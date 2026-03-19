@@ -1,0 +1,62 @@
+<?php
+/**
+ * Settings.
+ *
+ * Register default options and handle settings.
+ *
+ * @package MightyShield
+ * @since   1.0.0
+ */
+namespace MightyShield\Includes;
+class settings {
+
+    /**
+     * Default option values.
+     *
+     * @since   1.0.0
+     */
+    private static $defaults = [
+        'mshield_enabled'                   => 'yes',
+        'mshield_block_store_api'           => 'yes',
+        'mshield_rate_checkout_limit'       => 5,
+        'mshield_rate_checkout_window'      => 3600,
+        'mshield_velocity_email_threshold'  => 3,
+        'mshield_velocity_order_threshold'  => 5,
+        'mshield_failed_payment_threshold'  => 5,
+        'mshield_temp_block_duration'       => 86400,
+        'mshield_blocked_email_domains'     => '',
+        'mshield_min_order_amount'          => '1.00',
+        'mshield_suspicious_amount_action'  => 'flag',
+        'mshield_address_sensitivity'       => 'medium',
+        'mshield_log_retention_days'        => 30,
+    ];
+
+    /**
+     * Get a setting value with default fallback.
+     *
+     * @since   1.0.0
+     *
+     * @param   string  $key    Option key.
+     * @return  mixed
+     */
+    public static function get( $key ) {
+
+        $default = isset( self::$defaults[ $key ] ) ? self::$defaults[ $key ] : '';
+        return get_option( $key, $default );
+
+    }
+
+    /**
+     * Get all default values.
+     *
+     * @since   1.0.0
+     *
+     * @return  array
+     */
+    public static function get_defaults() {
+
+        return self::$defaults;
+
+    }
+
+}
