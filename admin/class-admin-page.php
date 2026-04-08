@@ -61,67 +61,61 @@ class admin_page {
      */
     public function register_settings() {
 
-        // Checkbox settings — default to 'no' when unchecked (not sent in POST).
-        register_setting( 'mshield_settings', 'mshield_enabled', [
+        // --- Firewall tab settings ---
+        register_setting( 'mshield_firewall', 'mshield_enabled', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
-        register_setting( 'mshield_settings', 'mshield_block_store_api', [
+        register_setting( 'mshield_firewall', 'mshield_block_store_api', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
-
-        // Integer settings with min/max bounds.
-        register_setting( 'mshield_settings', 'mshield_rate_checkout_limit', [
-            'sanitize_callback' => function( $value ) { return max( 1, absint( $value ) ); },
-        ] );
-        register_setting( 'mshield_settings', 'mshield_rate_checkout_window', [
-            'sanitize_callback' => function( $value ) { return max( 60, absint( $value ) ); },
-        ] );
-        register_setting( 'mshield_settings', 'mshield_velocity_email_threshold', [
-            'sanitize_callback' => function( $value ) { return max( 1, absint( $value ) ); },
-        ] );
-        register_setting( 'mshield_settings', 'mshield_velocity_order_threshold', [
-            'sanitize_callback' => function( $value ) { return max( 1, absint( $value ) ); },
-        ] );
-        register_setting( 'mshield_settings', 'mshield_failed_payment_threshold', [
-            'sanitize_callback' => function( $value ) { return max( 1, absint( $value ) ); },
-        ] );
-        register_setting( 'mshield_settings', 'mshield_temp_block_duration', [
-            'sanitize_callback' => function( $value ) { return max( 3600, absint( $value ) ); },
-        ] );
-        register_setting( 'mshield_settings', 'mshield_log_retention_days', [
+        register_setting( 'mshield_firewall', 'mshield_log_retention_days', [
             'sanitize_callback' => function( $value ) { return max( 1, min( 365, absint( $value ) ) ); },
         ] );
 
-        // Textarea — sanitize line-by-line.
-        register_setting( 'mshield_settings', 'mshield_blocked_email_domains', [
+        // --- Rate Limits tab settings ---
+        register_setting( 'mshield_rates', 'mshield_rate_checkout_limit', [
+            'sanitize_callback' => function( $value ) { return max( 1, absint( $value ) ); },
+        ] );
+        register_setting( 'mshield_rates', 'mshield_rate_checkout_window', [
+            'sanitize_callback' => function( $value ) { return max( 60, absint( $value ) ); },
+        ] );
+        register_setting( 'mshield_rates', 'mshield_velocity_email_threshold', [
+            'sanitize_callback' => function( $value ) { return max( 1, absint( $value ) ); },
+        ] );
+        register_setting( 'mshield_rates', 'mshield_velocity_order_threshold', [
+            'sanitize_callback' => function( $value ) { return max( 1, absint( $value ) ); },
+        ] );
+        register_setting( 'mshield_rates', 'mshield_failed_payment_threshold', [
+            'sanitize_callback' => function( $value ) { return max( 1, absint( $value ) ); },
+        ] );
+        register_setting( 'mshield_rates', 'mshield_temp_block_duration', [
+            'sanitize_callback' => function( $value ) { return max( 3600, absint( $value ) ); },
+        ] );
+
+        // --- Fraud Checks tab settings ---
+        register_setting( 'mshield_fraud', 'mshield_blocked_email_domains', [
             'sanitize_callback' => 'sanitize_textarea_field',
         ] );
-
-        // Float — minimum order amount.
-        register_setting( 'mshield_settings', 'mshield_min_order_amount', [
+        register_setting( 'mshield_fraud', 'mshield_min_order_amount', [
             'sanitize_callback' => function( $value ) { return max( 0, (float) $value ); },
         ] );
-
-        // Select — whitelist allowed values.
-        register_setting( 'mshield_settings', 'mshield_suspicious_amount_action', [
+        register_setting( 'mshield_fraud', 'mshield_suspicious_amount_action', [
             'sanitize_callback' => function( $value ) {
                 return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'flag';
             },
         ] );
-        register_setting( 'mshield_settings', 'mshield_address_sensitivity', [
+        register_setting( 'mshield_fraud', 'mshield_address_sensitivity', [
             'sanitize_callback' => function( $value ) {
                 return \in_array( $value, [ 'low', 'medium', 'high' ], true ) ? $value : 'medium';
             },
         ] );
-
-        // Smarty Address Verification.
-        register_setting( 'mshield_settings', 'mshield_smarty_enabled', [
+        register_setting( 'mshield_fraud', 'mshield_smarty_enabled', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
-        register_setting( 'mshield_settings', 'mshield_smarty_auth_id', [
+        register_setting( 'mshield_fraud', 'mshield_smarty_auth_id', [
             'sanitize_callback' => 'sanitize_text_field',
         ] );
-        register_setting( 'mshield_settings', 'mshield_smarty_auth_token', [
+        register_setting( 'mshield_fraud', 'mshield_smarty_auth_token', [
             'sanitize_callback' => function( $value ) {
                 if( empty( $value ) ) {
                     return get_option( 'mshield_smarty_auth_token', '' );
@@ -129,29 +123,23 @@ class admin_page {
                 return sanitize_text_field( $value );
             },
         ] );
-        register_setting( 'mshield_settings', 'mshield_smarty_action', [
+        register_setting( 'mshield_fraud', 'mshield_smarty_action', [
             'sanitize_callback' => function( $value ) {
                 return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'flag';
             },
         ] );
-
-        // ZIP/State Mismatch.
-        register_setting( 'mshield_settings', 'mshield_zip_state_enabled', [
+        register_setting( 'mshield_fraud', 'mshield_zip_state_enabled', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
-        register_setting( 'mshield_settings', 'mshield_zip_state_action', [
+        register_setting( 'mshield_fraud', 'mshield_zip_state_action', [
             'sanitize_callback' => function( $value ) {
                 return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'block';
             },
         ] );
-
-        // Honeypot.
-        register_setting( 'mshield_settings', 'mshield_honeypot_enabled', [
+        register_setting( 'mshield_fraud', 'mshield_honeypot_enabled', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
-
-        // Device Fingerprinting.
-        register_setting( 'mshield_settings', 'mshield_fingerprint_enabled', [
+        register_setting( 'mshield_fraud', 'mshield_fingerprint_enabled', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
 

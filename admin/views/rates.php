@@ -12,7 +12,7 @@ use MightyShield\Includes\settings;
 ?>
 
 <form method="post" action="options.php">
-    <?php settings_fields( 'mshield_settings' ); ?>
+    <?php settings_fields( 'mshield_rates' ); ?>
 
     <div class="mshield-section">
         <h2><?php esc_html_e( 'Checkout Rate Limiting', 'mighty-shield' ); ?></h2>
