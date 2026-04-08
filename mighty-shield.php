@@ -3,7 +3,7 @@
 Plugin Name: MightyShield
 Plugin URI: https://builtmighty.com
 Description: WooCommerce firewall for protecting against card spammer orders.
-Version: 1.1.0
+Version: 1.1.1
 Author: Built Mighty
 Author URI: https://builtmighty.com
 Copyright: Built Mighty
@@ -31,7 +31,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '1.1.0' );
+define( 'MSHIELD_VERSION', '1.1.1' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );

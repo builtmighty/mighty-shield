@@ -4,7 +4,7 @@ Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -64,6 +64,9 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 == Screenshots ==
 
 == Changelog ==
+
+= 1.1.1 =
+* Fixed admin settings page inaccessible when plugin protections are disabled.
 
 = 1.1.0 =
 * Added Smarty USPS address verification for US billing addresses.
