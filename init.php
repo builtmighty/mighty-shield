@@ -72,11 +72,6 @@ class Plugin {
         $this->load_class( \MightyShield\Protection\honeypot::class );
         $this->load_class( \MightyShield\Protection\device_fingerprint::class );
 
-        // Admin.
-        if( is_admin() ) {
-            $this->load_class( \MightyShield\Admin\admin_page::class );
-        }
-
     }
 
     /**

@@ -102,18 +102,32 @@ function load() {
     // Check if WooCommerce is active.
     if( ! class_exists( 'WooCommerce' ) ) return;
 
-    // Check if plugin is enabled.
-    if( get_option( 'mshield_enabled', 'yes' ) !== 'yes' ) return;
-
     /**
-     * Require classes.
+     * Require core classes (always loaded when WooCommerce is active).
      *
-     * @since   1.0.0
+     * @since   1.1.0
      */
     require_once MSHIELD_PATH . 'includes/class-ip-utils.php';
     require_once MSHIELD_PATH . 'includes/class-db.php';
     require_once MSHIELD_PATH . 'includes/class-settings.php';
     require_once MSHIELD_PATH . 'firewall/class-ip-whitelist.php';
+    require_once MSHIELD_PATH . 'admin/class-admin-page.php';
+    require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
+
+    // Always load admin page so settings are accessible.
+    if( is_admin() ) {
+        new \MightyShield\Admin\admin_page();
+        new \MightyShield\Admin\log_viewer();
+    }
+
+    // Check if plugin protections are enabled.
+    if( get_option( 'mshield_enabled', 'yes' ) !== 'yes' ) return;
+
+    /**
+     * Require protection classes.
+     *
+     * @since   1.0.0
+     */
     require_once MSHIELD_PATH . 'firewall/class-api-firewall.php';
     require_once MSHIELD_PATH . 'protection/class-rate-limiter.php';
     require_once MSHIELD_PATH . 'protection/class-velocity-detector.php';
@@ -125,8 +139,6 @@ function load() {
     require_once MSHIELD_PATH . 'protection/class-smarty-address-verifier.php';
     require_once MSHIELD_PATH . 'protection/class-honeypot.php';
     require_once MSHIELD_PATH . 'protection/class-device-fingerprint.php';
-    require_once MSHIELD_PATH . 'admin/class-admin-page.php';
-    require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
 
     /**
      * Initiate.
