@@ -114,6 +114,47 @@ class admin_page {
             },
         ] );
 
+        // Smarty Address Verification.
+        register_setting( 'mshield_settings', 'mshield_smarty_enabled', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_settings', 'mshield_smarty_auth_id', [
+            'sanitize_callback' => 'sanitize_text_field',
+        ] );
+        register_setting( 'mshield_settings', 'mshield_smarty_auth_token', [
+            'sanitize_callback' => function( $value ) {
+                if( empty( $value ) ) {
+                    return get_option( 'mshield_smarty_auth_token', '' );
+                }
+                return sanitize_text_field( $value );
+            },
+        ] );
+        register_setting( 'mshield_settings', 'mshield_smarty_action', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'flag';
+            },
+        ] );
+
+        // ZIP/State Mismatch.
+        register_setting( 'mshield_settings', 'mshield_zip_state_enabled', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_settings', 'mshield_zip_state_action', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'block';
+            },
+        ] );
+
+        // Honeypot.
+        register_setting( 'mshield_settings', 'mshield_honeypot_enabled', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+
+        // Device Fingerprinting.
+        register_setting( 'mshield_settings', 'mshield_fingerprint_enabled', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+
     }
 
     /**

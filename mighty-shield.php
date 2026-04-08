@@ -38,6 +38,18 @@ define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
 defined( 'MSHIELD_FILE' ) || define( 'MSHIELD_FILE', __FILE__ );
 
 /**
+ * Plugin action links.
+ *
+ * @since   1.0.0
+ */
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), '\MightyShield\plugin_action_links' );
+function plugin_action_links( $links ) {
+    $settings_link = '<a href="' . esc_url( admin_url( 'admin.php?page=mighty-shield' ) ) . '">' . __( 'Settings', 'mighty-shield' ) . '</a>';
+    array_unshift( $links, $settings_link );
+    return $links;
+}
+
+/**
  * On activation.
  *
  * @since   1.0.0
@@ -109,6 +121,10 @@ function load() {
     require_once MSHIELD_PATH . 'protection/class-email-domain-blocker.php';
     require_once MSHIELD_PATH . 'protection/class-order-amount-validator.php';
     require_once MSHIELD_PATH . 'protection/class-address-validator.php';
+    require_once MSHIELD_PATH . 'protection/class-zip-state-validator.php';
+    require_once MSHIELD_PATH . 'protection/class-smarty-address-verifier.php';
+    require_once MSHIELD_PATH . 'protection/class-honeypot.php';
+    require_once MSHIELD_PATH . 'protection/class-device-fingerprint.php';
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
 

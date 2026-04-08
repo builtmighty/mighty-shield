@@ -67,6 +67,10 @@ class Plugin {
         $this->load_class( \MightyShield\Protection\email_domain_blocker::class );
         $this->load_class( \MightyShield\Protection\order_amount_validator::class );
         $this->load_class( \MightyShield\Protection\address_validator::class );
+        $this->load_class( \MightyShield\Protection\zip_state_validator::class );
+        $this->load_class( \MightyShield\Protection\smarty_address_verifier::class );
+        $this->load_class( \MightyShield\Protection\honeypot::class );
+        $this->load_class( \MightyShield\Protection\device_fingerprint::class );
 
         // Admin.
         if( is_admin() ) {

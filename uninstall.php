@@ -31,6 +31,14 @@ $options = [
     'mshield_min_order_amount',
     'mshield_suspicious_amount_action',
     'mshield_address_sensitivity',
+    'mshield_smarty_enabled',
+    'mshield_smarty_auth_id',
+    'mshield_smarty_auth_token',
+    'mshield_smarty_action',
+    'mshield_zip_state_enabled',
+    'mshield_zip_state_action',
+    'mshield_honeypot_enabled',
+    'mshield_fingerprint_enabled',
     'mshield_log_retention_days',
 ];
 

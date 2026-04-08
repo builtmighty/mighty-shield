@@ -28,6 +28,14 @@ class settings {
         'mshield_min_order_amount'          => '1.00',
         'mshield_suspicious_amount_action'  => 'flag',
         'mshield_address_sensitivity'       => 'medium',
+        'mshield_smarty_enabled'            => 'no',
+        'mshield_smarty_auth_id'            => '',
+        'mshield_smarty_auth_token'         => '',
+        'mshield_smarty_action'             => 'flag',
+        'mshield_zip_state_enabled'         => 'yes',
+        'mshield_zip_state_action'          => 'block',
+        'mshield_honeypot_enabled'          => 'yes',
+        'mshield_fingerprint_enabled'       => 'no',
         'mshield_log_retention_days'        => 30,
     ];
 
