@@ -4,7 +4,7 @@ Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 1.1.2
+Stable tag: 1.2.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -28,8 +28,12 @@ MightyShield protects WooCommerce stores from card testing attacks by blocking a
 * Score-based fake address detection
 * Smarty USPS address verification for US billing addresses with automatic ZIP/State fallback
 * ZIP/State mismatch detection — catches US orders where the ZIP prefix doesn't match the state
-* Honeypot hidden field — invisible bot trap with zero false positives
-* Device fingerprinting — detects automated browsers and timezone/country mismatches
+* Honeypot hidden field — invisible bot trap with configurable block/flag/notify action
+* Checkout timing — signed token detects implausibly fast (automated) submissions, unaffected by IP or product changes
+* Device fingerprinting — detects automated browsers and timezone/country mismatches with configurable action
+* Device velocity limiting — rate-limits by device signature regardless of IP, catching VPN/IP-rotating attackers
+* Bot challenge — Cloudflare Turnstile or Google reCAPTCHA v3 at checkout
+* Persistent IP blocklist with CIDR support, plus one-click blocking from the logs
 * Settings link on the plugins page for quick access
 * Admin dashboard with stats, top blocked IPs, and filterable logs
 * Daily auto-cleanup of old logs and expired rate limits
@@ -59,11 +63,20 @@ Smarty verifies US billing addresses against USPS data to catch fake, non-existe
 
 = What does the honeypot do? =
 
-The honeypot adds an invisible field to the checkout form. Real customers never see or fill it, but automated bots do. When filled, the order is blocked and the IP is temporarily banned. Zero false positives.
+The honeypot adds an invisible field to the checkout form. Real customers never see or fill it, but automated bots do. When filled, MightyShield takes the action you configure — block the checkout (and temporarily ban the IP), flag the order with a note, or flag and email the admin. Zero false positives.
 
 == Screenshots ==
 
 == Changelog ==
+
+= 1.2.0 =
+* Added configurable action (block / flag / flag + notify admin) to the honeypot.
+* Added checkout timing detection — an HMAC-signed token flags/blocks implausibly fast (automated) submissions; defaults to Flag for safe rollout.
+* Added configurable action (block / flag / flag + notify admin) to device fingerprinting; a missing fingerprint is only ever flagged, never blocked.
+* Added device velocity limiting — rate-limits checkout by device signature independent of IP to counter VPN/IP rotation.
+* Added a bot challenge (Cloudflare Turnstile or Google reCAPTCHA v3) at checkout with block / flag / notify action.
+* Added a persistent IP blocklist with CIDR support and a dedicated admin tab.
+* Added a one-click "block" link in the logs to add an IP to the blocklist.
 
 = 1.1.2 =
 * Fixed settings on other tabs being cleared when saving a single tab.

@@ -3,7 +3,7 @@
 Plugin Name: MightyShield
 Plugin URI: https://builtmighty.com
 Description: WooCommerce firewall for protecting against card spammer orders.
-Version: 1.1.2
+Version: 1.2.0
 Author: Built Mighty
 Author URI: https://builtmighty.com
 Copyright: Built Mighty
@@ -31,7 +31,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '1.1.2' );
+define( 'MSHIELD_VERSION', '1.2.0' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -111,6 +111,7 @@ function load() {
     require_once MSHIELD_PATH . 'includes/class-db.php';
     require_once MSHIELD_PATH . 'includes/class-settings.php';
     require_once MSHIELD_PATH . 'firewall/class-ip-whitelist.php';
+    require_once MSHIELD_PATH . 'firewall/class-ip-blocklist.php';
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
 
@@ -138,7 +139,9 @@ function load() {
     require_once MSHIELD_PATH . 'protection/class-zip-state-validator.php';
     require_once MSHIELD_PATH . 'protection/class-smarty-address-verifier.php';
     require_once MSHIELD_PATH . 'protection/class-honeypot.php';
+    require_once MSHIELD_PATH . 'protection/class-checkout-timing.php';
     require_once MSHIELD_PATH . 'protection/class-device-fingerprint.php';
+    require_once MSHIELD_PATH . 'protection/class-captcha.php';
 
     /**
      * Initiate.
