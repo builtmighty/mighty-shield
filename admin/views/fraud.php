@@ -153,6 +153,51 @@ use MightyShield\Includes\settings;
                     </label>
                 </td>
             </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Action when triggered', 'mighty-shield' ); ?></th>
+                <td>
+                    <select name="mshield_honeypot_action">
+                        <option value="block" <?php selected( settings::get( 'mshield_honeypot_action' ), 'block' ); ?>><?php esc_html_e( 'Block (prevent checkout)', 'mighty-shield' ); ?></option>
+                        <option value="flag" <?php selected( settings::get( 'mshield_honeypot_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
+                        <option value="notify" <?php selected( settings::get( 'mshield_honeypot_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="mshield-section">
+        <h2><?php esc_html_e( 'Checkout Timing', 'mighty-shield' ); ?></h2>
+        <p class="description"><?php esc_html_e( 'Measures how long a shopper takes to submit checkout. Bots and scripted card-runners submit far faster than a human can. IP- and content-agnostic, so it is unaffected by VPN rotation or changing products.', 'mighty-shield' ); ?></p>
+        <table class="form-table">
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Enable Checkout Timing', 'mighty-shield' ); ?></th>
+                <td>
+                    <label>
+                        <input type="hidden" name="mshield_timing_enabled" value="no" />
+                        <input type="checkbox" name="mshield_timing_enabled" value="yes" <?php checked( settings::get( 'mshield_timing_enabled' ), 'yes' ); ?> />
+                        <?php esc_html_e( 'Detect implausibly fast (automated) checkout submissions.', 'mighty-shield' ); ?>
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Minimum Seconds', 'mighty-shield' ); ?></th>
+                <td>
+                    <input type="number" name="mshield_timing_min_seconds" value="<?php echo esc_attr( settings::get( 'mshield_timing_min_seconds' ) ); ?>" min="0" step="1" class="small-text" />
+                    <p class="description"><?php esc_html_e( 'Submissions faster than this many seconds after the form loads are treated as automated. Default: 4. Keep it conservative (3–5) to avoid catching fast, legitimate shoppers.', 'mighty-shield' ); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Action on Fast Submission', 'mighty-shield' ); ?></th>
+                <td>
+                    <select name="mshield_timing_action">
+                        <option value="block" <?php selected( settings::get( 'mshield_timing_action' ), 'block' ); ?>><?php esc_html_e( 'Block (prevent checkout)', 'mighty-shield' ); ?></option>
+                        <option value="flag" <?php selected( settings::get( 'mshield_timing_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
+                        <option value="notify" <?php selected( settings::get( 'mshield_timing_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
+                    </select>
+                    <p class="description"><?php esc_html_e( 'Defaults to Flag so you can watch the logs before enforcing. A missing or invalid timing token is only ever flagged, never blocked.', 'mighty-shield' ); ?></p>
+                </td>
+            </tr>
         </table>
     </div>
 
@@ -168,6 +213,66 @@ use MightyShield\Includes\settings;
                         <input type="checkbox" name="mshield_fingerprint_enabled" value="yes" <?php checked( settings::get( 'mshield_fingerprint_enabled' ), 'yes' ); ?> />
                         <?php esc_html_e( 'Detect automated browsers and timezone/country mismatches.', 'mighty-shield' ); ?>
                     </label>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Action on Suspicious Device', 'mighty-shield' ); ?></th>
+                <td>
+                    <select name="mshield_fingerprint_action">
+                        <option value="block" <?php selected( settings::get( 'mshield_fingerprint_action' ), 'block' ); ?>><?php esc_html_e( 'Block (prevent checkout)', 'mighty-shield' ); ?></option>
+                        <option value="flag" <?php selected( settings::get( 'mshield_fingerprint_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
+                        <option value="notify" <?php selected( settings::get( 'mshield_fingerprint_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
+                    </select>
+                    <p class="description"><?php esc_html_e( 'Governs automated-browser and timezone/country-mismatch detections. A missing fingerprint (e.g. JavaScript disabled) is only ever logged, never blocked.', 'mighty-shield' ); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Device Velocity Threshold', 'mighty-shield' ); ?></th>
+                <td>
+                    <input type="number" name="mshield_fingerprint_velocity_threshold" value="<?php echo esc_attr( settings::get( 'mshield_fingerprint_velocity_threshold' ) ); ?>" min="0" step="1" class="small-text" />
+                    <p class="description"><?php esc_html_e( 'Max checkout attempts allowed per device within the checkout rate window (Rate Limits tab), regardless of IP. Catches attackers rotating IPs via VPN. Set to 0 to disable. Uses the "Action on Suspicious Device" setting above.', 'mighty-shield' ); ?></p>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="mshield-section">
+        <h2><?php esc_html_e( 'Bot Challenge (CAPTCHA)', 'mighty-shield' ); ?></h2>
+        <p class="description"><?php esc_html_e( 'Add an invisible bot challenge to checkout. Cloudflare Turnstile is free and privacy-friendly (recommended); reCAPTCHA v3 is score-based. Strong against automated card-runners and unaffected by IP rotation.', 'mighty-shield' ); ?></p>
+        <table class="form-table">
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Provider', 'mighty-shield' ); ?></th>
+                <td>
+                    <select name="mshield_captcha_provider">
+                        <option value="off" <?php selected( settings::get( 'mshield_captcha_provider' ), 'off' ); ?>><?php esc_html_e( 'Off', 'mighty-shield' ); ?></option>
+                        <option value="turnstile" <?php selected( settings::get( 'mshield_captcha_provider' ), 'turnstile' ); ?>><?php esc_html_e( 'Cloudflare Turnstile (recommended)', 'mighty-shield' ); ?></option>
+                        <option value="recaptcha_v3" <?php selected( settings::get( 'mshield_captcha_provider' ), 'recaptcha_v3' ); ?>><?php esc_html_e( 'Google reCAPTCHA v3', 'mighty-shield' ); ?></option>
+                    </select>
+                    <p class="description"><?php esc_html_e( 'Requires both a site key and secret key below. Turnstile keys: dash.cloudflare.com. reCAPTCHA keys: google.com/recaptcha/admin.', 'mighty-shield' ); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Site Key', 'mighty-shield' ); ?></th>
+                <td>
+                    <input type="text" name="mshield_captcha_site_key" value="<?php echo esc_attr( settings::get( 'mshield_captcha_site_key' ) ); ?>" class="regular-text" />
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Secret Key', 'mighty-shield' ); ?></th>
+                <td>
+                    <?php $has_captcha_secret = ! empty( settings::get( 'mshield_captcha_secret_key' ) ); ?>
+                    <input type="password" name="mshield_captcha_secret_key" value="" class="regular-text" <?php echo $has_captcha_secret ? 'placeholder="••••••••"' : ''; ?> />
+                    <p class="description"><?php echo $has_captcha_secret ? esc_html__( 'Secret is saved. Leave blank to keep existing secret.', 'mighty-shield' ) : esc_html__( 'Your provider secret key.', 'mighty-shield' ); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Action on Failed Challenge', 'mighty-shield' ); ?></th>
+                <td>
+                    <select name="mshield_captcha_action">
+                        <option value="block" <?php selected( settings::get( 'mshield_captcha_action' ), 'block' ); ?>><?php esc_html_e( 'Block (prevent checkout)', 'mighty-shield' ); ?></option>
+                        <option value="flag" <?php selected( settings::get( 'mshield_captcha_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
+                        <option value="notify" <?php selected( settings::get( 'mshield_captcha_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
+                    </select>
                 </td>
             </tr>
         </table>

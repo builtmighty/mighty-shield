@@ -3,7 +3,8 @@
  * Device Fingerprint.
  *
  * Collects browser metadata at checkout to detect automated browsers
- * and geographic mismatches with billing address.
+ * and geographic mismatches with billing address. Also rate-limits by
+ * device signature to catch VPN/IP-rotating attackers.
  *
  * @package MightyShield
  * @since   1.0.0
@@ -48,7 +49,9 @@ class device_fingerprint {
 
         add_action( 'woocommerce_after_checkout_billing_form', [ $this, 'render_field' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
-        add_action( 'woocommerce_after_checkout_validation', [ $this, 'validate_fingerprint' ], 5, 2 );
+        add_action( 'woocommerce_checkout_process', [ $this, 'record_velocity' ], 0 );
+        add_action( 'woocommerce_after_checkout_validation', [ $this, 'block_fingerprint' ], 5, 2 );
+        add_action( 'woocommerce_checkout_order_processed', [ $this, 'flag_fingerprint' ], 5, 3 );
 
     }
 
@@ -83,34 +86,30 @@ class device_fingerprint {
     }
 
     /**
-     * Validate fingerprint data.
+     * Block checkout on a suspicious fingerprint.
+     *
+     * Runs before order creation. Only active when the configured action is
+     * "block". A missing/malformed fingerprint is never blockable (protects
+     * legitimate JS-disabled shoppers) — it is logged as flagged only.
      *
      * @since   1.0.0
      *
      * @param   array    $data   Checkout posted data.
      * @param   object   $errors WP_Error object.
      */
-    public function validate_fingerprint( $data, $errors ) {
+    public function block_fingerprint( $data, $errors ) {
 
-        $raw = isset( $_POST['mshield_device_data'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_device_data'] ) ) : '';
-        $ip  = ip_utils::get_client_ip();
+        if( settings::get( 'mshield_fingerprint_action' ) !== 'block' ) return;
 
-        // Missing fingerprint — JS didn't execute. Flag but don't block (could be JS-disabled user).
-        if( empty( $raw ) ) {
-            db::log_event( $ip, 'classic_checkout', 'flagged', 'Device fingerprint missing (JS did not execute)' );
-            return;
-        }
+        $country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
+        $result  = $this->evaluate( $country );
+        $ip      = ip_utils::get_client_ip();
 
-        $device = json_decode( $raw, true );
-        if( ! is_array( $device ) ) {
-            db::log_event( $ip, 'classic_checkout', 'flagged', 'Device fingerprint data malformed' );
-            return;
-        }
+        if( empty( $result['reasons'] ) ) return;
 
-        // Bot detection: navigator.webdriver is true for Selenium/Puppeteer.
-        if( isset( $device['webdriver'] ) && $device['webdriver'] === true ) {
+        if( $result['blockable'] ) {
 
-            db::log_event( $ip, 'classic_checkout', 'blocked', 'Automated browser detected (webdriver=true)' );
+            db::log_event( $ip, 'classic_checkout', 'blocked', implode( '; ', $result['reasons'] ) );
 
             $duration = (int) settings::get( 'mshield_temp_block_duration' );
             set_transient( 'mshield_tempblock_' . md5( $ip ), true, $duration );
@@ -120,8 +119,79 @@ class device_fingerprint {
 
         }
 
+        // Non-blockable signals (e.g. missing/malformed) — record only.
+        db::log_event( $ip, 'classic_checkout', 'flagged', implode( '; ', $result['reasons'] ) );
+
+    }
+
+    /**
+     * Flag an order on a suspicious fingerprint.
+     *
+     * Runs after order creation. Active when the configured action is "flag"
+     * or "notify".
+     *
+     * @since   1.0.0
+     *
+     * @param   int     $order_id   Order ID.
+     * @param   array   $posted     Posted data.
+     * @param   object  $order      WC_Order object.
+     */
+    public function flag_fingerprint( $order_id, $posted, $order ) {
+
+        $action = settings::get( 'mshield_fingerprint_action' );
+        if( $action === 'block' ) return;
+
+        $country = $order->get_billing_country();
+        $result  = $this->evaluate( $country );
+
+        if( empty( $result['reasons'] ) ) return;
+
+        $ip     = ip_utils::get_client_ip();
+        $reason = implode( '; ', $result['reasons'] );
+
+        db::log_event( $ip, 'classic_checkout', 'flagged', $reason );
+        $order->add_order_note( 'MightyShield: ' . $reason );
+        $order->update_meta_data( '_mshield_flagged', 'device_fingerprint' );
+        $order->save();
+
+        if( $action === 'notify' ) {
+            $this->send_admin_notification( $order, $reason );
+        }
+
+    }
+
+    /**
+     * Evaluate the submitted device fingerprint.
+     *
+     * @since   1.0.0
+     *
+     * @param   string  $country    Billing country code.
+     * @return  array   [ 'blockable' => bool, 'reasons' => string[] ]
+     */
+    private function evaluate( $country ) {
+
+        $reasons   = [];
+        $blockable = false;
+
+        $raw = isset( $_POST['mshield_device_data'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_device_data'] ) ) : '';
+
+        // Missing fingerprint — JS didn't execute. Flag but never block.
+        if( empty( $raw ) ) {
+            return [ 'blockable' => false, 'reasons' => [ 'Device fingerprint missing (JS did not execute)' ] ];
+        }
+
+        $device = json_decode( $raw, true );
+        if( ! is_array( $device ) ) {
+            return [ 'blockable' => false, 'reasons' => [ 'Device fingerprint data malformed' ] ];
+        }
+
+        // Bot detection: navigator.webdriver is true for Selenium/Puppeteer.
+        if( isset( $device['webdriver'] ) && $device['webdriver'] === true ) {
+            $reasons[]  = 'Automated browser detected (webdriver=true)';
+            $blockable  = true;
+        }
+
         // Timezone vs. billing country mismatch.
-        $country  = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
         $timezone = isset( $device['timezone'] ) ? $device['timezone'] : '';
 
         if( ! empty( $country ) && ! empty( $timezone ) && isset( self::COUNTRY_TZ_PREFIXES[ $country ] ) ) {
@@ -137,15 +207,113 @@ class device_fingerprint {
             }
 
             if( ! $matches ) {
-                db::log_event(
-                    $ip,
-                    'classic_checkout',
-                    'flagged',
-                    sprintf( 'Timezone/country mismatch: browser timezone "%s" does not match billing country %s', $timezone, $country )
-                );
+                $reasons[] = sprintf( 'Timezone/country mismatch: browser timezone "%s" does not match billing country %s', $timezone, $country );
+                $blockable = true;
             }
 
         }
+
+        // Device velocity — counts checkout attempts per device signature,
+        // independent of IP, to catch VPN/IP-rotating attackers.
+        $threshold = (int) settings::get( 'mshield_fingerprint_velocity_threshold' );
+        if( $threshold > 0 ) {
+
+            $signature = $this->get_signature( $device );
+            if( $signature !== '' ) {
+
+                $count = db::check_rate_limit( $signature, 'fp_velocity' );
+
+                if( $count > $threshold ) {
+                    $reasons[] = sprintf( 'Device velocity exceeded: %d/%d checkouts from the same device signature', $count, $threshold );
+                    $blockable = true;
+                }
+
+            }
+
+        }
+
+        return [ 'blockable' => $blockable, 'reasons' => $reasons ];
+
+    }
+
+    /**
+     * Record a checkout attempt against the device velocity counter.
+     *
+     * Called once per checkout submission so the counter reflects real
+     * attempts. Kept separate from evaluate() so the read-only evaluation can
+     * run on both the block and flag hooks without double-counting.
+     *
+     * @since   1.0.0
+     */
+    public function record_velocity() {
+
+        $threshold = (int) settings::get( 'mshield_fingerprint_velocity_threshold' );
+        if( $threshold <= 0 ) return;
+
+        $raw = isset( $_POST['mshield_device_data'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_device_data'] ) ) : '';
+        if( empty( $raw ) ) return;
+
+        $device = json_decode( $raw, true );
+        if( ! is_array( $device ) ) return;
+
+        $signature = $this->get_signature( $device );
+        if( $signature === '' ) return;
+
+        $window = (int) settings::get( 'mshield_rate_checkout_window' );
+        db::increment_rate_limit( $signature, 'fp_velocity', $window );
+
+    }
+
+    /**
+     * Build a stable, IP-independent device signature.
+     *
+     * @since   1.0.0
+     *
+     * @param   array   $device     Decoded fingerprint data.
+     * @return  string  MD5 signature, or '' if insufficient data.
+     */
+    private function get_signature( $device ) {
+
+        $parts = [
+            isset( $device['timezone'] ) ? $device['timezone'] : '',
+            isset( $device['language'] ) ? $device['language'] : '',
+            isset( $device['platform'] ) ? $device['platform'] : '',
+            ( isset( $device['screen_width'] ) ? $device['screen_width'] : '' ) . 'x' . ( isset( $device['screen_height'] ) ? $device['screen_height'] : '' ),
+        ];
+
+        $joined = implode( '|', $parts );
+
+        // Require at least some real data to avoid collapsing empty fingerprints
+        // into one shared signature.
+        if( trim( str_replace( [ '|', 'x' ], '', $joined ) ) === '' ) return '';
+
+        return md5( $joined );
+
+    }
+
+    /**
+     * Send admin notification email.
+     *
+     * @since   1.0.0
+     *
+     * @param   object  $order  WC_Order object.
+     * @param   string  $reason Reason for flagging.
+     */
+    private function send_admin_notification( $order, $reason ) {
+
+        $admin_email = get_option( 'admin_email' );
+        $subject     = sprintf( '[MightyShield] Suspicious device on order #%d', $order->get_id() );
+        $message     = sprintf(
+            "A suspicious device fingerprint was detected by MightyShield.\n\nOrder: #%d\nReason: %s\nCustomer: %s (%s)\nIP: %s\n\nReview this order: %s",
+            $order->get_id(),
+            $reason,
+            $order->get_formatted_billing_full_name(),
+            $order->get_billing_email(),
+            $order->get_customer_ip_address(),
+            $order->get_edit_order_url()
+        );
+
+        wp_mail( $admin_email, $subject, $message );
 
     }
 

@@ -81,6 +81,14 @@ $total_pages = ceil( $total / $per_page );
                         <code><?php echo esc_html( $log->ip ); ?></code>
                         <br>
                         <a href="<?php echo esc_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&filter_ip=' . urlencode( $log->ip ) ) ); ?>" style="font-size: 12px;"><?php esc_html_e( 'filter', 'mighty-shield' ); ?></a>
+                        <?php
+                        $block_url = wp_nonce_url(
+                            admin_url( 'admin.php?page=mighty-shield&mshield_block_ip=' . urlencode( $log->ip ) ),
+                            'mshield_block_ip'
+                        );
+                        ?>
+                        &nbsp;|&nbsp;
+                        <a href="<?php echo esc_url( $block_url ); ?>" style="font-size: 12px; color: #d63638;" onclick="return confirm('<?php echo esc_js( sprintf( __( 'Add %s to the blocklist?', 'mighty-shield' ), $log->ip ) ); ?>');"><?php esc_html_e( 'block', 'mighty-shield' ); ?></a>
                     </td>
                     <td>
                         <?php

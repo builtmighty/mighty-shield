@@ -35,7 +35,17 @@ class settings {
         'mshield_zip_state_enabled'         => 'yes',
         'mshield_zip_state_action'          => 'block',
         'mshield_honeypot_enabled'          => 'yes',
+        'mshield_honeypot_action'           => 'block',
+        'mshield_timing_enabled'            => 'yes',
+        'mshield_timing_min_seconds'        => 4,
+        'mshield_timing_action'             => 'flag',
         'mshield_fingerprint_enabled'       => 'no',
+        'mshield_fingerprint_action'        => 'block',
+        'mshield_fingerprint_velocity_threshold' => 5,
+        'mshield_captcha_provider'          => 'off',
+        'mshield_captcha_site_key'          => '',
+        'mshield_captcha_secret_key'        => '',
+        'mshield_captcha_action'            => 'block',
         'mshield_log_retention_days'        => 30,
     ];
 
