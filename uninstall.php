@@ -38,7 +38,18 @@ $options = [
     'mshield_zip_state_enabled',
     'mshield_zip_state_action',
     'mshield_honeypot_enabled',
+    'mshield_honeypot_action',
+    'mshield_timing_enabled',
+    'mshield_timing_min_seconds',
+    'mshield_timing_action',
     'mshield_fingerprint_enabled',
+    'mshield_fingerprint_action',
+    'mshield_fingerprint_velocity_threshold',
+    'mshield_captcha_provider',
+    'mshield_captcha_site_key',
+    'mshield_captcha_secret_key',
+    'mshield_captcha_action',
+    'mshield_ip_blocklist',
     'mshield_log_retention_days',
 ];
 

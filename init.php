@@ -59,6 +59,7 @@ class Plugin {
 
         // Firewall.
         $this->load_class( \MightyShield\Firewall\api_firewall::class );
+        $this->load_class( \MightyShield\Firewall\ip_blocklist::class );
 
         // Protection.
         $this->load_class( \MightyShield\Protection\rate_limiter::class );
@@ -70,7 +71,9 @@ class Plugin {
         $this->load_class( \MightyShield\Protection\zip_state_validator::class );
         $this->load_class( \MightyShield\Protection\smarty_address_verifier::class );
         $this->load_class( \MightyShield\Protection\honeypot::class );
+        $this->load_class( \MightyShield\Protection\checkout_timing::class );
         $this->load_class( \MightyShield\Protection\device_fingerprint::class );
+        $this->load_class( \MightyShield\Protection\captcha::class );
 
     }
 

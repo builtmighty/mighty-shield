@@ -12,6 +12,7 @@ namespace MightyShield\Admin;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
 use MightyShield\Firewall\ip_whitelist;
+use MightyShield\Firewall\ip_blocklist;
 
 class admin_page {
 
@@ -20,7 +21,7 @@ class admin_page {
      *
      * @since   1.0.0
      */
-    private const ALLOWED_TABS = [ 'dashboard', 'firewall', 'whitelist', 'rates', 'fraud', 'logs' ];
+    private const ALLOWED_TABS = [ 'dashboard', 'firewall', 'whitelist', 'blocklist', 'rates', 'fraud', 'logs' ];
 
     /**
      * Construct.
@@ -139,8 +140,55 @@ class admin_page {
         register_setting( 'mshield_fraud', 'mshield_honeypot_enabled', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
+        register_setting( 'mshield_fraud', 'mshield_honeypot_action', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'block';
+            },
+        ] );
+        register_setting( 'mshield_fraud', 'mshield_timing_enabled', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_fraud', 'mshield_timing_min_seconds', [
+            'sanitize_callback' => function( $value ) { return max( 0, absint( $value ) ); },
+        ] );
+        register_setting( 'mshield_fraud', 'mshield_timing_action', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'flag';
+            },
+        ] );
         register_setting( 'mshield_fraud', 'mshield_fingerprint_enabled', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_fraud', 'mshield_fingerprint_action', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'block';
+            },
+        ] );
+        register_setting( 'mshield_fraud', 'mshield_fingerprint_velocity_threshold', [
+            'sanitize_callback' => function( $value ) { return max( 0, absint( $value ) ); },
+        ] );
+
+        // Bot challenge (CAPTCHA).
+        register_setting( 'mshield_fraud', 'mshield_captcha_provider', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'off', 'turnstile', 'recaptcha_v3' ], true ) ? $value : 'off';
+            },
+        ] );
+        register_setting( 'mshield_fraud', 'mshield_captcha_site_key', [
+            'sanitize_callback' => 'sanitize_text_field',
+        ] );
+        register_setting( 'mshield_fraud', 'mshield_captcha_secret_key', [
+            'sanitize_callback' => function( $value ) {
+                if( empty( $value ) ) {
+                    return get_option( 'mshield_captcha_secret_key', '' );
+                }
+                return sanitize_text_field( $value );
+            },
+        ] );
+        register_setting( 'mshield_fraud', 'mshield_captcha_action', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'block';
+            },
         ] );
 
     }
@@ -199,6 +247,54 @@ class admin_page {
             }
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=whitelist' ) );
+            exit;
+
+        }
+
+        // Add IP to blocklist.
+        if( isset( $_POST['mshield_block_add_ip'] ) && check_admin_referer( 'mshield_blocklist_action' ) ) {
+
+            $ip    = sanitize_text_field( $_POST['mshield_block_new_ip'] ?? '' );
+            $label = sanitize_text_field( $_POST['mshield_block_new_ip_label'] ?? '' );
+
+            if( ! empty( $ip ) && $this->validate_ip_input( $ip ) ) {
+                ip_blocklist::add_ip( $ip, $label, 'Added manually' );
+                set_transient( 'mshield_admin_notice', [ 'ip_blocked', __( 'IP address added to blocklist.', 'mighty-shield' ), 'success' ], 30 );
+            } else {
+                set_transient( 'mshield_admin_notice', [ 'ip_invalid', __( 'Invalid IP address or CIDR format.', 'mighty-shield' ), 'error' ], 30 );
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=blocklist' ) );
+            exit;
+
+        }
+
+        // Remove IP from blocklist.
+        if( isset( $_GET['mshield_block_remove_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
+
+            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_block_remove_ip' ) ) {
+                $ip = sanitize_text_field( $_GET['mshield_block_remove_ip'] );
+                ip_blocklist::remove_ip( $ip );
+                set_transient( 'mshield_admin_notice', [ 'ip_unblocked', __( 'IP address removed from blocklist.', 'mighty-shield' ), 'success' ], 30 );
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=blocklist' ) );
+            exit;
+
+        }
+
+        // Block an IP directly from the Logs table.
+        if( isset( $_GET['mshield_block_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
+
+            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_block_ip' ) ) {
+                $ip = sanitize_text_field( $_GET['mshield_block_ip'] );
+                if( ! empty( $ip ) && $this->validate_ip_input( $ip ) ) {
+                    ip_blocklist::add_ip( $ip, '', 'Blocked from logs' );
+                    set_transient( 'mshield_admin_notice', [ 'ip_blocked', sprintf( __( 'IP %s added to blocklist.', 'mighty-shield' ), $ip ), 'success' ], 30 );
+                }
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=blocklist' ) );
             exit;
 
         }
@@ -314,6 +410,7 @@ class admin_page {
             'dashboard' => __( 'Dashboard', 'mighty-shield' ),
             'firewall'  => __( 'Firewall', 'mighty-shield' ),
             'whitelist' => __( 'IP Whitelist', 'mighty-shield' ),
+            'blocklist' => __( 'IP Blocklist', 'mighty-shield' ),
             'rates'     => __( 'Rate Limits', 'mighty-shield' ),
             'fraud'     => __( 'Fraud Checks', 'mighty-shield' ),
             'logs'      => __( 'Logs', 'mighty-shield' ),
