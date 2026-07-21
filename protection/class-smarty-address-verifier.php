@@ -32,6 +32,78 @@ class smarty_address_verifier {
         // Flag/notify mode: run AFTER order creation.
         add_action( 'woocommerce_checkout_order_processed', [ $this, 'flag_invalid_address' ], 5, 3 );
 
+        // Surface a persistent warning while verification is degraded.
+        if( is_admin() ) {
+            add_action( 'admin_notices', [ $this, 'render_degraded_notice' ] );
+        }
+
+    }
+
+    /**
+     * Record and alert on a degraded (API-unavailable) verification state.
+     *
+     * The email is throttled to at most once per day; the recorded state
+     * powers a persistent admin notice until verification recovers.
+     *
+     * @since   1.3.0
+     *
+     * @param   string  $error_message  The API error that triggered fallback.
+     */
+    private function alert_degraded( $error_message ) {
+
+        // Persist the latest degraded state for the admin notice.
+        update_option( 'mshield_smarty_degraded', [
+            'time'    => time(),
+            'message' => $error_message,
+        ], false );
+
+        // Throttle the notification email to once per day.
+        if( get_transient( 'mshield_smarty_alerted' ) ) return;
+        set_transient( 'mshield_smarty_alerted', 1, DAY_IN_SECONDS );
+
+        $admin_email = get_option( 'admin_email' );
+        $subject     = '[MightyShield] Address verification is degraded';
+        $message     = sprintf(
+            "MightyShield's Smarty address verification is currently unavailable and has fallen back to a basic ZIP/State check.\n\n" .
+            "Reason: %s\n\n" .
+            "Full USPS address verification is NOT running until this is resolved. Common causes:\n" .
+            "- Smarty subscription/quota exhausted (HTTP 402)\n" .
+            "- Invalid or expired auth-id / auth-token (HTTP 401/403)\n" .
+            "- Network/API outage\n\n" .
+            "Check your Smarty account at https://www.smarty.com/account and the MightyShield > Fraud Checks settings.\n\n" .
+            "This alert is sent at most once per day.",
+            $error_message
+        );
+
+        wp_mail( $admin_email, $subject, $message );
+
+    }
+
+    /**
+     * Show an admin notice while address verification is degraded.
+     *
+     * @since   1.3.0
+     */
+    public function render_degraded_notice() {
+
+        if( ! current_user_can( 'manage_woocommerce' ) ) return;
+
+        $degraded = get_option( 'mshield_smarty_degraded' );
+        if( empty( $degraded ) || empty( $degraded['time'] ) ) return;
+
+        // Only surface if a degradation was recorded within the last 24h.
+        if( ( time() - (int) $degraded['time'] ) > DAY_IN_SECONDS ) return;
+
+        printf(
+            '<div class="notice notice-error"><p><strong>%s</strong> %s</p></div>',
+            esc_html__( 'MightyShield:', 'mighty-shield' ),
+            esc_html( sprintf(
+                /* translators: %s: API error message. */
+                __( 'Address verification (Smarty) is degraded and is falling back to a basic ZIP/State check — full USPS verification is NOT running. Last error: %s. Check your Smarty account quota and API keys.', 'mighty-shield' ),
+                $degraded['message']
+            ) )
+        );
+
     }
 
     /**
@@ -149,7 +221,10 @@ class smarty_address_verifier {
         if( is_wp_error( $response ) ) {
 
             $ip = ip_utils::get_client_ip();
-            db::log_event( $ip, 'system', 'flagged', 'Smarty API error: ' . $response->get_error_message() . ' — falling back to ZIP/State check' );
+            db::log_event( $ip, 'system', 'degraded', 'Smarty address verification unavailable: ' . $response->get_error_message() . ' — falling back to basic ZIP/State check' );
+
+            // Alert the store admin (throttled) that full verification is off.
+            $this->alert_degraded( $response->get_error_message() );
 
             // Cache API error briefly to avoid hammering a failing API.
             set_transient( $cache_key, 'api_error', MINUTE_IN_SECONDS );
@@ -159,6 +234,12 @@ class smarty_address_verifier {
         }
 
         $result = $this->analyze_response( $response, $state );
+
+        // A successful call means verification has recovered — clear any
+        // lingering degraded-state flag so the admin notice disappears.
+        if( get_option( 'mshield_smarty_degraded' ) ) {
+            delete_option( 'mshield_smarty_degraded' );
+        }
 
         // Cache result for 5 minutes.
         set_transient( $cache_key, $result, 5 * MINUTE_IN_SECONDS );

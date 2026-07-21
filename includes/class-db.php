@@ -64,11 +64,20 @@ class db {
      * @param   string  $endpoint   Route or endpoint identifier.
      * @param   string  $action     Action taken (blocked, rate_limited, flagged).
      * @param   string  $reason     Reason for the action.
-     * @param   string  $data       Optional request data.
+     * @param   string  $data       Optional request data. When empty, a compact
+     *                              JSON forensics blob (user agent, billing
+     *                              email, request URI) is captured automatically.
      */
     public static function log_event( $ip, $endpoint, $action, $reason = '', $data = '' ) {
 
         global $wpdb;
+
+        // Auto-capture lightweight forensics when no explicit data was passed.
+        // The log table historically stored nothing here, which made spam
+        // analysis (email/user-agent correlation) impossible after the fact.
+        if( $data === '' ) {
+            $data = self::capture_forensics();
+        }
 
         $wpdb->insert(
             $wpdb->prefix . 'mshield_log',
@@ -82,6 +91,39 @@ class db {
             ],
             [ '%s', '%s', '%s', '%s', '%s', '%s' ]
         );
+
+    }
+
+    /**
+     * Capture a compact forensics blob for a logged event.
+     *
+     * Records the user agent, billing email (if present in the request) and
+     * request URI — the fields most useful for correlating spam-order clusters
+     * after the fact. Returns a JSON string capped to fit the TEXT column.
+     *
+     * @since   1.3.0
+     *
+     * @return  string  JSON-encoded forensics data (may be empty).
+     */
+    private static function capture_forensics() {
+
+        $forensics = [];
+
+        if( ! empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
+            $forensics['ua'] = substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 255 );
+        }
+
+        if( ! empty( $_POST['billing_email'] ) ) {
+            $forensics['email'] = sanitize_email( wp_unslash( $_POST['billing_email'] ) );
+        }
+
+        if( ! empty( $_SERVER['REQUEST_URI'] ) ) {
+            $forensics['uri'] = substr( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), 0, 255 );
+        }
+
+        if( empty( $forensics ) ) return '';
+
+        return (string) wp_json_encode( $forensics );
 
     }
 
