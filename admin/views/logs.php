@@ -71,6 +71,7 @@ $total_pages = ceil( $total / $per_page );
                     <th><?php esc_html_e( 'Action', 'mighty-shield' ); ?></th>
                     <th><?php esc_html_e( 'Endpoint', 'mighty-shield' ); ?></th>
                     <th><?php esc_html_e( 'Reason', 'mighty-shield' ); ?></th>
+                    <th><?php esc_html_e( 'Details', 'mighty-shield' ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -96,6 +97,7 @@ $total_pages = ceil( $total / $per_page );
                             'blocked'      => '#d63638',
                             'rate_limited' => '#dba617',
                             'flagged'      => '#2271b1',
+                            'degraded'     => '#996800',
                         ];
                         $color = isset( $action_colors[ $log->action ] ) ? $action_colors[ $log->action ] : '#50575e';
                         ?>
@@ -103,6 +105,23 @@ $total_pages = ceil( $total / $per_page );
                     </td>
                     <td><code style="font-size: 12px;"><?php echo esc_html( $log->endpoint ); ?></code></td>
                     <td style="font-size: 13px;"><?php echo esc_html( $log->reason ); ?></td>
+                    <td style="font-size: 12px;">
+                        <?php
+                        $details = ! empty( $log->request_data ) ? json_decode( $log->request_data, true ) : null;
+                        if( is_array( $details ) ) {
+                            $bits = [];
+                            if( ! empty( $details['email'] ) ) {
+                                $bits[] = '<strong>' . esc_html__( 'Email:', 'mighty-shield' ) . '</strong> ' . esc_html( $details['email'] );
+                            }
+                            if( ! empty( $details['ua'] ) ) {
+                                $bits[] = '<strong>' . esc_html__( 'UA:', 'mighty-shield' ) . '</strong> ' . esc_html( $details['ua'] );
+                            }
+                            echo $bits ? wp_kses_post( implode( '<br>', $bits ) ) : '&mdash;';
+                        } else {
+                            echo '&mdash;';
+                        }
+                        ?>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
