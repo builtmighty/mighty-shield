@@ -195,7 +195,17 @@ use MightyShield\Includes\settings;
                         <option value="flag" <?php selected( settings::get( 'mshield_timing_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
                         <option value="notify" <?php selected( settings::get( 'mshield_timing_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
                     </select>
-                    <p class="description"><?php esc_html_e( 'Defaults to Flag so you can watch the logs before enforcing. A missing or invalid timing token is only ever flagged, never blocked.', 'mighty-shield' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Defaults to Flag so you can watch the logs before enforcing.', 'mighty-shield' ); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Action on Missing Token', 'mighty-shield' ); ?></th>
+                <td>
+                    <select name="mshield_timing_missing_action">
+                        <option value="flag" <?php selected( settings::get( 'mshield_timing_missing_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag only (safe default)', 'mighty-shield' ); ?></option>
+                        <option value="block" <?php selected( settings::get( 'mshield_timing_missing_action' ), 'block' ); ?>><?php esc_html_e( 'Block (stops scripted checkouts)', 'mighty-shield' ); ?></option>
+                    </select>
+                    <p class="description"><?php esc_html_e( 'What to do when the timing token is missing or invalid — the signature of a scripted checkout that never rendered the form. Flag by default to guard against page caching stripping the field; set to Block when under active bot attack (only takes effect when the action above is Block).', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
         </table>
@@ -223,7 +233,17 @@ use MightyShield\Includes\settings;
                         <option value="flag" <?php selected( settings::get( 'mshield_fingerprint_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
                         <option value="notify" <?php selected( settings::get( 'mshield_fingerprint_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
                     </select>
-                    <p class="description"><?php esc_html_e( 'Governs automated-browser and timezone/country-mismatch detections. A missing fingerprint (e.g. JavaScript disabled) is only ever logged, never blocked.', 'mighty-shield' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Governs automated-browser and timezone/country-mismatch detections.', 'mighty-shield' ); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Action on Missing Fingerprint', 'mighty-shield' ); ?></th>
+                <td>
+                    <select name="mshield_fingerprint_missing_action">
+                        <option value="flag" <?php selected( settings::get( 'mshield_fingerprint_missing_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag only (safe default)', 'mighty-shield' ); ?></option>
+                        <option value="block" <?php selected( settings::get( 'mshield_fingerprint_missing_action' ), 'block' ); ?>><?php esc_html_e( 'Block (stops non-JS bots)', 'mighty-shield' ); ?></option>
+                    </select>
+                    <p class="description"><?php esc_html_e( 'What to do when no fingerprint is submitted (JavaScript did not run) — the signature of a scripted, non-interactive checkout. Flag by default to accommodate rare no-JS shoppers; set to Block when under active card-testing attack, since real payment already requires JavaScript. Only takes effect when the action above is Block.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
             <tr>
