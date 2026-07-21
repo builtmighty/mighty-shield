@@ -156,12 +156,22 @@ class admin_page {
                 return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'flag';
             },
         ] );
+        register_setting( 'mshield_fraud', 'mshield_timing_missing_action', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'block', 'flag' ], true ) ? $value : 'flag';
+            },
+        ] );
         register_setting( 'mshield_fraud', 'mshield_fingerprint_enabled', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
         register_setting( 'mshield_fraud', 'mshield_fingerprint_action', [
             'sanitize_callback' => function( $value ) {
                 return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'block';
+            },
+        ] );
+        register_setting( 'mshield_fraud', 'mshield_fingerprint_missing_action', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'block', 'flag' ], true ) ? $value : 'flag';
             },
         ] );
         register_setting( 'mshield_fraud', 'mshield_fingerprint_velocity_threshold', [
