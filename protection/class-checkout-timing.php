@@ -4,9 +4,9 @@
  *
  * Stamps the checkout form with a signed timestamp token and measures how long
  * the shopper took to submit. Implausibly fast submissions are automated. The
- * token is HMAC-signed so it cannot be forged, and a missing/invalid token is
- * only ever flagged (never blocks — protects against page caching stripping
- * the field).
+ * token is HMAC-signed so it cannot be forged. A missing/invalid token is
+ * flagged by default (protects against page caching stripping the field), but
+ * can be set to block via mshield_timing_missing_action when under attack.
  *
  * @package MightyShield
  * @since   1.2.0
@@ -66,8 +66,12 @@ class checkout_timing {
 
             db::log_event( $ip, 'classic_checkout', 'blocked', $result['reason'] );
 
-            $duration = (int) settings::get( 'mshield_temp_block_duration' );
-            set_transient( 'mshield_tempblock_' . md5( $ip ), true, $duration );
+            // Only strong signals (genuinely fast submit) escalate to an
+            // IP-wide temp-block.
+            if( ! empty( $result['temp_block'] ) ) {
+                $duration = (int) settings::get( 'mshield_temp_block_duration' );
+                set_transient( 'mshield_tempblock_' . md5( $ip ), true, $duration );
+            }
 
             $errors->add( 'mighty_shield_timing', __( 'This order could not be processed. Please try again.', 'mighty-shield' ) );
             return;
@@ -121,21 +125,28 @@ class checkout_timing {
         $token   = isset( $_POST['mshield_ct_token'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_ct_token'] ) ) : '';
         $elapsed = $this->verify_token( $token );
 
-        // Missing / forged / invalid token — flag but never block.
+        // Missing / forged / invalid token. A scripted checkout that never
+        // rendered our field lands here. Whether that blocks is governed by
+        // mshield_timing_missing_action: "flag" (default; guards against page
+        // caching stripping the field) or "block" (recommended under attack).
         if( $elapsed === null ) {
-            return [ 'blockable' => false, 'reason' => 'Checkout timing token missing or invalid' ];
+            $missing_blockable = ( settings::get( 'mshield_timing_missing_action' ) === 'block' );
+            // Weaker signal — reject the order but do not IP temp-block, to
+            // avoid locking out a shopper if caching ever strips the field.
+            return [ 'blockable' => $missing_blockable, 'temp_block' => false, 'reason' => 'Checkout timing token missing or invalid' ];
         }
 
         $min = (int) settings::get( 'mshield_timing_min_seconds' );
 
         if( $elapsed < $min ) {
             return [
-                'blockable' => true,
-                'reason'    => sprintf( 'Checkout submitted too fast: %ds (minimum %ds) — likely automated', $elapsed, $min ),
+                'blockable'  => true,
+                'temp_block' => true,
+                'reason'     => sprintf( 'Checkout submitted too fast: %ds (minimum %ds) — likely automated', $elapsed, $min ),
             ];
         }
 
-        return [ 'blockable' => false, 'reason' => null ];
+        return [ 'blockable' => false, 'temp_block' => false, 'reason' => null ];
 
     }
 

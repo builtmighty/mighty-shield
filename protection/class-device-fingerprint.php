@@ -89,8 +89,9 @@ class device_fingerprint {
      * Block checkout on a suspicious fingerprint.
      *
      * Runs before order creation. Only active when the configured action is
-     * "block". A missing/malformed fingerprint is never blockable (protects
-     * legitimate JS-disabled shoppers) — it is logged as flagged only.
+     * "block". A missing/malformed fingerprint is blockable only when
+     * mshield_fingerprint_missing_action is "block"; otherwise it is logged as
+     * flagged (protecting legitimate JS-disabled shoppers).
      *
      * @since   1.0.0
      *
@@ -111,8 +112,12 @@ class device_fingerprint {
 
             db::log_event( $ip, 'classic_checkout', 'blocked', implode( '; ', $result['reasons'] ) );
 
-            $duration = (int) settings::get( 'mshield_temp_block_duration' );
-            set_transient( 'mshield_tempblock_' . md5( $ip ), true, $duration );
+            // Only escalate to an IP-wide temp-block for strong signals, so a
+            // false positive on missing data does not lock a shopper out.
+            if( ! empty( $result['temp_block'] ) ) {
+                $duration = (int) settings::get( 'mshield_temp_block_duration' );
+                set_transient( 'mshield_tempblock_' . md5( $ip ), true, $duration );
+            }
 
             $errors->add( 'mighty_shield_fingerprint', __( 'This order could not be processed. Please contact support.', 'mighty-shield' ) );
             return;
@@ -175,14 +180,25 @@ class device_fingerprint {
 
         $raw = isset( $_POST['mshield_device_data'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_device_data'] ) ) : '';
 
-        // Missing fingerprint — JS didn't execute. Flag but never block.
+        // Missing/malformed fingerprint means the browser never ran our JS — the
+        // signature of a non-interactive (scripted) checkout. Whether that is
+        // blockable is governed by mshield_fingerprint_missing_action: "flag"
+        // (default, accommodates rare no-JS shoppers) or "block" (recommended
+        // when under active card-testing attack, since real payment already
+        // requires JS via the gateway's tokenization script).
+        $missing_blockable = ( settings::get( 'mshield_fingerprint_missing_action' ) === 'block' );
+
+        // Missing fingerprint — JS didn't execute. Reject the order when
+        // configured to block, but do NOT set an IP temp-block: this is a
+        // weaker signal, and a false positive should not lock a real shopper
+        // out for hours.
         if( empty( $raw ) ) {
-            return [ 'blockable' => false, 'reasons' => [ 'Device fingerprint missing (JS did not execute)' ] ];
+            return [ 'blockable' => $missing_blockable, 'temp_block' => false, 'reasons' => [ 'Device fingerprint missing (JS did not execute)' ] ];
         }
 
         $device = json_decode( $raw, true );
         if( ! is_array( $device ) ) {
-            return [ 'blockable' => false, 'reasons' => [ 'Device fingerprint data malformed' ] ];
+            return [ 'blockable' => $missing_blockable, 'temp_block' => false, 'reasons' => [ 'Device fingerprint data malformed' ] ];
         }
 
         // Bot detection: navigator.webdriver is true for Selenium/Puppeteer.
@@ -232,7 +248,9 @@ class device_fingerprint {
 
         }
 
-        return [ 'blockable' => $blockable, 'reasons' => $reasons ];
+        // Genuine detections (webdriver, timezone mismatch, device velocity)
+        // are strong enough to justify an IP temp-block.
+        return [ 'blockable' => $blockable, 'temp_block' => true, 'reasons' => $reasons ];
 
     }
 
