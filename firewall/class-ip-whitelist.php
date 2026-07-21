@@ -136,18 +136,47 @@ class ip_whitelist {
             }
         }
 
-        // Method 2: Resolve site hostname via DNS.
-        $host = wp_parse_url( site_url(), PHP_URL_HOST );
-        if( $host ) {
-            $resolved = gethostbyname( $host );
-            if( $resolved !== $host && filter_var( $resolved, FILTER_VALIDATE_IP ) ) {
-                self::add_ip( $resolved, 'Server IP (DNS: ' . $host . ')', true );
-            }
-        }
+        // NOTE: We deliberately do NOT resolve the site hostname via DNS.
+        // Behind a CDN/proxy such as Cloudflare, that resolves to the CDN's
+        // edge IP, which would wrongly whitelist the proxy and let any request
+        // routed through it bypass the firewall. See remove_dns_whitelist_entries().
 
-        // Method 3: Loopback addresses.
+        // Method 2: Loopback addresses.
         self::add_ip( '127.0.0.1', 'Loopback IPv4', true );
         self::add_ip( '::1', 'Loopback IPv6', true );
+
+    }
+
+    /**
+     * Remove whitelist entries created by the legacy DNS auto-detection.
+     *
+     * Prior versions resolved the site hostname and whitelisted the result,
+     * which behind Cloudflare added an edge IP (e.g. 104.x). Those entries are
+     * labelled "Server IP (DNS: ..." and are removed on upgrade.
+     *
+     * @since   1.3.0
+     *
+     * @return  bool    True if any entry was removed.
+     */
+    public static function remove_dns_whitelist_entries() {
+
+        $whitelist = self::get_whitelist();
+        $filtered  = [];
+        $changed   = false;
+
+        foreach( $whitelist as $entry ) {
+            if( isset( $entry['label'] ) && strpos( $entry['label'], 'Server IP (DNS:' ) === 0 ) {
+                $changed = true;
+                continue;
+            }
+            $filtered[] = $entry;
+        }
+
+        if( $changed ) {
+            update_option( self::OPTION_KEY, $filtered );
+        }
+
+        return $changed;
 
     }
 
