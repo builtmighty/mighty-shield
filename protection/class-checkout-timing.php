@@ -55,6 +55,8 @@ class checkout_timing {
      */
     public function block_field( $data, $errors ) {
 
+        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
+
         if( settings::get( 'mshield_timing_action' ) !== 'block' ) return;
 
         $result = $this->evaluate();
@@ -93,6 +95,8 @@ class checkout_timing {
      * @param   object  $order      WC_Order object.
      */
     public function flag_field( $order_id, $posted, $order ) {
+
+        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $action = settings::get( 'mshield_timing_action' );
         if( $action === 'block' ) return;

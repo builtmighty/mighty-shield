@@ -3,7 +3,7 @@
 Plugin Name: MightyShield
 Plugin URI: https://builtmighty.com
 Description: WooCommerce firewall for protecting against card spammer orders.
-Version: 1.3.0
+Version: 1.4.0
 Author: Built Mighty
 Author URI: https://builtmighty.com
 Copyright: Built Mighty
@@ -31,7 +31,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '1.3.0' );
+define( 'MSHIELD_VERSION', '1.4.0' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -93,6 +93,11 @@ function maybe_upgrade() {
         \MightyShield\Firewall\ip_whitelist::remove_dns_whitelist_entries();
     }
 
+    // 1.4.0: stamp explicit types on legacy IP-only whitelist entries.
+    if( version_compare( $installed, '1.4.0', '<' ) && class_exists( '\MightyShield\Firewall\ip_whitelist' ) ) {
+        \MightyShield\Firewall\ip_whitelist::normalize_stored();
+    }
+
     update_option( 'mshield_version', MSHIELD_VERSION, false );
 
 }
@@ -131,6 +136,7 @@ function load() {
     require_once MSHIELD_PATH . 'includes/class-settings.php';
     require_once MSHIELD_PATH . 'firewall/class-ip-whitelist.php';
     require_once MSHIELD_PATH . 'firewall/class-ip-blocklist.php';
+    require_once MSHIELD_PATH . 'includes/class-exempt.php';
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
 

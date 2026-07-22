@@ -13,7 +13,7 @@ wp plugin install https://github.com/builtmighty/mighty-shield/releases/latest/d
 ## Features
 
 - **Store API Firewall** — Hard-blocks non-whitelisted IPs from WooCommerce Store API cart and checkout endpoints
-- **Auto IP Whitelisting** — Automatically detects and whitelists the server IP on activation, with CIDR range support
+- **Universal Whitelist** — Whitelist by IP/CIDR, WordPress user, or email address; whitelisted entities bypass **all** checks (blocks and flags), not just the firewall. Server IP is auto-whitelisted on activation, and any log row can be whitelisted in one click
 - **Persistent IP Blocklist** — Permanently bar IPs/CIDR ranges from checkout and the Store API, with one-click blocking from the logs (whitelist always wins)
 - **Checkout Rate Limiting** — Configurable per-IP rate limits on checkout attempts (default: 5/hour)
 - **Velocity Detection** — Detects rapid-fire order patterns: multiple unique emails or excessive orders from a single IP
@@ -29,6 +29,7 @@ wp plugin install https://github.com/builtmighty/mighty-shield/releases/latest/d
 - **Device Velocity** — Rate-limits checkout by device signature independent of IP, catching attackers who rotate IPs via VPN
 - **Bot Challenge (CAPTCHA)** — Cloudflare Turnstile or Google reCAPTCHA v3 at checkout, verified server-side
 - **Admin Dashboard** — Real-time stats, top blocked IPs, and filterable event logs under WooCommerce menu
+- **Built-in Documentation** — A Documentation tab in the admin that explains every setting and walks through setup
 - **Auto Cleanup** — Daily cron job purges old logs and expired rate limit data
 
 ## Requirements
@@ -55,7 +56,7 @@ MightyShield provides two layers of protection:
 
 **Layer 2 — Classic Checkout Protections:** Rate limiting, velocity detection, email/address validation, honeypot field, checkout timing, device fingerprinting and velocity, a bot challenge (Turnstile / reCAPTCHA v3), Smarty address verification, ZIP/State validation, and failed payment tracking on the actual checkout flow via WooCommerce hooks. Each detection can be set to block the checkout, flag the order with a note, or flag and email the admin. These protect against fraud on the checkout form itself.
 
-A persistent IP blocklist backs both layers — blocklisted IPs are refused at classic checkout and the Store API, while whitelisted IPs are never blocked.
+A persistent IP blocklist backs both layers — blocklisted IPs are refused at classic checkout and the Store API, while the whitelist is honored everywhere: a whitelisted IP, WordPress user, or email address bypasses every check in both layers.
 
 ## License
 

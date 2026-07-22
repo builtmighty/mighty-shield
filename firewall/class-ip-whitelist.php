@@ -23,6 +23,9 @@ class ip_whitelist {
     /**
      * Check if an IP is whitelisted.
      *
+     * Only IP-type entries are considered; user/email entries are matched via
+     * their dedicated methods.
+     *
      * @since   1.0.0
      *
      * @param   string  $ip     IP address to check.
@@ -30,19 +33,22 @@ class ip_whitelist {
      */
     public static function is_whitelisted( $ip ) {
 
-        $whitelist = self::get_whitelist();
+        foreach( self::get_whitelist() as $entry ) {
 
-        foreach( $whitelist as $entry ) {
+            if( $entry['type'] !== 'ip' ) continue;
+
+            $value = $entry['value'];
 
             // CIDR check.
-            if( strpos( $entry['ip'], '/' ) !== false ) {
-                if( ip_utils::ip_in_cidr( $ip, $entry['ip'] ) ) {
+            if( strpos( $value, '/' ) !== false ) {
+                if( ip_utils::ip_in_cidr( $ip, $value ) ) {
                     return true;
                 }
+                continue;
             }
 
             // Exact match.
-            if( $entry['ip'] === $ip ) {
+            if( $value === $ip ) {
                 return true;
             }
 
@@ -53,7 +59,134 @@ class ip_whitelist {
     }
 
     /**
+     * Check if a WordPress user is whitelisted.
+     *
+     * @since   1.4.0
+     *
+     * @param   int  $user_id    WordPress user ID.
+     * @return  bool
+     */
+    public static function is_user_whitelisted( $user_id ) {
+
+        $user_id = (int) $user_id;
+        if( $user_id <= 0 ) return false;
+
+        foreach( self::get_whitelist() as $entry ) {
+            if( $entry['type'] === 'user' && (int) $entry['value'] === $user_id ) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }
+
+    /**
+     * Check if an email address is whitelisted (case-insensitive).
+     *
+     * @since   1.4.0
+     *
+     * @param   string  $email  Email address.
+     * @return  bool
+     */
+    public static function is_email_whitelisted( $email ) {
+
+        $email = strtolower( trim( (string) $email ) );
+        if( $email === '' ) return false;
+
+        foreach( self::get_whitelist() as $entry ) {
+            if( $entry['type'] === 'email' && $entry['value'] === $email ) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }
+
+    /**
+     * Add a typed entry to the whitelist.
+     *
+     * @since   1.4.0
+     *
+     * @param   string  $type   Entry type: 'ip', 'user', or 'email'.
+     * @param   string  $value  Match value (IP/CIDR, user ID, or email).
+     * @param   string  $label  Description label.
+     * @param   bool    $system Whether this is a system-detected entry.
+     * @return  bool    True if added, false if already exists or invalid type.
+     */
+    public static function add_entry( $type, $value, $label = '', $system = false ) {
+
+        $type = in_array( $type, [ 'ip', 'user', 'email' ], true ) ? $type : '';
+        if( $type === '' ) return false;
+
+        // Normalize the value per type.
+        if( $type === 'email' ) {
+            $value = strtolower( trim( sanitize_email( $value ) ) );
+        } elseif( $type === 'user' ) {
+            $value = (string) (int) $value;
+        } else {
+            $value = sanitize_text_field( $value );
+        }
+
+        if( $value === '' || $value === '0' ) return false;
+
+        $whitelist = self::get_whitelist();
+
+        // Check for duplicate (same type + value).
+        foreach( $whitelist as $entry ) {
+            if( $entry['type'] === $type && $entry['value'] === $value ) return false;
+        }
+
+        $new = [
+            'type'   => $type,
+            'value'  => $value,
+            'label'  => sanitize_text_field( $label ),
+            'system' => (bool) $system,
+            'added'  => time(),
+        ];
+
+        // Mirror IP entries into the legacy 'ip' key for back-compat.
+        if( $type === 'ip' ) $new['ip'] = $value;
+
+        $whitelist[] = $new;
+
+        return update_option( self::OPTION_KEY, $whitelist );
+
+    }
+
+    /**
+     * Remove a typed entry from the whitelist.
+     *
+     * @since   1.4.0
+     *
+     * @param   string  $type   Entry type.
+     * @param   string  $value  Match value.
+     * @return  bool
+     */
+    public static function remove_entry( $type, $value ) {
+
+        if( $type === 'email' ) {
+            $value = strtolower( trim( (string) $value ) );
+        } elseif( $type === 'user' ) {
+            $value = (string) (int) $value;
+        }
+
+        $filtered = [];
+
+        foreach( self::get_whitelist() as $entry ) {
+            if( $entry['type'] === $type && $entry['value'] === $value ) continue;
+            $filtered[] = $entry;
+        }
+
+        return update_option( self::OPTION_KEY, $filtered );
+
+    }
+
+    /**
      * Add an IP to the whitelist.
+     *
+     * Back-compat wrapper around add_entry() for the 'ip' type.
      *
      * @since   1.0.0
      *
@@ -64,21 +197,7 @@ class ip_whitelist {
      */
     public static function add_ip( $ip, $label = '', $system = false ) {
 
-        $whitelist = self::get_whitelist();
-
-        // Check for duplicate.
-        foreach( $whitelist as $entry ) {
-            if( $entry['ip'] === $ip ) return false;
-        }
-
-        $whitelist[] = [
-            'ip'     => sanitize_text_field( $ip ),
-            'label'  => sanitize_text_field( $label ),
-            'system' => (bool) $system,
-            'added'  => time(),
-        ];
-
-        return update_option( self::OPTION_KEY, $whitelist );
+        return self::add_entry( 'ip', $ip, $label, $system );
 
     }
 
@@ -92,21 +211,15 @@ class ip_whitelist {
      */
     public static function remove_ip( $ip ) {
 
-        $whitelist = self::get_whitelist();
-        $filtered  = [];
-
-        foreach( $whitelist as $entry ) {
-            if( $entry['ip'] !== $ip ) {
-                $filtered[] = $entry;
-            }
-        }
-
-        return update_option( self::OPTION_KEY, $filtered );
+        return self::remove_entry( 'ip', $ip );
 
     }
 
     /**
-     * Get the full whitelist.
+     * Get the full whitelist, with every entry normalized to the typed shape.
+     *
+     * Legacy entries (pre-1.4.0) stored only an 'ip' key with no 'type'; they
+     * are normalized to type 'ip' on read so old data keeps matching.
      *
      * @since   1.0.0
      *
@@ -115,7 +228,50 @@ class ip_whitelist {
     public static function get_whitelist() {
 
         $whitelist = get_option( self::OPTION_KEY, [] );
-        return is_array( $whitelist ) ? $whitelist : [];
+        if( ! is_array( $whitelist ) ) return [];
+
+        return array_map( [ __CLASS__, 'normalize' ], $whitelist );
+
+    }
+
+    /**
+     * Normalize a stored entry to the typed shape.
+     *
+     * @since   1.4.0
+     *
+     * @param   array  $entry   Raw stored entry.
+     * @return  array
+     */
+    private static function normalize( $entry ) {
+
+        if( ! is_array( $entry ) ) return [ 'type' => 'ip', 'value' => '', 'label' => '', 'system' => false, 'added' => 0 ];
+
+        // Legacy entries have no 'type' and store the IP in 'ip'.
+        if( empty( $entry['type'] ) ) {
+            $entry['type']  = 'ip';
+            $entry['value'] = isset( $entry['ip'] ) ? $entry['ip'] : '';
+        }
+
+        if( ! isset( $entry['value'] ) ) $entry['value'] = isset( $entry['ip'] ) ? $entry['ip'] : '';
+        if( ! isset( $entry['label'] ) ) $entry['label'] = '';
+        if( ! isset( $entry['system'] ) ) $entry['system'] = false;
+        if( ! isset( $entry['added'] ) ) $entry['added'] = 0;
+
+        return $entry;
+
+    }
+
+    /**
+     * Persist all stored entries in the normalized typed shape.
+     *
+     * One-time upgrade tidy-up so legacy IP-only entries gain an explicit
+     * 'type'. Matching already works without this via normalize() on read.
+     *
+     * @since   1.4.0
+     */
+    public static function normalize_stored() {
+
+        update_option( self::OPTION_KEY, self::get_whitelist() );
 
     }
 

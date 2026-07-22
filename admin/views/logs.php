@@ -42,6 +42,7 @@ $total_pages = ceil( $total / $per_page );
                 <option value="blocked" <?php selected( $filter_action, 'blocked' ); ?>><?php esc_html_e( 'Blocked', 'mighty-shield' ); ?></option>
                 <option value="rate_limited" <?php selected( $filter_action, 'rate_limited' ); ?>><?php esc_html_e( 'Rate Limited', 'mighty-shield' ); ?></option>
                 <option value="flagged" <?php selected( $filter_action, 'flagged' ); ?>><?php esc_html_e( 'Flagged', 'mighty-shield' ); ?></option>
+                <option value="exempt" <?php selected( $filter_action, 'exempt' ); ?>><?php esc_html_e( 'Exempt (whitelisted)', 'mighty-shield' ); ?></option>
             </select>
         </label>
 
@@ -90,6 +91,14 @@ $total_pages = ceil( $total / $per_page );
                         ?>
                         &nbsp;|&nbsp;
                         <a href="<?php echo esc_url( $block_url ); ?>" style="font-size: 12px; color: #d63638;" onclick="return confirm('<?php echo esc_js( sprintf( __( 'Add %s to the blocklist?', 'mighty-shield' ), $log->ip ) ); ?>');"><?php esc_html_e( 'block', 'mighty-shield' ); ?></a>
+                        <?php
+                        $wl_ip_url = wp_nonce_url(
+                            admin_url( 'admin.php?page=mighty-shield&mshield_whitelist_ip=' . urlencode( $log->ip ) ),
+                            'mshield_whitelist_ip'
+                        );
+                        ?>
+                        &nbsp;|&nbsp;
+                        <a href="<?php echo esc_url( $wl_ip_url ); ?>" style="font-size: 12px; color: #00a32a;" onclick="return confirm('<?php echo esc_js( sprintf( __( 'Whitelist %s (bypass all checks)?', 'mighty-shield' ), $log->ip ) ); ?>');"><?php esc_html_e( 'whitelist', 'mighty-shield' ); ?></a>
                     </td>
                     <td>
                         <?php
@@ -98,6 +107,7 @@ $total_pages = ceil( $total / $per_page );
                             'rate_limited' => '#dba617',
                             'flagged'      => '#2271b1',
                             'degraded'     => '#996800',
+                            'exempt'       => '#00a32a',
                         ];
                         $color = isset( $action_colors[ $log->action ] ) ? $action_colors[ $log->action ] : '#50575e';
                         ?>
@@ -111,7 +121,23 @@ $total_pages = ceil( $total / $per_page );
                         if( is_array( $details ) ) {
                             $bits = [];
                             if( ! empty( $details['email'] ) ) {
-                                $bits[] = '<strong>' . esc_html__( 'Email:', 'mighty-shield' ) . '</strong> ' . esc_html( $details['email'] );
+                                $wl_email_url = wp_nonce_url(
+                                    admin_url( 'admin.php?page=mighty-shield&mshield_whitelist_email=' . urlencode( $details['email'] ) ),
+                                    'mshield_whitelist_email'
+                                );
+                                $bits[] = '<strong>' . esc_html__( 'Email:', 'mighty-shield' ) . '</strong> ' . esc_html( $details['email'] )
+                                    . ' <a href="' . esc_url( $wl_email_url ) . '" style="color:#00a32a;" onclick="return confirm(\'' . esc_js( __( 'Whitelist this email (bypass all checks)?', 'mighty-shield' ) ) . '\');">' . esc_html__( 'whitelist', 'mighty-shield' ) . '</a>';
+                            }
+                            if( ! empty( $details['user_id'] ) ) {
+                                $u        = get_userdata( (int) $details['user_id'] );
+                                $u_label  = $u ? $u->user_login : ( '#' . (int) $details['user_id'] );
+                                $wl_user_url = wp_nonce_url(
+                                    admin_url( 'admin.php?page=mighty-shield&mshield_whitelist_user=' . (int) $details['user_id'] ),
+                                    'mshield_whitelist_user'
+                                );
+                                $bits[] = '<strong>' . esc_html__( 'User:', 'mighty-shield' ) . '</strong> '
+                                    . '<a href="' . esc_url( get_edit_user_link( (int) $details['user_id'] ) ) . '">' . esc_html( $u_label ) . '</a>'
+                                    . ' <a href="' . esc_url( $wl_user_url ) . '" style="color:#00a32a;" onclick="return confirm(\'' . esc_js( __( 'Whitelist this user (bypass all checks)?', 'mighty-shield' ) ) . '\');">' . esc_html__( 'whitelist', 'mighty-shield' ) . '</a>';
                             }
                             if( ! empty( $details['ua'] ) ) {
                                 $bits[] = '<strong>' . esc_html__( 'UA:', 'mighty-shield' ) . '</strong> ' . esc_html( $details['ua'] );

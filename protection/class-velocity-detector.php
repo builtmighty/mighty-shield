@@ -38,6 +38,8 @@ class velocity_detector {
      */
     public function track_order( $order_id, $posted, $order ) {
 
+        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
+
         $ip    = ip_utils::get_client_ip();
         $email = $order->get_billing_email() ?? '';
 
