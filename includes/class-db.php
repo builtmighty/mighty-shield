@@ -121,6 +121,13 @@ class db {
             $forensics['uri'] = substr( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), 0, 255 );
         }
 
+        // Capture the logged-in customer's WP user ID so a log row can be
+        // whitelisted by user later.
+        $uid = function_exists( 'get_current_user_id' ) ? (int) get_current_user_id() : 0;
+        if( $uid > 0 ) {
+            $forensics['user_id'] = $uid;
+        }
+
         if( empty( $forensics ) ) return '';
 
         return (string) wp_json_encode( $forensics );

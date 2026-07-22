@@ -49,6 +49,8 @@ class zip_state_validator {
      */
     public function block_zip_state_mismatch( $data, $errors ) {
 
+        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
+
         $action = settings::get( 'mshield_zip_state_action' );
         if( $action !== 'block' ) return;
 
@@ -80,6 +82,8 @@ class zip_state_validator {
      * @param   object  $order      WC_Order object.
      */
     public function flag_zip_state_mismatch( $order_id, $posted, $order ) {
+
+        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $action = settings::get( 'mshield_zip_state_action' );
         if( $action === 'block' ) return;

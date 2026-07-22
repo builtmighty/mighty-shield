@@ -57,6 +57,8 @@ class honeypot {
      */
     public function block_field( $data, $errors ) {
 
+        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
+
         if( settings::get( 'mshield_honeypot_action' ) !== 'block' ) return;
 
         if( ! $this->is_triggered() ) return;
@@ -86,6 +88,8 @@ class honeypot {
      * @param   object  $order      WC_Order object.
      */
     public function flag_field( $order_id, $posted, $order ) {
+
+        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $action = settings::get( 'mshield_honeypot_action' );
         if( $action === 'block' ) return;

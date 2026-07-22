@@ -4,7 +4,7 @@ Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 1.2.0
+Stable tag: 1.4.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -19,7 +19,7 @@ MightyShield protects WooCommerce stores from card testing attacks by blocking a
 
 * Block non-whitelisted IPs from Store API cart and checkout endpoints
 * Auto-detect and whitelist server IP on activation
-* IP whitelist with CIDR range support
+* Whitelist by IP/CIDR, WordPress user, or email address — whitelisted entities bypass ALL checks (blocks and flags), with one-click whitelisting from the logs
 * Per-IP checkout rate limiting (configurable, default 5/hour)
 * Velocity detection — flags IPs using multiple emails or rapid-fire orders
 * Temporary IP blocking after repeated failed payments
@@ -68,6 +68,19 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 == Screenshots ==
 
 == Changelog ==
+
+= 1.4.0 =
+* Added a built-in Documentation tab that explains every setting and how to set the plugin up.
+* Whitelist now applies to every protection — a whitelisted IP, user, or email bypasses all blocks and flags (previously only the Store API firewall honored the whitelist).
+* Whitelist entries can now be an IP/CIDR, a WordPress user, or an email address.
+* Added one-click "whitelist" links (IP, email, and user) in the event logs.
+* Logs now capture the logged-in customer's user ID for after-the-fact whitelisting.
+* Whitelisted IPs are never treated as temporarily blocked, even if a temp-block was set earlier.
+
+= 1.3.0 =
+* Capture request forensics (user agent, billing email, request URI) in the event log for spam-cluster analysis.
+* Stopped auto-whitelisting the DNS-resolved site IP (a CDN/proxy edge IP behind Cloudflare) and added a cleanup migration to remove legacy entries.
+* Added one-time upgrade migrations that run when the plugin version changes.
 
 = 1.2.0 =
 * Added configurable action (block / flag / flag + notify admin) to the honeypot.

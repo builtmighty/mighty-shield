@@ -116,6 +116,8 @@ class smarty_address_verifier {
      */
     public function block_invalid_address( $data, $errors ) {
 
+        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
+
         $action = settings::get( 'mshield_smarty_action' );
         if( $action !== 'block' ) return;
 
@@ -155,6 +157,8 @@ class smarty_address_verifier {
      * @param   object  $order      WC_Order object.
      */
     public function flag_invalid_address( $order_id, $posted, $order ) {
+
+        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $action = settings::get( 'mshield_smarty_action' );
         if( $action === 'block' ) return;

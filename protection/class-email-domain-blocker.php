@@ -222,6 +222,8 @@ class email_domain_blocker {
      */
     public function check_email( $data, $errors ) {
 
+        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
+
         $email = isset( $data['billing_email'] ) ? $data['billing_email'] : '';
         if( empty( $email ) ) return;
 

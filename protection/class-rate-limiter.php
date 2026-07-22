@@ -36,6 +36,8 @@ class rate_limiter {
      */
     public function check_checkout_rate() {
 
+        if( \MightyShield\Includes\exempt::is_exempt( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
+
         $ip = ip_utils::get_client_ip();
 
         // Check if IP is temporarily blocked.
@@ -73,6 +75,10 @@ class rate_limiter {
      * @return  bool
      */
     public static function is_temp_blocked( $ip ) {
+
+        // Whitelisted IPs are never treated as temp-blocked, even if a
+        // transient was set before the IP was whitelisted.
+        if( \MightyShield\Firewall\ip_whitelist::is_whitelisted( $ip ) ) return false;
 
         $key = 'mshield_tempblock_' . md5( $ip );
         return (bool) get_transient( $key );

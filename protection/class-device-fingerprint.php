@@ -100,6 +100,8 @@ class device_fingerprint {
      */
     public function block_fingerprint( $data, $errors ) {
 
+        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
+
         if( settings::get( 'mshield_fingerprint_action' ) !== 'block' ) return;
 
         $country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
@@ -142,6 +144,8 @@ class device_fingerprint {
      * @param   object  $order      WC_Order object.
      */
     public function flag_fingerprint( $order_id, $posted, $order ) {
+
+        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $action = settings::get( 'mshield_fingerprint_action' );
         if( $action === 'block' ) return;
@@ -264,6 +268,8 @@ class device_fingerprint {
      * @since   1.0.0
      */
     public function record_velocity() {
+
+        if( \MightyShield\Includes\exempt::is_exempt( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
 
         $threshold = (int) settings::get( 'mshield_fingerprint_velocity_threshold' );
         if( $threshold <= 0 ) return;

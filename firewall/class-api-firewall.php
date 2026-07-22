@@ -72,6 +72,12 @@ class api_firewall {
             return $result;
         }
 
+        // Whitelisted WP user bypasses the firewall.
+        $uid = get_current_user_id();
+        if( $uid && ip_whitelist::is_user_whitelisted( $uid ) ) {
+            return $result;
+        }
+
         // Allow logged-in admins/shop managers.
         if( is_user_logged_in() && current_user_can( 'manage_woocommerce' ) ) {
             return $result;

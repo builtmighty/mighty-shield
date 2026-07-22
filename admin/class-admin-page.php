@@ -21,7 +21,7 @@ class admin_page {
      *
      * @since   1.0.0
      */
-    private const ALLOWED_TABS = [ 'dashboard', 'firewall', 'whitelist', 'blocklist', 'rates', 'fraud', 'logs' ];
+    private const ALLOWED_TABS = [ 'dashboard', 'firewall', 'whitelist', 'blocklist', 'rates', 'fraud', 'logs', 'documentation' ];
 
     /**
      * Construct.
@@ -229,31 +229,29 @@ class admin_page {
         // Capability check for all actions.
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
 
-        // Add IP to whitelist.
+        // Add a typed entry to the whitelist (IP / user / email).
         if( isset( $_POST['mshield_add_ip'] ) && check_admin_referer( 'mshield_whitelist_action' ) ) {
 
-            $ip    = sanitize_text_field( $_POST['mshield_new_ip'] ?? '' );
-            $label = sanitize_text_field( $_POST['mshield_new_ip_label'] ?? '' );
+            $type  = sanitize_text_field( $_POST['mshield_new_type'] ?? 'ip' );
+            $value = sanitize_text_field( wp_unslash( $_POST['mshield_new_value'] ?? '' ) );
+            $label = sanitize_text_field( wp_unslash( $_POST['mshield_new_ip_label'] ?? '' ) );
 
-            if( ! empty( $ip ) && $this->validate_ip_input( $ip ) ) {
-                ip_whitelist::add_ip( $ip, $label );
-                set_transient( 'mshield_admin_notice', [ 'ip_added', __( 'IP address added to whitelist.', 'mighty-shield' ), 'success' ], 30 );
-            } else {
-                set_transient( 'mshield_admin_notice', [ 'ip_invalid', __( 'Invalid IP address or CIDR format.', 'mighty-shield' ), 'error' ], 30 );
-            }
+            set_transient( 'mshield_admin_notice', $this->whitelist_add( $type, $value, $label ), 30 );
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=whitelist' ) );
             exit;
 
         }
 
-        // Remove IP from whitelist.
+        // Remove an entry from the whitelist.
         if( isset( $_GET['mshield_remove_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
             if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_remove_ip' ) ) {
-                $ip = sanitize_text_field( $_GET['mshield_remove_ip'] );
-                ip_whitelist::remove_ip( $ip );
-                set_transient( 'mshield_admin_notice', [ 'ip_removed', __( 'IP address removed from whitelist.', 'mighty-shield' ), 'success' ], 30 );
+                $value = sanitize_text_field( wp_unslash( $_GET['mshield_remove_ip'] ) );
+                $type  = sanitize_text_field( $_GET['wl_type'] ?? 'ip' );
+                if( ! \in_array( $type, [ 'ip', 'user', 'email' ], true ) ) $type = 'ip';
+                ip_whitelist::remove_entry( $type, $value );
+                set_transient( 'mshield_admin_notice', [ 'ip_removed', __( 'Whitelist entry removed.', 'mighty-shield' ), 'success' ], 30 );
             }
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=whitelist' ) );
@@ -309,6 +307,45 @@ class admin_page {
 
         }
 
+        // Whitelist an IP directly from the Logs table.
+        if( isset( $_GET['mshield_whitelist_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
+
+            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_whitelist_ip' ) ) {
+                $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_ip'] ) );
+                set_transient( 'mshield_admin_notice', $this->whitelist_add( 'ip', $value, 'Whitelisted from logs' ), 30 );
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=whitelist' ) );
+            exit;
+
+        }
+
+        // Whitelist an email directly from the Logs table.
+        if( isset( $_GET['mshield_whitelist_email'] ) && isset( $_GET['_wpnonce'] ) ) {
+
+            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_whitelist_email' ) ) {
+                $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_email'] ) );
+                set_transient( 'mshield_admin_notice', $this->whitelist_add( 'email', $value, 'Whitelisted from logs' ), 30 );
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=whitelist' ) );
+            exit;
+
+        }
+
+        // Whitelist a WP user directly from the Logs table.
+        if( isset( $_GET['mshield_whitelist_user'] ) && isset( $_GET['_wpnonce'] ) ) {
+
+            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_whitelist_user' ) ) {
+                $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_user'] ) );
+                set_transient( 'mshield_admin_notice', $this->whitelist_add( 'user', $value, 'Whitelisted from logs' ), 30 );
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=whitelist' ) );
+            exit;
+
+        }
+
         // Clear logs.
         if( isset( $_POST['mshield_clear_logs'] ) && check_admin_referer( 'mshield_clear_logs_action' ) ) {
 
@@ -356,6 +393,62 @@ class admin_page {
         }
 
         return false;
+
+    }
+
+    /**
+     * Validate, resolve, and add a typed whitelist entry.
+     *
+     * @since   1.4.0
+     *
+     * @param   string  $type   'ip', 'user', or 'email'.
+     * @param   string  $value  IP/CIDR, username/email/ID, or email address.
+     * @param   string  $label  Optional label.
+     * @return  array   Admin-notice tuple [ id, message, type ].
+     */
+    private function whitelist_add( $type, $value, $label = '' ) {
+
+        if( $type === 'ip' ) {
+
+            if( empty( $value ) || ! $this->validate_ip_input( $value ) ) {
+                return [ 'wl_invalid', __( 'Invalid IP address or CIDR format.', 'mighty-shield' ), 'error' ];
+            }
+            ip_whitelist::add_entry( 'ip', $value, $label );
+            return [ 'wl_added', sprintf( __( 'IP %s added to whitelist.', 'mighty-shield' ), $value ), 'success' ];
+
+        }
+
+        if( $type === 'email' ) {
+
+            if( ! is_email( $value ) ) {
+                return [ 'wl_invalid', __( 'Invalid email address.', 'mighty-shield' ), 'error' ];
+            }
+            ip_whitelist::add_entry( 'email', $value, $label );
+            return [ 'wl_added', sprintf( __( 'Email %s added to whitelist.', 'mighty-shield' ), $value ), 'success' ];
+
+        }
+
+        if( $type === 'user' ) {
+
+            if( ctype_digit( (string) $value ) ) {
+                $user = get_user_by( 'id', (int) $value );
+            } elseif( is_email( $value ) ) {
+                $user = get_user_by( 'email', $value );
+            } else {
+                $user = get_user_by( 'login', $value );
+            }
+
+            if( ! $user ) {
+                return [ 'wl_invalid', __( 'No WordPress user found for that username/email/ID.', 'mighty-shield' ), 'error' ];
+            }
+
+            $display = $label !== '' ? $label : $user->user_login . ' (' . $user->user_email . ')';
+            ip_whitelist::add_entry( 'user', $user->ID, $display );
+            return [ 'wl_added', sprintf( __( 'User %s added to whitelist.', 'mighty-shield' ), $user->user_login ), 'success' ];
+
+        }
+
+        return [ 'wl_invalid', __( 'Invalid whitelist entry type.', 'mighty-shield' ), 'error' ];
 
     }
 
@@ -424,6 +517,7 @@ class admin_page {
             'rates'     => __( 'Rate Limits', 'mighty-shield' ),
             'fraud'     => __( 'Fraud Checks', 'mighty-shield' ),
             'logs'      => __( 'Logs', 'mighty-shield' ),
+            'documentation' => __( 'Documentation', 'mighty-shield' ),
         ];
 
         echo '<div class="mshield-tabs">';

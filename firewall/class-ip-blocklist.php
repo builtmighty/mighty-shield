@@ -53,6 +53,8 @@ class ip_blocklist {
      */
     public function check_checkout() {
 
+        if( \MightyShield\Includes\exempt::is_exempt( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
+
         $ip = ip_utils::get_client_ip();
 
         if( ! self::is_blocked( $ip ) ) return;
@@ -87,6 +89,11 @@ class ip_blocklist {
         if( ! $protected ) return $result;
 
         $ip = ip_utils::get_client_ip();
+
+        // Whitelisted WP user bypasses the blocklist (whitelisted IPs already
+        // pass via is_blocked()).
+        $uid = get_current_user_id();
+        if( $uid && ip_whitelist::is_user_whitelisted( $uid ) ) return $result;
 
         if( ! self::is_blocked( $ip ) ) return $result;
 

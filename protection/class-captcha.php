@@ -122,6 +122,8 @@ class captcha {
      */
     public function block_checkout( $data, $errors ) {
 
+        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
+
         if( settings::get( 'mshield_captcha_action' ) !== 'block' ) return;
 
         if( $this->is_verified() ) return;
@@ -143,6 +145,8 @@ class captcha {
      * @param   object  $order      WC_Order object.
      */
     public function flag_order( $order_id, $posted, $order ) {
+
+        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $action = settings::get( 'mshield_captcha_action' );
         if( $action === 'block' ) return;

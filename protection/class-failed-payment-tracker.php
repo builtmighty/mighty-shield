@@ -37,6 +37,8 @@ class failed_payment_tracker {
      */
     public function track_failure( $order_id, $order ) {
 
+        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
+
         // Get the IP from the order, fall back to current request IP.
         $ip = $order->get_customer_ip_address();
         if( empty( $ip ) ) {
