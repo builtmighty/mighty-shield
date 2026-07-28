@@ -72,7 +72,7 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 = 1.4.0 =
 * Added a built-in Documentation tab that explains every setting and how to set the plugin up.
 * Whitelist now applies to every protection — a whitelisted IP, user, or email bypasses all blocks and flags (previously only the Store API firewall honored the whitelist).
-* Whitelist entries can now be an IP/CIDR, a WordPress user, or an email address.
+* Whitelist entries can now be an IP/CIDR, a WordPress user, a user role, or an email address. Whitelisting a role exempts every user in it.
 * Added one-click "whitelist" links (IP, email, and user) in the event logs.
 * Logs now capture the logged-in customer's user ID for after-the-fact whitelisting.
 * Whitelisted IPs are never treated as temporarily blocked, even if a temp-block was set earlier.
