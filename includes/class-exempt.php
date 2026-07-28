@@ -52,6 +52,8 @@ class exempt {
                 $current = function_exists( 'get_current_user_id' ) ? (int) get_current_user_id() : 0;
                 if( $current > 0 && ip_whitelist::is_user_whitelisted( $current ) ) {
                     self::$ip_user_exempt = 'user';
+                } elseif( $current > 0 && ip_whitelist::is_role_whitelisted( $current ) ) {
+                    self::$ip_user_exempt = 'role';
                 }
             }
         }
@@ -65,6 +67,8 @@ class exempt {
         if( $reason === '' && $user_id !== null && (int) $user_id > 0 ) {
             if( ip_whitelist::is_user_whitelisted( (int) $user_id ) ) {
                 $reason = 'user';
+            } elseif( ip_whitelist::is_role_whitelisted( (int) $user_id ) ) {
+                $reason = 'role';
             }
         }
 

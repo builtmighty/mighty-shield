@@ -1,0 +1,308 @@
+/**
+ * MightyShield admin design system.
+ *
+ * Scoped under .mshield-app. Light is the default; [data-theme="dark"] overrides.
+ * Palette ported from the approved design mockup.
+ *
+ * @package MightyShield
+ * @since   1.5.0
+ */
+
+.mshield-app {
+    --bg:#f0f0f1; --surface:#ffffff; --surface-2:#f6f7f8;
+    --fg:#1d2327; --fg-2:#50575e; --fg-3:#8c9196;
+    --line:#e2e4e7; --line-2:#eff0f2;
+    --brand:#3858e9; --brand-soft:#eef1fe;
+    --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.05);
+    --shadow-lg:0 12px 32px rgba(16,24,40,.14);
+    --ok:#00a32a; --warn:#dba617; --danger:#d63638; --flag:#8c5ce6;
+    --ink-danger:#c22b2d; --ink-warn:#96700a; --ink-flag:#6f43cc; --ink-ok:#0a7c26;
+
+    font-family:'Public Sans',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--fg);
+    max-width:1200px;
+}
+
+.mshield-app[data-theme="dark"] {
+    --bg:#0e1116; --surface:#161a20; --surface-2:#1d222a;
+    --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#6f7987;
+    --line:#272e38; --line-2:#212831;
+    --brand:#7d95ff; --brand-soft:#1a2140;
+    --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 44px rgba(0,0,0,.55);
+    --ink-danger:#ff8f91; --ink-warn:#f0c34b; --ink-flag:#b69dff; --ink-ok:#57d97f;
+}
+
+/* Give the plugin screen its own background inside the WP content column. */
+.mshield-app {
+    margin:16px 20px 40px 2px;
+    padding:0;
+    background:var(--bg);
+    animation:ms-in .3s cubic-bezier(.22,1,.36,1);
+}
+
+/* Dark mode: repaint the surrounding WordPress admin chrome so there is no
+   light gutter around the themed plugin area. */
+body.mshield-theme-dark,
+body.mshield-theme-dark #wpcontent,
+body.mshield-theme-dark #wpbody,
+body.mshield-theme-dark #wpbody-content { background:#0e1116 !important; }
+body.mshield-theme-dark #wpfooter { color:#6f7987; }
+.mshield-mono { font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+
+@keyframes ms-in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+@keyframes ms-drawer { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:none} }
+
+/* ---------- Header ---------- */
+.mshield-header { display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.mshield-header .ms-brandmark {
+    width:38px; height:38px; border-radius:9px; background:var(--brand);
+    display:flex; align-items:center; justify-content:center; color:#fff;
+    box-shadow:0 4px 12px rgba(56,88,233,.28); flex:none;
+}
+.mshield-header h1 { margin:0; font-size:23px; font-weight:700; letter-spacing:-.02em; color:var(--fg); padding:0; }
+.mshield-title-row { display:flex; align-items:center; gap:9px; }
+.mshield-tagline { font-size:13px; color:var(--fg-2); margin-top:2px; }
+.mshield-version {
+    font-family:'JetBrains Mono',monospace; font-size:11px; padding:2px 7px; border-radius:20px;
+    background:var(--surface-2); border:1px solid var(--line); color:var(--fg-3);
+}
+.mshield-spacer { flex:1; }
+
+/* ---------- Buttons ---------- */
+.mshield-btn {
+    display:inline-flex; align-items:center; gap:7px; padding:8px 13px; border-radius:7px;
+    border:1px solid var(--line); background:var(--surface); color:var(--fg); cursor:pointer;
+    font-size:13px; font-weight:500; box-shadow:var(--shadow); text-decoration:none; line-height:1.2;
+}
+.mshield-btn:hover { background:var(--surface-2); color:var(--fg); }
+.mshield-btn.is-primary { border-color:transparent; background:var(--brand); color:#fff; font-weight:600; }
+.mshield-btn.is-primary:hover { filter:brightness(1.08); background:var(--brand); color:#fff; }
+.mshield-btn.is-danger { border-color:transparent; background:var(--danger); color:#fff; font-weight:600; }
+.mshield-btn.is-small { padding:6px 11px; font-size:12.5px; }
+
+/* ---------- Card-grid nav ---------- */
+.mshield-navcards {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:26px;
+}
+.mshield-navcard {
+    display:flex; flex-direction:column; align-items:flex-start; gap:9px; padding:13px 14px;
+    border-radius:10px; cursor:pointer; text-align:left; font-size:13px; font-weight:600;
+    background:var(--surface); color:var(--fg); border:1px solid var(--line); box-shadow:var(--shadow);
+    text-decoration:none;
+}
+.mshield-navcard:hover { color:var(--fg); border-color:var(--brand); }
+.mshield-navcard.is-active {
+    background:var(--brand); color:#fff; border-color:transparent; box-shadow:0 4px 14px rgba(56,88,233,.26);
+}
+.mshield-navcard.is-active:hover { color:#fff; }
+
+/* ---------- Cards ---------- */
+.mshield-card {
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    box-shadow:var(--shadow); padding:18px 20px;
+}
+.mshield-card.is-flush { padding:0; overflow:hidden; }
+.mshield-card-head { display:flex; align-items:center; gap:12px; padding:15px 18px; border-bottom:1px solid var(--line-2); }
+.mshield-card-title { font-size:15px; font-weight:650; }
+.mshield-card-sub { font-size:12.5px; color:var(--fg-2); margin-top:2px; }
+.mshield-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
+.mshield-stack { display:flex; flex-direction:column; gap:18px; }
+
+/* ---------- Hero (protection status) ---------- */
+.mshield-hero {
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap; position:relative; overflow:hidden;
+    background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow);
+}
+.mshield-hero .ms-accent { position:absolute; inset:0 auto 0 0; width:3px; background:var(--ok); }
+.mshield-hero.is-off .ms-accent { background:var(--danger); }
+.mshield-hero .ms-ico {
+    width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,163,42,.1); color:var(--ok); flex:none;
+}
+.mshield-hero.is-off .ms-ico { background:rgba(214,54,56,.1); color:var(--danger); }
+.mshield-hero-title { font-size:15.5px; font-weight:650; }
+.mshield-hero-meta { font-size:12.5px; color:var(--fg-2); margin-top:3px; font-family:'JetBrains Mono',monospace; }
+
+/* ---------- Pills ---------- */
+.mshield-pill {
+    display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600;
+    padding:3px 9px; border-radius:20px;
+}
+.mshield-pill .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+.mshield-pill.is-ok { background:rgba(0,163,42,.11); color:var(--ink-ok); }
+.mshield-pill.is-blocked { background:rgba(214,54,56,.10); color:var(--ink-danger); }
+.mshield-pill.is-rate { background:rgba(219,166,23,.14); color:var(--ink-warn); }
+.mshield-pill.is-flag { background:rgba(140,92,230,.13); color:var(--ink-flag); }
+.mshield-pill.is-exempt { background:rgba(0,163,42,.11); color:var(--ink-ok); }
+.mshield-tag-pill { border-radius:5px; padding:3px 9px; }
+
+/* ---------- Toggle switch ---------- */
+.mshield-toggle {
+    width:42px; height:24px; border-radius:20px; background:var(--fg-3); position:relative;
+    display:inline-block; cursor:pointer; border:0; padding:0; vertical-align:middle; flex:none;
+}
+.mshield-toggle .knob {
+    position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff;
+    box-shadow:0 1px 2px rgba(0,0,0,.28); transition:left .16s ease;
+}
+.mshield-toggle.is-on { background:var(--ok); }
+.mshield-toggle.is-on .knob { left:21px; }
+
+/* ---------- Stat cards ---------- */
+.mshield-statcard { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 17px; box-shadow:var(--shadow); }
+.mshield-statcard .ms-label { display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--fg-2); }
+.mshield-statcard.is-blocked .ms-label { color:var(--ink-danger); }
+.mshield-statcard.is-rate .ms-label { color:var(--ink-warn); }
+.mshield-statcard.is-flag .ms-label { color:var(--ink-flag); }
+.mshield-statcard .ms-big { display:flex; align-items:baseline; gap:8px; margin:9px 0 12px; }
+.mshield-statcard .ms-big .n { font-size:30px; font-weight:700; letter-spacing:-.03em; }
+.mshield-statcard .ms-big .u { font-size:12px; color:var(--fg-3); }
+.mshield-statcard .ms-row { display:flex; justify-content:space-between; font-size:12.5px; color:var(--fg-2); padding:7px 0; border-top:1px solid var(--line-2); }
+.mshield-statcard .ms-row .v { font-family:'JetBrains Mono',monospace; color:var(--fg); }
+
+/* ---------- Chart ---------- */
+.mshield-chart { width:100%; height:auto; display:block; overflow:visible; }
+.mshield-legend { display:flex; gap:16px; font-size:12.5px; color:var(--fg-2); flex-wrap:wrap; }
+.mshield-legend span { display:flex; align-items:center; gap:6px; }
+.mshield-legend i { width:9px; height:9px; border-radius:2px; display:inline-block; }
+
+/* ---------- Top IPs ---------- */
+.mshield-iprow { display:flex; align-items:center; gap:14px; padding:12px 18px; border-bottom:1px solid var(--line-2); }
+.mshield-iprow:last-child { border-bottom:0; }
+.mshield-iprow .ip { font-family:'JetBrains Mono',monospace; font-size:13.5px; width:150px; }
+.mshield-iprow .bar { flex:1; height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; max-width:320px; }
+.mshield-iprow .bar > span { display:block; height:100%; background:var(--danger); border-radius:3px; }
+.mshield-iprow .count { font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:600; width:56px; text-align:right; }
+
+/* ---------- Logs table ---------- */
+.mshield-filters { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:16px; }
+.mshield-search { position:relative; flex:1; min-width:220px; }
+.mshield-search svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); }
+.mshield-input, .mshield-select {
+    padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);
+    color:var(--fg); font-size:13px; outline:none;
+}
+.mshield-search .mshield-input { width:100%; padding-left:33px; }
+.mshield-input:focus, .mshield-select:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(56,88,233,.14); }
+
+.mshield-loglist { overflow-x:auto; }
+.mshield-bulkbar { display:flex; align-items:center; gap:9px; padding:11px 16px; border-bottom:1px solid var(--line-2); background:var(--surface-2); }
+.mshield-logrow {
+    display:grid; grid-template-columns:34px 96px 150px 128px minmax(200px,1fr) 110px 64px;
+    align-items:center; gap:12px; min-width:840px; padding:12px 16px; border-bottom:1px solid var(--line-2); font-size:13px;
+}
+.mshield-logrow.is-head { padding:10px 16px; border-bottom:1px solid var(--line); font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--fg-3); background:var(--surface); }
+.mshield-logrow.is-clickable { cursor:pointer; }
+.mshield-logrow.is-clickable:hover { background:var(--surface-2); }
+.mshield-logrow .details-link { font-size:12.5px; color:var(--brand); font-weight:600; }
+.mshield-logfoot { display:flex; align-items:center; gap:10px; padding:11px 16px; border-top:1px solid var(--line); background:var(--surface-2); font-size:12.5px; color:var(--fg-2); }
+
+/* ---------- Info banner ---------- */
+.mshield-banner {
+    display:flex; align-items:flex-start; gap:11px; padding:13px 15px; border-radius:10px;
+    background:var(--brand-soft); border:1px solid rgba(56,88,233,.22); font-size:13px; color:var(--fg); line-height:1.5;
+}
+
+/* ---------- Drawer ---------- */
+.mshield-drawer-overlay { position:fixed; inset:0; z-index:100000; background:rgba(15,18,22,.42); }
+.mshield-drawer {
+    position:absolute; top:0; right:0; bottom:0; width:440px; max-width:92vw; background:var(--surface);
+    border-left:1px solid var(--line); box-shadow:var(--shadow-lg); display:flex; flex-direction:column;
+    animation:ms-drawer .28s cubic-bezier(.22,1,.36,1);
+}
+.mshield-drawer-head { display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--line-2); }
+.mshield-drawer-body { flex:1; overflow:auto; padding:18px 20px; display:flex; flex-direction:column; gap:16px; }
+.mshield-drawer-foot { display:flex; gap:8px; padding:14px 20px; border-top:1px solid var(--line-2); }
+.mshield-kv { display:grid; grid-template-columns:104px 1fr; gap:9px 14px; font-size:13px; }
+.mshield-kv .k { color:var(--fg-2); }
+.mshield-eyebrow { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--fg-3); margin-bottom:8px; }
+.mshield-raw { margin:0; padding:12px; border-radius:9px; background:var(--surface-2); border:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-size:11.5px; line-height:1.65; color:var(--fg-2); overflow:auto; white-space:pre-wrap; word-break:break-word; }
+.mshield-hidden { display:none; }
+
+/* ================================================================
+ * Overrides so the existing settings views inherit the new look.
+ * ============================================================== */
+.mshield-app .mshield-section {
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:18px 20px; margin-bottom:18px; box-shadow:var(--shadow); color:var(--fg);
+}
+.mshield-app .mshield-section h2 { margin-top:0; font-size:16px; font-weight:650; color:var(--fg); }
+.mshield-app .mshield-section .description,
+.mshield-app .mshield-section p.description { color:var(--fg-2); }
+
+.mshield-app .mshield-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:18px; }
+.mshield-app .mshield-stat { background:var(--surface); border:1px solid var(--line); padding:16px 17px; border-radius:12px; box-shadow:var(--shadow); }
+.mshield-app .mshield-stat h3 { margin:0 0 5px; font-size:12.5px; font-weight:600; color:var(--fg-2); }
+.mshield-app .mshield-stat .number { font-size:30px; font-weight:700; letter-spacing:-.03em; color:var(--fg); }
+.mshield-app .mshield-stat .number.blocked { color:var(--ink-danger); }
+.mshield-app .mshield-stat .number.limited { color:var(--ink-warn); }
+.mshield-app .mshield-stat .number.flagged { color:var(--ink-flag); }
+
+.mshield-app .mshield-table { width:100%; border-collapse:collapse; }
+.mshield-app .mshield-table th, .mshield-app .mshield-table td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line-2); color:var(--fg); }
+.mshield-app .mshield-table th { background:var(--surface-2); font-weight:600; color:var(--fg-2); }
+.mshield-app .mshield-table code { background:var(--surface-2); border-radius:4px; padding:2px 6px; font-family:'JetBrains Mono',monospace; }
+
+/* Enable checkboxes in settings views become toggle switches. */
+.mshield-app .form-table input[type="checkbox"] {
+    appearance:none !important; -webkit-appearance:none !important;
+    width:42px !important; height:24px !important; min-width:42px; border-radius:20px !important;
+    background:var(--fg-3) !important; position:relative; cursor:pointer; border:0 !important;
+    margin:0 6px 0 0; box-shadow:none !important; vertical-align:middle; flex:none;
+}
+.mshield-app .form-table input[type="checkbox"]::before {
+    content:"" !important; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.28); transition:left .16s ease; margin:0;
+    color:transparent;
+}
+.mshield-app .form-table input[type="checkbox"]:checked { background:var(--ok) !important; }
+.mshield-app .form-table input[type="checkbox"]:checked::before { left:21px; }
+.mshield-app .form-table label { display:inline-flex; align-items:center; gap:2px; }
+
+/* Radio-bubble groups (segmented choices). */
+.mshield-radios { display:flex; flex-wrap:wrap; gap:8px; }
+.mshield-radio {
+    position:relative; display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:999px;
+    border:1px solid var(--line); background:var(--surface); color:var(--fg-2); cursor:pointer;
+    font-size:13px; font-weight:600; user-select:none; line-height:1.2;
+}
+.mshield-radio input[type="radio"] {
+    position:absolute !important; opacity:0 !important; width:1px !important; height:1px !important;
+    margin:0 !important; padding:0 !important; pointer-events:none; appearance:none !important; -webkit-appearance:none !important;
+}
+.mshield-radio:hover { border-color:var(--brand); color:var(--fg); }
+.mshield-radio.is-checked,
+.mshield-radio:has(input:checked) {
+    background:var(--brand); border-color:transparent; color:#fff; box-shadow:0 2px 8px rgba(56,88,233,.24);
+}
+
+/* Form controls inside settings views. */
+.mshield-app .form-table th { color:var(--fg); }
+.mshield-app .form-table td { color:var(--fg); }
+.mshield-app input[type="text"],
+.mshield-app input[type="number"],
+.mshield-app input[type="password"],
+.mshield-app textarea,
+.mshield-app select {
+    border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--fg);
+}
+.mshield-app input[type="text"]:focus,
+.mshield-app input[type="number"]:focus,
+.mshield-app input[type="password"]:focus,
+.mshield-app textarea:focus,
+.mshield-app select:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(56,88,233,.14); }
+
+.mshield-app .button {
+    border-radius:7px; border:1px solid var(--line); background:var(--surface); color:var(--fg);
+    box-shadow:var(--shadow); height:auto; padding:6px 13px;
+}
+.mshield-app .button-primary { border-color:transparent; background:var(--brand); color:#fff; text-shadow:none; }
+.mshield-app .button-primary:hover { filter:brightness(1.08); background:var(--brand); }
+
+/* WordPress notices inside the app keep their own colors but round off. */
+.mshield-app .notice, .mshield-app div.error, .mshield-app div.updated { border-radius:8px; }
+
+@media screen and (max-width:782px) {
+    .mshield-app { margin:12px 0 40px; }
+    .mshield-drawer { width:100%; }
+}
