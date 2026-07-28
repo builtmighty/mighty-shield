@@ -264,15 +264,20 @@ $logs_url      = admin_url( 'admin.php?page=mighty-shield&tab=logs' );
 
         <h2 id="whitelist"><?php esc_html_e( 'IP Whitelist', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'The allow list. Anything on it bypasses every MightyShield check, with no blocks and no flags. Use it for trusted staff, offices, and known-good customers. A whitelist entry always wins over the blocklist.', 'mighty-shield' ); ?></p>
-        <p><?php esc_html_e( 'You can whitelist three kinds of thing:', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'You can whitelist four kinds of thing:', 'mighty-shield' ); ?></p>
         <table>
             <thead><tr><th><?php esc_html_e( 'Type', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'What to enter', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'Matches', 'mighty-shield' ); ?></th></tr></thead>
             <tbody>
                 <tr><td><span class="field"><?php esc_html_e( 'IP address / CIDR', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'A single address like 192.168.1.1, or a range like 10.0.0.0/8.', 'mighty-shield' ); ?></td><td><?php esc_html_e( 'Anyone connecting from that address or range.', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'WordPress user', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'A username, an account email, or a user ID.', 'mighty-shield' ); ?></td><td><?php esc_html_e( 'That customer when logged in, and orders tied to their account.', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Email address', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'A full email address.', 'mighty-shield' ); ?></td><td><?php esc_html_e( 'Any checkout using that billing email (guests included).', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'User role', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'A role chosen from the dropdown, such as Administrator or Shop manager.', 'mighty-shield' ); ?></td><td><?php esc_html_e( 'Every logged-in user who has that role.', 'mighty-shield' ); ?></td></tr>
             </tbody>
         </table>
+        <div class="callout important">
+            <span class="callout-label"><?php esc_html_e( 'Important', 'mighty-shield' ); ?></span>
+            <p><?php esc_html_e( 'A whitelisted role exempts every user in it. Whitelisting a broad role such as Customer would let all of those users skip every check, so prefer staff roles like Administrator or Shop manager.', 'mighty-shield' ); ?></p>
+        </div>
         <p><?php printf( wp_kses_post( __( 'Add entries with the form on the <a href="%s">IP Whitelist</a> tab, or use the "whitelist" link on any row in the Logs. Remove an entry with its Remove button.', 'mighty-shield' ) ), esc_url( $whitelist_url ) ); ?></p>
 
         <h2 id="blocklist"><?php esc_html_e( 'IP Blocklist', 'mighty-shield' ); ?></h2>

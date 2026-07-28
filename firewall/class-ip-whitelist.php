@@ -105,19 +105,47 @@ class ip_whitelist {
     }
 
     /**
+     * Check if a user's role is whitelisted.
+     *
+     * @since   1.4.0
+     *
+     * @param   int  $user_id    WordPress user ID.
+     * @return  bool
+     */
+    public static function is_role_whitelisted( $user_id ) {
+
+        $user_id = (int) $user_id;
+        if( $user_id <= 0 ) return false;
+
+        // Collect whitelisted role slugs.
+        $roles = [];
+        foreach( self::get_whitelist() as $entry ) {
+            if( $entry['type'] === 'role' ) $roles[] = $entry['value'];
+        }
+
+        if( empty( $roles ) ) return false;
+
+        $user = get_userdata( $user_id );
+        if( ! $user ) return false;
+
+        return (bool) array_intersect( (array) $user->roles, $roles );
+
+    }
+
+    /**
      * Add a typed entry to the whitelist.
      *
      * @since   1.4.0
      *
-     * @param   string  $type   Entry type: 'ip', 'user', or 'email'.
-     * @param   string  $value  Match value (IP/CIDR, user ID, or email).
+     * @param   string  $type   Entry type: 'ip', 'user', 'email', or 'role'.
+     * @param   string  $value  Match value (IP/CIDR, user ID, email, or role slug).
      * @param   string  $label  Description label.
      * @param   bool    $system Whether this is a system-detected entry.
      * @return  bool    True if added, false if already exists or invalid type.
      */
     public static function add_entry( $type, $value, $label = '', $system = false ) {
 
-        $type = in_array( $type, [ 'ip', 'user', 'email' ], true ) ? $type : '';
+        $type = in_array( $type, [ 'ip', 'user', 'email', 'role' ], true ) ? $type : '';
         if( $type === '' ) return false;
 
         // Normalize the value per type.
@@ -125,6 +153,8 @@ class ip_whitelist {
             $value = strtolower( trim( sanitize_email( $value ) ) );
         } elseif( $type === 'user' ) {
             $value = (string) (int) $value;
+        } elseif( $type === 'role' ) {
+            $value = sanitize_key( $value );
         } else {
             $value = sanitize_text_field( $value );
         }
@@ -170,6 +200,8 @@ class ip_whitelist {
             $value = strtolower( trim( (string) $value ) );
         } elseif( $type === 'user' ) {
             $value = (string) (int) $value;
+        } elseif( $type === 'role' ) {
+            $value = sanitize_key( $value );
         }
 
         $filtered = [];
