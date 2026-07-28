@@ -4,7 +4,7 @@ Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -69,10 +69,16 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 
 == Changelog ==
 
+= 1.5.0 =
+* Redesigned the admin interface: a modern card-based layout, a plugin header, and a light/dark theme toggle saved per user.
+* Rebuilt the Dashboard with a protection-status hero (with a quick on/off toggle), a 7-day events trend chart, refreshed stat cards, and a top-blocked-IPs list.
+* Rebuilt the Logs screen with search, date-range and action filters, an event-detail drawer, row selection with bulk actions (block / whitelist / delete), and CSV export.
+* Restyled every settings tab to match the new design system.
+
 = 1.4.0 =
 * Added a built-in Documentation tab that explains every setting and how to set the plugin up.
 * Whitelist now applies to every protection — a whitelisted IP, user, or email bypasses all blocks and flags (previously only the Store API firewall honored the whitelist).
-* Whitelist entries can now be an IP/CIDR, a WordPress user, or an email address.
+* Whitelist entries can now be an IP/CIDR, a WordPress user, a user role, or an email address. Whitelisting a role exempts every user in it.
 * Added one-click "whitelist" links (IP, email, and user) in the event logs.
 * Logs now capture the logged-in customer's user ID for after-the-fact whitelisting.
 * Whitelisted IPs are never treated as temporarily blocked, even if a temp-block was set earlier.

@@ -229,6 +229,8 @@ class db {
         $defaults = [
             'action'   => '',
             'ip'       => '',
+            'search'   => '',
+            'days'     => 0,
             'per_page' => 50,
             'page'     => 1,
             'orderby'  => 'created_at',
@@ -237,20 +239,8 @@ class db {
 
         $args  = wp_parse_args( $args, $defaults );
         $table = $wpdb->prefix . 'mshield_log';
-        $where = [];
-        $values = [];
 
-        if( ! empty( $args['action'] ) ) {
-            $where[] = 'action = %s';
-            $values[] = $args['action'];
-        }
-
-        if( ! empty( $args['ip'] ) ) {
-            $where[] = 'ip = %s';
-            $values[] = $args['ip'];
-        }
-
-        $where_sql = ! empty( $where ) ? 'WHERE ' . implode( ' AND ', $where ) : '';
+        list( $where_sql, $values ) = self::build_log_where( $args );
 
         // Sanitize orderby.
         $allowed_orderby = [ 'id', 'ip', 'endpoint', 'action', 'created_at' ];
@@ -280,26 +270,125 @@ class db {
         global $wpdb;
 
         $table = $wpdb->prefix . 'mshield_log';
-        $where = [];
-        $values = [];
 
-        if( ! empty( $args['action'] ) ) {
-            $where[] = 'action = %s';
-            $values[] = $args['action'];
-        }
-
-        if( ! empty( $args['ip'] ) ) {
-            $where[] = 'ip = %s';
-            $values[] = $args['ip'];
-        }
-
-        $where_sql = ! empty( $where ) ? 'WHERE ' . implode( ' AND ', $where ) : '';
+        list( $where_sql, $values ) = self::build_log_where( $args );
 
         if( ! empty( $values ) ) {
             return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} {$where_sql}", $values ) );
         }
 
         return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+
+    }
+
+    /**
+     * Build the shared WHERE clause and prepared values for log queries.
+     *
+     * @since   1.5.0
+     *
+     * @param   array   $args   Filter arguments (action, ip, search, days).
+     * @return  array   [ string $where_sql, array $values ]
+     */
+    private static function build_log_where( $args ) {
+
+        global $wpdb;
+
+        $where  = [];
+        $values = [];
+
+        if( ! empty( $args['action'] ) ) {
+            $where[]  = 'action = %s';
+            $values[] = $args['action'];
+        }
+
+        if( ! empty( $args['ip'] ) ) {
+            $where[]  = 'ip = %s';
+            $values[] = $args['ip'];
+        }
+
+        if( ! empty( $args['search'] ) ) {
+            $like     = '%' . $wpdb->esc_like( $args['search'] ) . '%';
+            $where[]  = '( ip LIKE %s OR reason LIKE %s OR request_data LIKE %s )';
+            $values[] = $like;
+            $values[] = $like;
+            $values[] = $like;
+        }
+
+        if( ! empty( $args['days'] ) ) {
+            $where[]  = 'created_at >= DATE_SUB( %s, INTERVAL %d DAY )';
+            $values[] = gmdate( 'Y-m-d H:i:s' );
+            $values[] = (int) $args['days'];
+        }
+
+        $where_sql = ! empty( $where ) ? 'WHERE ' . implode( ' AND ', $where ) : '';
+
+        return [ $where_sql, $values ];
+
+    }
+
+    /**
+     * Delete specific log entries by ID.
+     *
+     * @since   1.5.0
+     *
+     * @param   int[]   $ids    Log row IDs.
+     * @return  int     Rows deleted.
+     */
+    public static function delete_logs_by_ids( $ids ) {
+
+        global $wpdb;
+
+        $ids = array_filter( array_map( 'absint', (array) $ids ) );
+        if( empty( $ids ) ) return 0;
+
+        $table        = $wpdb->prefix . 'mshield_log';
+        $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+        return (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE id IN ({$placeholders})", $ids ) );
+
+    }
+
+    /**
+     * Get per-day event counts for the last N days, split by action.
+     *
+     * @since   1.5.0
+     *
+     * @param   int     $days   Number of days (including today).
+     * @return  array   Ordered oldest-first: [ [ 'date' => 'Y-m-d', 'blocked' => int, 'rate_limited' => int, 'flagged' => int, 'total' => int ], ... ]
+     */
+    public static function get_daily_stats( $days = 7 ) {
+
+        global $wpdb;
+
+        $days  = max( 1, (int) $days );
+        $table = $wpdb->prefix . 'mshield_log';
+
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT DATE(created_at) as d, action, COUNT(*) as total
+             FROM {$table}
+             WHERE created_at >= DATE_SUB( %s, INTERVAL %d DAY )
+             GROUP BY DATE(created_at), action",
+            gmdate( 'Y-m-d H:i:s' ),
+            $days - 1
+        ) );
+
+        // Seed each day with zeros so the chart always has a full series.
+        $series = [];
+        for( $i = $days - 1; $i >= 0; $i-- ) {
+            $date = gmdate( 'Y-m-d', time() - ( $i * DAY_IN_SECONDS ) );
+            $series[ $date ] = [ 'date' => $date, 'blocked' => 0, 'rate_limited' => 0, 'flagged' => 0, 'total' => 0 ];
+        }
+
+        foreach( $rows as $row ) {
+            if( ! isset( $series[ $row->d ] ) ) continue;
+            $count = (int) $row->total;
+            if( isset( $series[ $row->d ][ $row->action ] ) ) {
+                $series[ $row->d ][ $row->action ] = $count;
+            }
+            $series[ $row->d ]['total'] += $count;
+        }
+
+        return array_values( $series );
 
     }
 

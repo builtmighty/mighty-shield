@@ -72,9 +72,9 @@ class api_firewall {
             return $result;
         }
 
-        // Whitelisted WP user bypasses the firewall.
+        // Whitelisted WP user or role bypasses the firewall.
         $uid = get_current_user_id();
-        if( $uid && ip_whitelist::is_user_whitelisted( $uid ) ) {
+        if( $uid && ( ip_whitelist::is_user_whitelisted( $uid ) || ip_whitelist::is_role_whitelisted( $uid ) ) ) {
             return $result;
         }
 
