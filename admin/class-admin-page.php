@@ -34,6 +34,8 @@ class admin_page {
         add_action( 'admin_init', [ $this, 'register_settings' ] );
         add_action( 'admin_init', [ $this, 'handle_actions' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_styles' ] );
+        add_action( 'wp_ajax_mshield_set_theme', [ $this, 'ajax_set_theme' ] );
+        add_filter( 'admin_body_class', [ $this, 'admin_body_class' ] );
 
     }
 
@@ -348,6 +350,64 @@ class admin_page {
 
         }
 
+        // Toggle master protection (dashboard hero switch).
+        if( isset( $_GET['mshield_toggle_protection'] ) && isset( $_GET['_wpnonce'] ) ) {
+
+            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_toggle_protection' ) ) {
+                $new = get_option( 'mshield_enabled', 'yes' ) === 'yes' ? 'no' : 'yes';
+                update_option( 'mshield_enabled', $new );
+                set_transient( 'mshield_admin_notice', [ 'protection', $new === 'yes' ? __( 'Protection enabled.', 'mighty-shield' ) : __( 'Protection disabled.', 'mighty-shield' ), 'success' ], 30 );
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=dashboard' ) );
+            exit;
+
+        }
+
+        // Bulk actions on selected log rows.
+        if( isset( $_POST['mshield_logs_bulk'] ) && check_admin_referer( 'mshield_logs_bulk_action' ) ) {
+
+            $action = sanitize_text_field( $_POST['mshield_bulk_action'] ?? '' );
+            $ids    = array_filter( array_map( 'absint', (array) ( $_POST['log_ids'] ?? [] ) ) );
+
+            if( empty( $ids ) || $action === '' ) {
+
+                set_transient( 'mshield_admin_notice', [ 'bulk_none', __( 'No log entries were selected.', 'mighty-shield' ), 'error' ], 30 );
+
+            } elseif( $action === 'delete' ) {
+
+                $n = db::delete_logs_by_ids( $ids );
+                set_transient( 'mshield_admin_notice', [ 'bulk_deleted', sprintf( __( 'Deleted %d log entries.', 'mighty-shield' ), $n ), 'success' ], 30 );
+
+            } elseif( \in_array( $action, [ 'block_ip', 'whitelist_ip' ], true ) ) {
+
+                global $wpdb;
+                $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+                $ips = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT ip FROM {$wpdb->prefix}mshield_log WHERE id IN ({$placeholders})", $ids ) );
+
+                $count = 0;
+                foreach( $ips as $ip ) {
+                    if( ! $this->validate_ip_input( $ip ) ) continue;
+                    if( $action === 'block_ip' ) {
+                        ip_blocklist::add_ip( $ip, '', 'Bulk-blocked from logs' );
+                    } else {
+                        ip_whitelist::add_entry( 'ip', $ip, 'Bulk-whitelisted from logs' );
+                    }
+                    $count++;
+                }
+
+                $msg = $action === 'block_ip'
+                    ? sprintf( __( '%d IP addresses added to the blocklist.', 'mighty-shield' ), $count )
+                    : sprintf( __( '%d IP addresses added to the whitelist.', 'mighty-shield' ), $count );
+                set_transient( 'mshield_admin_notice', [ 'bulk_ip', $msg, 'success' ], 30 );
+
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
         // Clear logs.
         if( isset( $_POST['mshield_clear_logs'] ) && check_admin_referer( 'mshield_clear_logs_action' ) ) {
 
@@ -490,24 +550,108 @@ class admin_page {
 
         if( strpos( $hook, 'mighty-shield' ) === false ) return;
 
-        wp_add_inline_style( 'wp-admin', '
-            .mshield-wrap { max-width: 1200px; }
-            .mshield-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid #c3c4c7; }
-            .mshield-tabs a { padding: 10px 20px; text-decoration: none; color: #50575e; border: 1px solid transparent; border-bottom: none; margin-bottom: -1px; }
-            .mshield-tabs a.active { background: #fff; border-color: #c3c4c7; border-bottom-color: #fff; color: #1d2327; font-weight: 600; }
-            .mshield-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-            .mshield-stat { background: #fff; border: 1px solid #c3c4c7; padding: 20px; border-radius: 4px; }
-            .mshield-stat h3 { margin: 0 0 5px; font-size: 14px; color: #50575e; }
-            .mshield-stat .number { font-size: 32px; font-weight: 700; color: #1d2327; }
-            .mshield-stat .number.blocked { color: #d63638; }
-            .mshield-stat .number.limited { color: #dba617; }
-            .mshield-stat .number.flagged { color: #2271b1; }
-            .mshield-table { width: 100%; border-collapse: collapse; }
-            .mshield-table th, .mshield-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #c3c4c7; }
-            .mshield-table th { background: #f0f0f1; font-weight: 600; }
-            .mshield-section { background: #fff; border: 1px solid #c3c4c7; padding: 20px; margin-bottom: 20px; border-radius: 4px; }
-            .mshield-section h2 { margin-top: 0; }
-        ' );
+        // Design-system fonts (Public Sans + JetBrains Mono).
+        wp_enqueue_style(
+            'mshield-fonts',
+            'https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300..800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap',
+            [],
+            null
+        );
+
+        // Version assets by modification time so edits always bust the cache.
+        $css_ver = @filemtime( MSHIELD_PATH . 'assets/css/mshield-admin.css' ) ?: MSHIELD_VERSION;
+        $js_ver  = @filemtime( MSHIELD_PATH . 'assets/js/mshield-admin.js' ) ?: MSHIELD_VERSION;
+
+        wp_enqueue_style( 'mshield-admin', MSHIELD_URI . 'assets/css/mshield-admin.css', [ 'mshield-fonts' ], $css_ver );
+
+        wp_enqueue_script( 'mshield-admin', MSHIELD_URI . 'assets/js/mshield-admin.js', [], $js_ver, [ 'in_footer' => true ] );
+        wp_localize_script( 'mshield-admin', 'mshieldAdmin', [
+            'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
+            'themeNonce' => wp_create_nonce( 'mshield_set_theme' ),
+            'i18n'       => [
+                'selected'    => __( 'selected', 'mighty-shield' ),
+                'eventDetail' => __( 'Event detail', 'mighty-shield' ),
+                'ip'          => __( 'IP address', 'mighty-shield' ),
+                'endpoint'    => __( 'Endpoint', 'mighty-shield' ),
+                'reason'      => __( 'Reason', 'mighty-shield' ),
+                'user'        => __( 'User', 'mighty-shield' ),
+                'raw'         => __( 'Request data', 'mighty-shield' ),
+                'whitelistIp' => __( 'Whitelist IP', 'mighty-shield' ),
+                'blockPerm'   => __( 'Block permanently', 'mighty-shield' ),
+            ],
+        ] );
+
+    }
+
+    /**
+     * Get the current user's saved admin theme.
+     *
+     * @since   1.5.0
+     *
+     * @return  string  'light' or 'dark'.
+     */
+    private function get_theme() {
+
+        $theme = get_user_meta( get_current_user_id(), 'mshield_admin_theme', true );
+        return $theme === 'dark' ? 'dark' : 'light';
+
+    }
+
+    /**
+     * Add a body class on the plugin page so dark mode can repaint the WP chrome.
+     *
+     * @since   1.5.0
+     *
+     * @param   string  $classes    Space-separated body classes.
+     * @return  string
+     */
+    public function admin_body_class( $classes ) {
+
+        if( isset( $_GET['page'] ) && $_GET['page'] === 'mighty-shield' && $this->get_theme() === 'dark' ) {
+            $classes .= ' mshield-theme-dark';
+        }
+
+        return $classes;
+
+    }
+
+    /**
+     * Render a horizontal radio-bubble group (segmented choice control).
+     *
+     * @since   1.5.0
+     *
+     * @param   string  $name       Field name.
+     * @param   array   $options    value => label map.
+     * @param   string  $current    Currently selected value.
+     */
+    public static function radios( $name, $options, $current ) {
+
+        echo '<div class="mshield-radios">';
+        foreach( $options as $value => $label ) {
+            $is = ( (string) $current === (string) $value ) ? ' is-checked' : '';
+            echo '<label class="mshield-radio' . esc_attr( $is ) . '">';
+            echo '<input type="radio" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" ' . checked( $current, $value, false ) . ' />';
+            echo '<span>' . esc_html( $label ) . '</span>';
+            echo '</label>';
+        }
+        echo '</div>';
+
+    }
+
+    /**
+     * AJAX: persist the admin theme choice for the current user.
+     *
+     * @since   1.5.0
+     */
+    public function ajax_set_theme() {
+
+        if( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
+        if( ! check_ajax_referer( 'mshield_set_theme', 'nonce', false ) ) wp_send_json_error( '', 400 );
+
+        $theme = isset( $_POST['theme'] ) && $_POST['theme'] === 'dark' ? 'dark' : 'light';
+        update_user_meta( get_current_user_id(), 'mshield_admin_theme', $theme );
+
+        wp_send_json_success( [ 'theme' => $theme ] );
 
     }
 
@@ -525,8 +669,38 @@ class admin_page {
             $tab = 'dashboard';
         }
 
-        echo '<div class="wrap mshield-wrap">';
-        echo '<h1>' . esc_html__( 'MightyShield', 'mighty-shield' ) . '</h1>';
+        $theme = $this->get_theme();
+
+        // Documentation is reached from a header button, not the card nav.
+        $tabs = [
+            'dashboard' => __( 'Dashboard', 'mighty-shield' ),
+            'firewall'  => __( 'Firewall', 'mighty-shield' ),
+            'whitelist' => __( 'IP Whitelist', 'mighty-shield' ),
+            'blocklist' => __( 'IP Blocklist', 'mighty-shield' ),
+            'rates'     => __( 'Rate Limits', 'mighty-shield' ),
+            'fraud'     => __( 'Fraud Checks', 'mighty-shield' ),
+            'logs'      => __( 'Logs', 'mighty-shield' ),
+        ];
+
+        $icons  = self::nav_icons();
+        $shield = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 4.6-3.2 8.4-8 9.6C7.2 20.4 4 16.6 4 12V6z"></path><path d="M9 12l2 2 4-4"></path></svg>';
+        $sun    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>';
+        $book   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l3 3v15H6z"></path><path d="M9 8h6M9 12h6M9 16h4"></path></svg>';
+        $doc_url = admin_url( 'admin.php?page=mighty-shield&tab=documentation' );
+
+        echo '<div class="wrap mshield-app" data-theme="' . esc_attr( $theme ) . '">';
+
+        // Header.
+        echo '<div class="mshield-header">';
+        echo '<div class="ms-brandmark">' . $shield . '</div>';
+        echo '<div><div class="mshield-title-row"><h1>' . esc_html__( 'MightyShield', 'mighty-shield' ) . '</h1>';
+        echo '<span class="mshield-version">' . esc_html( 'v' . MSHIELD_VERSION ) . '</span></div>';
+        echo '<div class="mshield-tagline">' . esc_html__( 'Spam and fraud protection for WooCommerce', 'mighty-shield' ) . '</div></div>';
+        echo '<span class="mshield-spacer"></span>';
+        $doc_active = $tab === 'documentation' ? ' is-primary' : '';
+        echo '<a class="mshield-btn' . esc_attr( $doc_active ) . '" href="' . esc_url( $doc_url ) . '">' . $book . esc_html__( 'Documentation', 'mighty-shield' ) . '</a>';
+        echo '<button type="button" id="mshield-theme-toggle" class="mshield-btn">' . $sun . '<span class="ms-theme-label">' . ( $theme === 'dark' ? esc_html__( 'Dark', 'mighty-shield' ) : esc_html__( 'Light', 'mighty-shield' ) ) . '</span></button>';
+        echo '</div>';
 
         // Display any transient notices from redirected actions.
         $notice = get_transient( 'mshield_admin_notice' );
@@ -537,30 +711,48 @@ class admin_page {
 
         settings_errors( 'mshield' );
 
-        // Tabs.
-        $tabs = [
-            'dashboard' => __( 'Dashboard', 'mighty-shield' ),
-            'firewall'  => __( 'Firewall', 'mighty-shield' ),
-            'whitelist' => __( 'IP Whitelist', 'mighty-shield' ),
-            'blocklist' => __( 'IP Blocklist', 'mighty-shield' ),
-            'rates'     => __( 'Rate Limits', 'mighty-shield' ),
-            'fraud'     => __( 'Fraud Checks', 'mighty-shield' ),
-            'logs'      => __( 'Logs', 'mighty-shield' ),
-            'documentation' => __( 'Documentation', 'mighty-shield' ),
-        ];
-
-        echo '<div class="mshield-tabs">';
+        // Card-grid navigation.
+        echo '<div class="mshield-navcards">';
         foreach( $tabs as $key => $label ) {
-            $url   = admin_url( 'admin.php?page=mighty-shield&tab=' . $key );
-            $class = ( $tab === $key ) ? 'active' : '';
-            echo '<a href="' . esc_url( $url ) . '" class="' . esc_attr( $class ) . '">' . esc_html( $label ) . '</a>';
+            $url    = admin_url( 'admin.php?page=mighty-shield&tab=' . $key );
+            $active = ( $tab === $key ) ? ' is-active' : '';
+            $icon   = isset( $icons[ $key ] ) ? $icons[ $key ] : '';
+            echo '<a class="mshield-navcard' . esc_attr( $active ) . '" href="' . esc_url( $url ) . '">' . $icon . '<span>' . esc_html( $label ) . '</span></a>';
         }
         echo '</div>';
 
         // Render active tab.
         include MSHIELD_PATH . 'admin/views/' . $tab . '.php';
 
+        // Drawer mount (used by the Logs screen).
+        echo '<div id="mshield-drawer-root"></div>';
+
         echo '</div>';
+
+    }
+
+    /**
+     * SVG icons for the card-grid navigation, keyed by tab slug.
+     *
+     * @since   1.5.0
+     *
+     * @return  array
+     */
+    private static function nav_icons() {
+
+        $o = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">';
+        $c = '</svg>';
+
+        return [
+            'dashboard'     => $o . '<rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect>' . $c,
+            'firewall'      => $o . '<path d="M3 5h18v14H3z"></path><path d="M3 10h18M9 5v5M15 10v9M6 14h12"></path>' . $c,
+            'whitelist'     => $o . '<circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path>' . $c,
+            'blocklist'     => $o . '<circle cx="12" cy="12" r="9"></circle><path d="M6 6l12 12"></path>' . $c,
+            'rates'         => $o . '<path d="M12 13V7"></path><circle cx="12" cy="13" r="8"></circle><path d="M9 2h6"></path>' . $c,
+            'fraud'         => $o . '<path d="M10.3 3.6 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path>' . $c,
+            'logs'          => $o . '<path d="M4 5h16M4 10h16M4 15h10M4 20h7"></path>' . $c,
+            'documentation' => $o . '<path d="M6 3h9l3 3v15H6z"></path><path d="M9 8h6M9 12h6M9 16h4"></path>' . $c,
+        ];
 
     }
 
