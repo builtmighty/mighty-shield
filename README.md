@@ -30,6 +30,7 @@ wp plugin install https://github.com/builtmighty/mighty-shield/releases/latest/d
 - **Bot Challenge (CAPTCHA)** — Cloudflare Turnstile or Google reCAPTCHA v3 at checkout, verified server-side
 - **Admin Dashboard** — Real-time stats, top blocked IPs, and filterable event logs under WooCommerce menu
 - **Built-in Documentation** — A Documentation tab in the admin that explains every setting and walks through setup
+- **Modern Admin UI** — Card-based layout with a light/dark theme toggle, a redesigned dashboard (status hero, 7-day trend chart, stat cards), and a powerful Logs screen with search, filters, bulk actions, and an event-detail drawer
 - **Auto Cleanup** — Daily cron job purges old logs and expired rate limit data
 
 ## Requirements
