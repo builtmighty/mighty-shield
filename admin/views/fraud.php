@@ -9,6 +9,13 @@
 if( ! defined( 'WPINC' ) ) { die; }
 
 use MightyShield\Includes\settings;
+use MightyShield\Admin\admin_page;
+
+$action_opts = [
+    'block'  => __( 'Block (prevent checkout)', 'mighty-shield' ),
+    'flag'   => __( 'Flag (add order note)', 'mighty-shield' ),
+    'notify' => __( 'Flag + notify admin via email', 'mighty-shield' ),
+];
 ?>
 
 <form method="post" action="options.php">
@@ -42,11 +49,11 @@ use MightyShield\Includes\settings;
             <tr>
                 <th scope="row"><?php esc_html_e( 'Action on Suspicious Amount', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_suspicious_amount_action">
-                        <option value="flag" <?php selected( settings::get( 'mshield_suspicious_amount_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
-                        <option value="block" <?php selected( settings::get( 'mshield_suspicious_amount_action' ), 'block' ); ?>><?php esc_html_e( 'Block (cancel order)', 'mighty-shield' ); ?></option>
-                        <option value="notify" <?php selected( settings::get( 'mshield_suspicious_amount_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_suspicious_amount_action', [
+                        'block'  => __( 'Block (cancel order)', 'mighty-shield' ),
+                        'flag'   => __( 'Flag (add order note)', 'mighty-shield' ),
+                        'notify' => __( 'Flag + notify admin via email', 'mighty-shield' ),
+                    ], settings::get( 'mshield_suspicious_amount_action' ) ); ?>
                 </td>
             </tr>
         </table>
@@ -59,11 +66,11 @@ use MightyShield\Includes\settings;
             <tr>
                 <th scope="row"><?php esc_html_e( 'Sensitivity', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_address_sensitivity">
-                        <option value="low" <?php selected( settings::get( 'mshield_address_sensitivity' ), 'low' ); ?>><?php esc_html_e( 'Low (score >= 10 to block)', 'mighty-shield' ); ?></option>
-                        <option value="medium" <?php selected( settings::get( 'mshield_address_sensitivity' ), 'medium' ); ?>><?php esc_html_e( 'Medium (score >= 7 to block)', 'mighty-shield' ); ?></option>
-                        <option value="high" <?php selected( settings::get( 'mshield_address_sensitivity' ), 'high' ); ?>><?php esc_html_e( 'High (score >= 5 to block)', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_address_sensitivity', [
+                        'low'    => __( 'Low (score >= 10 to block)', 'mighty-shield' ),
+                        'medium' => __( 'Medium (score >= 7 to block)', 'mighty-shield' ),
+                        'high'   => __( 'High (score >= 5 to block)', 'mighty-shield' ),
+                    ], settings::get( 'mshield_address_sensitivity' ) ); ?>
                     <p class="description"><?php esc_html_e( 'Higher sensitivity catches more suspicious addresses but may increase false positives.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
@@ -102,11 +109,7 @@ use MightyShield\Includes\settings;
             <tr>
                 <th scope="row"><?php esc_html_e( 'Action on Failed Verification', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_smarty_action">
-                        <option value="flag" <?php selected( settings::get( 'mshield_smarty_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
-                        <option value="block" <?php selected( settings::get( 'mshield_smarty_action' ), 'block' ); ?>><?php esc_html_e( 'Block (prevent checkout)', 'mighty-shield' ); ?></option>
-                        <option value="notify" <?php selected( settings::get( 'mshield_smarty_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_smarty_action', $action_opts, settings::get( 'mshield_smarty_action' ) ); ?>
                 </td>
             </tr>
         </table>
@@ -129,11 +132,7 @@ use MightyShield\Includes\settings;
             <tr>
                 <th scope="row"><?php esc_html_e( 'Action on Mismatch', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_zip_state_action">
-                        <option value="block" <?php selected( settings::get( 'mshield_zip_state_action' ), 'block' ); ?>><?php esc_html_e( 'Block (prevent checkout)', 'mighty-shield' ); ?></option>
-                        <option value="flag" <?php selected( settings::get( 'mshield_zip_state_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
-                        <option value="notify" <?php selected( settings::get( 'mshield_zip_state_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_zip_state_action', $action_opts, settings::get( 'mshield_zip_state_action' ) ); ?>
                 </td>
             </tr>
         </table>
@@ -156,11 +155,7 @@ use MightyShield\Includes\settings;
             <tr>
                 <th scope="row"><?php esc_html_e( 'Action when triggered', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_honeypot_action">
-                        <option value="block" <?php selected( settings::get( 'mshield_honeypot_action' ), 'block' ); ?>><?php esc_html_e( 'Block (prevent checkout)', 'mighty-shield' ); ?></option>
-                        <option value="flag" <?php selected( settings::get( 'mshield_honeypot_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
-                        <option value="notify" <?php selected( settings::get( 'mshield_honeypot_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_honeypot_action', $action_opts, settings::get( 'mshield_honeypot_action' ) ); ?>
                 </td>
             </tr>
         </table>
@@ -190,21 +185,17 @@ use MightyShield\Includes\settings;
             <tr>
                 <th scope="row"><?php esc_html_e( 'Action on Fast Submission', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_timing_action">
-                        <option value="block" <?php selected( settings::get( 'mshield_timing_action' ), 'block' ); ?>><?php esc_html_e( 'Block (prevent checkout)', 'mighty-shield' ); ?></option>
-                        <option value="flag" <?php selected( settings::get( 'mshield_timing_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
-                        <option value="notify" <?php selected( settings::get( 'mshield_timing_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_timing_action', $action_opts, settings::get( 'mshield_timing_action' ) ); ?>
                     <p class="description"><?php esc_html_e( 'Defaults to Flag so you can watch the logs before enforcing.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php esc_html_e( 'Action on Missing Token', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_timing_missing_action">
-                        <option value="flag" <?php selected( settings::get( 'mshield_timing_missing_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag only (safe default)', 'mighty-shield' ); ?></option>
-                        <option value="block" <?php selected( settings::get( 'mshield_timing_missing_action' ), 'block' ); ?>><?php esc_html_e( 'Block (stops scripted checkouts)', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_timing_missing_action', [
+                        'flag'  => __( 'Flag only (safe default)', 'mighty-shield' ),
+                        'block' => __( 'Block (stops scripted checkouts)', 'mighty-shield' ),
+                    ], settings::get( 'mshield_timing_missing_action' ) ); ?>
                     <p class="description"><?php esc_html_e( 'What to do when the timing token is missing or invalid — the signature of a scripted checkout that never rendered the form. Flag by default to guard against page caching stripping the field; set to Block when under active bot attack (only takes effect when the action above is Block).', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
@@ -228,21 +219,17 @@ use MightyShield\Includes\settings;
             <tr>
                 <th scope="row"><?php esc_html_e( 'Action on Suspicious Device', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_fingerprint_action">
-                        <option value="block" <?php selected( settings::get( 'mshield_fingerprint_action' ), 'block' ); ?>><?php esc_html_e( 'Block (prevent checkout)', 'mighty-shield' ); ?></option>
-                        <option value="flag" <?php selected( settings::get( 'mshield_fingerprint_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
-                        <option value="notify" <?php selected( settings::get( 'mshield_fingerprint_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_fingerprint_action', $action_opts, settings::get( 'mshield_fingerprint_action' ) ); ?>
                     <p class="description"><?php esc_html_e( 'Governs automated-browser and timezone/country-mismatch detections.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php esc_html_e( 'Action on Missing Fingerprint', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_fingerprint_missing_action">
-                        <option value="flag" <?php selected( settings::get( 'mshield_fingerprint_missing_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag only (safe default)', 'mighty-shield' ); ?></option>
-                        <option value="block" <?php selected( settings::get( 'mshield_fingerprint_missing_action' ), 'block' ); ?>><?php esc_html_e( 'Block (stops non-JS bots)', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_fingerprint_missing_action', [
+                        'flag'  => __( 'Flag only (safe default)', 'mighty-shield' ),
+                        'block' => __( 'Block (stops non-JS bots)', 'mighty-shield' ),
+                    ], settings::get( 'mshield_fingerprint_missing_action' ) ); ?>
                     <p class="description"><?php esc_html_e( 'What to do when no fingerprint is submitted (JavaScript did not run) — the signature of a scripted, non-interactive checkout. Flag by default to accommodate rare no-JS shoppers; set to Block when under active card-testing attack, since real payment already requires JavaScript. Only takes effect when the action above is Block.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
@@ -263,11 +250,11 @@ use MightyShield\Includes\settings;
             <tr>
                 <th scope="row"><?php esc_html_e( 'Provider', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_captcha_provider">
-                        <option value="off" <?php selected( settings::get( 'mshield_captcha_provider' ), 'off' ); ?>><?php esc_html_e( 'Off', 'mighty-shield' ); ?></option>
-                        <option value="turnstile" <?php selected( settings::get( 'mshield_captcha_provider' ), 'turnstile' ); ?>><?php esc_html_e( 'Cloudflare Turnstile (recommended)', 'mighty-shield' ); ?></option>
-                        <option value="recaptcha_v3" <?php selected( settings::get( 'mshield_captcha_provider' ), 'recaptcha_v3' ); ?>><?php esc_html_e( 'Google reCAPTCHA v3', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_captcha_provider', [
+                        'off'          => __( 'Off', 'mighty-shield' ),
+                        'turnstile'    => __( 'Cloudflare Turnstile (recommended)', 'mighty-shield' ),
+                        'recaptcha_v3' => __( 'Google reCAPTCHA v3', 'mighty-shield' ),
+                    ], settings::get( 'mshield_captcha_provider' ) ); ?>
                     <p class="description"><?php esc_html_e( 'Requires both a site key and secret key below. Turnstile keys: dash.cloudflare.com. reCAPTCHA keys: google.com/recaptcha/admin.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
@@ -288,11 +275,7 @@ use MightyShield\Includes\settings;
             <tr>
                 <th scope="row"><?php esc_html_e( 'Action on Failed Challenge', 'mighty-shield' ); ?></th>
                 <td>
-                    <select name="mshield_captcha_action">
-                        <option value="block" <?php selected( settings::get( 'mshield_captcha_action' ), 'block' ); ?>><?php esc_html_e( 'Block (prevent checkout)', 'mighty-shield' ); ?></option>
-                        <option value="flag" <?php selected( settings::get( 'mshield_captcha_action' ), 'flag' ); ?>><?php esc_html_e( 'Flag (add order note)', 'mighty-shield' ); ?></option>
-                        <option value="notify" <?php selected( settings::get( 'mshield_captcha_action' ), 'notify' ); ?>><?php esc_html_e( 'Flag + notify admin via email', 'mighty-shield' ); ?></option>
-                    </select>
+                    <?php admin_page::radios( 'mshield_captcha_action', $action_opts, settings::get( 'mshield_captcha_action' ) ); ?>
                 </td>
             </tr>
         </table>
