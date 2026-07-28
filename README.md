@@ -13,7 +13,7 @@ wp plugin install https://github.com/builtmighty/mighty-shield/releases/latest/d
 ## Features
 
 - **Store API Firewall** — Hard-blocks non-whitelisted IPs from WooCommerce Store API cart and checkout endpoints
-- **Universal Whitelist** — Whitelist by IP/CIDR, WordPress user, or email address; whitelisted entities bypass **all** checks (blocks and flags), not just the firewall. Server IP is auto-whitelisted on activation, and any log row can be whitelisted in one click
+- **Universal Whitelist** — Whitelist by IP/CIDR, WordPress user, user role, or email address; whitelisted entities bypass **all** checks (blocks and flags), not just the firewall. Server IP is auto-whitelisted on activation, and any log row can be whitelisted in one click
 - **Persistent IP Blocklist** — Permanently bar IPs/CIDR ranges from checkout and the Store API, with one-click blocking from the logs (whitelist always wins)
 - **Checkout Rate Limiting** — Configurable per-IP rate limits on checkout attempts (default: 5/hour)
 - **Velocity Detection** — Detects rapid-fire order patterns: multiple unique emails or excessive orders from a single IP

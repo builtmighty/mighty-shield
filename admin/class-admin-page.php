@@ -229,11 +229,13 @@ class admin_page {
         // Capability check for all actions.
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
 
-        // Add a typed entry to the whitelist (IP / user / email).
+        // Add a typed entry to the whitelist (IP / user / email / role).
         if( isset( $_POST['mshield_add_ip'] ) && check_admin_referer( 'mshield_whitelist_action' ) ) {
 
             $type  = sanitize_text_field( $_POST['mshield_new_type'] ?? 'ip' );
-            $value = sanitize_text_field( wp_unslash( $_POST['mshield_new_value'] ?? '' ) );
+            $value = ( $type === 'role' )
+                ? sanitize_key( $_POST['mshield_new_role'] ?? '' )
+                : sanitize_text_field( wp_unslash( $_POST['mshield_new_value'] ?? '' ) );
             $label = sanitize_text_field( wp_unslash( $_POST['mshield_new_ip_label'] ?? '' ) );
 
             set_transient( 'mshield_admin_notice', $this->whitelist_add( $type, $value, $label ), 30 );
@@ -445,6 +447,33 @@ class admin_page {
             $display = $label !== '' ? $label : $user->user_login . ' (' . $user->user_email . ')';
             ip_whitelist::add_entry( 'user', $user->ID, $display );
             return [ 'wl_added', sprintf( __( 'User %s added to whitelist.', 'mighty-shield' ), $user->user_login ), 'success' ];
+
+        }
+
+        if( $type === 'role' ) {
+
+            $roles = wp_roles()->roles;
+            $slug  = sanitize_key( $value );
+
+            // Accept a slug directly, or resolve a display name to its slug.
+            if( ! isset( $roles[ $slug ] ) ) {
+                $slug = '';
+                foreach( $roles as $role_slug => $role ) {
+                    if( strtolower( $role['name'] ) === strtolower( trim( $value ) ) ) {
+                        $slug = $role_slug;
+                        break;
+                    }
+                }
+            }
+
+            if( $slug === '' || ! isset( $roles[ $slug ] ) ) {
+                return [ 'wl_invalid', __( 'Unknown user role.', 'mighty-shield' ), 'error' ];
+            }
+
+            $name    = translate_user_role( $roles[ $slug ]['name'] );
+            $display = $label !== '' ? $label : $name;
+            ip_whitelist::add_entry( 'role', $slug, $display );
+            return [ 'wl_added', sprintf( __( 'Role %s added to whitelist.', 'mighty-shield' ), $name ), 'success' ];
 
         }
 

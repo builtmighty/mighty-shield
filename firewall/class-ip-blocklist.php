@@ -90,10 +90,10 @@ class ip_blocklist {
 
         $ip = ip_utils::get_client_ip();
 
-        // Whitelisted WP user bypasses the blocklist (whitelisted IPs already
-        // pass via is_blocked()).
+        // Whitelisted WP user or role bypasses the blocklist (whitelisted IPs
+        // already pass via is_blocked()).
         $uid = get_current_user_id();
-        if( $uid && ip_whitelist::is_user_whitelisted( $uid ) ) return $result;
+        if( $uid && ( ip_whitelist::is_user_whitelisted( $uid ) || ip_whitelist::is_role_whitelisted( $uid ) ) ) return $result;
 
         if( ! self::is_blocked( $ip ) ) return $result;
 
