@@ -3,7 +3,7 @@
 Plugin Name: MightyShield
 Plugin URI: https://builtmighty.com
 Description: WooCommerce firewall for protecting against card spammer orders.
-Version: 1.5.0
+Version: 1.6.0
 Author: Built Mighty
 Author URI: https://builtmighty.com
 Copyright: Built Mighty
@@ -31,7 +31,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '1.5.0' );
+define( 'MSHIELD_VERSION', '1.6.0' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -98,6 +98,11 @@ function maybe_upgrade() {
         \MightyShield\Firewall\ip_whitelist::normalize_stored();
     }
 
+    // 1.6.0: create the IP data cache table (dbDelta is idempotent).
+    if( version_compare( $installed, '1.6.0', '<' ) && class_exists( '\MightyShield\Includes\db' ) ) {
+        \MightyShield\Includes\db::create_tables();
+    }
+
     update_option( 'mshield_version', MSHIELD_VERSION, false );
 
 }
@@ -133,6 +138,7 @@ function load() {
      */
     require_once MSHIELD_PATH . 'includes/class-ip-utils.php';
     require_once MSHIELD_PATH . 'includes/class-db.php';
+    require_once MSHIELD_PATH . 'includes/class-ip-data.php';
     require_once MSHIELD_PATH . 'includes/class-settings.php';
     require_once MSHIELD_PATH . 'firewall/class-ip-whitelist.php';
     require_once MSHIELD_PATH . 'firewall/class-ip-blocklist.php';

@@ -49,9 +49,23 @@ class db {
             INDEX idx_window_end (window_end)
         ) {$charset_collate};";
 
+        // IP geolocation data cache.
+        $ipdata_table = $wpdb->prefix . 'mshield_ip_data';
+        $sql_ipdata = "CREATE TABLE {$ipdata_table} (
+            ip VARCHAR(45) NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT '',
+            city VARCHAR(100) NOT NULL DEFAULT '',
+            region VARCHAR(100) NOT NULL DEFAULT '',
+            country VARCHAR(10) NOT NULL DEFAULT '',
+            org VARCHAR(191) NOT NULL DEFAULT '',
+            fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (ip)
+        ) {$charset_collate};";
+
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta( $sql_log );
         dbDelta( $sql_rate );
+        dbDelta( $sql_ipdata );
 
     }
 
@@ -475,6 +489,129 @@ class db {
     }
 
     /**
+     * Get per-hour event counts for the last N hours, split by action.
+     *
+     * @since   1.6.0
+     *
+     * @param   int     $hours  Number of hours (including the current one).
+     * @return  array   Ordered oldest-first, each: [ 'label' => 'H:00', 'blocked' => int, 'rate_limited' => int, 'flagged' => int, 'total' => int ]
+     */
+    public static function get_hourly_stats( $hours = 24 ) {
+
+        global $wpdb;
+
+        $hours = max( 1, (int) $hours );
+        $table = $wpdb->prefix . 'mshield_log';
+
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H') as h, action, COUNT(*) as total
+             FROM {$table}
+             WHERE created_at >= DATE_SUB( %s, INTERVAL %d HOUR )
+             GROUP BY DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H'), action",
+            gmdate( 'Y-m-d H:i:s' ),
+            $hours - 1
+        ) );
+
+        $series = [];
+        for( $i = $hours - 1; $i >= 0; $i-- ) {
+            $ts  = time() - ( $i * HOUR_IN_SECONDS );
+            $key = gmdate( 'Y-m-d H', $ts );
+            $series[ $key ] = [ 'label' => gmdate( 'H:00', $ts ), 'blocked' => 0, 'rate_limited' => 0, 'flagged' => 0, 'total' => 0 ];
+        }
+
+        foreach( $rows as $row ) {
+            if( ! isset( $series[ $row->h ] ) ) continue;
+            $count = (int) $row->total;
+            if( isset( $series[ $row->h ][ $row->action ] ) ) {
+                $series[ $row->h ][ $row->action ] = $count;
+            }
+            $series[ $row->h ]['total'] += $count;
+        }
+
+        return array_values( $series );
+
+    }
+
+    /**
+     * Get cached geolocation data for one IP.
+     *
+     * @since   1.6.0
+     *
+     * @param   string  $ip     IP address.
+     * @return  array|null       Row as array, or null if not cached.
+     */
+    public static function get_ip_data( $ip ) {
+
+        global $wpdb;
+
+        $row = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}mshield_ip_data WHERE ip = %s",
+            $ip
+        ), ARRAY_A );
+
+        return $row ?: null;
+
+    }
+
+    /**
+     * Get cached geolocation data for a set of IPs, keyed by IP.
+     *
+     * @since   1.6.0
+     *
+     * @param   string[]    $ips    IP addresses.
+     * @return  array       ip => row (array).
+     */
+    public static function get_ip_data_map( $ips ) {
+
+        global $wpdb;
+
+        $ips = array_values( array_unique( array_filter( (array) $ips ) ) );
+        if( empty( $ips ) ) return [];
+
+        $placeholders = implode( ',', array_fill( 0, count( $ips ), '%s' ) );
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}mshield_ip_data WHERE ip IN ({$placeholders})",
+            $ips
+        ), ARRAY_A );
+
+        $map = [];
+        foreach( $rows as $row ) {
+            $map[ $row['ip'] ] = $row;
+        }
+
+        return $map;
+
+    }
+
+    /**
+     * Store (upsert) geolocation data for an IP.
+     *
+     * @since   1.6.0
+     *
+     * @param   string  $ip     IP address.
+     * @param   array   $data   Keys: status, city, region, country, org.
+     */
+    public static function save_ip_data( $ip, $data ) {
+
+        global $wpdb;
+
+        $wpdb->replace(
+            $wpdb->prefix . 'mshield_ip_data',
+            [
+                'ip'         => sanitize_text_field( $ip ),
+                'status'     => substr( sanitize_text_field( $data['status'] ?? '' ), 0, 20 ),
+                'city'       => substr( sanitize_text_field( $data['city'] ?? '' ), 0, 100 ),
+                'region'     => substr( sanitize_text_field( $data['region'] ?? '' ), 0, 100 ),
+                'country'    => substr( sanitize_text_field( $data['country'] ?? '' ), 0, 10 ),
+                'org'        => substr( sanitize_text_field( $data['org'] ?? '' ), 0, 191 ),
+                'fetched_at' => gmdate( 'Y-m-d H:i:s' ),
+            ],
+            [ '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
+        );
+
+    }
+
+    /**
      * Cleanup expired data.
      *
      * @since   1.0.0
@@ -502,6 +639,13 @@ class db {
             "DELETE FROM {$wpdb->prefix}mshield_rate_limits WHERE window_end < %s",
             $now
         ) );
+
+        // Drop cached IP data for IPs no longer present in the log.
+        $wpdb->query(
+            "DELETE d FROM {$wpdb->prefix}mshield_ip_data d
+             LEFT JOIN {$wpdb->prefix}mshield_log l ON l.ip = d.ip
+             WHERE l.ip IS NULL"
+        );
 
     }
 

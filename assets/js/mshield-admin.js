@@ -60,6 +60,26 @@
         }
 
         var pillClass = { blocked:'is-blocked', rate_limited:'is-rate', flagged:'is-flag', exempt:'is-exempt', allowed:'is-ok' };
+        var current = null, currentRow = null;
+
+        function ipIntelHtml( d ) {
+            var head = '<div class="mshield-eyebrow">' + esc( cfg.i18n.ipIntel || 'IP location' ) + '</div>';
+            var ip = d.ipData;
+            if ( ip && ip.status === 'success' ) {
+                var loc = [ ip.city, ip.region, ip.country ].filter( Boolean ).join( ', ' );
+                return '<div class="mshield-ipintel" id="mshield-ipintel">' + head +
+                    '<div class="mshield-kv">' +
+                        '<span class="k">' + esc( cfg.i18n.location || 'Location' ) + '</span><span>' + esc( loc || '—' ) + '</span>' +
+                        '<span class="k">' + esc( cfg.i18n.org || 'Organization' ) + '</span><span>' + esc( ip.org || '—' ) + '</span>' +
+                    '</div></div>';
+            }
+            if ( ip && ip.status && ip.status !== 'success' ) {
+                return '<div class="mshield-ipintel" id="mshield-ipintel">' + head +
+                    '<p style="margin:0;color:var(--fg-3);font-size:13px">' + esc( 'No location data available for this IP.' ) + '</p></div>';
+            }
+            return '<div class="mshield-ipintel" id="mshield-ipintel">' + head +
+                '<button type="button" class="mshield-btn is-small" data-getip>' + esc( cfg.i18n.getIp || 'Get IP' ) + '</button></div>';
+        }
 
         function rowData( row ) {
             var d = {};
@@ -67,7 +87,8 @@
             return d;
         }
 
-        function open( d ) {
+        function open( d, row ) {
+            current = d; currentRow = row || null;
             var det = d.details || {};
             var rawLines = [];
             if ( det.ua )      rawLines.push( 'user-agent: ' + det.ua );
@@ -97,6 +118,7 @@
                         '<span class="k">' + esc( cfg.i18n.reason || 'Reason' ) + '</span><span>' + esc( d.reason || '' ) + '</span>' +
                         ( det.user_label ? '<span class="k">' + esc( cfg.i18n.user || 'User' ) + '</span><span>' + esc( det.user_label ) + '</span>' : '' ) +
                       '</div>' +
+                      ipIntelHtml( d ) +
                       '<div><div class="mshield-eyebrow">' + esc( cfg.i18n.raw || 'Request data' ) + '</div>' +
                       '<pre class="mshield-raw">' + esc( raw ) + '</pre></div>' +
                     '</div>' +
@@ -111,7 +133,7 @@
             row.addEventListener( 'click', function( e ) {
                 // Let checkboxes and inner links behave normally.
                 if ( e.target.closest( 'input, a' ) ) return;
-                open( rowData( row ) );
+                open( rowData( row ), row );
             } );
         } );
 
@@ -120,6 +142,40 @@
                 if ( e.target.classList.contains( 'mshield-drawer-overlay' ) || e.target.hasAttribute( 'data-close' ) ) close();
             }
         } );
+
+        // "Get IP" button inside the drawer — fetch + cache without a reload.
+        mount.addEventListener( 'click', function( e ) {
+            var btn = e.target.closest( '[data-getip]' );
+            if ( ! btn || ! current || ! cfg.ajaxUrl ) return;
+            e.preventDefault();
+            btn.disabled = true;
+            btn.textContent = cfg.i18n.gettingIp || 'Looking up…';
+
+            var body = new URLSearchParams();
+            body.set( 'action', 'mshield_get_ip' );
+            body.set( 'nonce', cfg.ipNonce || '' );
+            body.set( 'ip', current.ip || '' );
+
+            fetch( cfg.ajaxUrl, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body: body.toString() } )
+                .then( function( r ) { return r.json(); } )
+                .then( function( res ) {
+                    if ( res && res.success && res.data ) {
+                        current.ipData = { status: res.data.status || 'success', city:res.data.city, region:res.data.region, country:res.data.country, org:res.data.org };
+                        if ( currentRow ) { try { currentRow.setAttribute( 'data-event', JSON.stringify( current ) ); } catch ( err ) {} }
+                        var el = document.getElementById( 'mshield-ipintel' );
+                        if ( el ) el.outerHTML = ipIntelHtml( current );
+                    } else {
+                        btn.disabled = false;
+                        btn.textContent = cfg.i18n.getIp || 'Get IP';
+                        var msg = document.createElement( 'div' );
+                        msg.style.cssText = 'color:var(--ink-danger);font-size:12.5px;margin-top:6px';
+                        msg.textContent = ( res && res.data && res.data.message ) || cfg.i18n.lookupFail || 'Lookup failed.';
+                        btn.parentNode.appendChild( msg );
+                    }
+                } )
+                .catch( function() { btn.disabled = false; btn.textContent = cfg.i18n.getIp || 'Get IP'; } );
+        } );
+
         document.addEventListener( 'keydown', function( e ) { if ( e.key === 'Escape' ) close(); } );
     }
 
@@ -157,6 +213,140 @@
         } );
     }
 
-    ready( function() { initTheme(); initDrawer(); initBulk(); initRadios(); } );
+    /* ---------- Interactive events chart ---------- */
+    function initChart() {
+        var box = document.getElementById( 'mshield-chart' );
+        var dataEl = document.getElementById( 'mshield-chart-data' );
+        if ( ! box || ! dataEl ) return;
+
+        var titles = {
+            '30d': 'Events over the past 30 days',
+            '7d':  'Events over the past 7 days',
+            '24h': 'Events over the past 24 hours',
+        };
+        var titleEl = document.getElementById( 'mshield-chart-title' );
+        var subEl   = document.getElementById( 'mshield-chart-sub' );
+        var rangeEl = document.getElementById( 'mshield-chart-range' );
+
+        var series = {};
+        try { series = JSON.parse( dataEl.textContent || '{}' ); } catch ( e ) { series = {}; }
+
+        // Geometry.
+        var W = 760, H = 220, L = 40, Rr = 14, T = 12, Bt = H - 28;
+        var pw = W - L - Rr, ph = Bt - T;
+
+        function esc2( s ) { return String( s == null ? '' : s ).replace( /[&<>"]/g, function( c ) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; } ); }
+
+        function render( s ) {
+            var labels = s.labels || [], B = s.blocked || [], R = s.rate_limited || [], F = s.flagged || [];
+            var n = labels.length;
+            var max = 1;
+            [ B, R, F ].forEach( function( a ) { a.forEach( function( v ) { if ( v > max ) max = v; } ); } );
+
+            function X( i ) { return n > 1 ? L + i * ( pw / ( n - 1 ) ) : L + pw / 2; }
+            function Y( v ) { return Bt - ( v / max ) * ph; }
+            function poly( a, color, w ) {
+                var pts = a.map( function( v, i ) { return X( i ).toFixed( 1 ) + ',' + Y( v ).toFixed( 1 ); } ).join( ' ' );
+                return '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="' + w + '" stroke-linejoin="round" stroke-linecap="round"></polyline>';
+            }
+
+            var grid = '';
+            for ( var g = 0; g <= 2; g++ ) {
+                var yy = T + ( ph * g / 2 );
+                var val = Math.round( max * ( 1 - g / 2 ) );
+                grid += '<line x1="' + L + '" y1="' + yy.toFixed( 1 ) + '" x2="' + ( W - Rr ) + '" y2="' + yy.toFixed( 1 ) + '" stroke="var(--line-2)"></line>';
+                grid += '<text x="' + ( L - 6 ) + '" y="' + ( yy + 3 ).toFixed( 1 ) + '" text-anchor="end" font-size="10.5" font-family="JetBrains Mono,monospace" fill="var(--fg-3)">' + val + '</text>';
+            }
+
+            var step = Math.max( 1, Math.ceil( n / 8 ) ), xl = '';
+            for ( var i = 0; i < n; i += step ) {
+                xl += '<text x="' + X( i ).toFixed( 1 ) + '" y="' + ( H - 8 ) + '" text-anchor="middle" font-size="10.5" font-family="Public Sans,sans-serif" fill="var(--fg-3)">' + esc2( labels[ i ] ) + '</text>';
+            }
+
+            box.innerHTML =
+                '<svg viewBox="0 0 ' + W + ' ' + H + '" class="mshield-chart" id="mshield-chart-svg">' +
+                    grid + xl +
+                    poly( F, '#8c5ce6', 2.2 ) + poly( R, '#dba617', 2.2 ) + poly( B, '#d63638', 2.4 ) +
+                    '<line id="mshield-guide" x1="0" y1="' + T + '" x2="0" y2="' + Bt + '" stroke="var(--fg-3)" stroke-width="1" opacity="0"></line>' +
+                    '<g id="mshield-dots"></g>' +
+                    '<rect id="mshield-hit" x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '" fill="transparent" style="cursor:crosshair"></rect>' +
+                '</svg>' +
+                '<div class="mshield-charttip" id="mshield-charttip" style="opacity:0"></div>';
+
+            // Sub line: totals for the visible range.
+            if ( subEl ) {
+                var tot = 0, blk = 0;
+                B.forEach( function( v ) { tot += v; blk += v; } );
+                R.forEach( function( v ) { tot += v; } );
+                F.forEach( function( v ) { tot += v; } );
+                var pct = tot > 0 ? Math.round( blk / tot * 100 ) : 0;
+                subEl.textContent = tot.toLocaleString() + ' events · ' + pct + '% blocked';
+            }
+
+            attachHover( s, X, Y, n );
+        }
+
+        function attachHover( s, X, Y, n ) {
+            var svg   = document.getElementById( 'mshield-chart-svg' );
+            var hit   = document.getElementById( 'mshield-hit' );
+            var guide = document.getElementById( 'mshield-guide' );
+            var dots  = document.getElementById( 'mshield-dots' );
+            var tip   = document.getElementById( 'mshield-charttip' );
+            if ( ! svg || ! hit ) return;
+
+            function hide() { guide.setAttribute( 'opacity', '0' ); dots.innerHTML = ''; tip.style.opacity = '0'; }
+
+            hit.addEventListener( 'mousemove', function( e ) {
+                var rect = svg.getBoundingClientRect();
+                var vbx  = ( e.clientX - rect.left ) / rect.width * W;
+                var i    = n > 1 ? Math.round( ( vbx - L ) / ( pw / ( n - 1 ) ) ) : 0;
+                i = Math.max( 0, Math.min( n - 1, i ) );
+
+                var px = X( i );
+                guide.setAttribute( 'x1', px ); guide.setAttribute( 'x2', px ); guide.setAttribute( 'opacity', '1' );
+
+                var cols = [ [ s.blocked, '#d63638' ], [ s.rate_limited, '#dba617' ], [ s.flagged, '#8c5ce6' ] ];
+                var dm = '';
+                cols.forEach( function( c ) { dm += '<circle cx="' + px.toFixed( 1 ) + '" cy="' + Y( c[0][i] ).toFixed( 1 ) + '" r="3.6" fill="var(--surface)" stroke="' + c[1] + '" stroke-width="2.2"></circle>'; } );
+                dots.innerHTML = dm;
+
+                tip.innerHTML =
+                    '<div class="t-label">' + esc2( s.labels[ i ] ) + '</div>' +
+                    '<div class="t-row"><i style="background:#d63638"></i>Blocked <b>' + s.blocked[ i ] + '</b></div>' +
+                    '<div class="t-row"><i style="background:#dba617"></i>Rate-limited <b>' + s.rate_limited[ i ] + '</b></div>' +
+                    '<div class="t-row"><i style="background:#8c5ce6"></i>Flagged <b>' + s.flagged[ i ] + '</b></div>';
+                var leftPx = ( px / W ) * rect.width;
+                tip.style.left = Math.min( rect.width - 150, Math.max( 0, leftPx + 10 ) ) + 'px';
+                tip.style.opacity = '1';
+            } );
+            hit.addEventListener( 'mouseleave', hide );
+        }
+
+        function setRange( range, btn ) {
+            if ( rangeEl ) {
+                rangeEl.querySelectorAll( '.mshield-range-btn' ).forEach( function( b ) { b.classList.toggle( 'is-active', b === btn ); } );
+            }
+            if ( titleEl && titles[ range ] ) titleEl.textContent = titles[ range ];
+
+            if ( ! cfg.ajaxUrl ) return;
+            var url = cfg.ajaxUrl + '?action=mshield_chart&range=' + encodeURIComponent( range ) + '&nonce=' + encodeURIComponent( cfg.chartNonce || '' );
+            fetch( url, { credentials:'same-origin' } )
+                .then( function( r ) { return r.json(); } )
+                .then( function( res ) { if ( res && res.success ) render( res.data ); } )
+                .catch( function() {} );
+        }
+
+        if ( rangeEl ) {
+            rangeEl.addEventListener( 'click', function( e ) {
+                var btn = e.target.closest( '.mshield-range-btn' );
+                if ( ! btn ) return;
+                setRange( btn.getAttribute( 'data-range' ), btn );
+            } );
+        }
+
+        render( series );
+    }
+
+    ready( function() { initTheme(); initDrawer(); initBulk(); initRadios(); initChart(); } );
 
 } )();
