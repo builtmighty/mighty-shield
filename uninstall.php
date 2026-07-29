@@ -15,6 +15,7 @@ global $wpdb;
 // Remove custom tables.
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mshield_log" );
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mshield_rate_limits" );
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mshield_ip_data" );
 
 // Remove options.
 $options = [

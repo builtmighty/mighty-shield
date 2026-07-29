@@ -10,12 +10,24 @@ if( ! defined( 'WPINC' ) ) { die; }
 
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\ip_data;
+use MightyShield\Admin\admin_page;
 
 $stats_day   = db::get_stats( 'day' );
 $stats_week  = db::get_stats( 'week' );
 $stats_month = db::get_stats( 'month' );
 $top_ips     = db::get_top_blocked_ips( 10, 'week' );
-$daily       = db::get_daily_stats( 7 );
+
+// Enrich the top blocked IPs with geolocation data. This only makes a network
+// call for IPs not already cached, so repeat loads stay fast.
+$top_ip_list = array_map( function( $r ) { return $r->ip; }, $top_ips );
+if( ! empty( $top_ip_list ) ) {
+    ip_data::enrich( $top_ip_list );
+}
+$ip_map = db::get_ip_data_map( $top_ip_list );
+
+// Initial chart series (defaults to 30 days; not persisted per user).
+$chart_series = admin_page::chart_series( '30d' );
 
 $enabled = settings::get( 'mshield_enabled' ) === 'yes';
 
@@ -76,32 +88,12 @@ $toggle_url = wp_nonce_url(
         </div>
     </div>
 
-    <!-- 7-day trend chart -->
-    <?php
-    $max = 1;
-    foreach( $daily as $d ) {
-        $max = max( $max, (int) $d['blocked'], (int) $d['rate_limited'], (int) $d['flagged'] );
-    }
-    $n     = max( 1, count( $daily ) );
-    $x0    = 44; $x1 = 680; $yTop = 30; $yBot = 190;
-    $stepX = $n > 1 ? ( $x1 - $x0 ) / ( $n - 1 ) : 0;
-    $py    = function( $v ) use ( $max, $yTop, $yBot ) { return $yBot - ( $v / $max ) * ( $yBot - $yTop ); };
-    $pts   = function( $key ) use ( $daily, $x0, $stepX, $py ) {
-        $out = [];
-        foreach( array_values( $daily ) as $i => $d ) {
-            $out[] = round( $x0 + $i * $stepX, 1 ) . ',' . round( $py( (int) $d[ $key ] ), 1 );
-        }
-        return implode( ' ', $out );
-    };
-    $week_total   = (int) $stats_week['total'];
-    $week_blocked = (int) $stats_week['blocked'];
-    $week_pct     = $week_total > 0 ? round( $week_blocked / $week_total * 100 ) : 0;
-    ?>
+    <!-- Interactive events trend chart -->
     <div class="mshield-card">
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px">
             <div>
-                <div class="mshield-card-title"><?php esc_html_e( 'Events over the past 7 days', 'mighty-shield' ); ?></div>
-                <div class="mshield-card-sub"><?php printf( esc_html__( '%1$s events processed · %2$d%% blocked', 'mighty-shield' ), esc_html( number_format_i18n( $week_total ) ), (int) $week_pct ); ?></div>
+                <div class="mshield-card-title" id="mshield-chart-title"><?php esc_html_e( 'Events over the past 30 days', 'mighty-shield' ); ?></div>
+                <div class="mshield-card-sub" id="mshield-chart-sub"></div>
             </div>
             <span class="mshield-spacer"></span>
             <div class="mshield-legend">
@@ -110,28 +102,13 @@ $toggle_url = wp_nonce_url(
                 <span><i style="background:#8c5ce6"></i><?php esc_html_e( 'Flagged', 'mighty-shield' ); ?></span>
             </div>
         </div>
-        <svg viewBox="0 0 724 214" class="mshield-chart">
-            <g stroke="var(--line-2)" stroke-width="1">
-                <line x1="34" y1="30" x2="712" y2="30"></line>
-                <line x1="34" y1="70" x2="712" y2="70"></line>
-                <line x1="34" y1="110" x2="712" y2="110"></line>
-                <line x1="34" y1="150" x2="712" y2="150"></line>
-                <line x1="34" y1="190" x2="712" y2="190"></line>
-            </g>
-            <g fill="var(--fg-3)" font-size="10.5" font-family="JetBrains Mono, monospace" text-anchor="end">
-                <text x="26" y="34"><?php echo esc_html( $max ); ?></text>
-                <text x="26" y="114"><?php echo esc_html( round( $max / 2 ) ); ?></text>
-                <text x="26" y="194">0</text>
-            </g>
-            <polyline points="<?php echo esc_attr( $pts( 'blocked' ) ); ?>" fill="none" stroke="#d63638" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"></polyline>
-            <polyline points="<?php echo esc_attr( $pts( 'rate_limited' ) ); ?>" fill="none" stroke="#dba617" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></polyline>
-            <polyline points="<?php echo esc_attr( $pts( 'flagged' ) ); ?>" fill="none" stroke="#8c5ce6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></polyline>
-            <g fill="var(--fg-3)" font-size="11" font-family="Public Sans, sans-serif" text-anchor="middle">
-                <?php foreach( array_values( $daily ) as $i => $d ) : ?>
-                    <text x="<?php echo esc_attr( round( $x0 + $i * $stepX, 1 ) ); ?>" y="209"><?php echo esc_html( date_i18n( 'M j', strtotime( $d['date'] ) ) ); ?></text>
-                <?php endforeach; ?>
-            </g>
-        </svg>
+        <div class="mshield-range" id="mshield-chart-range">
+            <button type="button" class="mshield-range-btn is-active" data-range="30d"><?php esc_html_e( '30 days', 'mighty-shield' ); ?></button>
+            <button type="button" class="mshield-range-btn" data-range="7d"><?php esc_html_e( '7 days', 'mighty-shield' ); ?></button>
+            <button type="button" class="mshield-range-btn" data-range="24h"><?php esc_html_e( '24 hours', 'mighty-shield' ); ?></button>
+        </div>
+        <div id="mshield-chart" class="mshield-chartbox"></div>
+        <script type="application/json" id="mshield-chart-data"><?php echo wp_json_encode( $chart_series ); ?></script>
     </div>
 
     <!-- Stat cards -->
@@ -163,7 +140,7 @@ $toggle_url = wp_nonce_url(
     <div class="mshield-card is-flush">
         <div class="mshield-card-head">
             <div>
-                <div class="mshield-card-title"><?php esc_html_e( 'Top blocked IPs', 'mighty-shield' ); ?></div>
+                <div class="mshield-card-title"><?php esc_html_e( 'Top Blocked IPs', 'mighty-shield' ); ?></div>
                 <div class="mshield-card-sub"><?php esc_html_e( 'Past 7 days', 'mighty-shield' ); ?></div>
             </div>
             <span class="mshield-spacer"></span>
@@ -172,12 +149,28 @@ $toggle_url = wp_nonce_url(
         <?php foreach( $top_ips as $row ) :
             $pct = round( (int) $row->total / $ip_max * 100 );
             $logs_url = admin_url( 'admin.php?page=mighty-shield&tab=logs&filter_ip=' . urlencode( $row->ip ) );
+
+            // Build a location string from cached IP data, if present.
+            $info = isset( $ip_map[ $row->ip ] ) ? $ip_map[ $row->ip ] : null;
+            $loc  = '';
+            if( $info && $info['status'] === 'success' ) {
+                $bits = array_filter( [ $info['city'], $info['region'], $info['country'] ] );
+                $loc  = implode( ', ', $bits );
+            }
         ?>
         <div class="mshield-iprow">
-            <span class="ip"><?php echo esc_html( $row->ip ); ?></span>
+            <div class="ipmeta">
+                <span class="ip mshield-mono"><?php echo esc_html( $row->ip ); ?></span>
+                <?php if( $loc !== '' || ( $info && ! empty( $info['org'] ) ) ) : ?>
+                    <span class="loc">
+                        <?php echo esc_html( $loc ); ?>
+                        <?php if( $info && ! empty( $info['org'] ) ) : ?><span class="org">· <?php echo esc_html( $info['org'] ); ?></span><?php endif; ?>
+                    </span>
+                <?php endif; ?>
+            </div>
             <div class="bar"><span style="width:<?php echo esc_attr( $pct ); ?>%"></span></div>
             <span class="count"><?php echo esc_html( number_format_i18n( (int) $row->total ) ); ?></span>
-            <a href="<?php echo esc_url( $logs_url ); ?>" style="font-size:12.5px;color:var(--brand);font-weight:600"><?php esc_html_e( 'Logs', 'mighty-shield' ); ?></a>
+            <a href="<?php echo esc_url( $logs_url ); ?>" class="ip-logs"><?php esc_html_e( 'Logs', 'mighty-shield' ); ?></a>
         </div>
         <?php endforeach; ?>
     </div>
