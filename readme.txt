@@ -4,7 +4,7 @@ Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -68,6 +68,14 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 == Screenshots ==
 
 == Changelog ==
+
+= 1.6.0 =
+* Added IP location intelligence (city, region, country, organization) via ip-api.com, cached in a new table so each IP is only ever fetched once.
+* Dashboard automatically enriches the top blocked IPs on load (missing IPs only, in a single batched request) and shows their location and network.
+* Added a "Get IP" button in the Logs event drawer that fetches and stores IP data on demand without a page reload; cached data loads automatically on future views.
+* Log cleanup now also drops cached IP data for IPs no longer present in the log.
+* Made the events trend chart interactive: hover tooltips, and switchable 24-hour / 7-day / 30-day ranges (defaults to 30 days).
+* Fixed IPv6 display: no longer overlaps the bar in Top Blocked IPs or the Endpoint column in the logs; capitalized the "Top Blocked IPs" heading.
 
 = 1.5.0 =
 * Redesigned the admin interface: a modern card-based layout, a plugin header, and a light/dark theme toggle saved per user.

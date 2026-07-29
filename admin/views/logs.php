@@ -32,6 +32,10 @@ $logs        = db::get_logs( $args );
 $total       = db::get_log_count( $args );
 $total_pages = max( 1, (int) ceil( $total / $per_page ) );
 
+// Cached IP data for the IPs on this page (one query), for the detail drawer.
+$page_ips    = array_map( function( $l ) { return $l->ip; }, $logs );
+$ip_data_map = db::get_ip_data_map( $page_ips );
+
 $retention = (int) settings::get( 'mshield_log_retention_days' );
 
 $pill_class = [
@@ -144,6 +148,18 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
                 $wl_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&mshield_whitelist_ip=' . urlencode( $log->ip ) ), 'mshield_whitelist_ip' );
                 $bl_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&mshield_block_ip=' . urlencode( $log->ip ) ), 'mshield_block_ip' );
 
+                $ip_info = null;
+                if( isset( $ip_data_map[ $log->ip ] ) ) {
+                    $d = $ip_data_map[ $log->ip ];
+                    $ip_info = [
+                        'status'  => $d['status'],
+                        'city'    => $d['city'],
+                        'region'  => $d['region'],
+                        'country' => $d['country'],
+                        'org'     => $d['org'],
+                    ];
+                }
+
                 $event = [
                     'time'        => date_i18n( 'M j, H:i:s', strtotime( $log->created_at ) ),
                     'ip'          => $log->ip,
@@ -154,6 +170,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
                     'details'     => $details,
                     'wlUrl'       => $wl_url,
                     'blockUrl'    => $bl_url,
+                    'ipData'      => $ip_info,
                 ];
                 $pc = isset( $pill_class[ $log->action ] ) ? $pill_class[ $log->action ] : '';
                 $al = isset( $action_labels[ $log->action ] ) ? $action_labels[ $log->action ] : $log->action;

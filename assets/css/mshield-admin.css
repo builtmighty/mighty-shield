@@ -165,14 +165,39 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-legend { display:flex; gap:16px; font-size:12.5px; color:var(--fg-2); flex-wrap:wrap; }
 .mshield-legend span { display:flex; align-items:center; gap:6px; }
 .mshield-legend i { width:9px; height:9px; border-radius:2px; display:inline-block; }
+.mshield-chartbox { position:relative; }
+.mshield-range { display:flex; gap:6px; margin-bottom:10px; }
+.mshield-range-btn {
+    padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
+    color:var(--fg-2); font-size:12.5px; font-weight:600; cursor:pointer;
+}
+.mshield-range-btn:hover { border-color:var(--brand); color:var(--fg); }
+.mshield-range-btn.is-active { background:var(--brand); border-color:transparent; color:#fff; }
+.mshield-charttip {
+    position:absolute; top:8px; left:0; pointer-events:none; z-index:3;
+    background:var(--fg); color:var(--surface); border-radius:8px; padding:8px 10px; font-size:12px;
+    box-shadow:var(--shadow-lg); min-width:132px; transition:opacity .1s ease;
+}
+.mshield-charttip .t-label { font-family:'JetBrains Mono',monospace; font-size:11px; opacity:.7; margin-bottom:4px; }
+.mshield-charttip .t-row { display:flex; align-items:center; gap:6px; line-height:1.7; }
+.mshield-charttip .t-row i { width:8px; height:8px; border-radius:2px; display:inline-block; }
+.mshield-charttip .t-row b { margin-left:auto; font-variant-numeric:tabular-nums; }
+
+/* Drawer IP-intel block. */
+.mshield-ipintel .mshield-btn { margin-top:2px; }
 
 /* ---------- Top IPs ---------- */
 .mshield-iprow { display:flex; align-items:center; gap:14px; padding:12px 18px; border-bottom:1px solid var(--line-2); }
 .mshield-iprow:last-child { border-bottom:0; }
-.mshield-iprow .ip { font-family:'JetBrains Mono',monospace; font-size:13.5px; width:150px; }
-.mshield-iprow .bar { flex:1; height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; max-width:320px; }
+.mshield-iprow .ipmeta { flex:1 1 auto; min-width:0; }
+.mshield-iprow .ip { font-size:13.5px; overflow-wrap:anywhere; display:block; }
+.mshield-iprow .loc { display:block; font-size:12px; color:var(--fg-2); margin-top:2px; overflow-wrap:anywhere; }
+.mshield-iprow .loc .org { color:var(--fg-3); }
+.mshield-iprow .bar { flex:0 0 150px; height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; }
 .mshield-iprow .bar > span { display:block; height:100%; background:var(--danger); border-radius:3px; }
-.mshield-iprow .count { font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:600; width:56px; text-align:right; }
+.mshield-iprow .count { font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:600; width:56px; text-align:right; flex:none; }
+.mshield-iprow .ip-logs { font-size:12.5px; color:var(--brand); font-weight:600; flex:none; }
+@media screen and (max-width:600px) { .mshield-iprow .bar { display:none; } }
 
 /* ---------- Logs table ---------- */
 .mshield-filters { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:16px; }
@@ -188,9 +213,13 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-loglist { overflow-x:auto; }
 .mshield-bulkbar { display:flex; align-items:center; gap:9px; padding:11px 16px; border-bottom:1px solid var(--line-2); background:var(--surface-2); }
 .mshield-logrow {
-    display:grid; grid-template-columns:34px 96px 150px 128px minmax(200px,1fr) 110px 64px;
-    align-items:center; gap:12px; min-width:840px; padding:12px 16px; border-bottom:1px solid var(--line-2); font-size:13px;
+    display:grid; grid-template-columns:34px 92px 172px 116px minmax(180px,1fr) 104px 60px;
+    align-items:center; gap:12px; min-width:860px; padding:12px 16px; border-bottom:1px solid var(--line-2); font-size:13px;
 }
+/* Let long values (IPv6, endpoints) wrap inside their own column instead of
+   bleeding into the next one. */
+.mshield-logrow > * { min-width:0; }
+.mshield-logrow > span { overflow-wrap:anywhere; }
 .mshield-logrow.is-head { padding:10px 16px; border-bottom:1px solid var(--line); font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--fg-3); background:var(--surface); }
 .mshield-logrow.is-clickable { cursor:pointer; }
 .mshield-logrow.is-clickable:hover { background:var(--surface-2); }
