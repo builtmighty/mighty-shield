@@ -11,6 +11,7 @@ namespace MightyShield\Admin;
 
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\ip_data;
 use MightyShield\Firewall\ip_whitelist;
 use MightyShield\Firewall\ip_blocklist;
 
@@ -35,6 +36,8 @@ class admin_page {
         add_action( 'admin_init', [ $this, 'handle_actions' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_styles' ] );
         add_action( 'wp_ajax_mshield_set_theme', [ $this, 'ajax_set_theme' ] );
+        add_action( 'wp_ajax_mshield_get_ip', [ $this, 'ajax_get_ip' ] );
+        add_action( 'wp_ajax_mshield_chart', [ $this, 'ajax_chart' ] );
         add_filter( 'admin_body_class', [ $this, 'admin_body_class' ] );
 
     }
@@ -568,6 +571,8 @@ class admin_page {
         wp_localize_script( 'mshield-admin', 'mshieldAdmin', [
             'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
             'themeNonce' => wp_create_nonce( 'mshield_set_theme' ),
+            'ipNonce'    => wp_create_nonce( 'mshield_get_ip' ),
+            'chartNonce' => wp_create_nonce( 'mshield_chart' ),
             'i18n'       => [
                 'selected'    => __( 'selected', 'mighty-shield' ),
                 'eventDetail' => __( 'Event detail', 'mighty-shield' ),
@@ -578,6 +583,13 @@ class admin_page {
                 'raw'         => __( 'Request data', 'mighty-shield' ),
                 'whitelistIp' => __( 'Whitelist IP', 'mighty-shield' ),
                 'blockPerm'   => __( 'Block permanently', 'mighty-shield' ),
+                'ipIntel'     => __( 'IP location', 'mighty-shield' ),
+                'getIp'       => __( 'Get IP', 'mighty-shield' ),
+                'gettingIp'   => __( 'Looking up…', 'mighty-shield' ),
+                'location'    => __( 'Location', 'mighty-shield' ),
+                'org'         => __( 'Organization', 'mighty-shield' ),
+                'country'     => __( 'Country', 'mighty-shield' ),
+                'lookupFail'  => __( 'Lookup failed. Please try again.', 'mighty-shield' ),
             ],
         ] );
 
@@ -652,6 +664,81 @@ class admin_page {
         update_user_meta( get_current_user_id(), 'mshield_admin_theme', $theme );
 
         wp_send_json_success( [ 'theme' => $theme ] );
+
+    }
+
+    /**
+     * AJAX: fetch (and cache) geolocation data for a single IP on demand.
+     *
+     * @since   1.6.0
+     */
+    public function ajax_get_ip() {
+
+        if( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
+        if( ! check_ajax_referer( 'mshield_get_ip', 'nonce', false ) ) wp_send_json_error( '', 400 );
+
+        $ip = isset( $_POST['ip'] ) ? sanitize_text_field( wp_unslash( $_POST['ip'] ) ) : '';
+        if( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) wp_send_json_error( [ 'message' => __( 'Invalid IP.', 'mighty-shield' ) ], 400 );
+
+        $data = ip_data::get_or_fetch( $ip );
+        if( $data === null ) {
+            wp_send_json_error( [ 'message' => __( 'Lookup failed. Please try again.', 'mighty-shield' ) ] );
+        }
+
+        wp_send_json_success( [
+            'status'  => $data['status'],
+            'city'    => $data['city'],
+            'region'  => $data['region'],
+            'country' => $data['country'],
+            'org'     => $data['org'],
+        ] );
+
+    }
+
+    /**
+     * AJAX: return event-trend series for a given range (24h / 7d / 30d).
+     *
+     * @since   1.6.0
+     */
+    public function ajax_chart() {
+
+        if( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
+        if( ! check_ajax_referer( 'mshield_chart', 'nonce', false ) ) wp_send_json_error( '', 400 );
+
+        $range = isset( $_GET['range'] ) ? sanitize_text_field( wp_unslash( $_GET['range'] ) ) : '30d';
+
+        wp_send_json_success( self::chart_series( $range ) );
+
+    }
+
+    /**
+     * Build a chart series payload for a range key.
+     *
+     * @since   1.6.0
+     *
+     * @param   string  $range  '24h', '7d', or '30d'.
+     * @return  array   [ 'labels' => [], 'blocked' => [], 'rate_limited' => [], 'flagged' => [] ]
+     */
+    public static function chart_series( $range ) {
+
+        if( $range === '24h' ) {
+            $rows     = db::get_hourly_stats( 24 );
+            $label_fn = function( $r ) { return $r['label']; };
+        } else {
+            $days     = $range === '7d' ? 7 : 30;
+            $rows     = db::get_daily_stats( $days );
+            $label_fn = function( $r ) { return date_i18n( 'M j', strtotime( $r['date'] ) ); };
+        }
+
+        $out = [ 'labels' => [], 'blocked' => [], 'rate_limited' => [], 'flagged' => [] ];
+        foreach( $rows as $r ) {
+            $out['labels'][]       = $label_fn( $r );
+            $out['blocked'][]      = (int) $r['blocked'];
+            $out['rate_limited'][] = (int) $r['rate_limited'];
+            $out['flagged'][]      = (int) $r['flagged'];
+        }
+
+        return $out;
 
     }
 
