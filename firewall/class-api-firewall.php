@@ -64,6 +64,16 @@ class api_firewall {
             return $result;
         }
 
+        // Test-mode forced firewall trip (block checkout). Scoped to the
+        // checkout route so the admin's cart still loads and they can reach
+        // checkout to see the block. Runs before the mode/whitelist/admin
+        // bypasses below so it applies even in blocklist mode. Enforce only;
+        // simulate logs and skips.
+        if( preg_match( '#^/wc/store(/v\d+)?/checkout#', $route ) && \MightyShield\Includes\test_mode::should_trip( 'firewall', 'Forced firewall trip (block checkout)' ) ) {
+            db::log_event( ip_utils::get_client_ip(), $route, 'blocked', 'Test mode: forced firewall trip' );
+            return new \WP_Error( 'mighty_shield_blocked', __( 'Access denied.', 'mighty-shield' ), [ 'status' => 403 ] );
+        }
+
         // Only the "whitelist" mode blanket-blocks the Store API (for classic
         // checkout stores where real customers never use it). In "blocklist"
         // mode, real shoppers are allowed and only blocklisted IPs are stopped
