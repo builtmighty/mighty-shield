@@ -40,6 +40,13 @@ class rate_limiter {
 
         $ip = ip_utils::get_client_ip();
 
+        // Test-mode force-trip.
+        if( \MightyShield\Includes\test_mode::should_trip( 'rate_limit', 'Forced rate-limit trip' ) ) {
+            db::log_event( $ip, 'classic_checkout', 'rate_limited', 'Test mode: forced rate-limit trip' );
+            wc_add_notice( __( 'Too many checkout attempts. Please wait and try again later.', 'mighty-shield' ), 'error' );
+            return;
+        }
+
         // Check if IP is temporarily blocked.
         if( $this->is_temp_blocked( $ip ) ) {
 

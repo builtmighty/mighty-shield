@@ -21,6 +21,8 @@ $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mshield_ip_data" );
 $options = [
     'mshield_enabled',
     'mshield_block_store_api',
+    'mshield_firewall_mode',
+    'mshield_store_api_checks',
     'mshield_ip_whitelist',
     'mshield_rate_checkout_limit',
     'mshield_rate_checkout_window',
@@ -51,8 +53,17 @@ $options = [
     'mshield_captcha_secret_key',
     'mshield_captcha_action',
     'mshield_ip_blocklist',
+    'mshield_smarty_degraded',
+    'mshield_captcha_degraded',
+    'mshield_version',
     'mshield_log_retention_days',
 ];
+
+// Per-user test-mode preferences.
+delete_metadata( 'user', 0, 'mshield_test_mode', '', true );
+delete_metadata( 'user', 0, 'mshield_test_layers', '', true );
+delete_metadata( 'user', 0, 'mshield_test_simulate', '', true );
+delete_metadata( 'user', 0, 'mshield_admin_theme', '', true );
 
 foreach( $options as $option ) {
     delete_option( $option );

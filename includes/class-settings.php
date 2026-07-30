@@ -18,6 +18,8 @@ class settings {
     private static $defaults = [
         'mshield_enabled'                   => 'yes',
         'mshield_block_store_api'           => 'yes',
+        'mshield_firewall_mode'             => 'whitelist',
+        'mshield_store_api_checks'          => 'no',
         'mshield_rate_checkout_limit'       => 5,
         'mshield_rate_checkout_window'      => 3600,
         'mshield_velocity_email_threshold'  => 3,

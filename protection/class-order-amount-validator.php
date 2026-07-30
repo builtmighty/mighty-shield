@@ -47,6 +47,12 @@ class order_amount_validator {
         $action = settings::get( 'mshield_suspicious_amount_action' );
         if( $action !== 'block' ) return;
 
+        if( \MightyShield\Includes\test_mode::should_trip( 'order_amount', 'Forced suspicious-amount block' ) ) {
+            db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'blocked', 'Test mode: forced suspicious order amount' );
+            $errors->add( 'mighty_shield_amount', __( 'This order could not be processed. Please contact support.', 'mighty-shield' ) );
+            return;
+        }
+
         $min = (float) settings::get( 'mshield_min_order_amount' );
         if( $min <= 0 ) return;
 
@@ -78,6 +84,16 @@ class order_amount_validator {
 
         $action = settings::get( 'mshield_suspicious_amount_action' );
         if( $action === 'block' ) return;
+
+        if( \MightyShield\Includes\test_mode::should_trip( 'order_amount', 'Forced suspicious-amount flag' ) ) {
+            $reason = 'Test mode: forced suspicious order amount';
+            db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'flagged', $reason );
+            $order->add_order_note( 'MightyShield: ' . $reason );
+            $order->update_meta_data( '_mshield_flagged', 'suspicious_amount' );
+            $order->save();
+            if( $action === 'notify' ) $this->send_admin_notification( $order, $reason );
+            return;
+        }
 
         $total = (float) $order->get_total();
         $min   = (float) settings::get( 'mshield_min_order_amount' );

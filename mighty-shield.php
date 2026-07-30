@@ -3,7 +3,7 @@
 Plugin Name: MightyShield
 Plugin URI: https://builtmighty.com
 Description: WooCommerce firewall for protecting against card spammer orders.
-Version: 1.6.0
+Version: 1.8.0
 Author: Built Mighty
 Author URI: https://builtmighty.com
 Copyright: Built Mighty
@@ -31,7 +31,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '1.6.0' );
+define( 'MSHIELD_VERSION', '1.8.0' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -142,9 +142,11 @@ function load() {
     require_once MSHIELD_PATH . 'includes/class-settings.php';
     require_once MSHIELD_PATH . 'firewall/class-ip-whitelist.php';
     require_once MSHIELD_PATH . 'firewall/class-ip-blocklist.php';
+    require_once MSHIELD_PATH . 'includes/class-test-mode.php';
     require_once MSHIELD_PATH . 'includes/class-exempt.php';
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
+    require_once MSHIELD_PATH . 'admin/class-test-mode.php';
 
     // Run version migrations if the plugin was just updated.
     maybe_upgrade();
@@ -154,6 +156,9 @@ function load() {
         new \MightyShield\Admin\admin_page();
         new \MightyShield\Admin\log_viewer();
     }
+
+    // Test-mode toolbar runs on the front end too (gated internally by capability).
+    new \MightyShield\Admin\test_mode_bar();
 
     // Check if plugin protections are enabled.
     if( get_option( 'mshield_enabled', 'yes' ) !== 'yes' ) return;
@@ -176,6 +181,7 @@ function load() {
     require_once MSHIELD_PATH . 'protection/class-checkout-timing.php';
     require_once MSHIELD_PATH . 'protection/class-device-fingerprint.php';
     require_once MSHIELD_PATH . 'protection/class-captcha.php';
+    require_once MSHIELD_PATH . 'protection/class-store-api.php';
 
     /**
      * Initiate.

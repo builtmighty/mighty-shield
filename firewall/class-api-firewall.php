@@ -64,6 +64,14 @@ class api_firewall {
             return $result;
         }
 
+        // Only the "whitelist" mode blanket-blocks the Store API (for classic
+        // checkout stores where real customers never use it). In "blocklist"
+        // mode, real shoppers are allowed and only blocklisted IPs are stopped
+        // (handled by ip_blocklist), so block-based checkout keeps working.
+        if( settings::get( 'mshield_firewall_mode' ) !== 'whitelist' ) {
+            return $result;
+        }
+
         // Get client IP.
         $ip = ip_utils::get_client_ip();
 

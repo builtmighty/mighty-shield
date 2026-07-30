@@ -59,4 +59,10 @@
         }
     } );
 
+    // Re-collect after WooCommerce refreshes the order review (one-page and
+    // AJAX checkouts re-render the form, which would otherwise blank the field).
+    if( window.jQuery ) {
+        window.jQuery( document.body ).on( 'updated_checkout', writeToField );
+    }
+
 } )();

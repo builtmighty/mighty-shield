@@ -120,6 +120,8 @@ class honeypot {
      */
     private function is_triggered() {
 
+        if( \MightyShield\Includes\test_mode::should_trip( 'honeypot', 'Forced honeypot trip' ) ) return true;
+
         return $this->get_value() !== '';
 
     }

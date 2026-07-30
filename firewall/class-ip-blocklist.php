@@ -57,6 +57,12 @@ class ip_blocklist {
 
         $ip = ip_utils::get_client_ip();
 
+        if( \MightyShield\Includes\test_mode::should_trip( 'blocklist', 'Forced blocklist trip' ) ) {
+            db::log_event( $ip, 'classic_checkout', 'blocked', 'Test mode: forced blocklist trip' );
+            wc_add_notice( __( 'Your access has been restricted. Please contact support.', 'mighty-shield' ), 'error' );
+            return;
+        }
+
         if( ! self::is_blocked( $ip ) ) return;
 
         db::log_event( $ip, 'classic_checkout', 'blocked', 'Blocklisted IP' );
