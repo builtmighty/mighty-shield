@@ -20,6 +20,7 @@ use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
 use MightyShield\Includes\exempt;
+use MightyShield\Includes\test_mode;
 
 class store_api {
 
@@ -127,6 +128,29 @@ class store_api {
 
         $ip = ip_utils::get_client_ip();
 
+        // Test-mode forced trips (block-mode layers). Each returns true only in
+        // enforce mode for the toggling admin; simulate mode logs and skips.
+        if( test_mode::should_trip( 'rate_limit', 'Forced rate-limit trip (block checkout)' ) ) {
+            db::log_event( $ip, 'store_api', 'blocked', 'Test mode: forced rate-limit trip' );
+            $this->block( __( 'Too many checkout attempts. Please wait and try again later.', 'mighty-shield' ) );
+        }
+        if( test_mode::should_trip( 'email_domain', 'Forced email-domain block (block checkout)' ) ) {
+            db::log_event( $ip, 'store_api', 'blocked', 'Test mode: forced disposable email' );
+            $this->block( __( 'Please use a valid, non-disposable email address.', 'mighty-shield' ) );
+        }
+        if( test_mode::should_trip( 'address', 'Forced address-validation block (block checkout)' ) ) {
+            db::log_event( $ip, 'store_api', 'blocked', 'Test mode: forced address validation' );
+            $this->block( __( 'Please verify your billing information and try again.', 'mighty-shield' ) );
+        }
+        if( settings::get( 'mshield_suspicious_amount_action' ) === 'block' && test_mode::should_trip( 'order_amount', 'Forced suspicious-amount block (block checkout)' ) ) {
+            db::log_event( $ip, 'store_api', 'blocked', 'Test mode: forced suspicious order amount' );
+            $this->block( __( 'This order could not be processed. Please contact support.', 'mighty-shield' ) );
+        }
+        if( settings::get( 'mshield_zip_state_action' ) === 'block' && test_mode::should_trip( 'zip_state', 'Forced ZIP/State mismatch (block checkout)' ) ) {
+            db::log_event( $ip, 'store_api', 'blocked', 'Test mode: forced ZIP/State mismatch' );
+            $this->block( __( 'Please verify your billing ZIP code and state.', 'mighty-shield' ) );
+        }
+
         // Temporary block (set by velocity / failed-payment / other layers).
         if( rate_limiter::is_temp_blocked( $ip ) ) {
             db::log_event( $ip, 'store_api', 'blocked', 'Temporarily blocked IP' );
@@ -210,7 +234,9 @@ class store_api {
         $trips = [];
 
         // Checkout timing.
-        if( settings::get( 'mshield_timing_enabled' ) === 'yes' ) {
+        if( test_mode::should_trip( 'timing', 'Forced checkout-timing trip (block checkout)' ) ) {
+            $trips[] = [ 'layer' => 'timing', 'reason' => 'Test mode: forced checkout-timing trip', 'action' => settings::get( 'mshield_timing_action' ), 'temp_block' => true ];
+        } elseif( settings::get( 'mshield_timing_enabled' ) === 'yes' ) {
             $token   = isset( $ext['ct'] ) ? (string) $ext['ct'] : '';
             $elapsed = checkout_timing::verify_token( $token );
             $reason  = null;
@@ -236,7 +262,9 @@ class store_api {
         }
 
         // Device fingerprint.
-        if( settings::get( 'mshield_fingerprint_enabled' ) === 'yes' && ! empty( $ext['dev'] ) ) {
+        if( test_mode::should_trip( 'fingerprint', 'Forced device fingerprint trip (block checkout)' ) ) {
+            $trips[] = [ 'layer' => 'fingerprint', 'reason' => 'Test mode: forced device fingerprint trip', 'action' => settings::get( 'mshield_fingerprint_action' ), 'temp_block' => true ];
+        } elseif( settings::get( 'mshield_fingerprint_enabled' ) === 'yes' && ! empty( $ext['dev'] ) ) {
             $device = json_decode( (string) $ext['dev'], true );
             if( is_array( $device ) ) {
                 $res = device_fingerprint::evaluate_device( $device, $order->get_billing_country() );
@@ -254,7 +282,9 @@ class store_api {
         // reCAPTCHA v3 (Turnstile is not supported on block checkout). An empty
         // token is treated as a skip so a script/enqueue failure never locks out
         // every block-checkout shopper.
-        if( settings::get( 'mshield_captcha_provider' ) === 'recaptcha_v3' ) {
+        if( test_mode::should_trip( 'captcha', 'Forced CAPTCHA failure (block checkout)' ) ) {
+            $trips[] = [ 'layer' => 'captcha', 'reason' => 'Test mode: forced CAPTCHA failure', 'action' => settings::get( 'mshield_captcha_action' ), 'temp_block' => false ];
+        } elseif( settings::get( 'mshield_captcha_provider' ) === 'recaptcha_v3' ) {
             $token = isset( $ext['cap'] ) ? (string) $ext['cap'] : '';
             if( $token !== '' ) {
                 $ok = captcha::verify( 'recaptcha_v3', settings::get( 'mshield_captcha_secret_key' ), $token );
@@ -282,6 +312,19 @@ class store_api {
         if( exempt::is_exempt( $email, $order->get_user_id() ) ) return;
 
         $ip = ip_utils::get_client_ip();
+
+        // Test-mode forced trips (flag-mode layers + velocity). Enforce only;
+        // simulate logs and skips.
+        if( settings::get( 'mshield_suspicious_amount_action' ) !== 'block' && test_mode::should_trip( 'order_amount', 'Forced suspicious-amount flag (block checkout)' ) ) {
+            $this->flag_order( $order, 'suspicious_amount', 'Test mode: forced suspicious order amount', settings::get( 'mshield_suspicious_amount_action' ) );
+        }
+        if( settings::get( 'mshield_zip_state_action' ) !== 'block' && test_mode::should_trip( 'zip_state', 'Forced ZIP/State mismatch flag (block checkout)' ) ) {
+            $this->flag_order( $order, 'zip_state_mismatch', 'Test mode: forced ZIP/State mismatch', settings::get( 'mshield_zip_state_action' ) );
+        }
+        if( test_mode::should_trip( 'velocity', 'Forced velocity trip (block checkout)' ) ) {
+            db::log_event( $ip, 'store_api', 'blocked', 'Test mode: forced velocity trip' );
+            rate_limiter::temp_block_ip( $ip, 'Test mode: forced velocity trip' );
+        }
 
         // Suspicious order amount (flag / notify).
         $min    = (float) settings::get( 'mshield_min_order_amount' );
