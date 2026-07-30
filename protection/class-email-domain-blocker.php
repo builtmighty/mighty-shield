@@ -224,22 +224,46 @@ class email_domain_blocker {
 
         if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
+        if( \MightyShield\Includes\test_mode::should_trip( 'email_domain', 'Forced email-domain block' ) ) {
+            db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'blocked', 'Test mode: forced email-domain block' );
+            $errors->add( 'mighty_shield_email', __( 'Please use a valid, non-disposable email address.', 'mighty-shield' ) );
+            return;
+        }
+
         $email = isset( $data['billing_email'] ) ? $data['billing_email'] : '';
         if( empty( $email ) ) return;
 
-        $domain = strtolower( substr( strrchr( $email, '@' ), 1 ) );
-        if( empty( $domain ) ) return;
+        if( self::is_disposable_email( $email ) ) {
 
-        $blocked_domains = $this->get_blocked_domains();
-
-        if( in_array( $domain, $blocked_domains, true ) ) {
-
-            $ip = ip_utils::get_client_ip();
+            $ip     = ip_utils::get_client_ip();
+            $domain = strtolower( substr( strrchr( $email, '@' ), 1 ) );
             db::log_event( $ip, 'classic_checkout', 'blocked', "Disposable email domain: {$domain}" );
 
             $errors->add( 'mighty_shield_email', __( 'Please use a valid, non-disposable email address.', 'mighty-shield' ) );
 
         }
+
+    }
+
+    /**
+     * Whether an email uses a blocked/disposable domain.
+     *
+     * Reusable by both classic checkout and the Store API (block) checkout.
+     *
+     * @since   1.8.0
+     *
+     * @param   string  $email  Email address.
+     * @return  bool
+     */
+    public static function is_disposable_email( $email ) {
+
+        $email = strtolower( trim( (string) $email ) );
+        if( $email === '' || strpos( $email, '@' ) === false ) return false;
+
+        $domain = substr( strrchr( $email, '@' ), 1 );
+        if( $domain === '' ) return false;
+
+        return in_array( $domain, self::get_blocked_domains(), true );
 
     }
 
@@ -252,7 +276,7 @@ class email_domain_blocker {
      *
      * @return  array
      */
-    private function get_blocked_domains() {
+    public static function get_blocked_domains() {
 
         $domains = self::DISPOSABLE_DOMAINS;
 

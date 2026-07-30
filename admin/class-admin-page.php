@@ -74,6 +74,14 @@ class admin_page {
         register_setting( 'mshield_firewall', 'mshield_block_store_api', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
+        register_setting( 'mshield_firewall', 'mshield_firewall_mode', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'whitelist', 'blocklist' ], true ) ? $value : 'whitelist';
+            },
+        ] );
+        register_setting( 'mshield_firewall', 'mshield_store_api_checks', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
         register_setting( 'mshield_firewall', 'mshield_log_retention_days', [
             'sanitize_callback' => function( $value ) { return max( 1, min( 365, absint( $value ) ) ); },
         ] );
