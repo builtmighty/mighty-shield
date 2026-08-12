@@ -78,6 +78,53 @@ class address_validator {
 
         if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
+        $result  = self::score_address( $data );
+        $score   = $result['score'];
+        $signals = $result['signals'];
+
+        // Get threshold based on sensitivity.
+        $sensitivity = settings::get( 'mshield_address_sensitivity' );
+        $threshold   = isset( self::THRESHOLDS[ $sensitivity ] ) ? self::THRESHOLDS[ $sensitivity ] : self::THRESHOLDS['medium'];
+
+        // Check if score exceeds threshold.
+        if( $score >= $threshold ) {
+
+            $ip = ip_utils::get_client_ip();
+            db::log_event( $ip, 'classic_checkout', 'blocked', 'Address validation failed (score: ' . $score . '/' . $threshold . '): ' . implode( ', ', $signals ) );
+
+            $errors->add( 'mighty_shield_address', __( 'Please verify your billing information and try again.', 'mighty-shield' ) );
+
+        }
+
+    }
+
+    /**
+     * Score an address for suspicious patterns. Reusable by classic and Store
+     * API (block) checkout.
+     *
+     * @since   1.8.0
+     *
+     * @param   array   $data   Billing fields (billing_first_name, billing_last_name,
+     *                          billing_address_1, billing_postcode, billing_phone,
+     *                          billing_email, billing_city).
+     * @return  array   [ 'score' => int, 'signals' => string[] ]
+     */
+    /**
+     * The score at/above which an address is blocked, per the configured sensitivity.
+     *
+     * @since   1.8.0
+     *
+     * @return  int
+     */
+    public static function block_threshold() {
+
+        $sensitivity = settings::get( 'mshield_address_sensitivity' );
+        return isset( self::THRESHOLDS[ $sensitivity ] ) ? self::THRESHOLDS[ $sensitivity ] : self::THRESHOLDS['medium'];
+
+    }
+
+    public static function score_address( $data ) {
+
         $score   = 0;
         $signals = [];
 
@@ -114,14 +161,14 @@ class address_validator {
 
         // Check ZIP/postcode for repeated digits.
         $postcode = isset( $data['billing_postcode'] ) ? trim( $data['billing_postcode'] ) : '';
-        if( ! empty( $postcode ) && $this->is_repeated_chars( $postcode ) ) {
+        if( ! empty( $postcode ) && self::is_repeated_chars( $postcode ) ) {
             $score += 2;
             $signals[] = 'repeated-digit ZIP';
         }
 
         // Check phone for repeated digits.
         $phone = isset( $data['billing_phone'] ) ? preg_replace( '/[^0-9]/', '', $data['billing_phone'] ) : '';
-        if( strlen( $phone ) >= 7 && $this->is_repeated_chars( $phone ) ) {
+        if( strlen( $phone ) >= 7 && self::is_repeated_chars( $phone ) ) {
             $score += 2;
             $signals[] = 'repeated-digit phone';
         }
@@ -139,24 +186,12 @@ class address_validator {
 
         // Check city for suspicious patterns.
         $city = isset( $data['billing_city'] ) ? trim( $data['billing_city'] ) : '';
-        if( strlen( $city ) === 1 || ( ! empty( $city ) && $this->is_repeated_chars( $city ) ) ) {
+        if( strlen( $city ) === 1 || ( ! empty( $city ) && self::is_repeated_chars( $city ) ) ) {
             $score += 2;
             $signals[] = 'suspicious city';
         }
 
-        // Get threshold based on sensitivity.
-        $sensitivity = settings::get( 'mshield_address_sensitivity' );
-        $threshold   = isset( self::THRESHOLDS[ $sensitivity ] ) ? self::THRESHOLDS[ $sensitivity ] : self::THRESHOLDS['medium'];
-
-        // Check if score exceeds threshold.
-        if( $score >= $threshold ) {
-
-            $ip = ip_utils::get_client_ip();
-            db::log_event( $ip, 'classic_checkout', 'blocked', 'Address validation failed (score: ' . $score . '/' . $threshold . '): ' . implode( ', ', $signals ) );
-
-            $errors->add( 'mighty_shield_address', __( 'Please verify your billing information and try again.', 'mighty-shield' ) );
-
-        }
+        return [ 'score' => $score, 'signals' => $signals ];
 
     }
 
@@ -168,7 +203,7 @@ class address_validator {
      * @param   string  $str    String to check.
      * @return  bool
      */
-    private function is_repeated_chars( $str ) {
+    private static function is_repeated_chars( $str ) {
 
         $str = preg_replace( '/[^a-z0-9]/i', '', $str );
         if( strlen( $str ) < 3 ) return false;

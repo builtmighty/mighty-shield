@@ -91,7 +91,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
             <option value="blocked" <?php selected( $filter_action, 'blocked' ); ?>><?php esc_html_e( 'Blocked', 'mighty-shield' ); ?></option>
             <option value="rate_limited" <?php selected( $filter_action, 'rate_limited' ); ?>><?php esc_html_e( 'Rate-limited', 'mighty-shield' ); ?></option>
             <option value="flagged" <?php selected( $filter_action, 'flagged' ); ?>><?php esc_html_e( 'Flagged', 'mighty-shield' ); ?></option>
-            <option value="exempt" <?php selected( $filter_action, 'exempt' ); ?>><?php esc_html_e( 'Exempt (whitelisted)', 'mighty-shield' ); ?></option>
+            <option value="exempt" <?php selected( $filter_action, 'exempt' ); ?>><?php esc_html_e( 'Exempt (allowlisted)', 'mighty-shield' ); ?></option>
         </select>
 
         <button type="submit" class="mshield-btn"><?php esc_html_e( 'Filter', 'mighty-shield' ); ?></button>
@@ -118,7 +118,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
                 <select name="mshield_bulk_action" class="mshield-select" style="padding:6px 10px;font-size:12.5px">
                     <option value=""><?php esc_html_e( 'Bulk actions', 'mighty-shield' ); ?></option>
                     <option value="block_ip"><?php esc_html_e( 'Block IP permanently', 'mighty-shield' ); ?></option>
-                    <option value="whitelist_ip"><?php esc_html_e( 'Add IP to whitelist', 'mighty-shield' ); ?></option>
+                    <option value="whitelist_ip"><?php esc_html_e( 'Add IP to allowlist', 'mighty-shield' ); ?></option>
                     <option value="delete"><?php esc_html_e( 'Delete entries', 'mighty-shield' ); ?></option>
                 </select>
                 <button type="submit" name="mshield_logs_bulk" value="1" class="mshield-btn is-small"><?php esc_html_e( 'Apply', 'mighty-shield' ); ?></button>

@@ -3,7 +3,7 @@
 Plugin Name: MightyShield
 Plugin URI: https://builtmighty.com
 Description: WooCommerce firewall for protecting against card spammer orders.
-Version: 1.6.0
+Version: 1.8.0
 Author: Built Mighty
 Author URI: https://builtmighty.com
 Copyright: Built Mighty
@@ -31,11 +31,29 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '1.6.0' );
+define( 'MSHIELD_VERSION', '1.8.0' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
 defined( 'MSHIELD_FILE' ) || define( 'MSHIELD_FILE', __FILE__ );
+
+/**
+ * Declare High-Performance Order Storage compatibility.
+ *
+ * The AI reviewer queries past orders via wc_get_orders(), which routes through
+ * whichever data store is active — so the plugin works under HPOS and legacy
+ * post storage alike. Declaring it stops WooCommerce listing MightyShield as
+ * incompatible on the HPOS settings screen.
+ *
+ * @since   1.9.0
+ */
+add_action( 'before_woocommerce_init', function() {
+
+    if( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', MSHIELD_FILE, true );
+    }
+
+} );
 
 /**
  * Plugin action links.
@@ -103,6 +121,18 @@ function maybe_upgrade() {
         \MightyShield\Includes\db::create_tables();
     }
 
+    // 1.8.0: purge leftovers from the removed test mode (shipped in 1.7.0).
+    if( version_compare( $installed, '1.8.0', '<' ) ) {
+
+        delete_metadata( 'user', 0, 'mshield_test_mode', '', true );
+        delete_metadata( 'user', 0, 'mshield_test_layers', '', true );
+        delete_metadata( 'user', 0, 'mshield_test_simulate', '', true );
+
+        global $wpdb;
+        $wpdb->delete( $wpdb->prefix . 'mshield_log', [ 'endpoint' => 'test_mode' ], [ '%s' ] );
+
+    }
+
     update_option( 'mshield_version', MSHIELD_VERSION, false );
 
 }
@@ -143,8 +173,12 @@ function load() {
     require_once MSHIELD_PATH . 'firewall/class-ip-whitelist.php';
     require_once MSHIELD_PATH . 'firewall/class-ip-blocklist.php';
     require_once MSHIELD_PATH . 'includes/class-exempt.php';
+    require_once MSHIELD_PATH . 'includes/class-ai-detection.php';
+    require_once MSHIELD_PATH . 'includes/class-ai-client.php';
+    require_once MSHIELD_PATH . 'includes/class-ai-capture.php';
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
+    require_once MSHIELD_PATH . 'admin/class-order-review.php';
 
     // Run version migrations if the plugin was just updated.
     maybe_upgrade();
@@ -153,6 +187,8 @@ function load() {
     if( is_admin() ) {
         new \MightyShield\Admin\admin_page();
         new \MightyShield\Admin\log_viewer();
+        new \MightyShield\Admin\order_review();
+        add_action( 'admin_notices', [ '\MightyShield\Admin\order_review', 'render_notice' ] );
     }
 
     // Check if plugin protections are enabled.
@@ -176,6 +212,8 @@ function load() {
     require_once MSHIELD_PATH . 'protection/class-checkout-timing.php';
     require_once MSHIELD_PATH . 'protection/class-device-fingerprint.php';
     require_once MSHIELD_PATH . 'protection/class-captcha.php';
+    require_once MSHIELD_PATH . 'protection/class-store-api.php';
+    require_once MSHIELD_PATH . 'protection/class-ai-reviewer.php';
 
     /**
      * Initiate.
