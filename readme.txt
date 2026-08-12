@@ -4,7 +4,7 @@ Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 1.8.0
+Stable tag: 1.8.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -69,7 +69,13 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 
 == Changelog ==
 
+= 1.8.1 =
+* Added a Fraud Review screen under WooCommerce → Orders (shown only when AI Detection is enabled) that lists every order the AI flagged and is still waiting on, with a count badge on the menu item — a dedicated queue instead of hunting for held orders one at a time.
+* The admin theme now follows your operating system's light/dark setting by default, with a System / Light / Dark toggle so you can override it.
+* Documented AI Detection in the built-in Documentation, including where to get an API key for each provider (Anthropic, OpenAI, Google Gemini).
+
 = 1.8.0 =
+* Added AI Fraud Detection: optionally send orders to an AI model (Anthropic Claude, OpenAI, or Google Gemini) for a 1–10 fraud rating; low-rated orders are held On hold for review with a per-order Approve/Deny panel, an optional authorize-only hold on supported gateways, and admin email alerts. Off by default.
 * Added block-based (Store API) checkout support: the server-side fraud checks — disposable email, order amount, address validation, ZIP/State, velocity, and rate limiting — now run on the block Checkout via the Store API, blocking or flagging per each layer's existing settings.
 * Added a Firewall Mode setting: "Classic checkout" (block all non-whitelisted IPs from the Store API, as before) or "Block/One-page checkout" (allow real shoppers, block only blocklisted IPs) so block-checkout stores are not locked out.
 * Added front-end checks to the block Checkout: checkout timing, device fingerprinting, and Google reCAPTCHA v3 now ride along with the Store API request and are verified server-side, honoring each layer's block / flag / notify action.

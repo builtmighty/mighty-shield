@@ -28,6 +28,7 @@ wp plugin install https://github.com/builtmighty/mighty-shield/releases/latest/d
 - **Device Fingerprinting** — Detects automated browsers and timezone/country mismatches, with a configurable block / flag / notify action
 - **Device Velocity** — Rate-limits checkout by device signature independent of IP, catching attackers who rotate IPs via VPN
 - **Bot Challenge (CAPTCHA)** — Cloudflare Turnstile or Google reCAPTCHA v3 at checkout, verified server-side
+- **AI Fraud Detection** — Optionally rate orders for fraud risk with Anthropic Claude, OpenAI, or Google Gemini; low-rated orders are held for review in a dedicated Fraud Review queue under WooCommerce → Orders, with a per-order Approve/Deny panel and optional authorize-only holds on supported gateways
 - **Admin Dashboard** — Real-time stats, top blocked IPs, and filterable event logs under WooCommerce menu
 - **Built-in Documentation** — A Documentation tab in the admin that explains every setting and walks through setup
 - **Modern Admin UI** — Card-based layout with a light/dark theme toggle, a redesigned dashboard (status hero, interactive trend chart, stat cards), and a powerful Logs screen with search, filters, bulk actions, and an event-detail drawer

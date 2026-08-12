@@ -11,7 +11,7 @@
  * they were actually taken is the worst failure this screen can produce.
  *
  * @package MightyShield
- * @since   1.9.0
+ * @since   1.8.0
  */
 namespace MightyShield\Admin;
 
@@ -25,7 +25,7 @@ class order_review {
     /**
      * Construct.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public function __construct() {
 
@@ -39,7 +39,7 @@ class order_review {
     /**
      * Register the metabox on the order edit screen.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $screen_id  Current screen ID.
      * @param   mixed   $subject    WC_Order under HPOS, WP_Post on legacy.
@@ -63,7 +63,7 @@ class order_review {
     /**
      * The order edit screen ID, correct under HPOS and legacy post storage.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @return  string
      */
@@ -85,7 +85,7 @@ class order_review {
      * WooCommerce passes a WC_Order under HPOS and a WP_Post on legacy storage
      * — it documents the divergence explicitly.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   mixed   $subject
      * @return  \WC_Order|null
@@ -109,7 +109,7 @@ class order_review {
      * Keys off _mshield_ai_flagged, never the shared _mshield_flagged, which
      * eight other layers also write.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  bool
@@ -129,7 +129,7 @@ class order_review {
     /**
      * Render the panel.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   mixed   $subject    WC_Order under HPOS, WP_Post on legacy.
      */
@@ -197,7 +197,7 @@ class order_review {
      * <form id="order">, and browsers drop nested forms — a form here would
      * silently submit WooCommerce's order update instead of our action.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      */
@@ -225,7 +225,7 @@ class order_review {
     /**
      * Build a nonced URL for one decision.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @param   string      $decision   'approve' or 'deny'.
@@ -247,7 +247,7 @@ class order_review {
     /**
      * Guidance shown after denying an order whose funds were already captured.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      */
@@ -268,7 +268,7 @@ class order_review {
     /**
      * Handle an Approve / Deny submission.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public function handle_decision() {
 
@@ -293,6 +293,9 @@ class order_review {
 
         set_transient( 'mshield_order_notice_' . $order_id, $notice, 60 );
 
+        // A decision removes this order from the Fraud Review queue.
+        delete_transient( 'mshield_ai_pending_count' );
+
         wp_safe_redirect( $order->get_edit_order_url() );
         exit;
 
@@ -301,7 +304,7 @@ class order_review {
     /**
      * Approve an order.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  array   [ message, type ]
@@ -354,7 +357,7 @@ class order_review {
     /**
      * Deny an order.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  array   [ message, type ]
@@ -424,7 +427,7 @@ class order_review {
      * A duplicate returns false from add_ip(), which means "already blocked" —
      * not a failure, so it is not surfaced as one.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  bool    Whether a new entry was written.
@@ -446,7 +449,7 @@ class order_review {
     /**
      * Show the result of a decision on the order screen.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public static function render_notice() {
 

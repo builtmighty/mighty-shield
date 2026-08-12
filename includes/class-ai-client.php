@@ -7,7 +7,7 @@
  * legitimate order, so callers receive a WP_Error and take no action.
  *
  * @package MightyShield
- * @since   1.9.0
+ * @since   1.8.0
  */
 namespace MightyShield\Includes;
 
@@ -20,21 +20,21 @@ class ai_client {
      * checkout request and a truncated call is a wasted call. Filterable via
      * mshield_ai_timeout for stores that would rather cap it tighter.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     const TIMEOUT = 10;
 
     /**
      * Output cap. The prompt asks for only an "x/10", so this is a cost guard.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     const MAX_TOKENS = 32;
 
     /**
      * Review a prompt and return the rating.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $prompt
      * @return  int|\WP_Error   Rating 1-10, or WP_Error on any failure.
@@ -84,7 +84,7 @@ class ai_client {
      * An unparseable reply is an error, never 0 — a zero would read as
      * maximally fraudulent and hold every order on a malformed response.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $text
      * @return  int|\WP_Error
@@ -114,7 +114,7 @@ class ai_client {
     /**
      * Clamp a rating into 1-10.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   int     $rating
      * @return  int
@@ -128,7 +128,7 @@ class ai_client {
     /**
      * Anthropic Messages API.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $prompt
      * @return  string|\WP_Error
@@ -161,7 +161,7 @@ class ai_client {
     /**
      * OpenAI Chat Completions API.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $prompt
      * @return  string|\WP_Error
@@ -200,7 +200,7 @@ class ai_client {
     /**
      * Google Gemini generateContent API.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $prompt
      * @return  string|\WP_Error
@@ -231,7 +231,7 @@ class ai_client {
     /**
      * Shared JSON POST with error normalization.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $url
      * @param   array   $headers
@@ -275,7 +275,7 @@ class ai_client {
     /**
      * Record a degraded state and alert the admin, throttled to once a day.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $error
      */
@@ -314,7 +314,7 @@ class ai_client {
     /**
      * Admin notice while the provider is degraded.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public static function render_degraded_notice() {
 

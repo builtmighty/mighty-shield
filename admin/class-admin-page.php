@@ -322,7 +322,7 @@ class admin_page {
      * Invalid entries are dropped individually so one typo cannot discard the
      * whole list.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   mixed   $value  Submitted value.
      * @return  string  Comma-delimited list of valid addresses.
@@ -740,12 +740,12 @@ class admin_page {
      *
      * @since   1.5.0
      *
-     * @return  string  'light' or 'dark'.
+     * @return  string  'system' (default — follows the OS), 'light', or 'dark'.
      */
     private function get_theme() {
 
         $theme = get_user_meta( get_current_user_id(), 'mshield_admin_theme', true );
-        return $theme === 'dark' ? 'dark' : 'light';
+        return \in_array( $theme, [ 'light', 'dark' ], true ) ? $theme : 'system';
 
     }
 
@@ -759,8 +759,15 @@ class admin_page {
      */
     public function admin_body_class( $classes ) {
 
-        if( isset( $_GET['page'] ) && $_GET['page'] === 'mighty-shield' && $this->get_theme() === 'dark' ) {
-            $classes .= ' mshield-theme-dark';
+        if( isset( $_GET['page'] ) && $_GET['page'] === 'mighty-shield' ) {
+            $theme = $this->get_theme();
+            // Explicit dark repaints the chrome outright; "system" defers to a
+            // prefers-color-scheme media query in the CSS.
+            if( $theme === 'dark' ) {
+                $classes .= ' mshield-theme-dark';
+            } elseif( $theme === 'system' ) {
+                $classes .= ' mshield-theme-system';
+            }
         }
 
         return $classes;
@@ -785,7 +792,7 @@ class admin_page {
      * inside the app instead (see render_page and render_degraded_banners), so
      * nothing of ours is lost. Scoped to this screen only.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public function suppress_notices() {
 
@@ -803,7 +810,7 @@ class admin_page {
      * These normally ride admin_notices, which suppress_notices() clears on this
      * screen — and this is the page where they matter most.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     private function render_degraded_banners() {
 
@@ -855,7 +862,8 @@ class admin_page {
         if( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
         if( ! check_ajax_referer( 'mshield_set_theme', 'nonce', false ) ) wp_send_json_error( '', 400 );
 
-        $theme = isset( $_POST['theme'] ) && $_POST['theme'] === 'dark' ? 'dark' : 'light';
+        $requested = isset( $_POST['theme'] ) ? sanitize_text_field( wp_unslash( $_POST['theme'] ) ) : '';
+        $theme     = \in_array( $requested, [ 'light', 'dark', 'system' ], true ) ? $requested : 'system';
         update_user_meta( get_current_user_id(), 'mshield_admin_theme', $theme );
 
         wp_send_json_success( [ 'theme' => $theme ] );
@@ -967,8 +975,12 @@ class admin_page {
 
         $icons  = self::nav_icons();
         $shield = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 4.6-3.2 8.4-8 9.6C7.2 20.4 4 16.6 4 12V6z"></path><path d="M9 12l2 2 4-4"></path></svg>';
-        $sun    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>';
-        $book   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l3 3v15H6z"></path><path d="M9 8h6M9 12h6M9 16h4"></path></svg>';
+        $sun     = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>';
+        $moon    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>';
+        $monitor = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>';
+        $book    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l3 3v15H6z"></path><path d="M9 8h6M9 12h6M9 16h4"></path></svg>';
+        $theme_icons  = [ 'system' => $monitor, 'light' => $sun, 'dark' => $moon ];
+        $theme_labels = [ 'system' => esc_html__( 'System', 'mighty-shield' ), 'light' => esc_html__( 'Light', 'mighty-shield' ), 'dark' => esc_html__( 'Dark', 'mighty-shield' ) ];
         $doc_url = admin_url( 'admin.php?page=mighty-shield&tab=documentation' );
 
         echo '<div class="wrap mshield-app" data-theme="' . esc_attr( $theme ) . '">';
@@ -982,7 +994,7 @@ class admin_page {
         echo '<span class="mshield-spacer"></span>';
         $doc_active = $tab === 'documentation' ? ' is-primary' : '';
         echo '<a class="mshield-btn' . esc_attr( $doc_active ) . '" href="' . esc_url( $doc_url ) . '">' . $book . esc_html__( 'Documentation', 'mighty-shield' ) . '</a>';
-        echo '<button type="button" id="mshield-theme-toggle" class="mshield-btn">' . $sun . '<span class="ms-theme-label">' . ( $theme === 'dark' ? esc_html__( 'Dark', 'mighty-shield' ) : esc_html__( 'Light', 'mighty-shield' ) ) . '</span></button>';
+        echo '<button type="button" id="mshield-theme-toggle" class="mshield-btn"><span class="ms-theme-icon">' . $theme_icons[ $theme ] . '</span><span class="ms-theme-label">' . $theme_labels[ $theme ] . '</span></button>';
         echo '</div>';
 
         // Display any transient notices from redirected actions, plus our own

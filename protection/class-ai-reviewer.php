@@ -13,7 +13,7 @@
  * authorize-only on the gateway instead and let the order land On-hold after.
  *
  * @package MightyShield
- * @since   1.9.0
+ * @since   1.8.0
  */
 namespace MightyShield\Protection;
 
@@ -31,14 +31,14 @@ class ai_reviewer {
      * Orders already reviewed this request, so the classic and Store API hooks
      * cannot double-review the same order.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     private $reviewed = [];
 
     /**
      * Construct.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public function __construct() {
 
@@ -57,7 +57,7 @@ class ai_reviewer {
     /**
      * Classic checkout entry point.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   int         $order_id
      * @param   array       $posted
@@ -72,7 +72,7 @@ class ai_reviewer {
     /**
      * Block (Store API) checkout entry point.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      */
@@ -85,7 +85,7 @@ class ai_reviewer {
     /**
      * Score the order, escalate to the AI, and act on the verdict.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      */
@@ -136,7 +136,7 @@ class ai_reviewer {
     /**
      * Force authorize-only and mark the order for review.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @param   int         $rating
@@ -183,6 +183,9 @@ class ai_reviewer {
 
         $order->save();
 
+        // A new held order changes the Fraud Review queue count.
+        delete_transient( 'mshield_ai_pending_count' );
+
         db::log_event( ip_utils::get_client_ip(), 'ai_review', 'flagged', $reason );
 
         // The gateway sets On-hold itself when it authorizes. Only step in when
@@ -202,7 +205,7 @@ class ai_reviewer {
      *
      * Only used for gateways that cannot authorize without capturing.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   int     $order_id
      */
@@ -221,7 +224,7 @@ class ai_reviewer {
     /**
      * Build the fraud-review prompt.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  string
@@ -266,7 +269,7 @@ class ai_reviewer {
      * Shipping falls back to billing so virtual orders still produce a usable
      * line rather than a row of commas.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @param   string      $type   'billing' or 'shipping'.
@@ -297,7 +300,7 @@ class ai_reviewer {
     /**
      * Email the store admin about a held order.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @param   int         $rating

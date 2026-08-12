@@ -3,7 +3,7 @@
  * AI Detection settings view.
  *
  * @package MightyShield
- * @since   1.9.0
+ * @since   1.8.0
  */
 
 if( ! defined( 'WPINC' ) ) { die; }

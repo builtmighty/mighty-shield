@@ -192,6 +192,7 @@ $logs_url      = admin_url( 'admin.php?page=mighty-shield&tab=logs' );
         <a href="#blocklist"><?php esc_html_e( 'Blocklist', 'mighty-shield' ); ?></a>
         <a href="#rate-limits"><?php esc_html_e( 'Rate Limits', 'mighty-shield' ); ?></a>
         <a href="#fraud"><?php esc_html_e( 'Fraud Checks', 'mighty-shield' ); ?></a>
+        <a href="#ai"><?php esc_html_e( 'AI Detection', 'mighty-shield' ); ?></a>
         <a href="#logs"><?php esc_html_e( 'Logs', 'mighty-shield' ); ?></a>
 
         <div class="nav-title"><?php esc_html_e( 'Help', 'mighty-shield' ); ?></div>
@@ -357,6 +358,45 @@ $logs_url      = admin_url( 'admin.php?page=mighty-shield&tab=logs' );
             <li><?php esc_html_e( 'Get a Site Key and Secret Key from the provider. Turnstile: dash.cloudflare.com. reCAPTCHA: google.com/recaptcha/admin.', 'mighty-shield' ); ?></li>
             <li><?php esc_html_e( 'Paste both keys, pick Action on Failed Challenge (default Block), and save.', 'mighty-shield' ); ?></li>
         </ol>
+
+        <h2 id="ai"><?php esc_html_e( 'AI Detection', 'mighty-shield' ); ?></h2>
+        <p><?php esc_html_e( 'AI Detection sends orders to an AI model to be rated for fraud risk. The model returns a score from 1 (almost certainly fraud) to 10 (clean). Orders that score at or below your threshold are put On hold and queued for you to review, so a real person makes the final call before the order ships.', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'It is off by default and needs an API key from one of the supported providers. AI Detection runs after the other checks, as a second opinion on orders that get through — it never blocks a customer at checkout on its own.', 'mighty-shield' ); ?></p>
+
+        <table>
+            <thead><tr><th><?php esc_html_e( 'Setting', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'What it does', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'Default', 'mighty-shield' ); ?></th></tr></thead>
+            <tbody>
+                <tr><td><span class="field"><?php esc_html_e( 'Enable AI Detection', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'The on/off switch for the whole feature. When off, no orders are sent to any AI provider.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Off', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Provider', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Which AI service to use: Anthropic (Claude), OpenAI, or Google Gemini. Each needs its own API key (see setup below).', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Anthropic', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Which orders to review', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Suspicious only sends an order to the AI only when it trips one of the signals below — this keeps API costs down. All orders sends every order for a rating.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Suspicious only', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Sensitivity', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'How many signals it takes to treat an order as suspicious. High = any one signal, Medium = any two, Low = all of them.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Medium', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Signals', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'The patterns that mark an order as suspicious: repeated orders from one address, a name that does not match the email, an unusually high order total, and a billing country that does not match the IP location. Each can be turned on or off.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'All on', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Rating threshold', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Orders rated at or below this number (1-10) are held for review. Higher = stricter (more orders held).', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( '4', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'When an order is flagged', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Flag for review holds the order after payment. Authorize only (when your gateway supports it) reserves the funds without capturing them, so approving captures and denying releases the hold — no refund needed.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Flag for review', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Notify admin', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Emails you when an order is held for review. You can set custom recipient addresses.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'On', 'mighty-shield' ); ?></td></tr>
+            </tbody>
+        </table>
+
+        <div class="callout note">
+            <span class="callout-label"><?php esc_html_e( 'Note', 'mighty-shield' ); ?></span>
+            <p><?php esc_html_e( 'API key fields stay blank after saving for security — an existing key is kept unless you type a new one. If the AI provider is unreachable or the key is wrong, MightyShield fails open (it lets the order through and shows an admin warning) rather than blocking real orders.', 'mighty-shield' ); ?></p>
+        </div>
+
+        <h3><?php esc_html_e( 'Reviewing flagged orders', 'mighty-shield' ); ?></h3>
+        <p><?php esc_html_e( 'Held orders appear in two places: a Fraud Review screen under WooCommerce → Orders (with a count badge showing how many are waiting), and a MightyShield — Fraud Review panel at the top of each held order. From the panel you Approve (capture/keep the order and move it to Processing) or Deny (release or flag for refund, and add the customer IP to the blocklist).', 'mighty-shield' ); ?></p>
+
+        <h3><?php esc_html_e( 'Getting an API key', 'mighty-shield' ); ?></h3>
+        <p><?php esc_html_e( 'Pick one provider and create an API key in its console, then paste it into the matching field on the AI Detection tab. All three are pay-as-you-go; the default models are inexpensive.', 'mighty-shield' ); ?></p>
+        <ul>
+            <li><strong><?php esc_html_e( 'Anthropic (Claude):', 'mighty-shield' ); ?></strong> <?php echo wp_kses_post( __( 'Sign in at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com/settings/keys</a> and create a key. Add billing credit under Plans &amp; Billing. Default model: <span class="field">claude-haiku-4-5</span>.', 'mighty-shield' ) ); ?></li>
+            <li><strong><?php esc_html_e( 'OpenAI:', 'mighty-shield' ); ?></strong> <?php echo wp_kses_post( __( 'Sign in at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com/api-keys</a> and create a secret key. An Organization ID (from your account settings) is optional. Default model: <span class="field">gpt-4o-mini</span>.', 'mighty-shield' ) ); ?></li>
+            <li><strong><?php esc_html_e( 'Google Gemini:', 'mighty-shield' ); ?></strong> <?php echo wp_kses_post( __( 'Sign in at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com/app/apikey</a> (Google AI Studio) and click Create API key. Default model: <span class="field">gemini-1.5-flash</span>.', 'mighty-shield' ) ); ?></li>
+        </ul>
+
+        <div class="callout note">
+            <span class="callout-label"><?php esc_html_e( 'Tip', 'mighty-shield' ); ?></span>
+            <p><?php esc_html_e( 'Start with Suspicious only and the default threshold, watch the Fraud Review queue for a few days, then raise the threshold or switch to All orders if you want the AI to weigh in on everything.', 'mighty-shield' ); ?></p>
+        </div>
 
         <h2 id="logs"><?php esc_html_e( 'Logs', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'A record of every action MightyShield takes. Each row shows the time, the IP address, the action (Blocked, Rate Limited, Flagged, or Exempt for allowlisted visitors), the endpoint, the reason, and details such as the email, user, and browser.', 'mighty-shield' ); ?></p>
