@@ -25,8 +25,8 @@ $wp_role_names = wp_roles()->get_names();
 ?>
 
 <div class="mshield-section">
-    <h2><?php esc_html_e( 'Add Whitelist Entry', 'mighty-shield' ); ?></h2>
-    <p class="description"><?php esc_html_e( 'Whitelisted IPs, users, roles, and email addresses bypass ALL MightyShield checks — no blocks, no flags. Use for trusted staff, offices, and known-good customers.', 'mighty-shield' ); ?></p>
+    <h2><?php esc_html_e( 'Add Allowlist Entry', 'mighty-shield' ); ?></h2>
+    <p class="description"><?php esc_html_e( 'Allowlisted IPs, users, roles, and email addresses bypass ALL MightyShield checks — no blocks, no flags. Use for trusted staff, offices, and known-good customers.', 'mighty-shield' ); ?></p>
     <form method="post">
         <?php wp_nonce_field( 'mshield_whitelist_action' ); ?>
         <table class="form-table">
@@ -70,15 +70,15 @@ $wp_role_names = wp_roles()->get_names();
             </tr>
         </table>
         <p>
-            <input type="submit" name="mshield_add_ip" class="button button-primary" value="<?php esc_attr_e( 'Add to Whitelist', 'mighty-shield' ); ?>" />
+            <input type="submit" name="mshield_add_ip" class="button button-primary" value="<?php esc_attr_e( 'Add to Allowlist', 'mighty-shield' ); ?>" />
         </p>
     </form>
 </div>
 
 <div class="mshield-section">
-    <h2><?php esc_html_e( 'Whitelisted Entries', 'mighty-shield' ); ?></h2>
+    <h2><?php esc_html_e( 'Allowlisted Entries', 'mighty-shield' ); ?></h2>
     <?php if( empty( $whitelist ) ) : ?>
-        <p><?php esc_html_e( 'No entries have been whitelisted yet.', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'No entries have been allowlisted yet.', 'mighty-shield' ); ?></p>
     <?php else : ?>
         <table class="mshield-table">
             <thead>
@@ -124,7 +124,7 @@ $wp_role_names = wp_roles()->get_names();
                             'mshield_remove_ip'
                         );
                         ?>
-                        <a href="<?php echo esc_url( $remove_url ); ?>" class="button button-small" onclick="return confirm('<?php esc_attr_e( 'Remove this entry from the whitelist?', 'mighty-shield' ); ?>');"><?php esc_html_e( 'Remove', 'mighty-shield' ); ?></a>
+                        <a href="<?php echo esc_url( $remove_url ); ?>" class="button button-small" onclick="return confirm('<?php esc_attr_e( 'Remove this entry from the allowlist?', 'mighty-shield' ); ?>');"><?php esc_html_e( 'Remove', 'mighty-shield' ); ?></a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

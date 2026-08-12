@@ -40,11 +40,6 @@ class velocity_detector {
 
         if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
-        if( \MightyShield\Includes\test_mode::should_trip( 'velocity', 'Forced velocity trip' ) ) {
-            rate_limiter::temp_block_ip( ip_utils::get_client_ip(), 'Test mode: forced velocity trip' );
-            return;
-        }
-
         $ip    = ip_utils::get_client_ip();
         $email = $order->get_billing_email() ?? '';
 

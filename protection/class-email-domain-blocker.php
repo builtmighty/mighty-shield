@@ -224,12 +224,6 @@ class email_domain_blocker {
 
         if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
-        if( \MightyShield\Includes\test_mode::should_trip( 'email_domain', 'Forced email-domain block' ) ) {
-            db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'blocked', 'Test mode: forced email-domain block' );
-            $errors->add( 'mighty_shield_email', __( 'Please use a valid, non-disposable email address.', 'mighty-shield' ) );
-            return;
-        }
-
         $email = isset( $data['billing_email'] ) ? $data['billing_email'] : '';
         if( empty( $email ) ) return;
 

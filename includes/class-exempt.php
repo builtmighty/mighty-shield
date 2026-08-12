@@ -40,10 +40,6 @@ class exempt {
      */
     public static function is_exempt( $email = '', $user_id = null ) {
 
-        // In test mode the acting admin must NOT be exempt, so their own
-        // checkout genuinely exercises every layer.
-        if( test_mode::active() ) return false;
-
         $reason = '';
 
         // IP + current-user checks are request-global — memoize them.

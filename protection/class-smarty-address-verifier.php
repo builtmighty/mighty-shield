@@ -121,12 +121,6 @@ class smarty_address_verifier {
         $action = settings::get( 'mshield_smarty_action' );
         if( $action !== 'block' ) return;
 
-        if( \MightyShield\Includes\test_mode::should_trip( 'smarty', 'Forced Smarty verification failure' ) ) {
-            db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'blocked', 'Test mode: forced Smarty address failure' );
-            $errors->add( 'mighty_shield_smarty', __( 'Please verify your billing address and try again.', 'mighty-shield' ) );
-            return;
-        }
-
         $country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
         if( $country !== 'US' ) return;
 
@@ -168,16 +162,6 @@ class smarty_address_verifier {
 
         $action = settings::get( 'mshield_smarty_action' );
         if( $action === 'block' ) return;
-
-        if( \MightyShield\Includes\test_mode::should_trip( 'smarty', 'Forced Smarty verification failure' ) ) {
-            $reason = 'Test mode: forced Smarty address failure';
-            db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'flagged', $reason );
-            $order->add_order_note( 'MightyShield: ' . $reason );
-            $order->update_meta_data( '_mshield_flagged', 'smarty_address_invalid' );
-            $order->save();
-            if( $action === 'notify' ) $this->send_admin_notification( $order, $reason );
-            return;
-        }
 
         if( $order->get_billing_country() !== 'US' ) return;
 

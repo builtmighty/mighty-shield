@@ -49,7 +49,7 @@ use MightyShield\Admin\admin_page;
                 <th scope="row"><?php esc_html_e( 'Firewall Mode', 'mighty-shield' ); ?></th>
                 <td>
                     <?php admin_page::radios( 'mshield_firewall_mode', [
-                        'whitelist' => __( 'Classic checkout: block all non-whitelisted IPs', 'mighty-shield' ),
+                        'whitelist' => __( 'Classic checkout: block all non-allowlisted IPs', 'mighty-shield' ),
                         'blocklist' => __( 'Block/One-page checkout: allow shoppers, block only blocklisted IPs', 'mighty-shield' ),
                     ], settings::get( 'mshield_firewall_mode' ) ); ?>
                     <p class="description"><?php esc_html_e( 'Use "Classic checkout" only if real customers never use the Store API (shortcode/classic checkout). If your store uses the block-based Checkout, choose the block/one-page option so real shoppers are not blocked.', 'mighty-shield' ); ?></p>

@@ -54,12 +54,6 @@ class zip_state_validator {
         $action = settings::get( 'mshield_zip_state_action' );
         if( $action !== 'block' ) return;
 
-        if( \MightyShield\Includes\test_mode::should_trip( 'zip_state', 'Forced ZIP/State mismatch' ) ) {
-            db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'blocked', 'Test mode: forced ZIP/State mismatch' );
-            $errors->add( 'mighty_shield_zip_state', __( 'Please verify your billing ZIP code and state.', 'mighty-shield' ) );
-            return;
-        }
-
         $country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
         if( $country !== 'US' ) return;
 
@@ -93,16 +87,6 @@ class zip_state_validator {
 
         $action = settings::get( 'mshield_zip_state_action' );
         if( $action === 'block' ) return;
-
-        if( \MightyShield\Includes\test_mode::should_trip( 'zip_state', 'Forced ZIP/State mismatch' ) ) {
-            $reason = 'Test mode: forced ZIP/State mismatch';
-            db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'flagged', $reason );
-            $order->add_order_note( 'MightyShield: ' . $reason );
-            $order->update_meta_data( '_mshield_flagged', 'zip_state_mismatch' );
-            $order->save();
-            if( $action === 'notify' ) $this->send_admin_notification( $order, $reason );
-            return;
-        }
 
         if( $order->get_billing_country() !== 'US' ) return;
 

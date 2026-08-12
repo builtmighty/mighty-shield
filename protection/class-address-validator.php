@@ -78,12 +78,6 @@ class address_validator {
 
         if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
-        if( \MightyShield\Includes\test_mode::should_trip( 'address', 'Forced address-validation block' ) ) {
-            db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'blocked', 'Test mode: forced address validation' );
-            $errors->add( 'mighty_shield_address', __( 'Please check your billing address and try again.', 'mighty-shield' ) );
-            return;
-        }
-
         $result  = self::score_address( $data );
         $score   = $result['score'];
         $signals = $result['signals'];

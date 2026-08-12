@@ -126,11 +126,6 @@ class checkout_timing {
      */
     private function evaluate() {
 
-        // Test-mode force-trip (enforce mode); simulate mode logs and skips.
-        if( \MightyShield\Includes\test_mode::should_trip( 'timing', 'Forced checkout-timing trip' ) ) {
-            return [ 'blockable' => true, 'temp_block' => true, 'reason' => 'Test mode: forced checkout-timing trip' ];
-        }
-
         $token   = isset( $_POST['mshield_ct_token'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_ct_token'] ) ) : '';
         $elapsed = self::verify_token( $token );
 

@@ -17,7 +17,7 @@ $current_ip = ip_utils::get_client_ip();
 
 <div class="mshield-section">
     <h2><?php esc_html_e( 'Block IP Address', 'mighty-shield' ); ?></h2>
-    <p class="description"><?php esc_html_e( 'Permanently bar an IP address or CIDR range from checkout and the Store API. Blocklist entries never expire until removed. Whitelisted IPs are never blocked.', 'mighty-shield' ); ?></p>
+    <p class="description"><?php esc_html_e( 'Permanently bar an IP address or CIDR range from checkout and the Store API. Blocklist entries never expire until removed. Allowlisted IPs are never blocked.', 'mighty-shield' ); ?></p>
     <form method="post">
         <?php wp_nonce_field( 'mshield_blocklist_action' ); ?>
         <table class="form-table">

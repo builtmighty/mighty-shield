@@ -98,7 +98,7 @@
             var raw = rawLines.length ? rawLines.join( '\n' ) : 'No additional request data captured.';
 
             var actions = '';
-            if ( d.wlUrl )  actions += '<a class="mshield-btn" style="flex:1;justify-content:center" href="' + esc( d.wlUrl ) + '">' + esc( cfg.i18n.whitelistIp || 'Whitelist IP' ) + '</a>';
+            if ( d.wlUrl )  actions += '<a class="mshield-btn" style="flex:1;justify-content:center" href="' + esc( d.wlUrl ) + '">' + esc( cfg.i18n.whitelistIp || 'Allowlist IP' ) + '</a>';
             if ( d.blockUrl ) actions += '<a class="mshield-btn is-danger" style="flex:1;justify-content:center" href="' + esc( d.blockUrl ) + '">' + esc( cfg.i18n.blockPerm || 'Block permanently' ) + '</a>';
 
             mount.innerHTML =

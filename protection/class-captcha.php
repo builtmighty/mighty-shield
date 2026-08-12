@@ -226,12 +226,6 @@ class captcha {
 
         if( $this->verified !== null ) return $this->verified;
 
-        // Test-mode force-trip (enforce mode); simulate mode logs and passes.
-        if( \MightyShield\Includes\test_mode::should_trip( 'captcha', 'Forced CAPTCHA failure' ) ) {
-            $this->verified = false;
-            return false;
-        }
-
         $field = $this->provider === 'turnstile' ? 'cf-turnstile-response' : 'mshield_captcha_token';
         $token = isset( $_POST[ $field ] ) ? sanitize_text_field( wp_unslash( $_POST[ $field ] ) ) : '';
 

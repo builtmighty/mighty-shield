@@ -22,7 +22,7 @@ class admin_page {
      *
      * @since   1.0.0
      */
-    private const ALLOWED_TABS = [ 'dashboard', 'firewall', 'whitelist', 'blocklist', 'rates', 'fraud', 'logs', 'documentation' ];
+    private const ALLOWED_TABS = [ 'dashboard', 'firewall', 'whitelist', 'blocklist', 'rates', 'fraud', 'ai', 'logs', 'documentation' ];
 
     /**
      * Construct.
@@ -39,6 +39,8 @@ class admin_page {
         add_action( 'wp_ajax_mshield_get_ip', [ $this, 'ajax_get_ip' ] );
         add_action( 'wp_ajax_mshield_chart', [ $this, 'ajax_chart' ] );
         add_filter( 'admin_body_class', [ $this, 'admin_body_class' ] );
+        // Late, so notices registered by other plugins are already in place.
+        add_action( 'in_admin_header', [ $this, 'suppress_notices' ], 1000 );
 
     }
 
@@ -214,7 +216,137 @@ class admin_page {
             },
         ] );
 
+        // --- AI Detection tab settings ---
+        register_setting( 'mshield_ai', 'mshield_ai_enabled', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_provider', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'anthropic', 'openai', 'gemini' ], true ) ? $value : 'anthropic';
+            },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_anthropic_key', [
+            'sanitize_callback' => function( $value ) {
+                if( empty( $value ) ) {
+                    return get_option( 'mshield_ai_anthropic_key', '' );
+                }
+                return sanitize_text_field( $value );
+            },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_anthropic_model', [
+            'sanitize_callback' => 'sanitize_text_field',
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_openai_key', [
+            'sanitize_callback' => function( $value ) {
+                if( empty( $value ) ) {
+                    return get_option( 'mshield_ai_openai_key', '' );
+                }
+                return sanitize_text_field( $value );
+            },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_openai_org', [
+            'sanitize_callback' => 'sanitize_text_field',
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_openai_model', [
+            'sanitize_callback' => 'sanitize_text_field',
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_gemini_key', [
+            'sanitize_callback' => function( $value ) {
+                if( empty( $value ) ) {
+                    return get_option( 'mshield_ai_gemini_key', '' );
+                }
+                return sanitize_text_field( $value );
+            },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_gemini_model', [
+            'sanitize_callback' => 'sanitize_text_field',
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_method', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'all', 'suspicious' ], true ) ? $value : 'suspicious';
+            },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_sensitivity', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'low', 'medium', 'high' ], true ) ? $value : 'medium';
+            },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_sig_address_velocity', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_velocity_orders', [
+            'sanitize_callback' => function( $value ) { return max( 2, min( 100, absint( $value ) ) ); },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_velocity_days', [
+            'sanitize_callback' => function( $value ) { return max( 1, min( 365, absint( $value ) ) ); },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_sig_email_mismatch', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_sig_high_value', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_high_value_amount', [
+            'sanitize_callback' => function( $value ) { return max( 0, (float) $value ); },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_sig_ip_mismatch', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_rating_threshold', [
+            'sanitize_callback' => function( $value ) { return max( 1, min( 10, absint( $value ) ) ); },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_verdict_action', [
+            'sanitize_callback' => function( $value ) {
+                $value = \in_array( $value, [ 'flag', 'authorize' ], true ) ? $value : 'flag';
+                // Enforced server-side too: a stale POST, or a gateway being
+                // disabled after this was saved, must not leave the store on a
+                // setting it cannot honor.
+                if( $value === 'authorize' && ! \MightyShield\Includes\ai_capture::any_gateway_supports_auth_only() ) {
+                    return 'flag';
+                }
+                return $value;
+            },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_notify_admin', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_notify_emails', [
+            'sanitize_callback' => [ $this, 'sanitize_email_list' ],
+        ] );
+
     }
+
+    /**
+     * Sanitize a comma-delimited list of email addresses.
+     *
+     * Invalid entries are dropped individually so one typo cannot discard the
+     * whole list.
+     *
+     * @since   1.9.0
+     *
+     * @param   mixed   $value  Submitted value.
+     * @return  string  Comma-delimited list of valid addresses.
+     */
+    public function sanitize_email_list( $value ) {
+
+        if( ! is_string( $value ) ) return '';
+
+        $valid = [];
+
+        foreach( explode( ',', $value ) as $email ) {
+
+            $email = sanitize_email( trim( $email ) );
+
+            if( ! empty( $email ) && is_email( $email ) && ! \in_array( $email, $valid, true ) ) {
+                $valid[] = $email;
+            }
+
+        }
+
+        return implode( ', ', $valid );
+
+    }
+
 
     /**
      * Sanitize checkbox value.
@@ -266,7 +398,7 @@ class admin_page {
                 $type  = sanitize_text_field( $_GET['wl_type'] ?? 'ip' );
                 if( ! \in_array( $type, [ 'ip', 'user', 'email' ], true ) ) $type = 'ip';
                 ip_whitelist::remove_entry( $type, $value );
-                set_transient( 'mshield_admin_notice', [ 'ip_removed', __( 'Whitelist entry removed.', 'mighty-shield' ), 'success' ], 30 );
+                set_transient( 'mshield_admin_notice', [ 'ip_removed', __( 'Allowlist entry removed.', 'mighty-shield' ), 'success' ], 30 );
             }
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=whitelist' ) );
@@ -409,7 +541,7 @@ class admin_page {
 
                 $msg = $action === 'block_ip'
                     ? sprintf( __( '%d IP addresses added to the blocklist.', 'mighty-shield' ), $count )
-                    : sprintf( __( '%d IP addresses added to the whitelist.', 'mighty-shield' ), $count );
+                    : sprintf( __( '%d IP addresses added to the allowlist.', 'mighty-shield' ), $count );
                 set_transient( 'mshield_admin_notice', [ 'bulk_ip', $msg, 'success' ], 30 );
 
             }
@@ -487,7 +619,7 @@ class admin_page {
                 return [ 'wl_invalid', __( 'Invalid IP address or CIDR format.', 'mighty-shield' ), 'error' ];
             }
             ip_whitelist::add_entry( 'ip', $value, $label );
-            return [ 'wl_added', sprintf( __( 'IP %s added to whitelist.', 'mighty-shield' ), $value ), 'success' ];
+            return [ 'wl_added', sprintf( __( 'IP %s added to allowlist.', 'mighty-shield' ), $value ), 'success' ];
 
         }
 
@@ -497,7 +629,7 @@ class admin_page {
                 return [ 'wl_invalid', __( 'Invalid email address.', 'mighty-shield' ), 'error' ];
             }
             ip_whitelist::add_entry( 'email', $value, $label );
-            return [ 'wl_added', sprintf( __( 'Email %s added to whitelist.', 'mighty-shield' ), $value ), 'success' ];
+            return [ 'wl_added', sprintf( __( 'Email %s added to allowlist.', 'mighty-shield' ), $value ), 'success' ];
 
         }
 
@@ -517,7 +649,7 @@ class admin_page {
 
             $display = $label !== '' ? $label : $user->user_login . ' (' . $user->user_email . ')';
             ip_whitelist::add_entry( 'user', $user->ID, $display );
-            return [ 'wl_added', sprintf( __( 'User %s added to whitelist.', 'mighty-shield' ), $user->user_login ), 'success' ];
+            return [ 'wl_added', sprintf( __( 'User %s added to allowlist.', 'mighty-shield' ), $user->user_login ), 'success' ];
 
         }
 
@@ -544,11 +676,11 @@ class admin_page {
             $name    = translate_user_role( $roles[ $slug ]['name'] );
             $display = $label !== '' ? $label : $name;
             ip_whitelist::add_entry( 'role', $slug, $display );
-            return [ 'wl_added', sprintf( __( 'Role %s added to whitelist.', 'mighty-shield' ), $name ), 'success' ];
+            return [ 'wl_added', sprintf( __( 'Role %s added to allowlist.', 'mighty-shield' ), $name ), 'success' ];
 
         }
 
-        return [ 'wl_invalid', __( 'Invalid whitelist entry type.', 'mighty-shield' ), 'error' ];
+        return [ 'wl_invalid', __( 'Invalid allowlist entry type.', 'mighty-shield' ), 'error' ];
 
     }
 
@@ -589,7 +721,7 @@ class admin_page {
                 'reason'      => __( 'Reason', 'mighty-shield' ),
                 'user'        => __( 'User', 'mighty-shield' ),
                 'raw'         => __( 'Request data', 'mighty-shield' ),
-                'whitelistIp' => __( 'Whitelist IP', 'mighty-shield' ),
+                'whitelistIp' => __( 'Allowlist IP', 'mighty-shield' ),
                 'blockPerm'   => __( 'Block permanently', 'mighty-shield' ),
                 'ipIntel'     => __( 'IP location', 'mighty-shield' ),
                 'getIp'       => __( 'Get IP', 'mighty-shield' ),
@@ -644,13 +776,68 @@ class admin_page {
      * @param   array   $options    value => label map.
      * @param   string  $current    Currently selected value.
      */
-    public static function radios( $name, $options, $current ) {
+    /**
+     * Strip foreign admin notices on the MightyShield screen.
+     *
+     * WordPress and other plugins inject notices into the top of any .wrap
+     * element, which is this app's own wrapper — the result pushes the header
+     * around and breaks the layout. MightyShield's own messages are re-rendered
+     * inside the app instead (see render_page and render_degraded_banners), so
+     * nothing of ours is lost. Scoped to this screen only.
+     *
+     * @since   1.9.0
+     */
+    public function suppress_notices() {
+
+        $screen = get_current_screen();
+        if( ! $screen || strpos( $screen->id, 'mighty-shield' ) === false ) return;
+
+        remove_all_actions( 'admin_notices' );
+        remove_all_actions( 'all_admin_notices' );
+
+    }
+
+    /**
+     * Render MightyShield's degraded warnings inside the app chrome.
+     *
+     * These normally ride admin_notices, which suppress_notices() clears on this
+     * screen — and this is the page where they matter most.
+     *
+     * @since   1.9.0
+     */
+    private function render_degraded_banners() {
+
+        $sources = [
+            'mshield_ai_degraded'      => __( 'AI order review is unavailable and orders are NOT being reviewed. Last error: %s', 'mighty-shield' ),
+            'mshield_smarty_degraded'  => __( 'Address verification (Smarty) is degraded and has fallen back to a basic ZIP/State check. Last error: %s', 'mighty-shield' ),
+            'mshield_captcha_degraded' => __( 'The bot challenge is misconfigured and is failing open so it does not block checkout. Last error: %s', 'mighty-shield' ),
+        ];
+
+        foreach( $sources as $option => $template ) {
+
+            $degraded = get_option( $option );
+            if( empty( $degraded ) || empty( $degraded['time'] ) ) continue;
+            if( ( time() - (int) $degraded['time'] ) > DAY_IN_SECONDS ) continue;
+
+            printf(
+                '<div class="mshield-banner" style="margin-bottom:18px;background:rgba(214,54,56,.08);border-color:rgba(214,54,56,.28);"><div><strong>%s</strong> %s</div></div>',
+                esc_html__( 'MightyShield:', 'mighty-shield' ),
+                esc_html( sprintf( $template, isset( $degraded['message'] ) ? $degraded['message'] : '' ) )
+            );
+
+        }
+
+    }
+
+    public static function radios( $name, $options, $current, $disabled = [] ) {
 
         echo '<div class="mshield-radios">';
         foreach( $options as $value => $label ) {
-            $is = ( (string) $current === (string) $value ) ? ' is-checked' : '';
+            $off = \in_array( (string) $value, array_map( 'strval', $disabled ), true );
+            $is  = ( ! $off && (string) $current === (string) $value ) ? ' is-checked' : '';
+            $is .= $off ? ' is-disabled' : '';
             echo '<label class="mshield-radio' . esc_attr( $is ) . '">';
-            echo '<input type="radio" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" ' . checked( $current, $value, false ) . ' />';
+            echo '<input type="radio" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" ' . checked( $current, $value, false ) . disabled( $off, true, false ) . ' />';
             echo '<span>' . esc_html( $label ) . '</span>';
             echo '</label>';
         }
@@ -770,10 +957,11 @@ class admin_page {
         $tabs = [
             'dashboard' => __( 'Dashboard', 'mighty-shield' ),
             'firewall'  => __( 'Firewall', 'mighty-shield' ),
-            'whitelist' => __( 'IP Whitelist', 'mighty-shield' ),
-            'blocklist' => __( 'IP Blocklist', 'mighty-shield' ),
+            'whitelist' => __( 'Allowlist', 'mighty-shield' ),
+            'blocklist' => __( 'Blocklist', 'mighty-shield' ),
             'rates'     => __( 'Rate Limits', 'mighty-shield' ),
             'fraud'     => __( 'Fraud Checks', 'mighty-shield' ),
+            'ai'        => __( 'AI Detection', 'mighty-shield' ),
             'logs'      => __( 'Logs', 'mighty-shield' ),
         ];
 
@@ -797,14 +985,28 @@ class admin_page {
         echo '<button type="button" id="mshield-theme-toggle" class="mshield-btn">' . $sun . '<span class="ms-theme-label">' . ( $theme === 'dark' ? esc_html__( 'Dark', 'mighty-shield' ) : esc_html__( 'Light', 'mighty-shield' ) ) . '</span></button>';
         echo '</div>';
 
-        // Display any transient notices from redirected actions.
+        // Display any transient notices from redirected actions, plus our own
+        // degraded warning, inside the app chrome. Foreign notices were stripped
+        // in suppress_notices() because WordPress injects them into the top of
+        // any .wrap element, which is this app's own wrapper.
         $notice = get_transient( 'mshield_admin_notice' );
         if( $notice && is_array( $notice ) && count( $notice ) === 3 ) {
             delete_transient( 'mshield_admin_notice' );
-            add_settings_error( 'mshield', $notice[0], $notice[1], $notice[2] );
+            printf(
+                '<div class="mshield-banner" style="margin-bottom:18px;%s"><div>%s</div></div>',
+                $notice[2] === 'error' ? 'background:rgba(214,54,56,.08);border-color:rgba(214,54,56,.28);' : '',
+                esc_html( $notice[1] )
+            );
         }
 
-        settings_errors( 'mshield' );
+        if( isset( $_GET['settings-updated'] ) && $_GET['settings-updated'] ) {
+            printf(
+                '<div class="mshield-banner" style="margin-bottom:18px;"><div>%s</div></div>',
+                esc_html__( 'Settings saved.', 'mighty-shield' )
+            );
+        }
+
+        $this->render_degraded_banners();
 
         // Card-grid navigation.
         echo '<div class="mshield-navcards">';
@@ -845,6 +1047,7 @@ class admin_page {
             'blocklist'     => $o . '<circle cx="12" cy="12" r="9"></circle><path d="M6 6l12 12"></path>' . $c,
             'rates'         => $o . '<path d="M12 13V7"></path><circle cx="12" cy="13" r="8"></circle><path d="M9 2h6"></path>' . $c,
             'fraud'         => $o . '<path d="M10.3 3.6 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path>' . $c,
+            'ai'            => $o . '<path d="M11 3l1.7 4.3L17 9l-4.3 1.7L11 15l-1.7-4.3L5 9l4.3-1.7z"></path><path d="M17.5 14l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"></path>' . $c,
             'logs'          => $o . '<path d="M4 5h16M4 10h16M4 15h10M4 20h7"></path>' . $c,
             'documentation' => $o . '<path d="M6 3h9l3 3v15H6z"></path><path d="M9 8h6M9 12h6M9 16h4"></path>' . $c,
         ];
