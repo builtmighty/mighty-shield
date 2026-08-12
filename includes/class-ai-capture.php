@@ -14,7 +14,7 @@
  * the gateway's OWN captured-state meta rather than trusting our own.
  *
  * @package MightyShield
- * @since   1.9.0
+ * @since   1.8.0
  */
 namespace MightyShield\Includes;
 
@@ -23,14 +23,14 @@ class ai_capture {
     /**
      * Order ID currently being forced to authorize-only.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     private static $order_id = 0;
 
     /**
      * Registered teardown callbacks.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     private static $teardown = [];
 
@@ -42,7 +42,7 @@ class ai_capture {
      * Square is a renamespaced fork, which matters only if you reach for the
      * framework's classes directly — the public gateway API is identical.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     const SKYVERGE = [
         'square_credit_card',
@@ -54,7 +54,7 @@ class ai_capture {
     /**
      * Gateways with their own per-order authorize-only filter.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     const NATIVE = [
         'stripe_cc',
@@ -72,7 +72,7 @@ class ai_capture {
      * captured and voided (see capture()/void()) when the merchant has set
      * PayPal's global intent to Authorize.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $gateway    Gateway ID.
      * @return  bool
@@ -89,7 +89,7 @@ class ai_capture {
      * Drives both the settings UI and its sanitize callback, so the store can
      * never be left on a verdict action it cannot honor.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @return  bool
      */
@@ -108,7 +108,7 @@ class ai_capture {
     /**
      * Gateway IDs available at checkout that can authorize-only.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @return  array
      */
@@ -129,7 +129,7 @@ class ai_capture {
     /**
      * Force an order to authorize without capturing.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  bool    True only when authorize-only was actually arranged.
@@ -211,7 +211,7 @@ class ai_capture {
      * uncaptured. Filtering only one produces a captured order that claims to
      * be authorized, or vice versa.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $gateway    Gateway ID.
      * @return  bool
@@ -233,7 +233,7 @@ class ai_capture {
     /**
      * Register a scoped filter and record its teardown.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string      $hook
      * @param   callable    $callback
@@ -257,7 +257,7 @@ class ai_capture {
      * paths. Returning false there makes the callback fall through to the
      * gateway's own value, which is what we want.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   mixed   $order
      * @return  bool
@@ -273,7 +273,7 @@ class ai_capture {
     /**
      * Remove every filter this class registered.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public static function teardown() {
 
@@ -289,7 +289,7 @@ class ai_capture {
     /**
      * Resolve the gateway object handling an order.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  \WC_Payment_Gateway|null
@@ -313,7 +313,7 @@ class ai_capture {
      * records intent, not outcome, and telling a merchant funds are merely
      * reserved when they were actually taken is the worst failure here.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  bool
@@ -353,7 +353,7 @@ class ai_capture {
     /**
      * Capture a previously authorized order.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  true|\WP_Error
@@ -419,7 +419,7 @@ class ai_capture {
     /**
      * Void / release an authorization without capturing it.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  true|\WP_Error

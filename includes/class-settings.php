@@ -98,7 +98,7 @@ class settings {
      * Falls back to the site admin when no list is configured. Lives here
      * rather than on the admin page because the checkout path needs it too.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @return  array   Email addresses.
      */

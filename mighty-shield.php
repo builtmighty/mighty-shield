@@ -3,7 +3,7 @@
 Plugin Name: MightyShield
 Plugin URI: https://builtmighty.com
 Description: WooCommerce firewall for protecting against card spammer orders.
-Version: 1.8.0
+Version: 1.8.1
 Author: Built Mighty
 Author URI: https://builtmighty.com
 Copyright: Built Mighty
@@ -31,7 +31,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '1.8.0' );
+define( 'MSHIELD_VERSION', '1.8.1' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -45,7 +45,7 @@ defined( 'MSHIELD_FILE' ) || define( 'MSHIELD_FILE', __FILE__ );
  * post storage alike. Declaring it stops WooCommerce listing MightyShield as
  * incompatible on the HPOS settings screen.
  *
- * @since   1.9.0
+ * @since   1.8.0
  */
 add_action( 'before_woocommerce_init', function() {
 
@@ -179,6 +179,7 @@ function load() {
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
     require_once MSHIELD_PATH . 'admin/class-order-review.php';
+    require_once MSHIELD_PATH . 'admin/class-fraud-review.php';
 
     // Run version migrations if the plugin was just updated.
     maybe_upgrade();
@@ -188,6 +189,7 @@ function load() {
         new \MightyShield\Admin\admin_page();
         new \MightyShield\Admin\log_viewer();
         new \MightyShield\Admin\order_review();
+        new \MightyShield\Admin\fraud_review();
         add_action( 'admin_notices', [ '\MightyShield\Admin\order_review', 'render_notice' ] );
     }
 

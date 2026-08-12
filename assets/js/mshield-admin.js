@@ -20,8 +20,20 @@
     }
 
     /* ---------- Theme toggle ---------- */
-    function syncBody( theme ) {
-        document.body.classList.toggle( 'mshield-theme-dark', theme === 'dark' );
+    // Cycles System -> Light -> Dark -> System. "System" follows the OS via
+    // prefers-color-scheme in the CSS; Light/Dark are explicit overrides.
+    var THEME_ICONS = {
+        system: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>',
+        light:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>',
+        dark:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>'
+    };
+    var THEME_LABELS = { system: 'System', light: 'Light', dark: 'Dark' };
+    var THEME_NEXT   = { system: 'light', light: 'dark', dark: 'system' };
+
+    function syncBody( mode ) {
+        document.body.classList.remove( 'mshield-theme-dark', 'mshield-theme-system' );
+        if ( mode === 'dark' ) { document.body.classList.add( 'mshield-theme-dark' ); }
+        else if ( mode === 'system' ) { document.body.classList.add( 'mshield-theme-system' ); }
     }
 
     function initTheme() {
@@ -33,11 +45,14 @@
         if ( ! toggle ) return;
 
         toggle.addEventListener( 'click', function() {
-            var next = app.getAttribute( 'data-theme' ) === 'dark' ? 'light' : 'dark';
+            var next = THEME_NEXT[ app.getAttribute( 'data-theme' ) ] || 'system';
             app.setAttribute( 'data-theme', next );
             syncBody( next );
+
+            var icon = toggle.querySelector( '.ms-theme-icon' );
+            if ( icon && THEME_ICONS[ next ] ) icon.innerHTML = THEME_ICONS[ next ];
             var label = toggle.querySelector( '.ms-theme-label' );
-            if ( label ) label.textContent = next === 'dark' ? 'Dark' : 'Light';
+            if ( label ) label.textContent = THEME_LABELS[ next ];
 
             if ( ! cfg.ajaxUrl ) return;
             var body = new URLSearchParams();

@@ -32,6 +32,19 @@
     --ink-danger:#ff8f91; --ink-warn:#f0c34b; --ink-flag:#b69dff; --ink-ok:#57d97f;
 }
 
+/* "System" theme: no explicit choice, so follow the OS. Same dark tokens as
+   [data-theme="dark"], applied only when the OS prefers dark. */
+@media (prefers-color-scheme: dark) {
+    .mshield-app[data-theme="system"] {
+        --bg:#0e1116; --surface:#161a20; --surface-2:#1d222a;
+        --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#6f7987;
+        --line:#272e38; --line-2:#212831;
+        --brand:#7d95ff; --brand-soft:#1a2140;
+        --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 44px rgba(0,0,0,.55);
+        --ink-danger:#ff8f91; --ink-warn:#f0c34b; --ink-flag:#b69dff; --ink-ok:#57d97f;
+    }
+}
+
 /* Give the plugin screen its own background inside the WP content column. */
 .mshield-app {
     margin:16px 20px 40px 2px;
@@ -47,6 +60,15 @@ body.mshield-theme-dark #wpcontent,
 body.mshield-theme-dark #wpbody,
 body.mshield-theme-dark #wpbody-content { background:#0e1116 !important; }
 body.mshield-theme-dark #wpfooter { color:#6f7987; }
+
+/* System theme: repaint the WP chrome only when the OS prefers dark. */
+@media (prefers-color-scheme: dark) {
+    body.mshield-theme-system,
+    body.mshield-theme-system #wpcontent,
+    body.mshield-theme-system #wpbody,
+    body.mshield-theme-system #wpbody-content { background:#0e1116 !important; }
+    body.mshield-theme-system #wpfooter { color:#6f7987; }
+}
 .mshield-mono { font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
 
 @keyframes ms-in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }

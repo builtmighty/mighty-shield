@@ -11,7 +11,7 @@
  * sets the score an order must reach before it is escalated to the AI.
  *
  * @package MightyShield
- * @since   1.9.0
+ * @since   1.8.0
  */
 namespace MightyShield\Includes;
 
@@ -20,7 +20,7 @@ class ai_detection {
     /**
      * Score contributed by each suspicious signal when it trips.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public const SIGNAL_WEIGHTS = [
         'address_velocity' => 2.5,
@@ -35,7 +35,7 @@ class ai_detection {
      * With four signals at 2.5 each the maximum score is 10, so low requires
      * every signal, medium any two, and high any single one.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public const THRESHOLDS = [
         'low'    => 10.0,
@@ -47,7 +47,7 @@ class ai_detection {
      * The score at/above which an order is escalated, per the configured
      * sensitivity.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @return  float
      */
@@ -61,7 +61,7 @@ class ai_detection {
     /**
      * The highest score reachable with every signal tripped.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @return  float
      */
@@ -74,7 +74,7 @@ class ai_detection {
     /**
      * The weight of a single signal.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $signal     Signal key (see SIGNAL_WEIGHTS).
      * @return  float
@@ -92,7 +92,7 @@ class ai_detection {
      * cannot be evaluated (missing data, uncached IP) is skipped rather than
      * tripped — an absent signal is not evidence of fraud.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  array   [ 'score' => float, 'signals' => string[] ]
@@ -132,7 +132,7 @@ class ai_detection {
      * mirroring billing, so every shipping read goes through here — otherwise
      * three of the four signals silently never trip on those orders.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @param   string      $field  Field suffix, e.g. 'city'.
@@ -156,7 +156,7 @@ class ai_detection {
      * "123 Main St." and "123  main st" must compare equal — WooCommerce order
      * queries match addresses exactly, so the real comparison happens here.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $address
      * @return  string
@@ -175,7 +175,7 @@ class ai_detection {
      * The signature of a drop address. Queried through wc_get_orders() so it
      * works under both HPOS and legacy post storage.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  string|null Reason when tripped, null otherwise.
@@ -227,7 +227,7 @@ class ai_detection {
     /**
      * Email/name mismatch — no overlap between the shipping name and the email.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  string|null
@@ -264,7 +264,7 @@ class ai_detection {
     /**
      * High value order.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  string|null
@@ -288,7 +288,7 @@ class ai_detection {
      * no backoff, and this runs on the checkout request — an uncached IP skips
      * the signal rather than costing the shopper five seconds.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  string|null
