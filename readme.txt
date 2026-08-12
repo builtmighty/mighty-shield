@@ -4,7 +4,7 @@ Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 1.6.0
+Stable tag: 1.8.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -51,7 +51,7 @@ The server IP is auto-whitelisted on activation. You may also want to whitelist 
 
 = Does this work with block-based checkout? =
 
-The Store API firewall will block block-based checkout since it uses the same endpoints. If you use block-based checkout, disable the Store API firewall and rely on the other protection layers (rate limiting, email blocking, address validation, etc.).
+Yes. Set **Firewall Mode** to "Block/One-page checkout" so real shoppers aren't blocked at the Store API, then enable **Block Checkout Protection**. The server-side fraud checks (disposable email, order amount, address validation, ZIP/State, velocity, rate limiting) run on the block Checkout, along with checkout timing, device fingerprinting, and reCAPTCHA v3 as front-end checks. The honeypot and Cloudflare Turnstile are the only layers that still require classic/one-page checkout.
 
 = How do I know it's working? =
 
@@ -68,6 +68,18 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 == Screenshots ==
 
 == Changelog ==
+
+= 1.8.0 =
+* Added block-based (Store API) checkout support: the server-side fraud checks — disposable email, order amount, address validation, ZIP/State, velocity, and rate limiting — now run on the block Checkout via the Store API, blocking or flagging per each layer's existing settings.
+* Added a Firewall Mode setting: "Classic checkout" (block all non-whitelisted IPs from the Store API, as before) or "Block/One-page checkout" (allow real shoppers, block only blocklisted IPs) so block-checkout stores are not locked out.
+* Added front-end checks to the block Checkout: checkout timing, device fingerprinting, and Google reCAPTCHA v3 now ride along with the Store API request and are verified server-side, honoring each layer's block / flag / notify action.
+* Removed Test Mode (added in 1.7.0): the admin-bar force-trip toggle has been retired. Its per-user settings and log entries are cleaned up automatically on upgrade.
+* Note: on block checkout the honeypot and Cloudflare Turnstile are not evaluated — both require a rendered field/widget that the React Checkout block does not provide. Use reCAPTCHA v3 for a bot challenge on block checkout, or classic/one-page checkout for the full set.
+
+= 1.7.0 =
+* Added Test Mode: a toolbar (admin bar) toggle that lets shop managers exercise the protection layers against their own checkout, with per-layer "force trip" controls and a Simulate (log-only) vs Enforce switch. State is per-user and never affects real customers.
+* Fixed One Page Checkout: Device Fingerprinting no longer interferes with the AJAX order review — the collector now loads wherever the checkout form renders (not only on standard checkout pages), renders a single field, refreshes after order-review updates, and never runs during the review refresh.
+* Hardened the bot challenge: reCAPTCHA v3 tokens are kept fresh and re-issued after checkout errors; Cloudflare Turnstile resets its single-use token on a failed attempt so retries work; the challenge now loads on shortcode/one-page checkouts; and a misconfigured secret key now fails open with an admin notice instead of silently blocking every checkout.
 
 = 1.6.0 =
 * Added IP location intelligence (city, region, country, organization) via ip-api.com, cached in a new table so each IP is only ever fetched once.

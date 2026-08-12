@@ -48,7 +48,6 @@ class device_fingerprint {
         if( settings::get( 'mshield_fingerprint_enabled' ) !== 'yes' ) return;
 
         add_action( 'woocommerce_after_checkout_billing_form', [ $this, 'render_field' ] );
-        add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
         add_action( 'woocommerce_checkout_process', [ $this, 'record_velocity' ], 0 );
         add_action( 'woocommerce_after_checkout_validation', [ $this, 'block_fingerprint' ], 5, 2 );
         add_action( 'woocommerce_checkout_order_processed', [ $this, 'flag_fingerprint' ], 5, 3 );
@@ -62,18 +61,27 @@ class device_fingerprint {
      */
     public function render_field() {
 
+        // Render once per request even if the billing form is re-rendered (some
+        // one-page-checkout plugins render it repeatedly), to avoid duplicate IDs.
+        static $done = false;
+        if( $done ) return;
+        $done = true;
+
+        // Enqueue here (not on wp_enqueue_scripts + is_checkout, which misses
+        // shortcode / one-page checkouts) so the collector always loads wherever
+        // the checkout billing form actually renders.
+        $this->enqueue_scripts();
+
         echo '<input type="hidden" name="mshield_device_data" id="mshield_device_data" value="" />';
 
     }
 
     /**
-     * Enqueue fingerprint collection script on checkout.
+     * Enqueue fingerprint collection script (idempotent by handle).
      *
      * @since   1.0.0
      */
     public function enqueue_scripts() {
-
-        if( ! is_checkout() ) return;
 
         wp_enqueue_script(
             'mshield-fingerprint',
@@ -82,6 +90,23 @@ class device_fingerprint {
             MSHIELD_VERSION,
             [ 'in_footer' => true ]
         );
+
+    }
+
+    /**
+     * Whether this request is a WooCommerce order-review refresh (not a real
+     * place-order). MightyShield must never interfere with that AJAX cycle,
+     * which one-page-checkout plugins lean on heavily.
+     *
+     * @since   1.7.0
+     *
+     * @return  bool
+     */
+    private static function is_review_refresh() {
+
+        return defined( 'DOING_AJAX' ) && DOING_AJAX
+            && isset( $_GET['wc-ajax'] )
+            && sanitize_text_field( wp_unslash( $_GET['wc-ajax'] ) ) === 'update_order_review';
 
     }
 
@@ -99,6 +124,8 @@ class device_fingerprint {
      * @param   object   $errors WP_Error object.
      */
     public function block_fingerprint( $data, $errors ) {
+
+        if( self::is_review_refresh() ) return;
 
         if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
@@ -205,10 +232,35 @@ class device_fingerprint {
             return [ 'blockable' => $missing_blockable, 'temp_block' => false, 'reasons' => [ 'Device fingerprint data malformed' ] ];
         }
 
+        // Genuine detections (webdriver, timezone mismatch, device velocity)
+        // are strong enough to justify an IP temp-block.
+        $res = self::evaluate_device( $device, $country );
+        return [ 'blockable' => $res['blockable'], 'temp_block' => true, 'reasons' => $res['reasons'] ];
+
+    }
+
+    /**
+     * Evaluate a decoded device fingerprint against the billing country.
+     *
+     * Reusable by classic checkout and the Store API (block) checkout. Covers
+     * automated-browser detection, timezone/country mismatch, and device
+     * velocity. Missing/malformed handling stays with the caller.
+     *
+     * @since   1.8.0
+     *
+     * @param   array   $device     Decoded fingerprint data.
+     * @param   string  $country    Billing country code.
+     * @return  array   [ 'blockable' => bool, 'reasons' => string[] ]
+     */
+    public static function evaluate_device( $device, $country ) {
+
+        $reasons   = [];
+        $blockable = false;
+
         // Bot detection: navigator.webdriver is true for Selenium/Puppeteer.
         if( isset( $device['webdriver'] ) && $device['webdriver'] === true ) {
-            $reasons[]  = 'Automated browser detected (webdriver=true)';
-            $blockable  = true;
+            $reasons[] = 'Automated browser detected (webdriver=true)';
+            $blockable = true;
         }
 
         // Timezone vs. billing country mismatch.
@@ -238,7 +290,7 @@ class device_fingerprint {
         $threshold = (int) settings::get( 'mshield_fingerprint_velocity_threshold' );
         if( $threshold > 0 ) {
 
-            $signature = $this->get_signature( $device );
+            $signature = self::get_signature( $device );
             if( $signature !== '' ) {
 
                 $count = db::check_rate_limit( $signature, 'fp_velocity' );
@@ -252,9 +304,7 @@ class device_fingerprint {
 
         }
 
-        // Genuine detections (webdriver, timezone mismatch, device velocity)
-        // are strong enough to justify an IP temp-block.
-        return [ 'blockable' => $blockable, 'temp_block' => true, 'reasons' => $reasons ];
+        return [ 'blockable' => $blockable, 'reasons' => $reasons ];
 
     }
 
@@ -269,6 +319,8 @@ class device_fingerprint {
      */
     public function record_velocity() {
 
+        if( self::is_review_refresh() ) return;
+
         if( \MightyShield\Includes\exempt::is_exempt( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
 
         $threshold = (int) settings::get( 'mshield_fingerprint_velocity_threshold' );
@@ -280,7 +332,7 @@ class device_fingerprint {
         $device = json_decode( $raw, true );
         if( ! is_array( $device ) ) return;
 
-        $signature = $this->get_signature( $device );
+        $signature = self::get_signature( $device );
         if( $signature === '' ) return;
 
         $window = (int) settings::get( 'mshield_rate_checkout_window' );
@@ -296,7 +348,7 @@ class device_fingerprint {
      * @param   array   $device     Decoded fingerprint data.
      * @return  string  MD5 signature, or '' if insufficient data.
      */
-    private function get_signature( $device ) {
+    private static function get_signature( $device ) {
 
         $parts = [
             isset( $device['timezone'] ) ? $device['timezone'] : '',

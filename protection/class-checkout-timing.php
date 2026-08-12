@@ -41,7 +41,7 @@ class checkout_timing {
      */
     public function render_field() {
 
-        echo '<input type="hidden" name="mshield_ct_token" id="mshield_ct_token" value="' . esc_attr( $this->generate_token() ) . '" />';
+        echo '<input type="hidden" name="mshield_ct_token" id="mshield_ct_token" value="' . esc_attr( self::generate_token() ) . '" />';
 
     }
 
@@ -127,7 +127,7 @@ class checkout_timing {
     private function evaluate() {
 
         $token   = isset( $_POST['mshield_ct_token'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_ct_token'] ) ) : '';
-        $elapsed = $this->verify_token( $token );
+        $elapsed = self::verify_token( $token );
 
         // Missing / forged / invalid token. A scripted checkout that never
         // rendered our field lands here. Whether that blocks is governed by
@@ -161,7 +161,7 @@ class checkout_timing {
      *
      * @return  string
      */
-    private function generate_token() {
+    public static function generate_token() {
 
         $ts = time();
         return $ts . '|' . hash_hmac( 'sha256', (string) $ts, wp_salt( 'auth' ) );
@@ -176,7 +176,7 @@ class checkout_timing {
      * @param   string  $token  Submitted token.
      * @return  int|null    Elapsed seconds, or null if missing/forged/invalid.
      */
-    private function verify_token( $token ) {
+    public static function verify_token( $token ) {
 
         if( $token === '' || strpos( $token, '|' ) === false ) return null;
 

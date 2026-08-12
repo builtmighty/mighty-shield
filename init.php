@@ -74,6 +74,10 @@ class Plugin {
         $this->load_class( \MightyShield\Protection\checkout_timing::class );
         $this->load_class( \MightyShield\Protection\device_fingerprint::class );
         $this->load_class( \MightyShield\Protection\captcha::class );
+        $this->load_class( \MightyShield\Protection\store_api::class );
+
+        // Last, so it reviews an order only after every other check has run.
+        $this->load_class( \MightyShield\Protection\ai_reviewer::class );
 
     }
 

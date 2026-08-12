@@ -32,6 +32,7 @@ wp plugin install https://github.com/builtmighty/mighty-shield/releases/latest/d
 - **Built-in Documentation** — A Documentation tab in the admin that explains every setting and walks through setup
 - **Modern Admin UI** — Card-based layout with a light/dark theme toggle, a redesigned dashboard (status hero, interactive trend chart, stat cards), and a powerful Logs screen with search, filters, bulk actions, and an event-detail drawer
 - **IP Location Intelligence** — Looks up city, region, country, and network for blocked IPs via ip-api.com, cached locally so each IP is fetched only once; shown on the dashboard and on demand in the logs
+- **Block / Store API Checkout Support** — The server-side fraud checks (email, order amount, address, ZIP/State, velocity, rate limit) also run on the block-based Checkout via the Store API, with a Firewall Mode that keeps real block-checkout shoppers from being locked out. Checkout timing, device fingerprinting, and reCAPTCHA v3 also ride along with the Store API request and are verified server-side (honeypot and Turnstile still require classic/one-page checkout)
 - **Auto Cleanup** — Daily cron job purges old logs and expired rate limit data
 
 ## Requirements

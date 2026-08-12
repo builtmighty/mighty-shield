@@ -188,8 +188,8 @@ $logs_url      = admin_url( 'admin.php?page=mighty-shield&tab=logs' );
         <div class="nav-title"><?php esc_html_e( 'Tabs', 'mighty-shield' ); ?></div>
         <a href="#dashboard"><?php esc_html_e( 'Dashboard', 'mighty-shield' ); ?></a>
         <a href="#firewall"><?php esc_html_e( 'Firewall', 'mighty-shield' ); ?></a>
-        <a href="#whitelist"><?php esc_html_e( 'IP Whitelist', 'mighty-shield' ); ?></a>
-        <a href="#blocklist"><?php esc_html_e( 'IP Blocklist', 'mighty-shield' ); ?></a>
+        <a href="#whitelist"><?php esc_html_e( 'Allowlist', 'mighty-shield' ); ?></a>
+        <a href="#blocklist"><?php esc_html_e( 'Blocklist', 'mighty-shield' ); ?></a>
         <a href="#rate-limits"><?php esc_html_e( 'Rate Limits', 'mighty-shield' ); ?></a>
         <a href="#fraud"><?php esc_html_e( 'Fraud Checks', 'mighty-shield' ); ?></a>
         <a href="#logs"><?php esc_html_e( 'Logs', 'mighty-shield' ); ?></a>
@@ -210,20 +210,20 @@ $logs_url      = admin_url( 'admin.php?page=mighty-shield&tab=logs' );
             <li><strong><?php esc_html_e( 'Store API firewall.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Blocks automated software from hitting the built-in WooCommerce cart and checkout API endpoints directly. Because your store uses the normal (classic) checkout, real customers are not affected.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Checkout protections.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'A set of fraud checks that run on the real checkout form: rate limits, address checks, a hidden bot trap, timing, device checks, and an optional bot challenge.', 'mighty-shield' ); ?></li>
         </ul>
-        <p><?php esc_html_e( 'Most checks let you choose how strict to be. See "Actions explained" below. Anything or anyone you add to the whitelist skips every check, so trusted staff and known-good customers are never affected.', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'Most checks let you choose how strict to be. See "Actions explained" below. Anything or anyone you add to the allowlist skips every check, so trusted staff and known-good customers are never affected.', 'mighty-shield' ); ?></p>
 
         <h2 id="quick-start"><?php esc_html_e( 'Quick start', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'A safe way to get set up without risking real orders:', 'mighty-shield' ); ?></p>
         <ol>
             <li><?php printf( wp_kses_post( __( 'Confirm the plugin is on. Open the <a href="%s">Firewall</a> tab and check that Enable MightyShield is ticked.', 'mighty-shield' ) ), esc_url( $firewall_url ) ); ?></li>
-            <li><?php printf( wp_kses_post( __( 'Whitelist yourself. On the <a href="%s">IP Whitelist</a> tab, add your own IP address (or your WordPress user account) so you can never be blocked while testing.', 'mighty-shield' ) ), esc_url( $whitelist_url ) ); ?></li>
+            <li><?php printf( wp_kses_post( __( 'Allowlist yourself. On the <a href="%s">Allowlist</a> tab, add your own IP address (or your WordPress user account) so you can never be blocked while testing.', 'mighty-shield' ) ), esc_url( $whitelist_url ) ); ?></li>
             <li><?php esc_html_e( 'Keep the defaults. The out-of-the-box settings are safe for a normal store. You do not need to change anything to be protected.', 'mighty-shield' ); ?></li>
             <li><?php printf( wp_kses_post( __( 'Watch the <a href="%s">Logs</a> for a few days. See what is being blocked and flagged before you make anything stricter.', 'mighty-shield' ) ), esc_url( $logs_url ) ); ?></li>
             <li><?php esc_html_e( 'Tighten if needed. If you are getting fraud, switch the high-value checks from Flag to Block, turn on the Bot Challenge, and add repeat offenders to the blocklist.', 'mighty-shield' ); ?></li>
         </ol>
         <div class="callout important">
             <span class="callout-label"><?php esc_html_e( 'Important', 'mighty-shield' ); ?></span>
-            <p><?php esc_html_e( 'Always whitelist your own IP or account before switching checks to Block. This keeps you from locking yourself out of your own checkout while testing.', 'mighty-shield' ); ?></p>
+            <p><?php esc_html_e( 'Always allowlist your own IP or account before switching checks to Block. This keeps you from locking yourself out of your own checkout while testing.', 'mighty-shield' ); ?></p>
         </div>
 
         <h2 id="actions"><?php esc_html_e( 'Actions explained', 'mighty-shield' ); ?></h2>
@@ -253,7 +253,7 @@ $logs_url      = admin_url( 'admin.php?page=mighty-shield&tab=logs' );
             <thead><tr><th><?php esc_html_e( 'Setting', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'What it does', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'Default', 'mighty-shield' ); ?></th></tr></thead>
             <tbody>
                 <tr><td><span class="field"><?php esc_html_e( 'Enable MightyShield', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'The master switch. When off, every protection stops. The admin screens stay available.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'On', 'mighty-shield' ); ?></td></tr>
-                <tr><td><span class="field"><?php esc_html_e( 'Block Store API', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Blocks non-whitelisted addresses from the WooCommerce cart and checkout API endpoints. Leave on for classic checkout stores. Turn off only if you use block-based (React) checkout.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'On', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Block Store API', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Blocks non-allowlisted addresses from the WooCommerce cart and checkout API endpoints. Leave on for classic checkout stores. Turn off only if you use block-based (React) checkout.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'On', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Log Retention', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'How many days to keep log entries before they are cleaned up automatically. Range 1 to 365.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( '30 days', 'mighty-shield' ); ?></td></tr>
             </tbody>
         </table>
@@ -262,9 +262,9 @@ $logs_url      = admin_url( 'admin.php?page=mighty-shield&tab=logs' );
             <p><?php esc_html_e( 'If you use the newer block-based checkout instead of classic checkout, turn Block Store API off, because that checkout uses the same API endpoints as the firewall protects.', 'mighty-shield' ); ?></p>
         </div>
 
-        <h2 id="whitelist"><?php esc_html_e( 'IP Whitelist', 'mighty-shield' ); ?></h2>
-        <p><?php esc_html_e( 'The allow list. Anything on it bypasses every MightyShield check, with no blocks and no flags. Use it for trusted staff, offices, and known-good customers. A whitelist entry always wins over the blocklist.', 'mighty-shield' ); ?></p>
-        <p><?php esc_html_e( 'You can whitelist four kinds of thing:', 'mighty-shield' ); ?></p>
+        <h2 id="whitelist"><?php esc_html_e( 'Allowlist', 'mighty-shield' ); ?></h2>
+        <p><?php esc_html_e( 'Anything on it bypasses every MightyShield check, with no blocks and no flags. Use it for trusted staff, offices, and known-good customers. An allowlist entry always wins over the blocklist.', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'You can allowlist four kinds of thing:', 'mighty-shield' ); ?></p>
         <table>
             <thead><tr><th><?php esc_html_e( 'Type', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'What to enter', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'Matches', 'mighty-shield' ); ?></th></tr></thead>
             <tbody>
@@ -276,13 +276,13 @@ $logs_url      = admin_url( 'admin.php?page=mighty-shield&tab=logs' );
         </table>
         <div class="callout important">
             <span class="callout-label"><?php esc_html_e( 'Important', 'mighty-shield' ); ?></span>
-            <p><?php esc_html_e( 'A whitelisted role exempts every user in it. Whitelisting a broad role such as Customer would let all of those users skip every check, so prefer staff roles like Administrator or Shop manager.', 'mighty-shield' ); ?></p>
+            <p><?php esc_html_e( 'An allowlisted role exempts every user in it. Allowlisting a broad role such as Customer would let all of those users skip every check, so prefer staff roles like Administrator or Shop manager.', 'mighty-shield' ); ?></p>
         </div>
-        <p><?php printf( wp_kses_post( __( 'Add entries with the form on the <a href="%s">IP Whitelist</a> tab, or use the "whitelist" link on any row in the Logs. Remove an entry with its Remove button.', 'mighty-shield' ) ), esc_url( $whitelist_url ) ); ?></p>
+        <p><?php printf( wp_kses_post( __( 'Add entries with the form on the <a href="%s">Allowlist</a> tab, or use the "allowlist" link on any row in the Logs. Remove an entry with its Remove button.', 'mighty-shield' ) ), esc_url( $whitelist_url ) ); ?></p>
 
-        <h2 id="blocklist"><?php esc_html_e( 'IP Blocklist', 'mighty-shield' ); ?></h2>
+        <h2 id="blocklist"><?php esc_html_e( 'Blocklist', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'A permanent ban list for IP addresses and ranges. Blocked addresses are refused at both the classic checkout and the Store API, and the ban never expires until you remove it. This is different from the automatic temporary blocks, which last 24 hours by default.', 'mighty-shield' ); ?></p>
-        <p><?php printf( wp_kses_post( __( 'Add an address on the <a href="%1$s">IP Blocklist</a> tab, or use the "block" link on any row in the <a href="%2$s">Logs</a>. Whitelisted addresses are never blocked, even if they also appear here.', 'mighty-shield' ) ), esc_url( $blocklist_url ), esc_url( $logs_url ) ); ?></p>
+        <p><?php printf( wp_kses_post( __( 'Add an address on the <a href="%1$s">Blocklist</a> tab, or use the "block" link on any row in the <a href="%2$s">Logs</a>. Allowlisted addresses are never blocked, even if they also appear here.', 'mighty-shield' ) ), esc_url( $blocklist_url ), esc_url( $logs_url ) ); ?></p>
 
         <h2 id="rate-limits"><?php esc_html_e( 'Rate Limits', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'These limits catch the rapid, repeated attempts that card testing creates. When a limit is passed, the address is temporarily blocked.', 'mighty-shield' ); ?></p>
@@ -359,12 +359,12 @@ $logs_url      = admin_url( 'admin.php?page=mighty-shield&tab=logs' );
         </ol>
 
         <h2 id="logs"><?php esc_html_e( 'Logs', 'mighty-shield' ); ?></h2>
-        <p><?php esc_html_e( 'A record of every action MightyShield takes. Each row shows the time, the IP address, the action (Blocked, Rate Limited, Flagged, or Exempt for whitelisted visitors), the endpoint, the reason, and details such as the email, user, and browser.', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'A record of every action MightyShield takes. Each row shows the time, the IP address, the action (Blocked, Rate Limited, Flagged, or Exempt for allowlisted visitors), the endpoint, the reason, and details such as the email, user, and browser.', 'mighty-shield' ); ?></p>
         <p><?php esc_html_e( 'Filter by action or by IP address at the top. On each row you can:', 'mighty-shield' ); ?></p>
         <ul>
             <li><strong><?php esc_html_e( 'filter', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'to show only that IP address.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'block', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'to add that IP to the blocklist.', 'mighty-shield' ); ?></li>
-            <li><strong><?php esc_html_e( 'whitelist', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'to allow that IP, email, or user past all checks.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'allowlist', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'to allow that IP, email, or user past all checks.', 'mighty-shield' ); ?></li>
         </ul>
         <p><?php esc_html_e( 'Clear All Logs in the Maintenance section empties the whole log. This cannot be undone.', 'mighty-shield' ); ?></p>
 
@@ -373,7 +373,7 @@ $logs_url      = admin_url( 'admin.php?page=mighty-shield&tab=logs' );
         <h2 id="situations"><?php esc_html_e( 'Common situations', 'mighty-shield' ); ?></h2>
 
         <h3><?php esc_html_e( 'A real customer was blocked', 'mighty-shield' ); ?></h3>
-        <p><?php printf( wp_kses_post( __( 'Open the <a href="%s">Logs</a>, find their entry, and use the "whitelist" link on that row (by IP, email, or user). They will bypass all checks from then on. If a whole check is catching real customers, switch it from Block to Flag while you investigate.', 'mighty-shield' ) ), esc_url( $logs_url ) ); ?></p>
+        <p><?php printf( wp_kses_post( __( 'Open the <a href="%s">Logs</a>, find their entry, and use the "allowlist" link on that row (by IP, email, or user). They will bypass all checks from then on. If a whole check is catching real customers, switch it from Block to Flag while you investigate.', 'mighty-shield' ) ), esc_url( $logs_url ) ); ?></p>
 
         <h3><?php esc_html_e( 'We are under active attack', 'mighty-shield' ); ?></h3>
         <p><?php printf( wp_kses_post( __( 'On the <a href="%1$s">Fraud Checks</a> tab, set Action on Missing Token and Action on Missing Fingerprint to Block (and make sure their main actions are Block), and turn on the Bot Challenge. Add the worst repeat IPs to the <a href="%2$s">blocklist</a>. Lower the rate limits on the <a href="%3$s">Rate Limits</a> tab if the flood continues.', 'mighty-shield' ) ), esc_url( $fraud_url ), esc_url( $blocklist_url ), esc_url( $rates_url ) ); ?></p>

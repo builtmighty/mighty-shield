@@ -18,6 +18,8 @@ class settings {
     private static $defaults = [
         'mshield_enabled'                   => 'yes',
         'mshield_block_store_api'           => 'yes',
+        'mshield_firewall_mode'             => 'whitelist',
+        'mshield_store_api_checks'          => 'no',
         'mshield_rate_checkout_limit'       => 5,
         'mshield_rate_checkout_window'      => 3600,
         'mshield_velocity_email_threshold'  => 3,
@@ -49,6 +51,30 @@ class settings {
         'mshield_captcha_secret_key'        => '',
         'mshield_captcha_action'            => 'block',
         'mshield_log_retention_days'        => 30,
+
+        // AI Detection.
+        'mshield_ai_enabled'                => 'no',
+        'mshield_ai_provider'               => 'anthropic',
+        'mshield_ai_anthropic_key'          => '',
+        'mshield_ai_anthropic_model'        => 'claude-haiku-4-5',
+        'mshield_ai_openai_key'             => '',
+        'mshield_ai_openai_org'             => '',
+        'mshield_ai_openai_model'           => 'gpt-4o-mini',
+        'mshield_ai_gemini_key'             => '',
+        'mshield_ai_gemini_model'           => 'gemini-1.5-flash',
+        'mshield_ai_method'                 => 'suspicious',
+        'mshield_ai_sensitivity'            => 'medium',
+        'mshield_ai_sig_address_velocity'   => 'yes',
+        'mshield_ai_velocity_orders'        => 3,
+        'mshield_ai_velocity_days'          => 30,
+        'mshield_ai_sig_email_mismatch'     => 'yes',
+        'mshield_ai_sig_high_value'         => 'yes',
+        'mshield_ai_high_value_amount'      => '500.00',
+        'mshield_ai_sig_ip_mismatch'        => 'yes',
+        'mshield_ai_rating_threshold'       => 4,
+        'mshield_ai_verdict_action'         => 'flag',
+        'mshield_ai_notify_admin'           => 'yes',
+        'mshield_ai_notify_emails'          => '',
     ];
 
     /**
@@ -63,6 +89,31 @@ class settings {
 
         $default = isset( self::$defaults[ $key ] ) ? self::$defaults[ $key ] : '';
         return get_option( $key, $default );
+
+    }
+
+    /**
+     * Resolve who should receive MightyShield notifications.
+     *
+     * Falls back to the site admin when no list is configured. Lives here
+     * rather than on the admin page because the checkout path needs it too.
+     *
+     * @since   1.9.0
+     *
+     * @return  array   Email addresses.
+     */
+    public static function notification_recipients() {
+
+        $emails = [];
+
+        foreach( explode( ',', (string) self::get( 'mshield_ai_notify_emails' ) ) as $email ) {
+
+            $email = trim( $email );
+            if( ! empty( $email ) && is_email( $email ) ) $emails[] = $email;
+
+        }
+
+        return empty( $emails ) ? [ get_option( 'admin_email' ) ] : $emails;
 
     }
 
