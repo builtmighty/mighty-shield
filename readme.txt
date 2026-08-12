@@ -73,7 +73,7 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 * Added block-based (Store API) checkout support: the server-side fraud checks — disposable email, order amount, address validation, ZIP/State, velocity, and rate limiting — now run on the block Checkout via the Store API, blocking or flagging per each layer's existing settings.
 * Added a Firewall Mode setting: "Classic checkout" (block all non-whitelisted IPs from the Store API, as before) or "Block/One-page checkout" (allow real shoppers, block only blocklisted IPs) so block-checkout stores are not locked out.
 * Added front-end checks to the block Checkout: checkout timing, device fingerprinting, and Google reCAPTCHA v3 now ride along with the Store API request and are verified server-side, honoring each layer's block / flag / notify action.
-* Test Mode now works on the block Checkout too: force-tripping a layer (rate limit, email, order amount, address, ZIP/State, velocity, timing, device fingerprint, reCAPTCHA, firewall, blocklist) exercises it through the Store API, respecting the Simulate / Enforce switch.
+* Removed Test Mode (added in 1.7.0): the admin-bar force-trip toggle has been retired. Its per-user settings and log entries are cleaned up automatically on upgrade.
 * Note: on block checkout the honeypot and Cloudflare Turnstile are not evaluated — both require a rendered field/widget that the React Checkout block does not provide. Use reCAPTCHA v3 for a bot challenge on block checkout, or classic/one-page checkout for the full set.
 
 = 1.7.0 =

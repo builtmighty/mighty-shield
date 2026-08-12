@@ -81,11 +81,13 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-btn.is-small { padding:6px 11px; font-size:12.5px; }
 
 /* ---------- Card-grid nav ---------- */
+/* One card per column on a single row, however many tabs there are. minmax(0,1fr)
+   lets columns shrink below their content width so the row never wraps. */
 .mshield-navcards {
-    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:26px;
+    display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:10px; margin-bottom:26px;
 }
 .mshield-navcard {
-    display:flex; flex-direction:column; align-items:flex-start; gap:9px; padding:13px 14px;
+    display:flex; flex-direction:column; align-items:flex-start; gap:9px; padding:13px 12px; min-width:0;
     border-radius:10px; cursor:pointer; text-align:left; font-size:13px; font-weight:600;
     background:var(--surface); color:var(--fg); border:1px solid var(--line); box-shadow:var(--shadow);
     text-decoration:none;
@@ -300,6 +302,8 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     margin:0 !important; padding:0 !important; pointer-events:none; appearance:none !important; -webkit-appearance:none !important;
 }
 .mshield-radio:hover { border-color:var(--brand); color:var(--fg); }
+.mshield-radio.is-disabled { opacity:.45; cursor:not-allowed; }
+.mshield-radio.is-disabled:hover { border-color:var(--line); color:var(--fg-2); }
 .mshield-radio.is-checked,
 .mshield-radio:has(input:checked) {
     background:var(--brand); border-color:transparent; color:#fff; box-shadow:0 2px 8px rgba(56,88,233,.24);
@@ -334,4 +338,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 @media screen and (max-width:782px) {
     .mshield-app { margin:12px 0 40px; }
     .mshield-drawer { width:100%; }
+    /* Below the WP admin mobile breakpoint a single row leaves each card too
+       narrow to read, so let the nav wrap again. */
+    .mshield-navcards { grid-auto-flow:row; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); }
 }

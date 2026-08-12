@@ -45,8 +45,10 @@ $options = [
     'mshield_timing_enabled',
     'mshield_timing_min_seconds',
     'mshield_timing_action',
+    'mshield_timing_missing_action',
     'mshield_fingerprint_enabled',
     'mshield_fingerprint_action',
+    'mshield_fingerprint_missing_action',
     'mshield_fingerprint_velocity_threshold',
     'mshield_captcha_provider',
     'mshield_captcha_site_key',
@@ -57,12 +59,31 @@ $options = [
     'mshield_captcha_degraded',
     'mshield_version',
     'mshield_log_retention_days',
+    'mshield_ai_enabled',
+    'mshield_ai_provider',
+    'mshield_ai_anthropic_key',
+    'mshield_ai_anthropic_model',
+    'mshield_ai_openai_key',
+    'mshield_ai_openai_org',
+    'mshield_ai_openai_model',
+    'mshield_ai_gemini_key',
+    'mshield_ai_gemini_model',
+    'mshield_ai_method',
+    'mshield_ai_sensitivity',
+    'mshield_ai_sig_address_velocity',
+    'mshield_ai_velocity_orders',
+    'mshield_ai_velocity_days',
+    'mshield_ai_sig_email_mismatch',
+    'mshield_ai_sig_high_value',
+    'mshield_ai_high_value_amount',
+    'mshield_ai_sig_ip_mismatch',
+    'mshield_ai_rating_threshold',
+    'mshield_ai_verdict_action',
+    'mshield_ai_notify_admin',
+    'mshield_ai_notify_emails',
+    'mshield_ai_degraded',
 ];
 
-// Per-user test-mode preferences.
-delete_metadata( 'user', 0, 'mshield_test_mode', '', true );
-delete_metadata( 'user', 0, 'mshield_test_layers', '', true );
-delete_metadata( 'user', 0, 'mshield_test_simulate', '', true );
 delete_metadata( 'user', 0, 'mshield_admin_theme', '', true );
 
 foreach( $options as $option ) {

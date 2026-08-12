@@ -209,11 +209,6 @@ class device_fingerprint {
         $reasons   = [];
         $blockable = false;
 
-        // Test-mode force-trip (enforce mode); simulate mode logs and skips.
-        if( \MightyShield\Includes\test_mode::should_trip( 'fingerprint', 'Forced device fingerprint trip' ) ) {
-            return [ 'blockable' => true, 'temp_block' => false, 'reasons' => [ 'Test mode: forced device fingerprint trip' ] ];
-        }
-
         $raw = isset( $_POST['mshield_device_data'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_device_data'] ) ) : '';
 
         // Missing/malformed fingerprint means the browser never ran our JS — the

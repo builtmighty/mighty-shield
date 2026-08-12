@@ -57,12 +57,6 @@ class ip_blocklist {
 
         $ip = ip_utils::get_client_ip();
 
-        if( \MightyShield\Includes\test_mode::should_trip( 'blocklist', 'Forced blocklist trip' ) ) {
-            db::log_event( $ip, 'classic_checkout', 'blocked', 'Test mode: forced blocklist trip' );
-            wc_add_notice( __( 'Your access has been restricted. Please contact support.', 'mighty-shield' ), 'error' );
-            return;
-        }
-
         if( ! self::is_blocked( $ip ) ) return;
 
         db::log_event( $ip, 'classic_checkout', 'blocked', 'Blocklisted IP' );
@@ -93,13 +87,6 @@ class ip_blocklist {
         }
 
         if( ! $protected ) return $result;
-
-        // Test-mode forced blocklist trip (block checkout). Scoped to the
-        // checkout route so the cart still loads. Enforce only; simulate logs.
-        if( preg_match( '#^/wc/store(/v\d+)?/checkout#', $route ) && \MightyShield\Includes\test_mode::should_trip( 'blocklist', 'Forced blocklist trip (block checkout)' ) ) {
-            db::log_event( ip_utils::get_client_ip(), $route, 'blocked', 'Test mode: forced blocklist trip' );
-            return new \WP_Error( 'mighty_shield_blocked', __( 'Access denied.', 'mighty-shield' ), [ 'status' => 403 ] );
-        }
 
         $ip = ip_utils::get_client_ip();
 
