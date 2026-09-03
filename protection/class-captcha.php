@@ -14,6 +14,7 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
 
 class captcha {
 
@@ -65,8 +66,9 @@ class captcha {
         if( settings::get( 'mshield_captcha_site_key' ) === '' || settings::get( 'mshield_captcha_secret_key' ) === '' ) return;
 
         add_action( 'woocommerce_after_checkout_billing_form', [ $this, 'render_field' ] );
-        add_action( 'woocommerce_after_checkout_validation', [ $this, 'block_checkout' ], 20, 2 );
-        add_action( 'woocommerce_checkout_order_processed', [ $this, 'flag_order' ], 5, 3 );
+        // Priority 20, so the signal is in the context well before
+        // risk_recorder::refuse_classic() reads it at 99.
+        add_action( 'woocommerce_after_checkout_validation', [ $this, 'assess' ], 20, 2 );
 
         if( is_admin() ) {
             add_action( 'admin_notices', [ $this, 'render_degraded_notice' ] );
@@ -75,107 +77,46 @@ class captcha {
     }
 
     /**
-     * Enqueue the provider script + our helper (idempotent by handle).
-     *
-     * Called from render_field() so it loads wherever the checkout billing form
-     * actually renders (classic, shortcode, and one-page checkouts), not only
-     * when is_checkout() is true.
-     *
-     * @since   1.2.0
-     */
-    public function enqueue_scripts() {
-
-        $site_key = settings::get( 'mshield_captcha_site_key' );
-
-        if( $this->provider === 'turnstile' ) {
-            wp_enqueue_script( 'mshield-turnstile', 'https://challenges.cloudflare.com/turnstile/v0/api.js', [], null, [ 'in_footer' => true ] );
-        } else {
-            wp_enqueue_script( 'mshield-recaptcha', 'https://www.google.com/recaptcha/api.js?render=' . rawurlencode( $site_key ), [], null, [ 'in_footer' => true ] );
-        }
-
-        wp_enqueue_script( 'mshield-captcha', MSHIELD_URI . 'assets/js/mshield-captcha.js', [], MSHIELD_VERSION, [ 'in_footer' => true ] );
-        wp_localize_script( 'mshield-captcha', 'mshieldCaptcha', [
-            'provider' => $this->provider,
-            'siteKey'  => $site_key,
-        ] );
-
-    }
-
-    /**
-     * Render the challenge widget / token field.
+     * Render the challenge widget on the classic checkout.
      *
      * @since   1.2.0
      */
     public function render_field() {
 
-        // Only render once per request (one-page checkouts may re-render the form).
+        // Once per request: a one-page checkout may re-render the billing form.
         static $done = false;
         if( $done ) return;
         $done = true;
 
-        $this->enqueue_scripts();
-
-        // Hidden token field used by reCAPTCHA v3 (Turnstile injects its own field).
-        echo '<input type="hidden" name="mshield_captcha_token" id="mshield_captcha_token" value="" />';
-
-        if( $this->provider === 'turnstile' ) {
-            echo '<div class="cf-turnstile" data-sitekey="' . esc_attr( settings::get( 'mshield_captcha_site_key' ) ) . '"></div>';
-        }
+        self::widget( 'checkout' );
 
     }
 
     /**
-     * Block checkout on a failed challenge (action = block).
+     * Record a failed challenge against the order's score.
+     *
+     * Emitting the signal is the whole job. It used to also refuse or flag the
+     * checkout itself, driven by its own mshield_captcha_action setting -- a
+     * second route to the same outcome, because captcha_failed already floors
+     * to Rejected. Two systems deciding one thing is how they come to disagree,
+     * so the setting is gone and the ladder decides.
      *
      * @since   1.2.0
      *
-     * @param   array    $data   Checkout posted data.
-     * @param   object   $errors WP_Error object.
+     * @param   array       $data   Checkout posted data.
+     * @param   \WP_Error   $errors
      */
-    public function block_checkout( $data, $errors ) {
+    public function assess( $data, $errors ) {
 
         if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
-        if( settings::get( 'mshield_captcha_action' ) !== 'block' ) return;
-
         if( $this->is_verified() ) return;
 
-        $ip = ip_utils::get_client_ip();
-        db::log_event( $ip, 'classic_checkout', 'blocked', 'CAPTCHA challenge failed (' . $this->provider . ')' );
+        $reason = 'Bot challenge failed (' . $this->provider . ')';
 
-        $errors->add( 'mighty_shield_captcha', __( 'Bot verification failed. Please reload the page and try again.', 'mighty-shield' ) );
+        risk_context::add( 'captcha_failed', $reason );
 
-    }
-
-    /**
-     * Flag an order on a failed challenge (action = flag / notify).
-     *
-     * @since   1.2.0
-     *
-     * @param   int     $order_id   Order ID.
-     * @param   array   $posted     Posted data.
-     * @param   object  $order      WC_Order object.
-     */
-    public function flag_order( $order_id, $posted, $order ) {
-
-        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
-
-        $action = settings::get( 'mshield_captcha_action' );
-        if( $action === 'block' ) return;
-
-        if( $this->is_verified() ) return;
-
-        $ip     = ip_utils::get_client_ip();
-        $reason = 'CAPTCHA challenge failed (' . $this->provider . ')';
-
-        db::log_event( $ip, 'classic_checkout', 'flagged', $reason );
-        $order->add_order_note( 'MightyShield: ' . $reason );
-        $order->update_meta_data( '_mshield_flagged', 'captcha' );
-        $order->save();
-
-        if( $action === 'notify' ) {
-            $this->send_admin_notification( $order, $reason );
-        }
+        db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'flagged', $reason );
 
     }
 
@@ -191,7 +132,7 @@ class captcha {
      * @param   string  $token      Submitted challenge token.
      * @return  bool
      */
-    public static function verify( $provider, $secret, $token ) {
+    public static function verify( $provider, $secret, $token, $action = '' ) {
 
         if( $token === '' || $secret === '' ) return false;
 
@@ -207,11 +148,31 @@ class captcha {
         $body = json_decode( wp_remote_retrieve_body( $response ), true );
 
         if( ! is_array( $body ) || empty( $body['success'] ) ) {
-            $codes = ( is_array( $body ) && ! empty( $body['error-codes'] ) ) ? (array) $body['error-codes'] : [];
-            if( array_intersect( $codes, [ 'invalid-input-secret', 'missing-input-secret', 'bad-request' ] ) ) {
-                return true; // fail open on misconfiguration
+            // A genuine failed challenge and a wrong secret key look almost
+            // identical here. Only the second must fail open, and it has to say
+            // so out loud -- a challenge silently passing everyone is exactly
+            // as bad as one silently refusing everyone.
+            $codes  = ( is_array( $body ) && ! empty( $body['error-codes'] ) ) ? (array) $body['error-codes'] : [];
+            $config = array_intersect( $codes, [ 'invalid-input-secret', 'missing-input-secret', 'bad-request' ] );
+
+            if( ! empty( $config ) ) {
+                self::alert_degraded( implode( ', ', $config ) );
+                return true;
             }
+
             return false;
+        }
+
+        // The action binds a token to the form it came from. Without this a
+        // token minted on the checkout page is a valid token everywhere, so
+        // protecting the login form would have bought nothing: a script loads
+        // checkout once, keeps the token, and posts it at wp-login.
+        //
+        // Only reCAPTCHA returns an action to check. Turnstile scopes its
+        // tokens to the widget and burns them on first verification, which is
+        // the same guarantee by a different route.
+        if( $action !== '' && $provider === 'recaptcha_v3' && isset( $body['action'] ) ) {
+            if( (string) $body['action'] !== $action ) return false;
         }
 
         if( $provider === 'recaptcha_v3' && isset( $body['score'] ) ) {
@@ -222,71 +183,176 @@ class captcha {
 
     }
 
+    /**
+     * Whether a challenge can actually be issued.
+     *
+     * A provider AND both keys. Every caller checks this before rendering a
+     * widget or refusing a request — a half-configured challenge that refuses
+     * everyone is worse than no challenge at all.
+     *
+     * @since   1.9.4
+     *
+     * @return  bool
+     */
+    public static function is_ready() {
+
+        $provider = settings::get( 'mshield_captcha_provider' );
+
+        if( $provider !== 'turnstile' && $provider !== 'recaptcha_v3' ) return false;
+
+        return settings::get( 'mshield_captcha_site_key' ) !== ''
+            && settings::get( 'mshield_captcha_secret_key' ) !== '';
+
+    }
+
+    /**
+     * The reCAPTCHA action name for a surface.
+     *
+     * @since   1.9.4
+     *
+     * @param   string  $surface    checkout | login | register | lostpassword | comment.
+     * @return  string
+     */
+    public static function action_for( $surface ) {
+
+        // reCAPTCHA only accepts [A-Za-z/_] in an action.
+        return 'mshield_' . preg_replace( '/[^a-z_]/', '', strtolower( (string) $surface ) );
+
+    }
+
+    /**
+     * Load the provider script and the widget renderer for one surface.
+     *
+     * One handle per provider, always with explicit rendering. Two callers used
+     * to register the same handle with different URLs -- store_api with
+     * ?render=explicit and this class without -- and whichever ran second was a
+     * silent no-op, so on a classic checkout with Store API checks enabled the
+     * Turnstile widget never rendered, no token was posted, and the checkout was
+     * refused for having failed a challenge it was never shown.
+     *
+     * @since   1.9.4
+     *
+     * @param   string  $surface
+     */
+    public static function enqueue( $surface ) {
+
+        if( ! self::is_ready() ) return;
+
+        $provider = settings::get( 'mshield_captcha_provider' );
+        $site_key = settings::get( 'mshield_captcha_site_key' );
+
+        if( $provider === 'turnstile' ) {
+            wp_enqueue_script( 'mshield-turnstile', 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit', [], null, [ 'in_footer' => true ] );
+        } else {
+            wp_enqueue_script( 'mshield-recaptcha', 'https://www.google.com/recaptcha/api.js?render=' . rawurlencode( $site_key ), [], null, [ 'in_footer' => true ] );
+        }
+
+        wp_enqueue_script( 'mshield-challenge', MSHIELD_URI . 'assets/js/mshield-challenge.js', [], MSHIELD_VERSION, [ 'in_footer' => true ] );
+        wp_localize_script( 'mshield-challenge', 'mshieldChallenge', [
+            'provider' => $provider,
+            'siteKey'  => $site_key,
+            'action'   => self::action_for( $surface ),
+        ] );
+
+    }
+
+    /**
+     * Print the widget host and token field for one surface.
+     *
+     * @since   1.9.4
+     *
+     * @param   string  $surface
+     */
+    public static function widget( $surface ) {
+
+        if( ! self::is_ready() ) return;
+
+        self::enqueue( $surface );
+
+        // One field name for both providers. Turnstile would inject its own
+        // cf-turnstile-response, but rendering explicitly means the token comes
+        // back through a callback, so it can go wherever we like -- and every
+        // surface then reads the same key.
+        printf(
+            '<div class="mshield-challenge" data-surface="%s"></div>'
+            . '<input type="hidden" name="mshield_captcha_token" class="mshield-challenge-token" value="" />',
+            esc_attr( $surface )
+        );
+
+    }
+
+    /**
+     * Whether the challenge submitted with this request passes.
+     *
+     * Memoized per surface: a surface can be checked by more than one hook
+     * (registration_errors and woocommerce_register_post both fire on a
+     * WooCommerce signup) and a token is single-use at the provider, so
+     * verifying twice would fail the second time.
+     *
+     * Returns TRUE when no challenge is configured. A half-configured captcha
+     * that refuses everyone is worse than no captcha.
+     *
+     * @since   1.9.4
+     *
+     * @param   string  $surface
+     * @return  bool    True when the request may proceed.
+     */
+    public static function passes( $surface ) {
+
+        static $seen = [];
+
+        if( isset( $seen[ $surface ] ) ) return $seen[ $surface ];
+
+        if( ! self::is_ready() ) return $seen[ $surface ] = true;
+
+        // Turnstile still posts its own field when a theme or another plugin
+        // renders a widget implicitly, so accept either.
+        $token = '';
+        foreach( [ 'mshield_captcha_token', 'cf-turnstile-response', 'g-recaptcha-response' ] as $field ) {
+            if( ! empty( $_POST[ $field ] ) ) {
+                $token = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+                break;
+            }
+        }
+
+        if( $token === '' ) return $seen[ $surface ] = false;
+
+        $ok = self::verify(
+            settings::get( 'mshield_captcha_provider' ),
+            settings::get( 'mshield_captcha_secret_key' ),
+            $token,
+            self::action_for( $surface )
+        );
+
+        return $seen[ $surface ] = $ok;
+
+    }
+
+    /**
+     * Whether this request's checkout challenge passed.
+     *
+     * Was a second, near-duplicate copy of verify() that had drifted from it —
+     * different empty-token handling, its own degraded-alert bookkeeping. It
+     * now defers, so there is one verification path and one set of fail-open
+     * rules for every surface.
+     *
+     * @since   1.2.0
+     *
+     * @return  bool
+     */
     private function is_verified() {
 
         if( $this->verified !== null ) return $this->verified;
 
-        $field = $this->provider === 'turnstile' ? 'cf-turnstile-response' : 'mshield_captcha_token';
-        $token = isset( $_POST[ $field ] ) ? sanitize_text_field( wp_unslash( $_POST[ $field ] ) ) : '';
+        $this->verified = self::passes( 'checkout' );
 
-        if( $token === '' ) {
-            $this->verified = false;
-            return false;
-        }
-
-        $endpoint = $this->provider === 'turnstile' ? self::TURNSTILE_VERIFY : self::RECAPTCHA_VERIFY;
-
-        $response = wp_remote_post( $endpoint, [
-            'timeout' => 5,
-            'body'    => [
-                'secret'   => settings::get( 'mshield_captcha_secret_key' ),
-                'response' => $token,
-                'remoteip' => ip_utils::get_client_ip(),
-            ],
-        ] );
-
-        // On a network/API error, fail open so a provider outage can't block all
-        // legitimate checkouts.
-        if( is_wp_error( $response ) ) {
-            $this->verified = true;
-            return true;
-        }
-
-        $body = json_decode( wp_remote_retrieve_body( $response ), true );
-
-        if( ! is_array( $body ) || empty( $body['success'] ) ) {
-
-            // Distinguish a genuine failed challenge from a plugin
-            // misconfiguration (wrong/missing secret). A misconfiguration must
-            // NOT block every checkout — fail open and alert the admin instead.
-            $codes  = ( is_array( $body ) && ! empty( $body['error-codes'] ) ) ? (array) $body['error-codes'] : [];
-            $config = array_intersect( $codes, [ 'invalid-input-secret', 'missing-input-secret', 'bad-request' ] );
-
-            if( ! empty( $config ) ) {
-                $this->alert_degraded( implode( ', ', $config ) );
-                $this->verified = true;
-                return true;
-            }
-
-            $this->verified = false;
-            return false;
-
-        }
-
-        // A successful verification means configuration is healthy — clear any
-        // lingering degraded flag so the admin notice disappears.
-        if( get_option( 'mshield_captcha_degraded' ) ) {
+        // A verified challenge means the configuration is healthy; clear any
+        // lingering degraded flag so the admin notice goes away.
+        if( $this->verified && get_option( 'mshield_captcha_degraded' ) ) {
             delete_option( 'mshield_captcha_degraded' );
         }
 
-        // reCAPTCHA v3 returns a score; enforce a minimum threshold.
-        if( $this->provider === 'recaptcha_v3' && isset( $body['score'] ) ) {
-            $this->verified = ( (float) $body['score'] >= self::RECAPTCHA_MIN_SCORE );
-            return $this->verified;
-        }
-
-        $this->verified = true;
-        return true;
+        return $this->verified;
 
     }
 
@@ -297,7 +363,7 @@ class captcha {
      *
      * @param   string  $error  The provider error code(s) that triggered it.
      */
-    private function alert_degraded( $error ) {
+    private static function alert_degraded( $error ) {
 
         update_option( 'mshield_captcha_degraded', [ 'time' => time(), 'message' => $error ], false );
 
@@ -309,9 +375,9 @@ class captcha {
         $message     = sprintf(
             "MightyShield's bot challenge (%s) is rejecting all tokens because of a configuration error: %s.\n\n" .
             "To avoid blocking legitimate checkouts, the challenge is temporarily failing open (allowing orders) until this is fixed.\n\n" .
-            "Check the Site Key and Secret Key under MightyShield > Fraud Checks > Bot Challenge.\n\n" .
+            "Check the Site Key and Secret Key under MightyShield > Blocking > Bot Challenge.\n\n" .
             "This alert is sent at most once per day.",
-            $this->provider,
+            settings::get( 'mshield_captcha_provider' ),
             $error
         );
 
@@ -344,30 +410,5 @@ class captcha {
 
     }
 
-    /**
-     * Send admin notification email.
-     *
-     * @since   1.2.0
-     *
-     * @param   object  $order  WC_Order object.
-     * @param   string  $reason Reason for flagging.
-     */
-    private function send_admin_notification( $order, $reason ) {
-
-        $admin_email = get_option( 'admin_email' );
-        $subject     = sprintf( '[MightyShield] CAPTCHA failure on order #%d', $order->get_id() );
-        $message     = sprintf(
-            "An order failed the MightyShield bot challenge.\n\nOrder: #%d\nReason: %s\nCustomer: %s (%s)\nIP: %s\n\nReview this order: %s",
-            $order->get_id(),
-            $reason,
-            $order->get_formatted_billing_full_name(),
-            $order->get_billing_email(),
-            $order->get_customer_ip_address(),
-            $order->get_edit_order_url()
-        );
-
-        wp_mail( $admin_email, $subject, $message );
-
-    }
 
 }

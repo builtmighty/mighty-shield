@@ -1,14 +1,15 @@
 <?php
 /**
- * AI Detection.
+ * Address helpers.
  *
- * Scoring vocabulary for AI-assisted order review. Existing layers catch card
- * testing; this one targets stolen-card orders shipped to real addresses, where
- * every attribute is individually legitimate and only the pattern across them
- * is suspicious.
+ * What is left of the old AI-detection scorer. Its four checks moved to
+ * protection/class-order-signals.php in 1.9.2, where they run on every checkout
+ * instead of only when AI review was switched on, and its own 0-10 suspicion
+ * score was retired: the plugin now has one scale, the 1-100 trust rating.
  *
- * Each suspicious signal contributes a fixed weight. The configured sensitivity
- * sets the score an order must reach before it is escalated to the AI.
+ * These two helpers stay because they are used independently of any of that —
+ * by class-entities.php to derive identities, and by the AI prompt builder to
+ * format an address.
  *
  * @package MightyShield
  * @since   1.8.0
@@ -16,114 +17,6 @@
 namespace MightyShield\Includes;
 
 class ai_detection {
-
-    /**
-     * Score contributed by each suspicious signal when it trips.
-     *
-     * @since   1.8.0
-     */
-    public const SIGNAL_WEIGHTS = [
-        'address_velocity' => 2.5,
-        'email_mismatch'   => 2.5,
-        'high_value'       => 2.5,
-        'ip_mismatch'      => 2.5,
-    ];
-
-    /**
-     * Score at/above which an order is escalated to the AI, per sensitivity.
-     *
-     * With four signals at 2.5 each the maximum score is 10, so low requires
-     * every signal, medium any two, and high any single one.
-     *
-     * @since   1.8.0
-     */
-    public const THRESHOLDS = [
-        'low'    => 10.0,
-        'medium' => 5.0,
-        'high'   => 2.5,
-    ];
-
-    /**
-     * The score at/above which an order is escalated, per the configured
-     * sensitivity.
-     *
-     * @since   1.8.0
-     *
-     * @return  float
-     */
-    public static function threshold() {
-
-        $sensitivity = settings::get( 'mshield_ai_sensitivity' );
-        return isset( self::THRESHOLDS[ $sensitivity ] ) ? self::THRESHOLDS[ $sensitivity ] : self::THRESHOLDS['medium'];
-
-    }
-
-    /**
-     * The highest score reachable with every signal tripped.
-     *
-     * @since   1.8.0
-     *
-     * @return  float
-     */
-    public static function max_score() {
-
-        return array_sum( self::SIGNAL_WEIGHTS );
-
-    }
-
-    /**
-     * The weight of a single signal.
-     *
-     * @since   1.8.0
-     *
-     * @param   string  $signal     Signal key (see SIGNAL_WEIGHTS).
-     * @return  float
-     */
-    public static function weight( $signal ) {
-
-        return isset( self::SIGNAL_WEIGHTS[ $signal ] ) ? self::SIGNAL_WEIGHTS[ $signal ] : 0.0;
-
-    }
-
-    /**
-     * Score an order against the suspicious signals.
-     *
-     * Each enabled signal that trips contributes its weight. A signal that
-     * cannot be evaluated (missing data, uncached IP) is skipped rather than
-     * tripped — an absent signal is not evidence of fraud.
-     *
-     * @since   1.8.0
-     *
-     * @param   \WC_Order   $order
-     * @return  array   [ 'score' => float, 'signals' => string[] ]
-     */
-    public static function score_order( $order ) {
-
-        $score   = 0.0;
-        $signals = [];
-
-        $checks = [
-            'address_velocity' => 'signal_address_velocity',
-            'email_mismatch'   => 'signal_email_mismatch',
-            'high_value'       => 'signal_high_value',
-            'ip_mismatch'      => 'signal_ip_mismatch',
-        ];
-
-        foreach( $checks as $key => $method ) {
-
-            if( settings::get( 'mshield_ai_sig_' . $key ) !== 'yes' ) continue;
-
-            $reason = self::$method( $order );
-            if( $reason === null ) continue;
-
-            $score    += self::weight( $key );
-            $signals[] = $reason;
-
-        }
-
-        return [ 'score' => $score, 'signals' => $signals ];
-
-    }
 
     /**
      * Read a shipping field, falling back to billing.
@@ -161,7 +54,7 @@ class ai_detection {
      * @param   string  $address
      * @return  string
      */
-    private static function normalize_address( $address ) {
+    public static function normalize_address( $address ) {
 
         $address = strtolower( trim( $address ) );
         $address = preg_replace( '/[^a-z0-9 ]/', '', $address );

@@ -11,27 +11,22 @@
 
     'use strict';
 
+    // The collector itself lives in mshield-collect.js, shared with the block
+    // checkout so the two paths cannot report different things.
     function collectFingerprint() {
 
-        var data = {
-            timezone: '',
+        if ( typeof window.mshieldCollect === 'function' ) return window.mshieldCollect();
+
+        // The shared collector failed to load. Send what can be read inline
+        // rather than nothing: an empty field reads as "JS did not run", which
+        // would penalise a shopper for our own asset failing.
+        return {
             timezone_offset: new Date().getTimezoneOffset(),
             language: navigator.language || '',
-            languages: navigator.languages ? Array.prototype.slice.call( navigator.languages ) : [],
-            screen_width: screen.width || 0,
-            screen_height: screen.height || 0,
             platform: navigator.platform || '',
-            webdriver: !!navigator.webdriver
+            webdriver: !!navigator.webdriver,
+            degraded: true
         };
-
-        // Timezone name (modern browsers).
-        try {
-            data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-        } catch( e ) {
-            data.timezone = '';
-        }
-
-        return data;
 
     }
 

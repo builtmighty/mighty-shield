@@ -48,23 +48,76 @@ class ip_utils {
     ];
 
     /**
+     * Addresses that can only belong to something inside the perimeter.
+     *
+     * An attacker on the internet cannot make REMOTE_ADDR read as loopback or
+     * RFC1918: those values mean the request genuinely arrived from the same
+     * host or the same private network. That is what makes them safe to treat
+     * as a proxy without the site owner having to enumerate anything, and it
+     * covers the ordinary nginx/HAProxy/Varnish-in-front deployment.
+     *
+     * @since   2.0.0
+     */
+    const PRIVATE_RANGES = [
+        '127.0.0.0/8',        // loopback
+        '10.0.0.0/8',         // RFC1918
+        '172.16.0.0/12',      // RFC1918
+        '192.168.0.0/16',     // RFC1918
+        '169.254.0.0/16',     // link-local
+        '::1/128',            // IPv6 loopback
+        'fc00::/7',           // IPv6 unique local
+        'fe80::/10',          // IPv6 link-local
+    ];
+
+    /**
+     * Whether an address is loopback or private.
+     *
+     * @since   2.0.0
+     *
+     * @param   string  $ip
+     * @return  bool
+     */
+    public static function is_private( $ip ) {
+
+        if( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) return false;
+
+        foreach( self::PRIVATE_RANGES as $cidr ) {
+            if( self::ip_in_cidr( $ip, $cidr ) ) return true;
+        }
+
+        return false;
+
+    }
+
+    /**
      * Get client IP address.
      *
      * Resolution order (most trustworthy first):
      *   1. A custom header named by the MSHIELD_IP_HEADER constant, if defined
-     *      (for non-Cloudflare proxy setups the site owner explicitly trusts).
+     *      — but ONLY when the connection itself came from a trusted proxy or
+     *      from inside the perimeter (loopback / RFC1918), and reading the
+     *      chain from the right so the attacker-controlled leftmost hop is not
+     *      what gets returned.
      *   2. Cloudflare's CF-Connecting-IP header — but ONLY when the connection
      *      actually reached us from a Cloudflare edge IP (REMOTE_ADDR is inside
      *      a trusted-proxy range). This prevents header spoofing.
      *   3. REMOTE_ADDR (the raw TCP peer).
      *
      * The client-suppliable X-Forwarded-For / X-Real-IP headers are NEVER
-     * trusted: behind Cloudflare the attacker controls the left-most XFF value
-     * (Cloudflare appends, it does not replace), which previously let a spoofed
-     * header defeat the blocklist / rate limiter and impersonate whitelisted IPs.
+     * trusted by default: behind Cloudflare the attacker controls the left-most
+     * XFF value (Cloudflare appends, it does not replace), which previously let
+     * a spoofed header defeat the blocklist / rate limiter and impersonate
+     * whitelisted IPs.
+     *
+     * Every IP-keyed control in the plugin — the blocklist, the rate limiter,
+     * the velocity counters, the temporary blocks, the geo signals and the
+     * allowlist — rests on this function. A header trusted here is a header
+     * that turns all of them off.
      *
      * @since   1.0.0
      * @since   1.3.0 Cloudflare-aware; stopped trusting X-Forwarded-For/X-Real-IP.
+     * @since   2.0.0 MSHIELD_IP_HEADER now requires a trusted or internal connection,
+     *                and the chain is read right-to-left.
      *
      * @return  string  Client IP address.
      */
@@ -74,16 +127,29 @@ class ip_utils {
             ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) )
             : '';
 
-        // 1. Explicit override header for bespoke proxy setups.
+        // 1. Explicit override header for bespoke proxy setups — but only from
+        //    a connection that could legitimately be carrying one.
         if( defined( 'MSHIELD_IP_HEADER' ) && MSHIELD_IP_HEADER ) {
+
             $key = 'HTTP_' . strtoupper( str_replace( '-', '_', MSHIELD_IP_HEADER ) );
+
             if( ! empty( $_SERVER[ $key ] ) ) {
-                $parts = explode( ',', sanitize_text_field( wp_unslash( $_SERVER[ $key ] ) ) );
-                $candidate = trim( $parts[0] );
-                if( filter_var( $candidate, FILTER_VALIDATE_IP ) ) {
-                    return $candidate;
+
+                // The gate this branch was missing. Without it the header was
+                // honoured whoever sent it, so pointing the constant at a
+                // client-suppliable header — X-Forwarded-For being the obvious
+                // one — handed every visitor the ability to choose their own
+                // IP, and with it the blocklist, the rate limiter, the velocity
+                // counters and any allowlisted address.
+                if( self::is_trusted_proxy( $remote ) || self::is_private( $remote ) ) {
+
+                    $client = self::client_from_chain( sanitize_text_field( wp_unslash( $_SERVER[ $key ] ) ) );
+                    if( $client !== '' ) return $client;
+
                 }
+
             }
+
         }
 
         // 2. Cloudflare connecting IP, trusted only when we sit behind Cloudflare.
@@ -100,6 +166,51 @@ class ip_utils {
         }
 
         return '0.0.0.0';
+
+    }
+
+    /**
+     * Pick the client out of a proxy header's value.
+     *
+     * Reads RIGHT to left, skipping hops that are themselves a proxy, and
+     * returns the first address that is not one. The direction is the whole
+     * point: each hop APPENDS to a forwarded-for chain, so the leftmost entry
+     * is whatever the original caller sent and is therefore the one value in
+     * the header an attacker fully controls. Taking it — which is what this
+     * did — is the spoof, even behind a proxy that is genuinely trusted.
+     *
+     * A single-value header (True-Client-IP, CF-Connecting-IP) has one entry,
+     * so the same walk returns it unchanged.
+     *
+     * If every hop looks like a proxy the leftmost valid address is returned
+     * rather than nothing. That case is an entirely internal chain, where the
+     * caller has already established the connection came from inside; giving up
+     * would collapse every visitor onto the proxy's own address, and a store
+     * whose customers all share one IP rate-limits itself shut.
+     *
+     * @since   2.0.0
+     *
+     * @param   string  $value  Raw header value.
+     * @return  string  Client IP, or '' if the header held none.
+     */
+    private static function client_from_chain( $value ) {
+
+        $parts = array_map( 'trim', explode( ',', $value ) );
+        $valid = [];
+
+        foreach( $parts as $part ) {
+            if( filter_var( $part, FILTER_VALIDATE_IP ) ) $valid[] = $part;
+        }
+
+        if( empty( $valid ) ) return '';
+
+        foreach( array_reverse( $valid ) as $candidate ) {
+            if( self::is_trusted_proxy( $candidate ) ) continue;
+            if( self::is_private( $candidate ) ) continue;
+            return $candidate;
+        }
+
+        return $valid[0];
 
     }
 

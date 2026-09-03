@@ -13,6 +13,8 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class zip_state_validator {
 
@@ -54,21 +56,51 @@ class zip_state_validator {
         $action = settings::get( 'mshield_zip_state_action' );
         if( $action !== 'block' ) return;
 
-        $country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
-        if( $country !== 'US' ) return;
+        $reason = self::assess(
+            isset( $data['billing_country'] ) ? $data['billing_country'] : '',
+            isset( $data['billing_state'] ) ? $data['billing_state'] : '',
+            isset( $data['billing_postcode'] ) ? $data['billing_postcode'] : ''
+        );
 
-        $state   = isset( $data['billing_state'] ) ? trim( $data['billing_state'] ) : '';
-        $zipcode = isset( $data['billing_postcode'] ) ? trim( $data['billing_postcode'] ) : '';
+        if( $reason === null ) return;
 
-        $result = self::verify_zip_state( $state, $zipcode );
+        db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'blocked', $reason );
+        $errors->add( 'mighty_shield_zip_state', response::with_note( __( 'Please verify your billing ZIP code and state.', 'mighty-shield' ) ) );
 
-        if( $result !== true && $result !== null ) {
+    }
 
-            $ip = ip_utils::get_client_ip();
-            db::log_event( $ip, 'classic_checkout', 'blocked', $result );
-            $errors->add( 'mighty_shield_zip_state', __( 'Please verify your billing ZIP code and state.', 'mighty-shield' ) );
+    /**
+     * Check the ZIP against the state and record a mismatch.
+     *
+     * The one place this check turns into a signal, called by both checkouts.
+     * The Store API called verify_zip_state() and blocked on the answer without
+     * ever recording it, so a mismatch cost an order nothing on the block
+     * checkout unless the setting was turned all the way up to block.
+     *
+     * verify_zip_state() is deliberately tri-state: true is a match, a string
+     * is a mismatch, and null means the prefix is not in the map and nothing
+     * can be said. Only a string is evidence, which is why the test below is
+     * written out rather than collapsed to a boolean.
+     *
+     * @since   2.0.0
+     *
+     * @param   string  $country    Billing country code.
+     * @param   string  $state      Billing state.
+     * @param   string  $zipcode    Billing postcode.
+     * @return  string|null Mismatch reason, or null when there is nothing to report.
+     */
+    public static function assess( $country, $state, $zipcode ) {
 
-        }
+        // The map is US-only, so there is nothing to check anywhere else.
+        if( $country !== 'US' ) return null;
+
+        $result = self::verify_zip_state( trim( (string) $state ), trim( (string) $zipcode ) );
+
+        if( $result === true || $result === null ) return null;
+
+        risk_context::add( 'zip_state_mismatch', $result );
+
+        return $result;
 
     }
 
@@ -88,24 +120,14 @@ class zip_state_validator {
         $action = settings::get( 'mshield_zip_state_action' );
         if( $action === 'block' ) return;
 
-        if( $order->get_billing_country() !== 'US' ) return;
+        $result = self::assess( $order->get_billing_country(), $order->get_billing_state(), $order->get_billing_postcode() );
 
-        $state   = $order->get_billing_state();
-        $zipcode = $order->get_billing_postcode();
-        $result  = self::verify_zip_state( $state, $zipcode );
+        if( $result === null ) return;
 
-        if( $result !== true && $result !== null ) {
+        \MightyShield\Includes\response::flag( $order, 'zip_state_mismatch', $result, false, 'classic_checkout' );
 
-            $ip = ip_utils::get_client_ip();
-            db::log_event( $ip, 'classic_checkout', 'flagged', $result );
-            $order->add_order_note( 'MightyShield: ' . $result );
-            $order->update_meta_data( '_mshield_flagged', 'zip_state_mismatch' );
-            $order->save();
-
-            if( $action === 'notify' ) {
-                $this->send_admin_notification( $order, $result );
-            }
-
+        if( $action === 'notify' ) {
+            $this->send_admin_notification( $order, $result );
         }
 
     }

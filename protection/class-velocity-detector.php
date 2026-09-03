@@ -12,6 +12,7 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
 
 class velocity_detector {
 
@@ -66,20 +67,39 @@ class velocity_detector {
      */
     private function track_email( $ip, $email ) {
 
-        $key    = 'mshield_emails_' . md5( $ip );
-        $emails = get_transient( $key );
+        // Distinct-email counting needs the set, not just a tally, so this one
+        // genuinely needs a collection. It lives in the rate-limit table rather
+        // than a transient for the same reason as the order counter below.
+        $hash = md5( strtolower( trim( $email ) ) );
 
-        if( ! is_array( $emails ) ) {
-            $emails = [];
-        }
+        // The IP hash is a literal PREFIX, not folded into one digest — the
+        // count below matches on it with LIKE, and md5 of the whole string
+        // shares no prefix with md5 of the IP, so that query could never match
+        // and distinct-email velocity would silently never fire.
+        db::increment_rate_limit( md5( $ip ) . ':' . $hash, 'vel_email_seen', HOUR_IN_SECONDS );
 
-        $email_hash = md5( strtolower( trim( $email ) ) );
-        if( ! in_array( $email_hash, $emails, true ) ) {
-            $emails[] = $email_hash;
-        }
+    }
 
-        // Store for 1 hour.
-        set_transient( $key, $emails, HOUR_IN_SECONDS );
+    /**
+     * How many distinct emails this IP has used in the window.
+     *
+     * @since   1.9.0
+     *
+     * @param   string  $ip
+     * @return  int
+     */
+    private function unique_emails( $ip ) {
+
+        global $wpdb;
+
+        return (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}mshield_rate_limits
+             WHERE action_type = 'vel_email_seen'
+               AND identifier LIKE %s
+               AND window_end >= %s",
+            $wpdb->esc_like( md5( $ip ) . ':' ) . '%',
+            gmdate( 'Y-m-d H:i:s' )
+        ) );
 
     }
 
@@ -92,12 +112,11 @@ class velocity_detector {
      */
     private function track_order_count( $ip ) {
 
-        $key   = 'mshield_orders_' . md5( $ip );
-        $count = (int) get_transient( $key );
-        $count++;
-
-        // Store for 15 minutes.
-        set_transient( $key, $count, 15 * MINUTE_IN_SECONDS );
+        // Counted in the rate-limit table, not a transient. Under a persistent
+        // object cache a transient can be evicted at any moment, which would
+        // silently reset the counter and disable velocity detection precisely
+        // when a burst of orders was filling the cache.
+        db::increment_rate_limit( md5( $ip . '|orders' ), 'vel_orders', 15 * MINUTE_IN_SECONDS );
 
     }
 
@@ -110,22 +129,20 @@ class velocity_detector {
      */
     private function check_thresholds( $ip ) {
 
-        // Check unique emails threshold.
         $email_threshold = (int) settings::get( 'mshield_velocity_email_threshold' );
-        $email_key       = 'mshield_emails_' . md5( $ip );
-        $emails          = get_transient( $email_key );
+        $emails          = $this->unique_emails( $ip );
 
-        if( is_array( $emails ) && count( $emails ) > $email_threshold ) {
+        if( $email_threshold > 0 && $emails > $email_threshold ) {
+            risk_context::add( 'velocity_emails', sprintf( '%d unique emails from this IP in the last hour (limit %d)', $emails, $email_threshold ) );
             rate_limiter::temp_block_ip( $ip, "Velocity: {$email_threshold}+ unique emails in 1 hour" );
             return;
         }
 
-        // Check order count threshold.
         $order_threshold = (int) settings::get( 'mshield_velocity_order_threshold' );
-        $order_key       = 'mshield_orders_' . md5( $ip );
-        $order_count     = (int) get_transient( $order_key );
+        $order_count     = db::check_rate_limit( md5( $ip . '|orders' ), 'vel_orders' );
 
-        if( $order_count > $order_threshold ) {
+        if( $order_threshold > 0 && $order_count > $order_threshold ) {
+            risk_context::add( 'velocity_orders', sprintf( '%d orders from this IP in the last 15 minutes (limit %d)', $order_count, $order_threshold ) );
             rate_limiter::temp_block_ip( $ip, "Velocity: {$order_threshold}+ orders in 15 minutes" );
             return;
         }

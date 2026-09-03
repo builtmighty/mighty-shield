@@ -12,6 +12,8 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class rate_limiter {
 
@@ -43,8 +45,10 @@ class rate_limiter {
         // Check if IP is temporarily blocked.
         if( $this->is_temp_blocked( $ip ) ) {
 
+            risk_context::add( 'ip_temp_blocked', 'IP is under a temporary block' );
+
             db::log_event( $ip, 'classic_checkout', 'blocked', 'Temporarily blocked IP' );
-            wc_add_notice( __( 'Your access has been temporarily restricted. Please try again later.', 'mighty-shield' ), 'error' );
+            wc_add_notice( response::with_note( __( 'Your access has been temporarily restricted. Please try again later.', 'mighty-shield' ) ), 'error' );
             return;
 
         }
@@ -58,8 +62,10 @@ class rate_limiter {
 
         if( $count > $limit ) {
 
+            risk_context::add( 'rate_limited', "Checkout rate limit exceeded: {$count}/{$limit}" );
+
             db::log_event( $ip, 'classic_checkout', 'rate_limited', "Checkout rate limit exceeded: {$count}/{$limit}" );
-            wc_add_notice( __( 'Too many checkout attempts. Please wait and try again later.', 'mighty-shield' ), 'error' );
+            wc_add_notice( response::with_note( __( 'Too many checkout attempts. Please wait and try again later.', 'mighty-shield' ) ), 'error' );
             return;
 
         }

@@ -13,6 +13,8 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class smarty_address_verifier {
 
@@ -49,7 +51,7 @@ class smarty_address_verifier {
      *
      * @param   string  $error_message  The API error that triggered fallback.
      */
-    private function alert_degraded( $error_message ) {
+    private static function alert_degraded( $error_message ) {
 
         // Persist the latest degraded state for the admin notice.
         update_option( 'mshield_smarty_degraded', [
@@ -99,7 +101,7 @@ class smarty_address_verifier {
             esc_html__( 'MightyShield:', 'mighty-shield' ),
             esc_html( sprintf(
                 /* translators: %s: API error message. */
-                __( 'Address verification (Smarty) is degraded and is falling back to a basic ZIP/State check — full USPS verification is NOT running. Last error: %s. Check your Smarty account quota and API keys.', 'mighty-shield' ),
+                __( 'Address verification (Smarty) is degraded and is falling back to a basic ZIP and state check. Full USPS verification is NOT running. Last error: %s. Check your Smarty account quota and API keys.', 'mighty-shield' ),
                 $degraded['message']
             ) )
         );
@@ -121,29 +123,58 @@ class smarty_address_verifier {
         $action = settings::get( 'mshield_smarty_action' );
         if( $action !== 'block' ) return;
 
-        $country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
-        if( $country !== 'US' ) return;
+        $reason = self::assess( $data );
+        if( $reason === null ) return;
+
+        db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'blocked', $reason );
+        $errors->add( 'mighty_shield_smarty', response::with_note( __( 'Please verify your billing address and try again.', 'mighty-shield' ) ) );
+
+    }
+
+    /**
+     * Verify the address against USPS data and record anything it cannot find.
+     *
+     * The one place this check turns into a signal, called by both checkouts.
+     * Until now this check did not exist on the block checkout at all: the
+     * class registers classic hooks only, so a store on the block checkout was
+     * paying for a Smarty subscription that never verified a single order.
+     *
+     * Fails open at every step. An API error, an exhausted quota or an
+     * unmappable ZIP all return null, which is the same as saying nothing, and
+     * a shopper is never refused because a third party was unreachable.
+     *
+     * @since   2.0.0
+     *
+     * @param   array   $data   Normalised billing fields.
+     * @return  string|null Reason the address could not be verified, or null.
+     */
+    public static function assess( $data ) {
+
+        // Static, so it carries its own copy of the constructor's gate.
+        if( settings::get( 'mshield_smarty_enabled' ) !== 'yes' ) return null;
+        if( empty( settings::get( 'mshield_smarty_auth_id' ) ) || empty( settings::get( 'mshield_smarty_auth_token' ) ) ) return null;
+
+        // Smarty covers US addresses only.
+        if( ( isset( $data['billing_country'] ) ? $data['billing_country'] : '' ) !== 'US' ) return null;
 
         $street  = isset( $data['billing_address_1'] ) ? trim( $data['billing_address_1'] ) : '';
         $city    = isset( $data['billing_city'] ) ? trim( $data['billing_city'] ) : '';
         $state   = isset( $data['billing_state'] ) ? trim( $data['billing_state'] ) : '';
         $zipcode = isset( $data['billing_postcode'] ) ? trim( $data['billing_postcode'] ) : '';
 
-        if( empty( $street ) ) return;
+        if( empty( $street ) ) return null;
 
-        $result = $this->verify_address( $street, $city, $state, $zipcode );
+        $result = self::verify_address( $street, $city, $state, $zipcode );
 
-        // Fail open: false means API error, skip blocking.
-        if( $result === false ) return;
+        // Fail open: false means the API could not answer.
+        if( $result === false ) return null;
+        if( $result['valid'] ) return null;
 
-        if( ! $result['valid'] ) {
+        $reason = 'Smarty address verification failed: ' . implode( ', ', $result['reasons'] );
 
-            $ip     = ip_utils::get_client_ip();
-            $reason = 'Smarty address verification failed: ' . implode( ', ', $result['reasons'] );
-            db::log_event( $ip, 'classic_checkout', 'blocked', $reason );
-            $errors->add( 'mighty_shield_smarty', __( 'Please verify your billing address and try again.', 'mighty-shield' ) );
+        risk_context::add( 'address_unverified', $reason );
 
-        }
+        return $reason;
 
     }
 
@@ -163,34 +194,20 @@ class smarty_address_verifier {
         $action = settings::get( 'mshield_smarty_action' );
         if( $action === 'block' ) return;
 
-        if( $order->get_billing_country() !== 'US' ) return;
+        $reason = self::assess( [
+            'billing_country'   => $order->get_billing_country(),
+            'billing_address_1' => $order->get_billing_address_1(),
+            'billing_city'      => $order->get_billing_city(),
+            'billing_state'     => $order->get_billing_state(),
+            'billing_postcode'  => $order->get_billing_postcode(),
+        ] );
 
-        $street  = $order->get_billing_address_1();
-        $city    = $order->get_billing_city();
-        $state   = $order->get_billing_state();
-        $zipcode = $order->get_billing_postcode();
+        if( $reason === null ) return;
 
-        if( empty( $street ) ) return;
+        \MightyShield\Includes\response::flag( $order, 'smarty_address_invalid', $reason, false, 'classic_checkout' );
 
-        $result = $this->verify_address( $street, $city, $state, $zipcode );
-
-        // Fail open.
-        if( $result === false ) return;
-
-        if( ! $result['valid'] ) {
-
-            $ip     = ip_utils::get_client_ip();
-            $reason = 'Smarty address verification failed: ' . implode( ', ', $result['reasons'] );
-
-            db::log_event( $ip, 'classic_checkout', 'flagged', $reason );
-            $order->add_order_note( 'MightyShield: ' . $reason );
-            $order->update_meta_data( '_mshield_flagged', 'smarty_address_invalid' );
-            $order->save();
-
-            if( $action === 'notify' ) {
-                $this->send_admin_notification( $order, $reason );
-            }
-
+        if( $action === 'notify' ) {
+            $this->send_admin_notification( $order, $reason );
         }
 
     }
@@ -206,20 +223,20 @@ class smarty_address_verifier {
      * @param   string  $zipcode    ZIP code.
      * @return  array|false         Array with 'valid' and 'reasons', or false on API failure.
      */
-    private function verify_address( $street, $city, $state, $zipcode ) {
+    private static function verify_address( $street, $city, $state, $zipcode ) {
 
-        $cache_key = $this->get_cache_key( $street, $city, $state, $zipcode );
+        $cache_key = self::get_cache_key( $street, $city, $state, $zipcode );
         $cached    = get_transient( $cache_key );
 
         // Cache hit: 'api_error' means previous API failure, array means cached result.
         if( $cached === 'api_error' ) {
-            return $this->fallback_zip_state( $state, $zipcode );
+            return self::fallback_zip_state( $state, $zipcode );
         }
         if( is_array( $cached ) ) {
             return $cached;
         }
 
-        $response = $this->call_smarty_api( $street, $city, $state, $zipcode );
+        $response = self::call_smarty_api( $street, $city, $state, $zipcode );
 
         // API failure — fall back to ZIP/state check.
         if( is_wp_error( $response ) ) {
@@ -228,16 +245,16 @@ class smarty_address_verifier {
             db::log_event( $ip, 'system', 'degraded', 'Smarty address verification unavailable: ' . $response->get_error_message() . ' — falling back to basic ZIP/State check' );
 
             // Alert the store admin (throttled) that full verification is off.
-            $this->alert_degraded( $response->get_error_message() );
+            self::alert_degraded( $response->get_error_message() );
 
             // Cache API error briefly to avoid hammering a failing API.
             set_transient( $cache_key, 'api_error', MINUTE_IN_SECONDS );
 
-            return $this->fallback_zip_state( $state, $zipcode );
+            return self::fallback_zip_state( $state, $zipcode );
 
         }
 
-        $result = $this->analyze_response( $response, $state );
+        $result = self::analyze_response( $response, $state );
 
         // A successful call means verification has recovered — clear any
         // lingering degraded-state flag so the admin notice disappears.
@@ -263,15 +280,15 @@ class smarty_address_verifier {
      * @param   string  $zipcode    ZIP code.
      * @return  array|\WP_Error     Decoded response array or WP_Error.
      */
-    private function call_smarty_api( $street, $city, $state, $zipcode ) {
+    private static function call_smarty_api( $street, $city, $state, $zipcode ) {
 
         $auth_id    = settings::get( 'mshield_smarty_auth_id' );
         $auth_token = settings::get( 'mshield_smarty_auth_token' );
 
-        $url = add_query_arg( [
-            'auth-id'    => $auth_id,
-            'auth-token' => $auth_token,
-        ], 'https://us-street.api.smarty.com/street-address' );
+        // Credentials as headers rather than query parameters: a URL is logged
+        // by proxies, servers and error reporters, so a key in one has a habit
+        // of turning up somewhere it was never meant to be.
+        $url = 'https://us-street.api.smarty.com/street-address';
 
         $body = wp_json_encode( [ [
             'street'  => $street,
@@ -281,7 +298,11 @@ class smarty_address_verifier {
         ] ] );
 
         $response = wp_remote_post( $url, [
-            'headers' => [ 'Content-Type' => 'application/json' ],
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Auth-ID'      => $auth_id,
+                'Auth-Token'   => $auth_token,
+            ],
             'body'    => $body,
             'timeout' => 5,
         ] );
@@ -318,7 +339,7 @@ class smarty_address_verifier {
      * @param   string  $input_state    The state submitted by the customer.
      * @return  array                   [ 'valid' => bool, 'reasons' => string[] ]
      */
-    private function analyze_response( $response, $input_state ) {
+    private static function analyze_response( $response, $input_state ) {
 
         $reasons = [];
 
@@ -378,7 +399,7 @@ class smarty_address_verifier {
      * @param   string  $zipcode    ZIP code.
      * @return  array|false         Verification result or false if unable to verify.
      */
-    private function fallback_zip_state( $state, $zipcode ) {
+    private static function fallback_zip_state( $state, $zipcode ) {
 
         $result = zip_state_validator::verify_zip_state( $state, $zipcode );
 
@@ -404,7 +425,7 @@ class smarty_address_verifier {
      * @param   string  $zipcode    ZIP code.
      * @return  string
      */
-    private function get_cache_key( $street, $city, $state, $zipcode ) {
+    private static function get_cache_key( $street, $city, $state, $zipcode ) {
 
         $normalized = strtolower( trim( $street ) . '|' . trim( $city ) . '|' . trim( $state ) . '|' . trim( $zipcode ) );
         return 'mshield_smarty_' . md5( $normalized );

@@ -4,7 +4,7 @@ Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 1.8.1
+Stable tag: 2.0.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -68,6 +68,58 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 == Screenshots ==
 
 == Changelog ==
+
+= 2.0.0 =
+* MightyShield now appears on the order itself. Open any order and the right-hand column shows its trust rating, the checks that tripped and what each one cost, and whatever action that order needs. Orders placed before MightyShield was installed can be rated from the same panel.
+* Tell MightyShield how an order turned out with a Clean or Fraud verdict, and it weighs your answer against future orders from the same customer, device, address or network. Change your mind at any time: switching the verdict takes back whatever the previous one did to that customer's standing.
+* Approve and Block now do the right thing for what actually happened to the money, read from your payment processor rather than from what MightyShield asked it to do. An order held on an authorization captures or voids; one held after payment moves to Processing or is cancelled with refund instructions; one held before payment sends the customer back to pay.
+* A new Rating column on the orders list, so you can see at a glance which of a hundred orders is worth opening.
+* The Fraud Review queue is rebuilt. It now says why each order is held and what happened to its money, and Approve and Block work directly from the list, so clearing ten held orders no longer means opening ten orders.
+* A MightyShield widget on the WordPress dashboard: whether protection is on, the last 30 days of activity, and how many orders are waiting for you.
+* Fixed: the Fraud Review queue could time out and fail to load on stores with only a few dozen orders.
+* Fixed: AI review was rejected by the provider on every request and silently stopped reviewing orders. Failed reviews now report what the provider actually objected to instead of only a status code.
+* Fixed: reCAPTCHA v3 could never succeed on the block-based checkout, which would have refused every order the moment it was switched on.
+* New: MightyShield now warns you when the Store API Firewall is set in a way that closes a block-based checkout to your customers. That combination previously took a store offline with nothing anywhere to say why.
+* Rewrote the built-in documentation against the plugin as it actually is. It now covers every setting, including twelve that were not documented at all, and a Payment section explaining why the same risk level can do different things on different orders.
+
+= 1.9.0 =
+* Reorganised the settings screens around how an order is actually judged. Each check's own settings now sit on its row on the Scoring tab, alongside what it costs and how often it fires, so configuring a check and deciding what it is worth are no longer two different pages. Firewall, Allowlist and Blocklist are now one Access tab, and a new Payment tab shows what each of your payment methods can and cannot check. Old bookmarks still work and no settings were changed.
+* Cloudflare Turnstile now works on the block-based checkout, not just the classic one. The widget appears just above the Place Order button, and if it cannot load for any reason the order goes through rather than being stopped.
+* Card checks now work on Square, Authorize.Net and Braintree as well as Stripe. When a payment succeeds but the billing address or security code did not match the card, the order is flagged for review before it ships — previously only Stripe stores got this, and these gateways only mentioned it in an order note when their own fraud filter had already caught it.
+* Payment methods MightyShield does not recognise are handled gracefully rather than ignored: those stores get everything except the card checks and the extra card verification, and nothing breaks.
+* Log entries now record which order they belong to, and the trust rating at the time, so you can trace an event back to the order instead of matching on address and timestamp by eye.
+* The hidden bot trap now works on the block-based checkout too. It previously only existed on the classic checkout, because there was no server-rendered form to put it in.
+* Rewrote the built-in documentation, which still described how the plugin worked two versions ago.
+* Security: a whitelisted email address no longer exempts anyone who simply types it at checkout. Previously, anyone who learned or guessed an allowlisted address could enter it and bypass every check in the plugin. An email now only grants an exemption to someone signed in to the account that owns it; whitelist the IP, user or role instead for anyone else. Attempts to use an allowlisted address without being signed in are recorded in your logs.
+* Security: fraud checks now run on the block-based checkout by default. They previously shipped switched off, so stores using WooCommerce's newer checkout had the firewall and none of the fraud checks. Existing stores are switched on during the update and told so once.
+* Velocity counters moved out of temporary storage that a caching plugin could clear at any moment, which could silently switch off velocity detection exactly when a burst of orders was filling the cache.
+* IP lookups now use an encrypted connection, and API credentials for Smarty and Google Gemini are sent as headers rather than in the address, where they end up in server and proxy logs.
+* Added an option to keep customers' personal details out of AI reviews. The review still sees the email domain, whether the address looks plausible, the town and postcode and the network the order came from — but not the street address, mailbox name, phone number or exact IP.
+* Added a unified trust rating. Every order is rated from 1 to 100 — 100 totally trustworthy, 1 as bad as it gets — and every protection layer now spends trust instead of deciding block/flag on its own, so several weak signals can combine into a strong verdict rather than producing separate order notes that nobody reads. An unknown customer starts as Monitored, not Trusted: the top of the scale has to be earned with a clean history.
+* Added a six-band response ladder — Trusted, Monitored, Challenged, Detained, Rejected, Banned. Detained, Rejected and Banned orders never reach the payment processor, which keeps spam and card-testing orders off your merchant account's decline and fraud ratios.
+* Added persistent identity memory. Email (with Gmail aliases collapsed), phone, address, device and IP network are remembered across orders and linked to each other, so a fraudster who changes one detail is still recognised. Values are hashed with a per-site key — no readable customer data is stored.
+* Added per-signal tuning: every signal has a weight, and can optionally force a band on its own regardless of the total score.
+* Enforcement is off by default. New installs and upgrades run in observation mode, recording what band each order would have landed in so you can tune thresholds against your own traffic before anything is enforced.
+* Refusals no longer announce themselves: the message is generic, varies between attempts, and is delayed, so automated card testing can no longer use the response to work out what tripped.
+* Added a step-up challenge for borderline orders: where the payment method supports it, additional card verification (3-D Secure) is requested instead of blocking. Genuine cardholders complete their bank's prompt and the sale goes through; someone using a stolen card cannot, and liability for the chargeback moves to the card issuer. Payment methods that cannot do this are unaffected and say so plainly on the order.
+* Added outcome learning. Refunds, chargebacks, completed orders and your own "Report as fraud" decisions are now remembered against the customer, device, address and network behind the order, so the next order from any of them is judged with hindsight. Includes a "Report as fraud" bulk action on the Orders screen, which also works on orders placed before this update.
+* Added payment-instrument checks for Stripe. When a payment succeeds but the billing address or security code did not match the card, the order is flagged for review before it ships — a common sign of a stolen card. Orders failing both are held automatically. Stripe's own risk rating and prepaid-card use on high-value orders are read too. Requires Stripe webhooks to be configured.
+* Orders held or flagged for any of these reasons now appear together in the Fraud Review queue.
+* AI review now returns a structured verdict — a 1-100 trust rating, an allow/review/deny call, and written reasons — instead of a bare number scraped out of a sentence. The reasons appear on the order, so you can see why an order was held rather than just that it was.
+* AI review is now sent everything MightyShield already worked out: which checks fired, what each cost, what is known about the customer, the device, the address and the network, and how old the account is. Previously it was asked to judge an order with less information than the plugin already had.
+* AI review can now run just after checkout instead of during it, so customers never wait on the AI provider and nobody who can place an order can run up your API bill. Recommended, and now the setting to reach for unless you rely on reserving funds without taking them, which has to happen during payment.
+* Added a daily limit on AI reviews. Once reached, orders carry on as normal without a review and a note is added to your logs.
+* Fixed a crash at checkout whenever the AI provider was unreachable, rate limited, or misconfigured. The failure was supposed to let the order through quietly and instead brought down the checkout — the opposite of what was intended, and it affected 1.8.0 and 1.8.1.
+* AI review now runs where it can change the outcome. Known-good customers and already-decided orders are skipped, concentrating spend on the genuinely ambiguous ones. Reviewing every order remains an option.
+* Disposable email detection now uses a maintained list refreshed daily, instead of ~49 domains frozen at release. The built-in list stays as a fallback, and a failed or malformed download never replaces a good list.
+* Added an email deliverability check: an address at a domain that cannot receive mail at all is flagged. Domains with no MX record but a valid A record are treated as deliverable, because they are — plenty of small legitimate businesses are set up that way.
+* Added protection either side of the checkout, which previously had none: coupon-code guessing, repeated failed logins, bursts of new accounts from one address, and orders from accounts created moments earlier. All of it feeds the order's trust rating.
+* Added checkout behaviour checks that tell a person from a script: whether form fields were filled without anyone typing, pasting or using autofill, and whether the browser's own description of itself holds together. Tuned to leave real customers alone — mobile taps, password managers, keyboard-only shoppers and low-spec machines all pass untouched.
+* Fixed device recognition, which previously identified a rough demographic rather than a device: thousands of ordinary customers shared one signature, so repeat-device limits flagged real shoppers and could be sidestepped by resizing a browser window.
+* The classic and block checkouts now share one collector, so a check cannot be avoided by using the other checkout.
+* Added datacenter, proxy/VPN and network-operator detection to IP lookups.
+* Fixed the IP location signal never firing for first-time visitors, because their address was only ever cached after they had already been blocked.
+* Fixed log cleanup silently never running on stores with the Store API firewall switched off, which let the log table grow without limit.
 
 = 1.8.1 =
 * Added a Fraud Review screen under WooCommerce → Orders (shown only when AI Detection is enabled) that lists every order the AI flagged and is still waiting on, with a count badge on the menu item — a dedicated queue instead of hunting for held orders one at a time.

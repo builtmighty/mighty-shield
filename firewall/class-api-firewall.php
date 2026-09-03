@@ -39,9 +39,6 @@ class api_firewall {
         // Hook into REST API dispatch at earliest priority.
         add_filter( 'rest_pre_dispatch', [ $this, 'intercept_request' ], 1, 3 );
 
-        // Register daily cleanup cron.
-        add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\db', 'cleanup' ] );
-
     }
 
     /**

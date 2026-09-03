@@ -46,18 +46,52 @@ class log_viewer {
         fputcsv( $output, [ 'ID', 'IP', 'Action', 'Endpoint', 'Reason', 'Date' ] );
 
         foreach( $logs as $log ) {
-            fputcsv( $output, [
+            fputcsv( $output, array_map( [ __CLASS__, 'defuse' ], [
                 $log->id,
                 $log->ip,
                 $log->action,
                 $log->endpoint,
                 $log->reason,
                 $log->created_at,
-            ] );
+            ] ) );
         }
 
         fclose( $output );
         exit;
+
+    }
+
+    /**
+     * Stop a spreadsheet treating a log value as a formula.
+     *
+     * Excel, Numbers and Sheets all evaluate a cell beginning with = + - @ or a
+     * leading tab. The reason column carries text that came off a checkout
+     * form, so a log export is a file built from attacker input and opened by
+     * the merchant — the textbook shape of CSV injection.
+     *
+     * Nothing reaches this today: every reason string begins with a literal and
+     * the IP column is validated before it is ever stored. That is a property
+     * of the current callers rather than of this function, and one new
+     * log_event() whose reason starts with a variable would quietly make it
+     * exploitable. Neutralising here means that can never be the file's problem.
+     *
+     * A leading apostrophe is the standard mitigation: spreadsheets read the
+     * rest of the cell as literal text and do not display the quote.
+     *
+     * @since   2.0.0
+     *
+     * @param   mixed   $value  Cell value.
+     * @return  string
+     */
+    private static function defuse( $value ) {
+
+        $value = (string) $value;
+
+        if( $value === '' ) return $value;
+
+        return \in_array( $value[0], [ '=', '+', '-', '@', "\t", "\r" ], true )
+            ? "'" . $value
+            : $value;
 
     }
 

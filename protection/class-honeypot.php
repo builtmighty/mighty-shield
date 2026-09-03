@@ -12,6 +12,8 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class honeypot {
 
@@ -65,13 +67,16 @@ class honeypot {
 
         $ip    = ip_utils::get_client_ip();
         $value = $this->get_value();
+
+        risk_context::add( 'honeypot', 'Honeypot field filled (bot detected)' );
+
         db::log_event( $ip, 'classic_checkout', 'blocked', 'Honeypot field filled (bot detected): "' . substr( $value, 0, 100 ) . '"' );
 
         // Temp-block the IP.
         $duration = (int) settings::get( 'mshield_temp_block_duration' );
         set_transient( 'mshield_tempblock_' . md5( $ip ), true, $duration );
 
-        $errors->add( 'mighty_shield_honeypot', __( 'This order could not be processed. Please contact support.', 'mighty-shield' ) );
+        $errors->add( 'mighty_shield_honeypot', response::with_note( __( 'This order could not be processed. Please contact support.', 'mighty-shield' ) ) );
 
     }
 
@@ -100,10 +105,9 @@ class honeypot {
         $value  = $this->get_value();
         $reason = 'Honeypot field filled (bot detected): "' . substr( $value, 0, 100 ) . '"';
 
-        db::log_event( $ip, 'classic_checkout', 'flagged', $reason );
-        $order->add_order_note( 'MightyShield: ' . $reason );
-        $order->update_meta_data( '_mshield_flagged', 'honeypot' );
-        $order->save();
+        risk_context::add( 'honeypot', 'Honeypot field filled (bot detected)' );
+
+        \MightyShield\Includes\response::flag( $order, 'honeypot', $reason, false, 'classic_checkout' );
 
         if( $action === 'notify' ) {
             $this->send_admin_notification( $order, $reason );

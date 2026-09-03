@@ -365,6 +365,8 @@ class ai_capture {
 
         if( ! $gateway ) return new \WP_Error( 'mshield_no_gateway', __( 'The payment gateway for this order is not available.', 'mighty-shield' ) );
 
+        try {
+
         if( \in_array( $id, self::SKYVERGE, true ) ) {
 
             if( ! method_exists( $gateway, 'get_capture_handler' ) ) {
@@ -412,17 +414,53 @@ class ai_capture {
 
         }
 
+        } catch( \Throwable $e ) {
+
+            // A gateway that throws is reporting a failure. Without this it
+            // surfaced as a fatal on admin-post.php, which loses the "the order
+            // remains on hold" message the caller exists to show.
+            return new \WP_Error( 'mshield_capture_exception', $e->getMessage() );
+
+        }
+
         return new \WP_Error( 'mshield_no_capture', __( 'Capturing is not supported for this gateway.', 'mighty-shield' ) );
 
     }
 
     /**
+     * Returned by void() when the release was requested but the processor gave
+     * us nothing to check it against.
+     *
+     * Not a success and not a failure. The merchant-facing wording has to
+     * differ, because "the authorization was released, there is nothing to
+     * refund" is a claim about somebody's money and must not be made on a
+     * request whose outcome we never saw.
+     *
+     * @since   2.0.0
+     */
+    const UNCONFIRMED = 'unconfirmed';
+
+    /**
      * Void / release an authorization without capturing it.
      *
+     * Three outcomes, not two. Some gateways report what happened and some do
+     * not, and flattening "we could not tell" into "it worked" is how a
+     * merchant ends up believing a customer's funds were released when they
+     * were not.
+     *
+     *   true          the processor confirmed the release
+     *   WP_Error      the processor confirmed a failure, or threw
+     *   UNCONFIRMED   the request went out; the API returned nothing to check
+     *
+     * Every call is wrapped: a gateway that throws is reporting a failure, and
+     * without this it surfaced as a fatal on admin-post.php rather than as the
+     * WP_Error the caller is written to handle.
+     *
      * @since   1.8.0
+     * @since   2.0.0 Verifies where the gateway allows it; never claims success it did not see.
      *
      * @param   \WC_Order   $order
-     * @return  true|\WP_Error
+     * @return  true|string|\WP_Error
      */
     public static function void( $order ) {
 
@@ -431,34 +469,57 @@ class ai_capture {
 
         if( ! $gateway ) return new \WP_Error( 'mshield_no_gateway', __( 'The payment gateway for this order is not available.', 'mighty-shield' ) );
 
-        if( \in_array( $id, self::SKYVERGE, true ) ) {
-            // The framework routes an uncaptured full-amount refund to a void.
-            // Partial amounts are rejected, so always pass the full total.
-            $result = $gateway->process_refund( $order->get_id(), $order->get_total() );
-            return is_wp_error( $result ) ? $result : true;
-        }
+        try {
 
-        switch( $id ) {
-
-            case 'stripe_cc':
-                $result = $gateway->void_charge( $order );
-                return is_wp_error( $result ) ? $result : true;
-
-            case 'stripe':
-                if( ! class_exists( '\WC_Stripe_Order_Handler' ) ) {
-                    return new \WP_Error( 'mshield_no_void', __( 'Stripe order handler unavailable.', 'mighty-shield' ) );
-                }
-                \WC_Stripe_Order_Handler::get_instance()->cancel_payment( $order->get_id() );
-                return true;
-
-            case 'woocommerce_payments':
-                $gateway->cancel_authorization( $order );
-                return true;
-
-            case 'ppcp-gateway':
-                // Refunding an authorize-intent order voids it.
+            if( \in_array( $id, self::SKYVERGE, true ) ) {
+                // The framework routes an uncaptured full-amount refund to a void.
+                // Partial amounts are rejected, so always pass the full total.
                 $result = $gateway->process_refund( $order->get_id(), $order->get_total() );
                 return is_wp_error( $result ) ? $result : true;
+            }
+
+            switch( $id ) {
+
+                case 'stripe_cc':
+                    $result = $gateway->void_charge( $order );
+                    return is_wp_error( $result ) ? $result : true;
+
+                case 'stripe':
+                    if( ! class_exists( '\WC_Stripe_Order_Handler' ) ) {
+                        return new \WP_Error( 'mshield_no_void', __( 'Stripe order handler unavailable.', 'mighty-shield' ) );
+                    }
+                    // cancel_payment() refunds the pre-auth internally and
+                    // returns nothing, and the refund id it produces is written
+                    // by the webhook rather than synchronously — so there is
+                    // genuinely nothing to read back at this point.
+                    \WC_Stripe_Order_Handler::get_instance()->cancel_payment( $order->get_id() );
+                    return self::UNCONFIRMED;
+
+                case 'woocommerce_payments':
+                    // Returns [ status, id, message, http_code ]. Canceled is
+                    // the only status that means the money was released; the
+                    // gateway writes its own failure note for the rest.
+                    $result = $gateway->cancel_authorization( $order );
+
+                    if( is_array( $result ) && isset( $result['status'] ) && $result['status'] === 'canceled' ) return true;
+
+                    return new \WP_Error(
+                        'mshield_void_failed',
+                        ! empty( $result['message'] )
+                            ? $result['message']
+                            : __( 'The processor did not confirm the authorization was cancelled.', 'mighty-shield' )
+                    );
+
+                case 'ppcp-gateway':
+                    // Refunding an authorize-intent order voids it.
+                    $result = $gateway->process_refund( $order->get_id(), $order->get_total() );
+                    return is_wp_error( $result ) ? $result : true;
+
+            }
+
+        } catch( \Throwable $e ) {
+
+            return new \WP_Error( 'mshield_void_exception', $e->getMessage() );
 
         }
 

@@ -73,11 +73,44 @@ class Plugin {
         $this->load_class( \MightyShield\Protection\honeypot::class );
         $this->load_class( \MightyShield\Protection\checkout_timing::class );
         $this->load_class( \MightyShield\Protection\device_fingerprint::class );
+        $this->load_class( \MightyShield\Protection\cookie_check::class );
         $this->load_class( \MightyShield\Protection\captcha::class );
+
+        // The same challenge on the surfaces that are not checkout: login,
+        // registration, lost password, comments.
+        $this->load_class( \MightyShield\Protection\challenge::class );
         $this->load_class( \MightyShield\Protection\store_api::class );
 
-        // Last, so it reviews an order only after every other check has run.
+        // Whole-order checks: the ones that need the finished order to judge.
+        // Ahead of the AI reviewer so its verdict is informed by them, and
+        // ahead of the recorder so they count toward the level.
+        $this->load_class( \MightyShield\Protection\order_signals::class );
+
+        // Stage two. Reviews an order only after every deterministic check has
+        // run, and only for the levels the merchant chose to spend calls on.
         $this->load_class( \MightyShield\Protection\ai_reviewer::class );
+
+        // Phase 1 terminus. Records the scored verdict once every layer above
+        // has emitted. Observation only — it takes no action on the order.
+        $this->load_class( \MightyShield\Protection\risk_recorder::class );
+
+        // Outcome learning. Records what actually happened to an order against
+        // every identity on it, so the next decision has hindsight.
+        $this->load_class( \MightyShield\Protection\outcomes::class );
+
+        // Payment-instrument intelligence. Arrives post-payment via the
+        // gateway's webhook stream, so it informs fulfilment and the next
+        // order rather than this one's risk level.
+        $this->load_class( \MightyShield\Protection\card_signals::class );
+
+        // Each gateway adapter listens for whatever its processor exposes and
+        // feeds card_signals in one normalised shape.
+        \MightyShield\Includes\gateways::listen();
+
+        // The doors either side of the checkout: the address someone used, and
+        // what they were doing before they got here.
+        $this->load_class( \MightyShield\Protection\email_intel::class );
+        $this->load_class( \MightyShield\Protection\account_guard::class );
 
     }
 
