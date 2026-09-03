@@ -12,6 +12,8 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class order_amount_validator {
 
@@ -47,17 +49,45 @@ class order_amount_validator {
         $action = settings::get( 'mshield_suspicious_amount_action' );
         if( $action !== 'block' ) return;
 
+        // No order exists yet at validation time, so the cart is the only
+        // total there is. The flag path below, and the Store API, read the
+        // order instead. The two can differ once fees are involved.
+        $reason = self::assess( (float) WC()->cart->get_total( 'edit' ) );
+        if( $reason === null ) return;
+
+        db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'blocked', $reason );
+        $errors->add( 'mighty_shield_amount', response::with_note( __( 'This order could not be processed. Please contact support.', 'mighty-shield' ) ) );
+
+    }
+
+    /**
+     * Compare an order total against the minimum and record anything under it.
+     *
+     * The one place this check turns into a signal, called by both checkouts.
+     * The Store API carried its own copy of the comparison, blocked on it, and
+     * never recorded it, so a card tester probing with a one dollar order
+     * scored nothing on the block checkout.
+     *
+     * @since   2.0.0
+     *
+     * @param   float   $total  Order or cart total.
+     * @return  string|null Reason the amount is suspicious, or null if it is not.
+     */
+    public static function assess( $total ) {
+
         $min = (float) settings::get( 'mshield_min_order_amount' );
-        if( $min <= 0 ) return;
 
-        $total = (float) WC()->cart->get_total( 'edit' );
-        if( $total >= $min ) return;
+        // Zero switches the check off entirely.
+        if( $min <= 0 ) return null;
 
-        $ip     = ip_utils::get_client_ip();
+        $total = (float) $total;
+        if( $total >= $min ) return null;
+
         $reason = sprintf( 'Suspicious order amount: $%s (minimum: $%s)', number_format( $total, 2 ), number_format( $min, 2 ) );
 
-        db::log_event( $ip, 'classic_checkout', 'blocked', $reason );
-        $errors->add( 'mighty_shield_amount', __( 'This order could not be processed. Please contact support.', 'mighty-shield' ) );
+        risk_context::add( 'amount_low', $reason );
+
+        return $reason;
 
     }
 
@@ -79,18 +109,10 @@ class order_amount_validator {
         $action = settings::get( 'mshield_suspicious_amount_action' );
         if( $action === 'block' ) return;
 
-        $total = (float) $order->get_total();
-        $min   = (float) settings::get( 'mshield_min_order_amount' );
+        $reason = self::assess( (float) $order->get_total() );
+        if( $reason === null ) return;
 
-        if( $min <= 0 || $total >= $min ) return;
-
-        $ip     = ip_utils::get_client_ip();
-        $reason = sprintf( 'Suspicious order amount: $%s (minimum: $%s)', number_format( $total, 2 ), number_format( $min, 2 ) );
-
-        db::log_event( $ip, 'classic_checkout', 'flagged', $reason );
-        $order->add_order_note( 'MightyShield: ' . $reason );
-        $order->update_meta_data( '_mshield_flagged', 'suspicious_amount' );
-        $order->save();
+        \MightyShield\Includes\response::flag( $order, 'suspicious_amount', $reason, false, 'classic_checkout' );
 
         if( $action === 'notify' ) {
             $this->send_admin_notification( $order, $reason );

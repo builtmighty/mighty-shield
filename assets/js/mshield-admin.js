@@ -74,7 +74,7 @@
             } );
         }
 
-        var pillClass = { blocked:'is-blocked', rate_limited:'is-rate', flagged:'is-flag', exempt:'is-exempt', allowed:'is-ok' };
+        var pillClass = { blocked:'is-blocked', rate_limited:'is-rate', flagged:'is-flag', exempt:'is-exempt', allowed:'is-ok', degraded:'is-muted' };
         var current = null, currentRow = null;
 
         function ipIntelHtml( d ) {
@@ -126,7 +126,7 @@
                       '<button class="mshield-btn is-small" data-close aria-label="Close">&times;</button>' +
                     '</div>' +
                     '<div class="mshield-drawer-body">' +
-                      '<div><span class="mshield-pill ' + ( pillClass[ d.action ] || '' ) + '">' + esc( d.actionLabel || d.action || '' ) + '</span></div>' +
+                      '<div><span class="mshield-pill ' + ( pillClass[ d.action ] || '' ) + '"><span class="dot"></span>' + esc( d.actionLabel || d.action || '' ) + '</span></div>' +
                       '<div class="mshield-kv">' +
                         '<span class="k">' + esc( cfg.i18n.ip || 'IP address' ) + '</span><span class="mshield-mono">' + esc( d.ip || '' ) + '</span>' +
                         '<span class="k">' + esc( cfg.i18n.endpoint || 'Endpoint' ) + '</span><span class="mshield-mono" style="font-size:12.5px">' + esc( d.endpoint || '' ) + '</span>' +
@@ -362,6 +362,143 @@
         render( series );
     }
 
-    ready( function() { initTheme(); initDrawer(); initBulk(); initRadios(); initChart(); } );
+
+    /**
+     * Force-level / action steppers.
+     *
+     * A coloured bubble between two arrows, standing in for a select. The
+     * hidden input is what posts, so the stored value survives on a page where
+     * this never runs -- it just cannot be changed there.
+     *
+     * Shared by Scoring's Force level and Blocking's Action so the two cannot
+     * drift; the choices come from a data attribute, so the order is whatever
+     * the server said it was.
+     */
+    function initSteppers() {
+
+        document.querySelectorAll( '.mshield-stepper' ).forEach( function( box ) {
+
+            var choices, keys;
+            try { choices = JSON.parse( box.getAttribute( 'data-choices' ) ); }
+            catch ( e ) { return; }
+
+            keys = Object.keys( choices );
+            if ( ! keys.length ) return;
+
+            var input = box.querySelector( 'input[type="hidden"]' ),
+                value = box.querySelector( '.ms-value' ),
+                down  = box.querySelector( '.is-down' ),
+                up    = box.querySelector( '.is-up' );
+
+            if ( ! input || ! value || ! down || ! up ) return;
+
+            function render( i ) {
+                var key = keys[ i ];
+                input.value = key;
+                value.textContent = choices[ key ];
+                // The level class carries the colour, so the bubble matches the
+                // trust ramp on the same page. Blocking's steppers are marked
+                // is-plain and keep one colour throughout.
+                value.className = 'ms-value s-' + key;
+                down.disabled = ( i === 0 );
+                up.disabled   = ( i === keys.length - 1 );
+            }
+
+            function step( by ) {
+                var i = keys.indexOf( input.value );
+                if ( i < 0 ) i = 0;
+                // Clamp, never wrap: wrapping would put the most severe choice
+                // one keypress from the least.
+                render( Math.max( 0, Math.min( keys.length - 1, i + by ) ) );
+            }
+
+            down.addEventListener( 'click', function() { step( -1 ); } );
+            up.addEventListener( 'click', function() { step( 1 ); } );
+
+        } );
+
+    }
+
+    /* ---------- Order panel ---------- */
+    // The "Use AI to Review" checkbox rides on the Rate Order link rather than
+    // in a form: WooCommerce wraps order metaboxes in its own <form id="order">
+    // and browsers drop nested forms, so a form here would submit WooCommerce's
+    // order update instead. Rewriting the href keeps one nonce and one handler.
+    function initOrderPanel() {
+
+        var rate = document.querySelector( '[data-mshield-rate]' );
+        var ai   = document.getElementById( 'mshield-use-ai' );
+        if ( ! rate || ! ai ) return;
+
+        function sync() {
+            var url;
+            try { url = new URL( rate.href, window.location.origin ); }
+            catch ( e ) { return; }
+            if ( ai.checked ) { url.searchParams.set( 'use_ai', '1' ); }
+            else { url.searchParams.delete( 'use_ai' ); }
+            rate.href = url.toString();
+        }
+
+        ai.addEventListener( 'change', sync );
+        sync();
+
+    }
+
+    // Arriving from an order screen's "Adjust setting" link. The browser will
+    // jump to the row on its own -- the id is real -- but a settings table is a
+    // wall of near-identical rows, so landing on one is not the same as finding
+    // it. The flash is what makes the jump legible.
+    function initSignalJump() {
+
+        var hash = window.location.hash || '';
+        if ( hash.indexOf( '#mshield-sig-' ) !== 0 ) return;
+
+        var row;
+        // An id from a signal key is [a-z_] only, but the hash comes from the
+        // address bar and anyone can type anything into it.
+        try { row = document.querySelector( hash ); } catch ( e ) { return; }
+        if ( ! row ) return;
+
+        // Native anchoring has already jumped by the time this runs, and lands
+        // the row under the admin bar. Re-centring costs nothing when it was
+        // already right.
+        if ( row.scrollIntoView ) {
+            row.scrollIntoView( { block: 'center' } );
+        }
+
+        row.classList.add( 'is-flash' );
+
+        // Removed rather than left on, so a second visit to the same row
+        // flashes again instead of sitting there permanently highlighted.
+        window.setTimeout( function() { row.classList.remove( 'is-flash' ); }, 2600 );
+
+    }
+
+    // Switching scoring profiles overwrites every trust cost, including any the
+    // merchant tuned by hand. The link knows how many rows it would replace, so
+    // ask before spending someone's afternoon.
+    function initScoringProfile() {
+
+        document.querySelectorAll( '[data-mshield-profile]' ).forEach( function( link ) {
+
+            link.addEventListener( 'click', function( e ) {
+
+                var changes = parseInt( link.getAttribute( 'data-mshield-changes' ), 10 );
+                if ( ! changes || changes < 1 ) return;
+
+                var name = link.getAttribute( 'data-mshield-profile' ) || '';
+                var msg  = changes === 1
+                    ? 'Switching to ' + name + ' will replace 1 trust cost you have changed. Continue?'
+                    : 'Switching to ' + name + ' will replace ' + changes + ' trust costs you have changed. Continue?';
+
+                if ( ! window.confirm( msg ) ) e.preventDefault();
+
+            } );
+
+        } );
+
+    }
+
+    ready( function() { initTheme(); initDrawer(); initBulk(); initRadios(); initSteppers(); initChart(); initOrderPanel(); initSignalJump(); initScoringProfile(); } );
 
 } )();

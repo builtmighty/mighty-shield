@@ -16,6 +16,8 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class checkout_timing {
 
@@ -75,7 +77,7 @@ class checkout_timing {
                 set_transient( 'mshield_tempblock_' . md5( $ip ), true, $duration );
             }
 
-            $errors->add( 'mighty_shield_timing', __( 'This order could not be processed. Please try again.', 'mighty-shield' ) );
+            $errors->add( 'mighty_shield_timing', response::with_note( __( 'This order could not be processed. Please try again.', 'mighty-shield' ) ) );
             return;
 
         }
@@ -106,10 +108,7 @@ class checkout_timing {
 
         $ip = ip_utils::get_client_ip();
 
-        db::log_event( $ip, 'classic_checkout', 'flagged', $result['reason'] );
-        $order->add_order_note( 'MightyShield: ' . $result['reason'] );
-        $order->update_meta_data( '_mshield_flagged', 'checkout_timing' );
-        $order->save();
+        \MightyShield\Includes\response::flag( $order, 'checkout_timing', $result['reason'], false, 'classic_checkout' );
 
         if( $action === 'notify' ) {
             $this->send_admin_notification( $order, $result['reason'] );
@@ -118,16 +117,41 @@ class checkout_timing {
     }
 
     /**
-     * Evaluate the submitted timing token.
+     * Evaluate the timing token carried on this request.
+     *
+     * Classic reads it from $_POST; the Store API carries it in the request
+     * extensions. Only the transport differs, so only the read lives here and
+     * the judgement lives in assess().
      *
      * @since   1.2.0
      *
-     * @return  array   [ 'blockable' => bool, 'reason' => string|null ]
+     * @return  array   [ 'blockable' => bool, 'temp_block' => bool, 'reason' => string|null ]
      */
     private function evaluate() {
 
-        $token   = isset( $_POST['mshield_ct_token'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_ct_token'] ) ) : '';
-        $elapsed = self::verify_token( $token );
+        return self::assess( isset( $_POST['mshield_ct_token'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_ct_token'] ) ) : '' );
+
+    }
+
+    /**
+     * Judge a timing token and record what it found.
+     *
+     * The one place this check turns into a signal, called by both checkouts.
+     * The Store API used to carry its own copy of this logic that only recorded
+     * anything when the action was set to block, so on the default "flag"
+     * setting a missing token produced nothing at all.
+     *
+     * Emission is unconditional. The action settings decide whether the order
+     * is also refused, never whether the evidence is kept.
+     *
+     * @since   2.0.0
+     *
+     * @param   string  $token  Submitted timing token, or '' if absent.
+     * @return  array   [ 'blockable' => bool, 'temp_block' => bool, 'reason' => string|null ]
+     */
+    public static function assess( $token ) {
+
+        $elapsed = self::verify_token( (string) $token );
 
         // Missing / forged / invalid token. A scripted checkout that never
         // rendered our field lands here. Whether that blocks is governed by
@@ -137,12 +161,20 @@ class checkout_timing {
             $missing_blockable = ( settings::get( 'mshield_timing_missing_action' ) === 'block' );
             // Weaker signal — reject the order but do not IP temp-block, to
             // avoid locking out a shopper if caching ever strips the field.
+            risk_context::add( 'timing_missing', 'Checkout timing token missing or invalid' );
+
             return [ 'blockable' => $missing_blockable, 'temp_block' => false, 'reason' => 'Checkout timing token missing or invalid' ];
         }
 
         $min = (int) settings::get( 'mshield_timing_min_seconds' );
 
         if( $elapsed < $min ) {
+
+            risk_context::add(
+                'timing_fast',
+                sprintf( 'Checkout submitted in %ds (minimum %ds) — likely automated', $elapsed, $min )
+            );
+
             return [
                 'blockable'  => true,
                 'temp_block' => true,

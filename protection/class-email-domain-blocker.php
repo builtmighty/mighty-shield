@@ -12,6 +12,8 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class email_domain_blocker {
 
@@ -231,9 +233,11 @@ class email_domain_blocker {
 
             $ip     = ip_utils::get_client_ip();
             $domain = strtolower( substr( strrchr( $email, '@' ), 1 ) );
+            risk_context::add( 'email_disposable', "Disposable or blocked email domain: {$domain}" );
+
             db::log_event( $ip, 'classic_checkout', 'blocked', "Disposable email domain: {$domain}" );
 
-            $errors->add( 'mighty_shield_email', __( 'Please use a valid, non-disposable email address.', 'mighty-shield' ) );
+            $errors->add( 'mighty_shield_email', response::with_note( __( 'Please use a valid, non-disposable email address.', 'mighty-shield' ) ) );
 
         }
 

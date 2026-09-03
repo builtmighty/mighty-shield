@@ -3,7 +3,7 @@
 Plugin Name: MightyShield
 Plugin URI: https://builtmighty.com
 Description: WooCommerce firewall for protecting against card spammer orders.
-Version: 1.8.1
+Version: 2.0.0
 Author: Built Mighty
 Author URI: https://builtmighty.com
 Copyright: Built Mighty
@@ -31,7 +31,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '1.8.1' );
+define( 'MSHIELD_VERSION', '2.0.0' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -75,9 +75,11 @@ function plugin_action_links( $links ) {
 register_activation_hook( __FILE__, '\MightyShield\activation' );
 function activation() {
 
-    // Create database tables.
+    // Create database tables and stamp the schema version, so a fresh install
+    // does not re-run dbDelta on its first load.
     require_once MSHIELD_PATH . 'includes/class-db.php';
     \MightyShield\Includes\db::create_tables();
+    update_option( 'mshield_db_version', \MightyShield\Includes\db::SCHEMA_VERSION, true );
 
     // Ensure whitelist option exists with autoload enabled.
     if( false === get_option( 'mshield_ip_whitelist' ) ) {
@@ -133,6 +135,27 @@ function maybe_upgrade() {
 
     }
 
+    // Schema changes are no longer handled here — db::maybe_upgrade_schema()
+    // owns them, gated on its own counter so they land regardless of what the
+    // plugin version already says.
+
+    // 1.9.0: turn on the fraud checks for the block checkout.
+    //
+    // These shipped off, which meant a store using WooCommerce's default
+    // checkout got the firewall and none of the fraud checks. Enabling it does
+    // not introduce new policy — each layer still applies the block/flag action
+    // the merchant already chose — it applies that choice to the checkout they
+    // actually use. Recorded so an admin notice can say what changed, because a
+    // security default that flips silently is its own kind of problem.
+    if( version_compare( $installed, '1.9.0', '<' ) ) {
+
+        if( get_option( 'mshield_store_api_checks' ) !== 'yes' ) {
+            update_option( 'mshield_store_api_checks', 'yes' );
+            update_option( 'mshield_store_api_enabled_notice', 1, false );
+        }
+
+    }
+
     update_option( 'mshield_version', MSHIELD_VERSION, false );
 
 }
@@ -173,24 +196,58 @@ function load() {
     require_once MSHIELD_PATH . 'firewall/class-ip-whitelist.php';
     require_once MSHIELD_PATH . 'firewall/class-ip-blocklist.php';
     require_once MSHIELD_PATH . 'includes/class-exempt.php';
+    require_once MSHIELD_PATH . 'includes/class-actions.php';
+    require_once MSHIELD_PATH . 'includes/class-risk-levels.php';
+    require_once MSHIELD_PATH . 'includes/class-signals.php';
+    require_once MSHIELD_PATH . 'includes/class-scoring-profiles.php';
+    require_once MSHIELD_PATH . 'includes/class-risk-context.php';
+    require_once MSHIELD_PATH . 'includes/gateways/interface-gateway-adapter.php';
+    require_once MSHIELD_PATH . 'includes/gateways/class-adapter-null.php';
+    require_once MSHIELD_PATH . 'includes/gateways/class-adapter-stripe.php';
+    require_once MSHIELD_PATH . 'includes/gateways/class-adapter-skyverge.php';
+    require_once MSHIELD_PATH . 'includes/class-gateways.php';
+    require_once MSHIELD_PATH . 'includes/class-response.php';
     require_once MSHIELD_PATH . 'includes/class-ai-detection.php';
+    require_once MSHIELD_PATH . 'includes/class-entities.php';
     require_once MSHIELD_PATH . 'includes/class-ai-client.php';
     require_once MSHIELD_PATH . 'includes/class-ai-capture.php';
+    require_once MSHIELD_PATH . 'includes/class-trust-badge.php';
+    require_once MSHIELD_PATH . 'includes/class-rescore.php';
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
-    require_once MSHIELD_PATH . 'admin/class-order-review.php';
+    require_once MSHIELD_PATH . 'admin/class-order-panel.php';
+    require_once MSHIELD_PATH . 'admin/class-order-column.php';
+    require_once MSHIELD_PATH . 'admin/class-dashboard-widget.php';
     require_once MSHIELD_PATH . 'admin/class-fraud-review.php';
+
+    // Converge the schema before anything reads or writes a table.
+    \MightyShield\Includes\db::maybe_upgrade_schema();
 
     // Run version migrations if the plugin was just updated.
     maybe_upgrade();
+
+    // Daily cleanup. Registered here rather than inside the Store API firewall,
+    // which returns early when that layer is switched off — the cron event is
+    // scheduled unconditionally at activation, so a store with Store API
+    // blocking disabled was firing the event into no listener and letting the
+    // log table grow without bound.
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\db', 'cleanup' ] );
 
     // Always load admin page so settings are accessible.
     if( is_admin() ) {
         new \MightyShield\Admin\admin_page();
         new \MightyShield\Admin\log_viewer();
-        new \MightyShield\Admin\order_review();
+        new \MightyShield\Admin\order_panel();
+        new \MightyShield\Admin\order_column();
+        new \MightyShield\Admin\dashboard_widget();
         new \MightyShield\Admin\fraud_review();
-        add_action( 'admin_notices', [ '\MightyShield\Admin\order_review', 'render_notice' ] );
+        add_action( 'admin_notices', [ '\MightyShield\Admin\order_panel', 'render_notice' ] );
+
+        // The panel calls outcomes::set_manual() when a reviewer rules on an
+        // order, and outcomes lives with the protection classes below the
+        // mshield_enabled guard. A merchant must still be able to record a
+        // verdict on a store where protection is switched off.
+        require_once MSHIELD_PATH . 'protection/class-outcomes.php';
     }
 
     // Check if plugin protections are enabled.
@@ -213,8 +270,16 @@ function load() {
     require_once MSHIELD_PATH . 'protection/class-honeypot.php';
     require_once MSHIELD_PATH . 'protection/class-checkout-timing.php';
     require_once MSHIELD_PATH . 'protection/class-device-fingerprint.php';
+    require_once MSHIELD_PATH . 'protection/class-cookie-check.php';
     require_once MSHIELD_PATH . 'protection/class-captcha.php';
+    require_once MSHIELD_PATH . 'protection/class-challenge.php';
     require_once MSHIELD_PATH . 'protection/class-store-api.php';
+    require_once MSHIELD_PATH . 'protection/class-order-signals.php';
+    require_once MSHIELD_PATH . 'protection/class-risk-recorder.php';
+    require_once MSHIELD_PATH . 'protection/class-outcomes.php';
+    require_once MSHIELD_PATH . 'protection/class-card-signals.php';
+    require_once MSHIELD_PATH . 'protection/class-email-intel.php';
+    require_once MSHIELD_PATH . 'protection/class-account-guard.php';
     require_once MSHIELD_PATH . 'protection/class-ai-reviewer.php';
 
     /**

@@ -26,7 +26,7 @@ $wp_role_names = wp_roles()->get_names();
 
 <div class="mshield-section">
     <h2><?php esc_html_e( 'Add Allowlist Entry', 'mighty-shield' ); ?></h2>
-    <p class="description"><?php esc_html_e( 'Allowlisted IPs, users, roles, and email addresses bypass ALL MightyShield checks — no blocks, no flags. Use for trusted staff, offices, and known-good customers.', 'mighty-shield' ); ?></p>
+    <p class="description"><?php esc_html_e( 'Allowlisted IPs, users, roles, and email addresses bypass ALL MightyShield checks, with no blocks and no flags. Use for trusted staff, offices, and known-good customers.', 'mighty-shield' ); ?></p>
     <form method="post">
         <?php wp_nonce_field( 'mshield_whitelist_action' ); ?>
         <table class="form-table">

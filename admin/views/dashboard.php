@@ -10,6 +10,7 @@ if( ! defined( 'WPINC' ) ) { die; }
 
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\response;
 use MightyShield\Includes\ip_data;
 use MightyShield\Admin\admin_page;
 
@@ -29,62 +30,70 @@ $ip_map = db::get_ip_data_map( $top_ip_list );
 // Initial chart series (defaults to 30 days; not persisted per user).
 $chart_series = admin_page::chart_series( '30d' );
 
-$enabled = settings::get( 'mshield_enabled' ) === 'yes';
-
-// The 12 protection layers. Always-on modules count as enabled; the rest
-// reflect their individual setting.
-$layers = [
-    true,                                                          // Rate limiting.
-    true,                                                          // Velocity detection.
-    true,                                                          // Failed-payment tracking.
-    true,                                                          // Disposable email blocking.
-    (float) settings::get( 'mshield_min_order_amount' ) > 0,       // Order-amount validation.
-    true,                                                          // Address validation.
-    settings::get( 'mshield_zip_state_enabled' ) === 'yes',        // ZIP/State mismatch.
-    settings::get( 'mshield_smarty_enabled' ) === 'yes',           // Smarty verification.
-    settings::get( 'mshield_honeypot_enabled' ) === 'yes',         // Honeypot.
-    settings::get( 'mshield_timing_enabled' ) === 'yes',           // Checkout timing.
-    settings::get( 'mshield_fingerprint_enabled' ) === 'yes',      // Device fingerprinting.
-    settings::get( 'mshield_captcha_provider' ) !== 'off',         // Bot challenge (CAPTCHA).
-];
-$layers_on    = count( array_filter( $layers ) );
-$layers_total = count( $layers );
-
-$toggle_url = wp_nonce_url(
-    admin_url( 'admin.php?page=mighty-shield&mshield_toggle_protection=1' ),
-    'mshield_toggle_protection'
-);
+// The state, its icon, its wording and its colours all come from one place —
+// the WordPress dashboard widget draws the same stripe from the same call, and
+// two copies of "what does Observing look like" is how they would drift.
+$now       = admin_page::protection_state();
+$states    = admin_page::protection_states();
+$state_now = $now['key'];
+$enabled   = $now['enabled'];
+$enforcing = $now['enforcing'];
+$observing = $now['observing'];
 ?>
 
 <div class="mshield-stack">
 
     <!-- Protection status hero -->
-    <div class="mshield-hero <?php echo $enabled ? '' : 'is-off'; ?>">
+    <div class="mshield-hero <?php echo esc_attr( $now['hero'] ); ?>">
         <span class="ms-accent"></span>
+        <?php /* Same icon as the selected segment of the control on the right, drawn
+                 from the same $states map so the two can never drift apart. */ ?>
         <span class="ms-ico">
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 4.6-3.2 8.4-8 9.6C7.2 20.4 4 16.6 4 12V6z"></path><path d="M9 12l2 2 4-4"></path></svg>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <?php echo $states[ $state_now ]['icon']; // phpcs:ignore WordPress.Security.EscapeOutput -- static markup from the map above. ?>
+            </svg>
         </span>
         <div style="min-width:0">
             <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                <span class="mshield-hero-title">
-                    <?php echo $enabled
-                        ? esc_html__( 'MightyShield is actively protecting your store', 'mighty-shield' )
-                        : esc_html__( 'MightyShield protection is turned off', 'mighty-shield' ); ?>
-                </span>
-                <?php if( $enabled ) : ?>
-                    <span class="mshield-pill is-ok"><span class="dot"></span><?php esc_html_e( 'Active', 'mighty-shield' ); ?></span>
-                <?php else : ?>
-                    <span class="mshield-pill is-blocked"><span class="dot"></span><?php esc_html_e( 'Disabled', 'mighty-shield' ); ?></span>
-                <?php endif; ?>
+                <span class="mshield-hero-title"><?php echo esc_html( $now['title'] ); ?></span>
+                <span class="mshield-pill <?php echo esc_attr( $now['pill'] ); ?>"><span class="dot"></span><?php echo esc_html( $now['label'] ); ?></span>
             </div>
-            <div class="mshield-hero-meta">
-                <?php printf( esc_html__( '%1$d of %2$d layers enabled', 'mighty-shield' ), (int) $layers_on, (int) $layers_total ); ?>
-            </div>
+            <?php /* No call to action here — the control to the right is the way
+                     to change it. */ ?>
+            <div class="mshield-hero-meta"><?php echo esc_html( $now['meta'] ); ?></div>
         </div>
         <span class="mshield-spacer"></span>
         <div style="display:flex;align-items:center;gap:11px">
             <span style="font-size:13px;color:var(--fg-2)"><?php esc_html_e( 'Protection', 'mighty-shield' ); ?></span>
-            <a href="<?php echo esc_url( $toggle_url ); ?>" class="mshield-toggle <?php echo $enabled ? 'is-on' : ''; ?>" role="switch" aria-checked="<?php echo $enabled ? 'true' : 'false'; ?>" aria-label="<?php esc_attr_e( 'Toggle protection', 'mighty-shield' ); ?>"><span class="knob"></span></a>
+
+            <?php /* A radiogroup rather than a switch: aria-checked is binary, so a
+                     three-state control described as a switch would be unreadable to
+                     a screen reader. Each option is a real link, so it is reachable
+                     and operable by keyboard with no script at all. */ ?>
+            <div class="mshield-tri at-<?php echo esc_attr( $state_now ); ?>"
+                 role="radiogroup" aria-label="<?php esc_attr_e( 'Protection state', 'mighty-shield' ); ?>">
+                <span class="ms-knob" aria-hidden="true"></span>
+                <?php foreach( $states as $key => $state ) :
+                    $is_now = $key === $state_now;
+                    $url    = wp_nonce_url(
+                        admin_url( 'admin.php?page=mighty-shield&mshield_set_state=' . $key ),
+                        'mshield_set_state_' . $key
+                    );
+                    ?>
+                    <a href="<?php echo esc_url( $url ); ?>"
+                       class="ms-opt<?php echo $is_now ? ' is-now' : ''; ?>"
+                       role="radio"
+                       aria-checked="<?php echo $is_now ? 'true' : 'false'; ?>"
+                       aria-label="<?php echo esc_attr( $state['hint'] ); ?>"
+                       title="<?php echo esc_attr( $state['hint'] ); ?>">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <?php echo $state['icon']; // phpcs:ignore WordPress.Security.EscapeOutput -- static markup from the map above. ?>
+                        </svg>
+                    </a>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
 

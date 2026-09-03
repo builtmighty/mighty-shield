@@ -12,6 +12,7 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
 
 class failed_payment_tracker {
 
@@ -59,6 +60,8 @@ class failed_payment_tracker {
         // Check threshold.
         $threshold = (int) settings::get( 'mshield_failed_payment_threshold' );
         if( $count >= $threshold ) {
+            risk_context::add( 'failed_payments', "Repeated payment failures from this IP: {$count} in 1 hour" );
+
             rate_limiter::temp_block_ip( $ip, "Failed payment threshold exceeded: {$count}/{$threshold} in 1 hour" );
         }
 

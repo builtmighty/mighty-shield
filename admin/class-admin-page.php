@@ -22,7 +22,71 @@ class admin_page {
      *
      * @since   1.0.0
      */
-    private const ALLOWED_TABS = [ 'dashboard', 'firewall', 'whitelist', 'blocklist', 'rates', 'fraud', 'ai', 'logs', 'documentation' ];
+    private const ALLOWED_TABS = [ 'dashboard', 'scoring', 'ai', 'blocking', 'payment', 'access', 'logs', 'documentation' ];
+
+    /**
+     * Tabs that were merged into another one in 1.9.0.
+     *
+     * Old bookmarks and any link out in the wild should land somewhere sensible
+     * rather than silently bouncing to the dashboard.
+     *
+     * @since   1.9.0
+     */
+    private const MERGED_TABS = [
+        'firewall'  => 'access',
+        'whitelist' => 'access',
+        'blocklist' => 'access',
+        'rates'     => 'scoring',
+        'fraud'     => 'scoring',
+        'checks'    => 'scoring',
+    ];
+
+    /**
+     * Page slugs that are MightyShield's own screens.
+     *
+     * Three separate things key off this — the stylesheet, the dark-mode chrome
+     * on the surrounding WP admin, and the foreign-notice suppression — and
+     * every one of them used to test `mighty-shield` as its own inline string.
+     * The Fraud Review queue is registered as `mshield-fraud-review`, which
+     * matches none of them, so that screen loaded no CSS at all and rendered as
+     * bare WordPress list-table markup. Stated once here instead.
+     *
+     * @since   1.9.6
+     */
+    const SCREENS = [ 'mighty-shield', 'mshield-fraud-review' ];
+
+    /**
+     * Whether a screen belongs to MightyShield.
+     *
+     * Accepts an admin hook suffix, a screen ID or a page slug — they all
+     * contain the slug, and the three callers each have a different one of the
+     * three to hand.
+     *
+     * @since   1.9.6
+     *
+     * @param   string  $needle     Hook suffix, screen ID, or page slug.
+     * @return  bool
+     */
+    public static function is_plugin_screen( $needle = '' ) {
+
+        $needle = (string) $needle;
+
+        if( $needle === '' ) {
+            $needle = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+        }
+
+        if( $needle === '' ) return false;
+
+        foreach( self::SCREENS as $slug ) {
+            // Anchored on the slug rather than a loose substring: 'mighty-shield'
+            // would otherwise also match a third-party screen that happens to
+            // mention it.
+            if( $needle === $slug || substr( $needle, -strlen( $slug ) - 1 ) === '_' . $slug ) return true;
+        }
+
+        return false;
+
+    }
 
     /**
      * Construct.
@@ -32,6 +96,10 @@ class admin_page {
     public function __construct() {
 
         add_action( 'admin_menu', [ $this, 'register_menu' ] );
+        // Not on MightyShield's own screens — suppress_notices() clears
+        // admin_notices there — which is right: this needs to be seen on the
+        // dashboard, not only by someone already looking at the settings.
+        add_action( 'admin_notices', [ __CLASS__, 'render_store_api_notice' ] );
         add_action( 'admin_init', [ $this, 'register_settings' ] );
         add_action( 'admin_init', [ $this, 'handle_actions' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_styles' ] );
@@ -63,30 +131,224 @@ class admin_page {
     }
 
     /**
+     * Tell the merchant the block checkout is now being checked.
+     *
+     * Shown once. A default that changes on upgrade should announce itself,
+     * particularly one that can start blocking orders.
+     *
+     * @since   1.9.0
+     */
+    public static function render_store_api_notice() {
+
+        if( ! get_option( 'mshield_store_api_enabled_notice' ) ) return;
+        if( ! current_user_can( 'manage_woocommerce' ) ) return;
+
+        printf(
+            '<div class="notice notice-info is-dismissible"><p><strong>%s</strong> %s <a href="%s">%s</a></p></div>',
+            esc_html__( 'MightyShield:', 'mighty-shield' ),
+            esc_html__( 'Fraud checks now run on the block-based checkout as well as the classic one. Previously they only ran on classic, so stores using the newer checkout were unprotected. Each check still does exactly what you have it set to do.', 'mighty-shield' ),
+            esc_url( admin_url( 'admin.php?page=mighty-shield&tab=blocking' ) ),
+            esc_html__( 'Review the setting', 'mighty-shield' )
+        );
+
+        delete_option( 'mshield_store_api_enabled_notice' );
+
+    }
+
+    /**
      * Register settings with sanitize callbacks.
      *
      * @since   1.0.0
      */
     public function register_settings() {
 
-        // --- Firewall tab settings ---
-        register_setting( 'mshield_firewall', 'mshield_enabled', [
+        // mshield_enabled is deliberately NOT registered to a settings group.
+        // It is owned by the dashboard's protection control, which sets it
+        // directly. Registering it here while no field submits it would make
+        // options.php write null over it on every save of that group.
+        //
+        // The mshield_firewall group is gone. Its three access settings moved to
+        // Blocking, where they belong -- they decide what gets blocked -- and
+        // log retention moved to Logs. A group must be registered where its
+        // FIELDS are, or options.php writes null over every option in it.
+
+        // --- Logs tab ---
+        register_setting( 'mshield_logs', 'mshield_log_retention_days', [
+            'sanitize_callback' => function( $value ) { return max( 1, min( 365, absint( $value ) ) ); },
+        ] );
+
+        // --- Scoring tab: one weight, floor and toggle per signal ---
+        foreach( \MightyShield\Includes\signals::CATALOG as $key => $signal ) {
+
+            register_setting( 'mshield_scoring', 'mshield_sig_' . $key . '_enabled', [
+                'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+            ] );
+
+            register_setting( 'mshield_scoring', 'mshield_sig_' . $key . '_weight', [
+                'sanitize_callback' => function( $value ) {
+                    // Negative weights are legal: they earn trust back.
+                    return max( -100.0, min( 100.0, (float) $value ) );
+                },
+            ] );
+
+            register_setting( 'mshield_scoring', 'mshield_sig_' . $key . '_floor', [
+                'sanitize_callback' => function( $value ) {
+                    return ( $value === 'none' || \MightyShield\Includes\risk_levels::exists( $value ) ) ? $value : 'none';
+                },
+            ] );
+
+        }
+
+        // Per-signal configuration now lives on its signal's row, so it has to
+        // be registered against the Scoring group or options.php will refuse to
+        // save it. Sanitising is driven by the field type declared alongside it.
+        foreach( \MightyShield\Includes\signals::all_fields() as $option => $field ) {
+
+            $type = $field['type'];
+            $min  = isset( $field['min'] ) ? $field['min'] : null;
+            $max  = isset( $field['max'] ) ? $field['max'] : null;
+            $choices = isset( $field['choices'] ) ? array_keys( $field['choices'] ) : [];
+
+            register_setting( 'mshield_scoring', $option, [
+                'sanitize_callback' => function( $value ) use ( $type, $min, $max, $choices, $option ) {
+
+                    if( $type === 'check' )  return $value === 'yes' ? 'yes' : 'no';
+
+                    if( $type === 'number' ) {
+                        $n = absint( $value );
+                        if( $min !== null ) $n = max( $min, $n );
+                        if( $max !== null ) $n = min( $max, $n );
+                        return $n;
+                    }
+
+                    if( $type === 'select' || $type === 'radios' ) {
+                        return \in_array( $value, $choices, true ) ? $value : ( $choices[0] ?? '' );
+                    }
+
+                    if( $type === 'password' ) {
+                        // A masked field submits empty when untouched. Keep the
+                        // stored key rather than wiping it.
+                        return empty( $value ) ? get_option( $option, '' ) : sanitize_text_field( $value );
+                    }
+
+                    if( $type === 'textarea' ) return sanitize_textarea_field( $value );
+
+                    return sanitize_text_field( $value );
+
+                },
+            ] );
+
+        }
+
+        // --- Blocking tab settings ---
+        // mshield_enforcement_mode is deliberately NOT registered to a settings
+        // group. Like mshield_enabled, it is owned by the dashboard's
+        // protection control. Registering it here with no field to submit it
+        // would make options.php write null over it on every Blocking save,
+        // and the sanitiser would read that null as 'observe'.
+
+        foreach( array_keys( \MightyShield\Includes\risk_levels::DEFAULT_THRESHOLDS ) as $level ) {
+            register_setting( 'mshield_blocking', 'mshield_level_' . $level . '_threshold', [
+                'sanitize_callback' => function( $value ) { return max( 1, min( 100, absint( $value ) ) ); },
+            ] );
+        }
+
+        // One action and one AI toggle per configurable level.
+        foreach( \MightyShield\Includes\risk_levels::CONFIGURABLE as $level ) {
+
+            register_setting( 'mshield_blocking', 'mshield_level_' . $level . '_action', [
+                'sanitize_callback' => function( $value ) use ( $level ) {
+
+                    $default = \MightyShield\Includes\risk_levels::LADDER[ $level ]['action'];
+
+                    if( ! \MightyShield\Includes\actions::exists( $value ) ) return $default;
+
+                    // The select renders unavailable options disabled, but a
+                    // disabled option can still be posted by hand. Refuse to
+                    // store an action no gateway can perform — it would read as
+                    // configured protection that silently falls back forever.
+                    if( ! \MightyShield\Includes\actions::is_available( $value ) ) return $default;
+
+                    return $value;
+
+                },
+            ] );
+
+            register_setting( 'mshield_blocking', 'mshield_level_' . $level . '_ai', [
+                'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+            ] );
+
+        }
+        // Moved here from the retired mshield_firewall group in 1.9.3: these
+        // decide which requests are blocked, which is what this page is about.
+        register_setting( 'mshield_blocking', 'mshield_block_store_api', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
-        register_setting( 'mshield_firewall', 'mshield_block_store_api', [
-            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
-        ] );
-        register_setting( 'mshield_firewall', 'mshield_firewall_mode', [
+        register_setting( 'mshield_blocking', 'mshield_firewall_mode', [
             'sanitize_callback' => function( $value ) {
                 return \in_array( $value, [ 'whitelist', 'blocklist' ], true ) ? $value : 'whitelist';
             },
         ] );
-        register_setting( 'mshield_firewall', 'mshield_store_api_checks', [
+        register_setting( 'mshield_blocking', 'mshield_store_api_checks', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
-        register_setting( 'mshield_firewall', 'mshield_log_retention_days', [
-            'sanitize_callback' => function( $value ) { return max( 1, min( 365, absint( $value ) ) ); },
+        // --- Bot challenge ---
+        // Moved out of the mshield_fraud group (whose tab was merged away, so
+        // it was registered but never submitted) and out of the per-signal
+        // Scoring loop. The fields live on Blocking now, because the challenge
+        // guards login, registration, lost password and comments as well as
+        // checkout -- it stopped being a scoring detail.
+        register_setting( 'mshield_blocking', 'mshield_captcha_provider', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'off', 'turnstile', 'recaptcha_v3' ], true ) ? $value : 'off';
+            },
         ] );
+        register_setting( 'mshield_blocking', 'mshield_captcha_site_key', [
+            'sanitize_callback' => 'sanitize_text_field',
+        ] );
+        register_setting( 'mshield_blocking', 'mshield_captcha_secret_key', [
+            'sanitize_callback' => function( $value ) {
+                // A masked field posts empty when untouched. Keep the stored
+                // key rather than wiping it.
+                return empty( $value ) ? get_option( 'mshield_captcha_secret_key', '' ) : sanitize_text_field( $value );
+            },
+        ] );
+        // mshield_captcha_action is retired and deliberately NOT registered.
+        // The captcha_failed signal on Scoring already floors a failed
+        // challenge to Rejected, so this was a second control for one outcome.
+        // Left registered with no field, options.php would null it on every
+        // Blocking save.
+
+        foreach( \MightyShield\Protection\challenge::SURFACES as $surface => $option ) {
+            register_setting( 'mshield_blocking', $option, [
+                'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+            ] );
+        }
+
+        register_setting( 'mshield_blocking', 'mshield_card_hold_on_mismatch', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_blocking', 'mshield_tarpit_enabled', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        register_setting( 'mshield_blocking', 'mshield_tarpit_min_ms', [
+            'sanitize_callback' => function( $value ) { return max( 0, min( 30000, absint( $value ) ) ); },
+        ] );
+        register_setting( 'mshield_blocking', 'mshield_tarpit_max_ms', [
+            'sanitize_callback' => function( $value ) { return max( 0, min( 30000, absint( $value ) ) ); },
+        ] );
+        register_setting( 'mshield_blocking', 'mshield_refusal_note', [
+            'sanitize_callback' => [ $this, 'sanitize_refusal_note' ],
+        ] );
+
+        register_setting( 'mshield_ai', 'mshield_ai_daily_cap', [
+            'sanitize_callback' => function( $value ) { return max( 0, absint( $value ) ); },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_redact_pii', [
+            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
+        ] );
+        // Which levels get an AI review is now a per-level checkbox on the Blocking
+        // tab, stored as mshield_level_<level>_ai.
 
         // --- Rate Limits tab settings ---
         register_setting( 'mshield_rates', 'mshield_rate_checkout_limit', [
@@ -109,112 +371,20 @@ class admin_page {
         ] );
 
         // --- Fraud Checks tab settings ---
-        register_setting( 'mshield_fraud', 'mshield_blocked_email_domains', [
-            'sanitize_callback' => 'sanitize_textarea_field',
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_min_order_amount', [
-            'sanitize_callback' => function( $value ) { return max( 0, (float) $value ); },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_suspicious_amount_action', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'flag';
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_address_sensitivity', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'low', 'medium', 'high' ], true ) ? $value : 'medium';
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_smarty_enabled', [
-            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_smarty_auth_id', [
-            'sanitize_callback' => 'sanitize_text_field',
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_smarty_auth_token', [
-            'sanitize_callback' => function( $value ) {
-                if( empty( $value ) ) {
-                    return get_option( 'mshield_smarty_auth_token', '' );
-                }
-                return sanitize_text_field( $value );
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_smarty_action', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'flag';
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_zip_state_enabled', [
-            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_zip_state_action', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'block';
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_honeypot_enabled', [
-            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_honeypot_action', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'block';
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_timing_enabled', [
-            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_timing_min_seconds', [
-            'sanitize_callback' => function( $value ) { return max( 0, absint( $value ) ); },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_timing_action', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'flag';
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_timing_missing_action', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'block', 'flag' ], true ) ? $value : 'flag';
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_fingerprint_enabled', [
-            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_fingerprint_action', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'block';
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_fingerprint_missing_action', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'block', 'flag' ], true ) ? $value : 'flag';
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_fingerprint_velocity_threshold', [
-            'sanitize_callback' => function( $value ) { return max( 0, absint( $value ) ); },
-        ] );
 
         // Bot challenge (CAPTCHA).
-        register_setting( 'mshield_fraud', 'mshield_captcha_provider', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'off', 'turnstile', 'recaptcha_v3' ], true ) ? $value : 'off';
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_captcha_site_key', [
-            'sanitize_callback' => 'sanitize_text_field',
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_captcha_secret_key', [
-            'sanitize_callback' => function( $value ) {
-                if( empty( $value ) ) {
-                    return get_option( 'mshield_captcha_secret_key', '' );
-                }
-                return sanitize_text_field( $value );
-            },
-        ] );
-        register_setting( 'mshield_fraud', 'mshield_captcha_action', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'block', 'flag', 'notify' ], true ) ? $value : 'block';
-            },
-        ] );
+        // The mshield_fraud group is gone. Its tab was merged into Scoring in
+        // 1.9.0 and admin/views/fraud.php has been unreachable ever since, so
+        // nothing submitted it -- but it re-registered twenty options that
+        // already belong to Scoring, and a later registration wins the group in
+        // WordPress's registry. mshield_address_sensitivity reported itself as
+        // living on a tab that does not exist.
+        //
+        // Removing the registrations changes no behaviour: settings::get()
+        // reads options directly and does not consult the registry. The
+        // per-layer *_action options (honeypot, timing, zip/state, smarty,
+        // fingerprint) went down with fraud.php and still have no UI -- they sit
+        // at their defaults. Worth a screen of their own eventually.
 
         // --- AI Detection tab settings ---
         register_setting( 'mshield_ai', 'mshield_ai_enabled', [
@@ -261,52 +431,29 @@ class admin_page {
         register_setting( 'mshield_ai', 'mshield_ai_gemini_model', [
             'sanitize_callback' => 'sanitize_text_field',
         ] );
-        register_setting( 'mshield_ai', 'mshield_ai_method', [
+        // The AI no longer decides the outcome -- it raises the level, and the
+        // level's action decides. Registered-but-unsubmitted would null this on
+        // every AI-tab save.
+        // Retired in 1.9.2 and deliberately NOT registered: mshield_ai_method,
+        // _timing, _sensitivity, the four _sig_* toggles, and
+        // _rating_threshold. Which orders get reviewed is per risk level on
+        // Blocking; reviews always run during checkout; the four signal
+        // toggles are the Scoring tab's per-signal switches; and the rating
+        // caps the trust score rather than crossing a threshold.
+        //
+        // mshield_ai_velocity_orders / _days / _high_value_amount are not
+        // registered here either. They ARE still live, registered once against
+        // the Scoring group where their fields are. Registering a second copy
+        // to this group meant every AI-tab save wrote null over whatever was
+        // set on Scoring.
+        register_setting( 'mshield_ai', 'mshield_ai_direction', [
             'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'all', 'suspicious' ], true ) ? $value : 'suspicious';
+                // Anything unrecognised falls to the conservative arm: an AI
+                // verdict that can hand trust back is opt-in.
+                return \in_array( $value, [ 'lower', 'both' ], true ) ? $value : 'lower';
             },
         ] );
-        register_setting( 'mshield_ai', 'mshield_ai_sensitivity', [
-            'sanitize_callback' => function( $value ) {
-                return \in_array( $value, [ 'low', 'medium', 'high' ], true ) ? $value : 'medium';
-            },
-        ] );
-        register_setting( 'mshield_ai', 'mshield_ai_sig_address_velocity', [
-            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
-        ] );
-        register_setting( 'mshield_ai', 'mshield_ai_velocity_orders', [
-            'sanitize_callback' => function( $value ) { return max( 2, min( 100, absint( $value ) ) ); },
-        ] );
-        register_setting( 'mshield_ai', 'mshield_ai_velocity_days', [
-            'sanitize_callback' => function( $value ) { return max( 1, min( 365, absint( $value ) ) ); },
-        ] );
-        register_setting( 'mshield_ai', 'mshield_ai_sig_email_mismatch', [
-            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
-        ] );
-        register_setting( 'mshield_ai', 'mshield_ai_sig_high_value', [
-            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
-        ] );
-        register_setting( 'mshield_ai', 'mshield_ai_high_value_amount', [
-            'sanitize_callback' => function( $value ) { return max( 0, (float) $value ); },
-        ] );
-        register_setting( 'mshield_ai', 'mshield_ai_sig_ip_mismatch', [
-            'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
-        ] );
-        register_setting( 'mshield_ai', 'mshield_ai_rating_threshold', [
-            'sanitize_callback' => function( $value ) { return max( 1, min( 10, absint( $value ) ) ); },
-        ] );
-        register_setting( 'mshield_ai', 'mshield_ai_verdict_action', [
-            'sanitize_callback' => function( $value ) {
-                $value = \in_array( $value, [ 'flag', 'authorize' ], true ) ? $value : 'flag';
-                // Enforced server-side too: a stale POST, or a gateway being
-                // disabled after this was saved, must not leave the store on a
-                // setting it cannot honor.
-                if( $value === 'authorize' && ! \MightyShield\Includes\ai_capture::any_gateway_supports_auth_only() ) {
-                    return 'flag';
-                }
-                return $value;
-            },
-        ] );
+
         register_setting( 'mshield_ai', 'mshield_ai_notify_admin', [
             'sanitize_callback' => [ $this, 'sanitize_checkbox' ],
         ] );
@@ -361,6 +508,55 @@ class admin_page {
     public function sanitize_checkbox( $value ) {
 
         return ( $value === 'yes' ) ? 'yes' : 'no';
+
+    }
+
+    /**
+     * Tags the refusal note may use.
+     *
+     * Not wp_kses_post, and the difference matters. This note is shown to the
+     * customer by two different renderers: the classic checkout runs it through
+     * wc_kses_notice(), which is wp_kses_post, while the block checkout runs it
+     * through WooCommerce's own sanitizeHTML(), whose default allowlist is
+     * exactly the list below. Allowing anything wider would mean a merchant
+     * pasting a list, seeing it work on one checkout, and never learning it
+     * silently vanished on the other.
+     *
+     * @since   2.0.0
+     *
+     * @return  array   wp_kses allowed-HTML array.
+     */
+    public static function refusal_note_tags() {
+
+        $link = [ 'href' => true, 'title' => true, 'target' => true, 'rel' => true, 'name' => true, 'download' => true ];
+
+        return [
+            'a'      => $link,
+            'b'      => [],
+            'strong' => [],
+            'i'      => [],
+            'em'     => [],
+            'p'      => [],
+            'br'     => [],
+            'abbr'   => [ 'title' => true ],
+        ];
+
+    }
+
+    /**
+     * Sanitize the merchant's refusal note.
+     *
+     * @since   2.0.0
+     *
+     * @param   string  $value
+     * @return  string
+     */
+    public function sanitize_refusal_note( $value ) {
+
+        // A group save posts every registered option, and an option with no
+        // field on the page arrives as null. Coercing first keeps wp_kses from
+        // being handed one.
+        return trim( wp_kses( (string) $value, self::refusal_note_tags() ) );
 
     }
 
@@ -493,16 +689,71 @@ class admin_page {
 
         }
 
-        // Toggle master protection (dashboard hero switch).
-        if( isset( $_GET['mshield_toggle_protection'] ) && isset( $_GET['_wpnonce'] ) ) {
+        // Protection state (dashboard hero control). Three states across two
+        // options, set explicitly rather than cycled: the control shows which
+        // one you are picking, so there is nothing to guess at.
+        if( isset( $_GET['mshield_set_state'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_toggle_protection' ) ) {
-                $new = get_option( 'mshield_enabled', 'yes' ) === 'yes' ? 'no' : 'yes';
-                update_option( 'mshield_enabled', $new );
-                set_transient( 'mshield_admin_notice', [ 'protection', $new === 'yes' ? __( 'Protection enabled.', 'mighty-shield' ) : __( 'Protection disabled.', 'mighty-shield' ), 'success' ], 30 );
+            $state = sanitize_key( wp_unslash( $_GET['mshield_set_state'] ) );
+
+            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_set_state_' . $state ) ) {
+
+                // Anything unrecognised falls to the safest of the three rather
+                // than to "enforce" — a bad nonce or a mangled URL must never
+                // start refusing customers.
+                $states = [
+                    'disabled'  => [ 'no',  null,      __( 'Protection disabled. No orders are being checked.', 'mighty-shield' ) ],
+                    'observing' => [ 'yes', 'observe', __( 'Now observing. Orders are rated and recorded, but the rating is not acted on.', 'mighty-shield' ) ],
+                    'active'    => [ 'yes', 'enforce', __( 'Protection active. Orders are now blocked and held by their rating.', 'mighty-shield' ) ],
+                ];
+
+                if( isset( $states[ $state ] ) ) {
+
+                    list( $enabled, $mode, $message ) = $states[ $state ];
+
+                    update_option( 'mshield_enabled', $enabled );
+
+                    // Disabling leaves the mode untouched, so turning protection
+                    // back on returns it to whichever mode it was last in.
+                    if( $mode !== null ) update_option( 'mshield_enforcement_mode', $mode );
+
+                    set_transient( 'mshield_admin_notice', [ 'protection', $message, 'success' ], 30 );
+
+                }
+
             }
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=dashboard' ) );
+            exit;
+
+        }
+
+        // Apply a scoring profile. An action rather than a settings field: it
+        // rewrites every trust cost at once, and it sits above the form on
+        // Scoring rather than inside it, so it applies on click rather than
+        // waiting for Save at the bottom of a long page.
+        if( isset( $_GET['mshield_set_profile'] ) && isset( $_GET['_wpnonce'] ) ) {
+
+            $profile = sanitize_key( wp_unslash( $_GET['mshield_set_profile'] ) );
+
+            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_set_profile_' . $profile )
+                && \MightyShield\Includes\scoring_profiles::apply( $profile ) ) {
+
+                set_transient( 'mshield_admin_notice', [
+                    'profile',
+                    sprintf(
+                        /* translators: %s: profile name, e.g. Strict. */
+                        __( 'Scoring set to %s. Every trust cost below now follows that profile, and you can still change any of them.', 'mighty-shield' ),
+                        \MightyShield\Includes\scoring_profiles::label( $profile )
+                    ),
+                    'success',
+                ], 30 );
+
+            }
+
+            // An unrecognised or unsigned profile changes nothing and lands
+            // back on the tab, rather than falling through to the strictest.
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=scoring' ) );
             exit;
 
         }
@@ -691,7 +942,26 @@ class admin_page {
      */
     public function enqueue_styles( $hook ) {
 
-        if( strpos( $hook, 'mighty-shield' ) === false ) return;
+        if( ! self::is_plugin_screen( $hook ) ) return;
+
+        self::enqueue_app_assets();
+
+    }
+
+    /**
+     * The design system's CSS and JS.
+     *
+     * Split out of enqueue_styles() so the order-screen panel can load the same
+     * assets. Its screen carries no `mighty-shield` page slug under either
+     * storage, so it cannot pass the gate above, and duplicating the enqueue
+     * would mean two lists of nonces drifting apart.
+     *
+     * wp_enqueue_* is idempotent, so a screen that somehow matched both gates
+     * still registers each handle once.
+     *
+     * @since   1.9.5
+     */
+    public static function enqueue_app_assets() {
 
         // Design-system fonts (Public Sans + JetBrains Mono).
         wp_enqueue_style(
@@ -759,7 +1029,7 @@ class admin_page {
      */
     public function admin_body_class( $classes ) {
 
-        if( isset( $_GET['page'] ) && $_GET['page'] === 'mighty-shield' ) {
+        if( self::is_plugin_screen() ) {
             $theme = $this->get_theme();
             // Explicit dark repaints the chrome outright; "system" defers to a
             // prefers-color-scheme media query in the CSS.
@@ -797,7 +1067,7 @@ class admin_page {
     public function suppress_notices() {
 
         $screen = get_current_screen();
-        if( ! $screen || strpos( $screen->id, 'mighty-shield' ) === false ) return;
+        if( ! $screen || ! self::is_plugin_screen( $screen->id ) ) return;
 
         remove_all_actions( 'admin_notices' );
         remove_all_actions( 'all_admin_notices' );
@@ -955,33 +1225,58 @@ class admin_page {
         $tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'dashboard';
 
         // Whitelist allowed tabs to prevent path traversal.
+        if( isset( self::MERGED_TABS[ $tab ] ) ) {
+            $tab = self::MERGED_TABS[ $tab ];
+        }
+
         if( ! \in_array( $tab, self::ALLOWED_TABS, true ) ) {
             $tab = 'dashboard';
         }
 
-        $theme = $this->get_theme();
+        self::shell_open( [ 'tab' => $tab ] );
 
-        // Documentation is reached from a header button, not the card nav.
-        $tabs = [
-            'dashboard' => __( 'Dashboard', 'mighty-shield' ),
-            'firewall'  => __( 'Firewall', 'mighty-shield' ),
-            'whitelist' => __( 'Allowlist', 'mighty-shield' ),
-            'blocklist' => __( 'Blocklist', 'mighty-shield' ),
-            'rates'     => __( 'Rate Limits', 'mighty-shield' ),
-            'fraud'     => __( 'Fraud Checks', 'mighty-shield' ),
-            'ai'        => __( 'AI Detection', 'mighty-shield' ),
-            'logs'      => __( 'Logs', 'mighty-shield' ),
-        ];
+        // Render active tab.
+        include MSHIELD_PATH . 'admin/views/' . $tab . '.php';
 
-        $icons  = self::nav_icons();
-        $shield = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 4.6-3.2 8.4-8 9.6C7.2 20.4 4 16.6 4 12V6z"></path><path d="M9 12l2 2 4-4"></path></svg>';
+        self::shell_close();
+
+    }
+
+    /**
+     * Open a MightyShield page: wrapper, header, notices, navigation.
+     *
+     * Extracted so the Fraud Review queue wears the same chrome. It is
+     * registered under WooCommerce with its own slug rather than as a tab, and
+     * duplicating a dozen lines of header markup there is how two screens that
+     * are meant to look identical stop looking identical.
+     *
+     * @since   1.9.6
+     *
+     * @param   array   $args {
+     *     @type string  tab   Active tab slug, or '' on a screen that is not a
+     *                         tab. Drives the nav cards and the Documentation
+     *                         button's active state.
+     *     @type bool    nav   Whether to render the tab cards. Default true when
+     *                         a tab is given.
+     *     @type array   back  Optional [ url, label ] shown in place of the nav.
+     * }
+     */
+    public static function shell_open( $args = [] ) {
+
+        $tab   = isset( $args['tab'] ) ? (string) $args['tab'] : '';
+        $nav   = isset( $args['nav'] ) ? (bool) $args['nav'] : ( $tab !== '' );
+        $back  = isset( $args['back'] ) ? $args['back'] : null;
+        $theme = self::current_theme();
+
+        $shield  = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 4.6-3.2 8.4-8 9.6C7.2 20.4 4 16.6 4 12V6z"></path><path d="M9 12l2 2 4-4"></path></svg>';
         $sun     = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>';
         $moon    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>';
         $monitor = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>';
         $book    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l3 3v15H6z"></path><path d="M9 8h6M9 12h6M9 16h4"></path></svg>';
+
         $theme_icons  = [ 'system' => $monitor, 'light' => $sun, 'dark' => $moon ];
         $theme_labels = [ 'system' => esc_html__( 'System', 'mighty-shield' ), 'light' => esc_html__( 'Light', 'mighty-shield' ), 'dark' => esc_html__( 'Dark', 'mighty-shield' ) ];
-        $doc_url = admin_url( 'admin.php?page=mighty-shield&tab=documentation' );
+        $doc_url      = admin_url( 'admin.php?page=mighty-shield&tab=documentation' );
 
         echo '<div class="wrap mshield-app" data-theme="' . esc_attr( $theme ) . '">';
 
@@ -997,11 +1292,67 @@ class admin_page {
         echo '<button type="button" id="mshield-theme-toggle" class="mshield-btn"><span class="ms-theme-icon">' . $theme_icons[ $theme ] . '</span><span class="ms-theme-label">' . $theme_labels[ $theme ] . '</span></button>';
         echo '</div>';
 
-        // Display any transient notices from redirected actions, plus our own
-        // degraded warning, inside the app chrome. Foreign notices were stripped
-        // in suppress_notices() because WordPress injects them into the top of
-        // any .wrap element, which is this app's own wrapper.
+        self::render_notices();
+
+        if( $nav ) {
+
+            $tabs  = self::nav_tabs();
+            $icons = self::nav_icons();
+
+            echo '<div class="mshield-navcards">';
+            foreach( $tabs as $key => $label ) {
+                $url    = admin_url( 'admin.php?page=mighty-shield&tab=' . $key );
+                $active = ( $tab === $key ) ? ' is-active' : '';
+                $icon   = isset( $icons[ $key ] ) ? $icons[ $key ] : '';
+                echo '<a class="mshield-navcard' . esc_attr( $active ) . '" href="' . esc_url( $url ) . '">' . $icon . '<span>' . esc_html( $label ) . '</span></a>';
+            }
+            echo '</div>';
+
+        } elseif( is_array( $back ) && count( $back ) === 2 ) {
+
+            printf(
+                '<p class="mshield-back"><a href="%s">&larr; %s</a></p>',
+                esc_url( $back[0] ),
+                esc_html( $back[1] )
+            );
+
+        }
+
+    }
+
+    /**
+     * Close a MightyShield page.
+     *
+     * @since   1.9.6
+     */
+    public static function shell_close() {
+
+        // Drawer mount (used by the Logs screen).
+        echo '<div id="mshield-drawer-root"></div>';
+
+        echo '</div>';
+
+    }
+
+    /**
+     * MightyShield's own messages, rendered inside the app chrome.
+     *
+     * Foreign notices are stripped by suppress_notices(), because WordPress
+     * injects them into the top of any .wrap element — which is this app's own
+     * wrapper — and they shove the header around. That suppression applies to
+     * every plugin screen, so anything of ours that would have gone out as an
+     * admin notice has to be re-rendered here or it is simply swallowed.
+     *
+     * @since   1.9.6
+     */
+    public static function render_notices() {
+
+        // First, above everything: if the firewall is closing the checkout, that
+        // is the only thing on this screen that matters.
+        self::render_checkout_conflict();
+
         $notice = get_transient( 'mshield_admin_notice' );
+
         if( $notice && is_array( $notice ) && count( $notice ) === 3 ) {
             delete_transient( 'mshield_admin_notice' );
             printf(
@@ -1018,25 +1369,198 @@ class admin_page {
             );
         }
 
-        $this->render_degraded_banners();
+        ( new self() )->render_degraded_banners();
 
-        // Card-grid navigation.
-        echo '<div class="mshield-navcards">';
-        foreach( $tabs as $key => $label ) {
-            $url    = admin_url( 'admin.php?page=mighty-shield&tab=' . $key );
-            $active = ( $tab === $key ) ? ' is-active' : '';
-            $icon   = isset( $icons[ $key ] ) ? $icons[ $key ] : '';
-            echo '<a class="mshield-navcard' . esc_attr( $active ) . '" href="' . esc_url( $url ) . '">' . $icon . '<span>' . esc_html( $label ) . '</span></a>';
-        }
-        echo '</div>';
+    }
 
-        // Render active tab.
-        include MSHIELD_PATH . 'admin/views/' . $tab . '.php';
+    /**
+     * The three protection states, in severity order.
+     *
+     * Three, not two: being switched on and actually acting on the trust
+     * rating are different things. In observe mode the rating is recorded and
+     * nothing is enforced, so anything reporting only mshield_enabled claims
+     * protection the plugin is deliberately not providing.
+     *
+     * Shared by the dashboard hero, its three-way control and the WordPress
+     * dashboard widget — three places that describe the same state, which is
+     * exactly the shape of thing that drifts when each keeps its own copy.
+     *
+     * @since   1.9.6
+     *
+     * @return  array   key => [ label, hint, icon ]
+     */
+    public static function protection_states() {
 
-        // Drawer mount (used by the Logs screen).
-        echo '<div id="mshield-drawer-root"></div>';
+        return [
+            'disabled'  => [
+                'label' => __( 'Disabled', 'mighty-shield' ),
+                'hint'  => __( 'Disabled. No orders are checked', 'mighty-shield' ),
+                // Power symbol.
+                'icon'  => '<path d="M12 4v8"></path><path d="M7.5 6.6a7 7 0 1 0 9 0"></path>',
+            ],
+            'observing' => [
+                'label' => __( 'Observing', 'mighty-shield' ),
+                'hint'  => __( 'Observing. Orders are rated and recorded, but not acted on', 'mighty-shield' ),
+                // Binoculars.
+                'icon'  => '<circle cx="6.5" cy="16" r="3.5"></circle><circle cx="17.5" cy="16" r="3.5"></circle>'
+                         . '<path d="M10 16h4"></path>'
+                         . '<path d="M4.6 13.2 5.6 5A1.5 1.5 0 0 1 7.1 3.6h1A1.5 1.5 0 0 1 9.6 5l.4 8.2"></path>'
+                         . '<path d="M19.4 13.2 18.4 5A1.5 1.5 0 0 0 16.9 3.6h-1A1.5 1.5 0 0 0 14.4 5L14 13.2"></path>',
+            ],
+            'active'    => [
+                'label' => __( 'Active', 'mighty-shield' ),
+                'hint'  => __( 'Active. Orders are blocked and held by their rating', 'mighty-shield' ),
+                // Shield, matching the hero icon.
+                'icon'  => '<path d="M12 3l8 3v6c0 4.6-3.2 8.4-8 9.6C7.2 20.4 4 16.6 4 12V6z"></path><path d="M9 12l2 2 4-4"></path>',
+            ],
+        ];
 
-        echo '</div>';
+    }
+
+    /**
+     * Which state protection is in right now, and how to draw it.
+     *
+     * @since   1.9.6
+     *
+     * @return  array   key, label, hint, icon, title, meta, pill, hero
+     */
+    public static function protection_state() {
+
+        $enabled   = settings::get( 'mshield_enabled' ) === 'yes';
+        $enforcing = $enabled && \MightyShield\Includes\response::is_enforcing();
+
+        $key    = $enabled ? ( $enforcing ? 'active' : 'observing' ) : 'disabled';
+        $states = self::protection_states();
+
+        // Observe still says "Shields are up": the individual checks really do
+        // block. What is not happening is the trust rating being acted on, and
+        // that is the only thing the meta line claims.
+        $meta = [
+            'active'    => __( 'MightyShield is actively protecting your store.', 'mighty-shield' ),
+            'observing' => __( 'Trust ratings are being recorded, not enforced.', 'mighty-shield' ),
+            'disabled'  => __( 'MightyShield is not checking any orders.', 'mighty-shield' ),
+        ];
+
+        $pill = [ 'active' => 'is-ok', 'observing' => 'is-rate', 'disabled' => 'is-blocked' ];
+        $hero = [ 'active' => '', 'observing' => 'is-observing', 'disabled' => 'is-off' ];
+
+        return array_merge( $states[ $key ], [
+            'key'       => $key,
+            'enabled'   => $enabled,
+            'enforcing' => $enforcing,
+            'observing' => $enabled && ! $enforcing,
+            'title'     => $enabled
+                ? __( 'Shields are up', 'mighty-shield' )
+                : __( 'Shields are down', 'mighty-shield' ),
+            'meta'      => $meta[ $key ],
+            'pill'      => $pill[ $key ],
+            'hero'      => $hero[ $key ],
+        ] );
+
+    }
+
+    /**
+     * The tab cards, in the order things actually happen.
+     *
+     * Documentation is reached from a header button, not the card nav.
+     *
+     * @since   1.9.6
+     *
+     * @return  array   slug => label
+     */
+    private static function nav_tabs() {
+
+        return [
+            'dashboard' => __( 'Dashboard', 'mighty-shield' ),
+            'scoring'   => __( 'Scoring', 'mighty-shield' ),
+            // Between Scoring and Blocking: that is the order things actually
+            // happen in. Scoring rates the order, AI review can revise the
+            // rating, Blocking acts on whatever it ends up being.
+            'ai'        => __( 'AI Review', 'mighty-shield' ),
+            'blocking'  => __( 'Blocking', 'mighty-shield' ),
+            'payment'   => __( 'Payment', 'mighty-shield' ),
+            'access'    => __( 'Access', 'mighty-shield' ),
+            'logs'      => __( 'Logs', 'mighty-shield' ),
+        ];
+
+    }
+
+    /**
+     * Whether the Store API firewall is currently closing the checkout.
+     *
+     * In whitelist mode the firewall denies /wc/store/v1/cart and
+     * /wc/store/v1/checkout to everyone who is not explicitly allowlisted. On a
+     * classic-checkout store that is exactly right and costs a shopper nothing.
+     * On a block checkout those are the endpoints the checkout is BUILT from,
+     * so the same setting quietly closes the shop: every real customer gets a
+     * 403 and an empty cart, and nothing anywhere says why.
+     *
+     * The settings are doing what they were asked to do, so this is a warning
+     * rather than a correction. What is not acceptable is that the plugin can
+     * take a store offline without mentioning it.
+     *
+     * @since   1.9.7
+     *
+     * @return  bool
+     */
+    public static function checkout_conflict() {
+
+        static $answer = null;
+
+        if( $answer !== null ) return $answer;
+
+        $answer = false;
+
+        // Never on the front end: has_block() loads the checkout page's post
+        // content, which is wasted work on every shopper request for a warning
+        // only an administrator can see or act on.
+        if( ! is_admin() ) return $answer;
+
+        if( settings::get( 'mshield_block_store_api' ) !== 'yes' )    return $answer;
+        if( settings::get( 'mshield_firewall_mode' ) !== 'whitelist' ) return $answer;
+
+        if( ! function_exists( 'wc_get_page_id' ) || ! function_exists( 'has_block' ) ) return $answer;
+
+        $page = (int) wc_get_page_id( 'checkout' );
+        if( $page <= 0 ) return $answer;
+
+        $answer = has_block( 'woocommerce/checkout', $page );
+
+        return $answer;
+
+    }
+
+    /**
+     * The warning itself, so both screens say it the same way.
+     *
+     * @since   1.9.7
+     */
+    public static function render_checkout_conflict() {
+
+        if( ! self::checkout_conflict() ) return;
+
+        printf(
+            '<div class="mshield-banner is-danger" style="margin-bottom:18px"><div><strong>%s</strong> %s <a href="%s">%s</a></div></div>',
+            esc_html__( 'Your checkout is closed to customers.', 'mighty-shield' ),
+            esc_html__( 'This store uses the block checkout, which is built on the Store API, and the Store API Firewall is set to Allowlist. That combination refuses the cart and the checkout for everyone who is not on your allowlist, so no customer can buy. Set the firewall to Blocklist, or turn it off.', 'mighty-shield' ),
+            esc_url( admin_url( 'admin.php?page=mighty-shield&tab=blocking' ) ),
+            esc_html__( 'Change it on Blocking', 'mighty-shield' )
+        );
+
+    }
+
+    /**
+     * The current user's admin theme, callable without an instance.
+     *
+     * @since   1.9.6
+     *
+     * @return  string  'system', 'light' or 'dark'.
+     */
+    public static function current_theme() {
+
+        $theme = get_user_meta( get_current_user_id(), 'mshield_admin_theme', true );
+
+        return \in_array( $theme, [ 'light', 'dark', 'system' ], true ) ? $theme : 'system';
 
     }
 
@@ -1054,6 +1578,16 @@ class admin_page {
 
         return [
             'dashboard'     => $o . '<rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect>' . $c,
+            // Sliders — the scoring tab is where weights get tuned.
+            'scoring'       => $o . '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"></path><path d="M1 14h6M9 8h6M17 16h6"></path>' . $c,
+            // A shield with a slash — the blocking tab is where refusals live.
+            'blocking'      => $o . '<path d="M12 3l8 3v6c0 4.6-3.2 8.4-8 9.6C7.2 20.4 4 16.6 4 12V6z"></path><path d="M9 12h6"></path>' . $c,
+            // Sliders for Checks (per-layer configuration).
+            'checks'        => $o . '<path d="M20 6H9M14 12H4M18 18H7"></path><circle cx="6" cy="6" r="2"></circle><circle cx="17" cy="12" r="2"></circle><circle cx="4" cy="18" r="2"></circle>' . $c,
+            // A card, for Payment.
+            'payment'       => $o . '<rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path>' . $c,
+            // A key, for Access.
+            'access'        => $o . '<circle cx="7.5" cy="15.5" r="3.5"></circle><path d="M10 13L20 3M17 6l2 2M14 9l2 2"></path>' . $c,
             'firewall'      => $o . '<path d="M3 5h18v14H3z"></path><path d="M3 10h18M9 5v5M15 10v9M6 14h12"></path>' . $c,
             'whitelist'     => $o . '<circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path>' . $c,
             'blocklist'     => $o . '<circle cx="12" cy="12" r="9"></circle><path d="M6 6l12 12"></path>' . $c,

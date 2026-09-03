@@ -14,6 +14,8 @@ namespace MightyShield\Firewall;
 
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class ip_blocklist {
 
@@ -59,8 +61,10 @@ class ip_blocklist {
 
         if( ! self::is_blocked( $ip ) ) return;
 
+        risk_context::add( 'ip_blocklisted', 'IP is on the blocklist' );
+
         db::log_event( $ip, 'classic_checkout', 'blocked', 'Blocklisted IP' );
-        wc_add_notice( __( 'Your access has been restricted. Please contact support.', 'mighty-shield' ), 'error' );
+        wc_add_notice( response::with_note( __( 'Your access has been restricted. Please contact support.', 'mighty-shield' ) ), 'error' );
 
     }
 
@@ -96,6 +100,8 @@ class ip_blocklist {
         if( $uid && ( ip_whitelist::is_user_whitelisted( $uid ) || ip_whitelist::is_role_whitelisted( $uid ) ) ) return $result;
 
         if( ! self::is_blocked( $ip ) ) return $result;
+
+        risk_context::add( 'ip_blocklisted', 'IP is on the blocklist' );
 
         db::log_event( $ip, $route, 'blocked', 'Store API access denied — blocklisted IP' );
 

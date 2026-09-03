@@ -3,7 +3,9 @@
  * IP Data.
  *
  * Fetches and caches geolocation/ownership data for IP addresses via the free
- * ip-api.com service. Results are cached in the mshield_ip_data table so each
+ * ip-api.com service, over HTTPS — the query carries a customer's IP address and
+ * the answer feeds a fraud decision, so neither should be readable or rewritable
+ * by anything on the path. Results are cached in the mshield_ip_data table so each
  * IP is only ever fetched once (kept fast, and gentle on the free API).
  *
  * @package MightyShield
@@ -18,14 +20,14 @@ class ip_data {
      *
      * @since   1.6.0
      */
-    private const FIELDS = 'status,city,region,countryCode,org';
+    private const FIELDS = 'status,city,region,countryCode,org,proxy,hosting,mobile,asname';
 
     /**
      * Fields for a batch lookup (query included so results can be mapped back).
      *
      * @since   1.6.0
      */
-    private const BATCH_FIELDS = 'status,city,region,countryCode,org,query';
+    private const BATCH_FIELDS = 'status,city,region,countryCode,org,proxy,hosting,mobile,asname,query';
 
     /**
      * Fetch and cache data for a single IP, returning the cached row.
@@ -108,9 +110,25 @@ class ip_data {
      */
     private static function fetch( $ip ) {
 
-        $url = 'http://ip-api.com/json/' . rawurlencode( $ip ) . '?fields=' . self::FIELDS;
+        $url = 'https://ip-api.com/json/' . rawurlencode( $ip ) . '?fields=' . self::FIELDS;
 
-        $response = wp_remote_get( $url, [ 'timeout' => 5 ] );
+        /**
+         * How long to wait on the IP lookup, in seconds.
+         *
+         * This call sits on the checkout path, so the ceiling is a tradeoff
+         * between the network signals and the sale. A miss costs the three
+         * network signals and nothing else, so the shorter side is the safer
+         * one on a busy store.
+         *
+         * @since   2.0.0
+         *
+         * @param   int     $timeout    Seconds. Default 5.
+         * @param   string  $ip         The address being looked up.
+         */
+        $timeout = (int) apply_filters( 'mighty_shield_ip_lookup_timeout', 5, $ip );
+        if( $timeout < 1 ) $timeout = 1;
+
+        $response = wp_remote_get( $url, [ 'timeout' => $timeout ] );
         if( is_wp_error( $response ) ) return null;
         if( (int) wp_remote_retrieve_response_code( $response ) !== 200 ) return null;
 
@@ -131,7 +149,7 @@ class ip_data {
      */
     private static function fetch_batch( $ips ) {
 
-        $url = 'http://ip-api.com/batch?fields=' . self::BATCH_FIELDS;
+        $url = 'https://ip-api.com/batch?fields=' . self::BATCH_FIELDS;
 
         $response = wp_remote_post( $url, [
             'timeout' => 6,
@@ -171,6 +189,13 @@ class ip_data {
             'region'  => isset( $d['region'] ) ? $d['region'] : '',
             'country' => isset( $d['countryCode'] ) ? $d['countryCode'] : '',
             'org'     => isset( $d['org'] ) ? $d['org'] : '',
+            'asname'  => isset( $d['asname'] ) ? $d['asname'] : '',
+            // Cast to a tri-state: 1 yes, 0 no, -1 not reported. A plan tier
+            // that omits these fields must not read as "definitely not a
+            // proxy" — absent data is not evidence of innocence.
+            'proxy'   => isset( $d['proxy'] ) ? ( $d['proxy'] ? 1 : 0 ) : -1,
+            'hosting' => isset( $d['hosting'] ) ? ( $d['hosting'] ? 1 : 0 ) : -1,
+            'mobile'  => isset( $d['mobile'] ) ? ( $d['mobile'] ? 1 : 0 ) : -1,
         ];
 
     }

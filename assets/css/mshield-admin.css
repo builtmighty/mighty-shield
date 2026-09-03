@@ -8,7 +8,11 @@
  * @since   1.5.0
  */
 
-.mshield-app {
+/* Two scopes, on purpose. .mshield-scope carries ONLY the design tokens and the
+   type, for places that borrow the palette inside somebody else's screen — a
+   cell in WooCommerce's order list, say. .mshield-app is that plus the chrome
+   of a full plugin page. Stating the tokens twice is how they would drift. */
+.mshield-app, .mshield-scope {
     --bg:#f0f0f1; --surface:#ffffff; --surface-2:#f6f7f8;
     --fg:#1d2327; --fg-2:#50575e; --fg-3:#8c9196;
     --line:#e2e4e7; --line-2:#eff0f2;
@@ -17,36 +21,39 @@
     --shadow-lg:0 12px 32px rgba(16,24,40,.14);
     --ok:#00a32a; --warn:#dba617; --danger:#d63638; --flag:#8c5ce6;
     --ink-danger:#c22b2d; --ink-warn:#96700a; --ink-flag:#6f43cc; --ink-ok:#0a7c26;
+    --ink-orange:#c2570f; --ink-lime:#4a9c1f;
 
     font-family:'Public Sans',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     color:var(--fg);
-    max-width:1200px;
 }
 
-.mshield-app[data-theme="dark"] {
+.mshield-app[data-theme="dark"], .mshield-scope[data-theme="dark"] {
     --bg:#0e1116; --surface:#161a20; --surface-2:#1d222a;
     --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#6f7987;
     --line:#272e38; --line-2:#212831;
     --brand:#7d95ff; --brand-soft:#1a2140;
     --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 44px rgba(0,0,0,.55);
     --ink-danger:#ff8f91; --ink-warn:#f0c34b; --ink-flag:#b69dff; --ink-ok:#57d97f;
+    --ink-orange:#ff9d5c; --ink-lime:#a8e063;
 }
 
 /* "System" theme: no explicit choice, so follow the OS. Same dark tokens as
    [data-theme="dark"], applied only when the OS prefers dark. */
 @media (prefers-color-scheme: dark) {
-    .mshield-app[data-theme="system"] {
+    .mshield-app[data-theme="system"], .mshield-scope[data-theme="system"] {
         --bg:#0e1116; --surface:#161a20; --surface-2:#1d222a;
         --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#6f7987;
         --line:#272e38; --line-2:#212831;
         --brand:#7d95ff; --brand-soft:#1a2140;
         --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 44px rgba(0,0,0,.55);
         --ink-danger:#ff8f91; --ink-warn:#f0c34b; --ink-flag:#b69dff; --ink-ok:#57d97f;
+        --ink-orange:#ff9d5c; --ink-lime:#a8e063;
     }
 }
 
 /* Give the plugin screen its own background inside the WP content column. */
 .mshield-app {
+    max-width:1200px;
     margin:16px 20px 40px 2px;
     padding:0;
     background:var(--bg);
@@ -144,21 +151,36 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     background:rgba(0,163,42,.1); color:var(--ok); flex:none;
 }
 .mshield-hero.is-off .ms-ico { background:rgba(214,54,56,.1); color:var(--danger); }
+/* Observe mode: on, but not acting on the rating. Amber rather than green so
+   the hero cannot be read as "enforcing" at a glance. */
+.mshield-hero.is-observing .ms-accent { background:var(--warn); }
+.mshield-hero.is-observing .ms-ico    { background:rgba(219,166,23,.14); color:var(--ink-warn); }
 .mshield-hero-title { font-size:15.5px; font-weight:650; }
 .mshield-hero-meta { font-size:12.5px; color:var(--fg-2); margin-top:3px; font-family:'JetBrains Mono',monospace; }
 
-/* ---------- Pills ---------- */
+/* ---------- Pills ----------
+   One definition for every pill in the plugin: the hero's status chip, the
+   processor tiles, the log tags and the table cells. There used to be a second,
+   outlined version scoped to .mshield-table, so the same "Available" state was
+   drawn two different ways depending on which screen you were on. */
 .mshield-pill {
     display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600;
-    padding:3px 9px; border-radius:20px;
+    padding:3px 9px; border-radius:20px; white-space:nowrap;
+    /* Unmodified pills -- a count, an em dash, "never" -- still read as chips
+       rather than as bare text, which is what the table version gave them. */
+    background:var(--surface-2); color:var(--fg-2);
 }
 .mshield-pill .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
 .mshield-pill.is-ok { background:rgba(0,163,42,.11); color:var(--ink-ok); }
-.mshield-pill.is-blocked { background:rgba(214,54,56,.10); color:var(--ink-danger); }
-.mshield-pill.is-rate { background:rgba(219,166,23,.14); color:var(--ink-warn); }
+.mshield-pill.is-blocked,
+.mshield-pill.is-danger { background:rgba(214,54,56,.10); color:var(--ink-danger); }
+.mshield-pill.is-rate,
+.mshield-pill.is-warn { background:rgba(219,166,23,.14); color:var(--ink-warn); }
 .mshield-pill.is-flag { background:rgba(140,92,230,.13); color:var(--ink-flag); }
 .mshield-pill.is-exempt { background:rgba(0,163,42,.11); color:var(--ink-ok); }
-.mshield-tag-pill { border-radius:5px; padding:3px 9px; }
+/* A quiet counterpart to is-ok, for a state that is simply not the case rather
+   than one that went wrong. */
+.mshield-pill.is-muted { background:var(--surface-2); color:var(--fg-3); }
 
 /* ---------- Toggle switch ---------- */
 .mshield-toggle {
@@ -171,6 +193,102 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 }
 .mshield-toggle.is-on { background:var(--ok); }
 .mshield-toggle.is-on .knob { left:21px; }
+
+/* ---------- Three-state protection control ---------- */
+/* Disabled / Observing / Active. A sliding knob rides behind three icon
+   options, so the current state reads at a glance and picking a different one
+   is a single click rather than a cycle. */
+.mshield-tri {
+    position:relative; display:inline-flex; align-items:center; gap:0;
+    padding:3px; border-radius:999px; flex:none;
+    background:var(--surface-2); border:1px solid var(--line);
+}
+.mshield-tri .ms-knob {
+    position:absolute; top:3px; left:3px; width:32px; height:26px; border-radius:999px;
+    background:var(--surface); box-shadow:var(--shadow);
+    transition:transform .18s cubic-bezier(.22,1,.36,1), background-color .18s ease;
+}
+.mshield-tri.at-observing .ms-knob { transform:translateX(32px); }
+.mshield-tri.at-active    .ms-knob { transform:translateX(64px); }
+
+/* The knob carries the state colour, matching the hero accent beside it. */
+.mshield-tri.at-disabled  .ms-knob { background:rgba(214,54,56,.16); }
+.mshield-tri.at-observing .ms-knob { background:rgba(219,166,23,.20); }
+.mshield-tri.at-active    .ms-knob { background:rgba(0,163,42,.18); }
+
+.mshield-tri .ms-opt {
+    position:relative; z-index:1; box-sizing:border-box;
+    width:32px; height:26px; display:inline-flex; align-items:center; justify-content:center;
+    color:var(--fg-3); border-radius:999px; text-decoration:none;
+    transition:color .16s ease;
+}
+.mshield-tri .ms-opt:hover { color:var(--fg-2); }
+.mshield-tri .ms-opt:focus-visible {
+    outline:2px solid var(--brand); outline-offset:1px; color:var(--fg-2);
+}
+/* Selected icon takes the state's ink colour, which is theme-aware; the knob
+   tints above are the same hues at low alpha and read on either background. */
+.mshield-tri.at-disabled  .ms-opt.is-now { color:var(--ink-danger); }
+.mshield-tri.at-observing .ms-opt.is-now { color:var(--ink-warn); }
+.mshield-tri.at-active    .ms-opt.is-now { color:var(--ink-ok); }
+.mshield-tri .ms-opt svg { display:block; }
+
+@media (prefers-reduced-motion: reduce) {
+    .mshield-tri .ms-knob { transition:none; }
+}
+
+/* Full-width, four-state, text-label variant of the same switch, for the
+   scoring profile. The dashboard's is icon-only with fixed 32px cells; this one
+   spreads across the section, so the knob is sized as a fraction of the track
+   and moves by whole multiples of its own width rather than by pixel offsets.
+   Four cells, 3px of padding each side: each is (100% - 6px) / 4. */
+.mshield-tri.is-full { display:flex; width:100%; flex:1 1 auto; box-sizing:border-box; }
+.mshield-tri.is-full .ms-knob {
+    top:3px; bottom:3px; height:auto;
+    width:calc( ( 100% - 6px ) / 4 );
+}
+.mshield-tri.is-full.at-balanced .ms-knob { transform:translateX(0); }
+.mshield-tri.is-full.at-cautious .ms-knob { transform:translateX(100%); }
+.mshield-tri.is-full.at-strict   .ms-knob { transform:translateX(200%); }
+.mshield-tri.is-full.at-custom   .ms-knob { transform:translateX(300%); }
+
+/* The knob carries the colour of what the profile does, borrowed from the risk
+   levels so the tab reads consistently: Cautious wears the orange of "high",
+   Strict the red of "rejected" and "banned". These are the same hues as the
+   --ink-* tokens at low alpha, which reads on either theme's background.
+   Custom is grey, because it describes where you are rather than a severity. */
+.mshield-tri.is-full.at-balanced .ms-knob { background:rgba(56,88,233,.16); }
+.mshield-tri.is-full.at-cautious .ms-knob { background:rgba(194,87,15,.20); }
+.mshield-tri.is-full.at-strict   .ms-knob { background:rgba(214,54,56,.18); }
+.mshield-tri.is-full.at-custom   .ms-knob { background:rgba(140,149,160,.20); }
+
+.mshield-tri.is-full .ms-opt {
+    flex:1 1 0; width:auto; min-width:0; height:auto;
+    padding:9px 10px; font-size:13px; font-weight:650; line-height:1.2;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.mshield-tri.is-full .ms-opt:hover { color:var(--fg); }
+
+/* Hover previews the colour the cell would take, so the control says what it
+   means before it is clicked as well as after. */
+.mshield-tri.is-full .ms-opt[data-tone="balanced"]:hover { color:var(--brand); }
+.mshield-tri.is-full .ms-opt[data-tone="cautious"]:hover { color:var(--ink-orange); }
+.mshield-tri.is-full .ms-opt[data-tone="strict"]:hover   { color:var(--ink-danger); }
+
+.mshield-tri.is-full.at-balanced .ms-opt.is-now { color:var(--brand); }
+.mshield-tri.is-full.at-cautious .ms-opt.is-now { color:var(--ink-orange); }
+.mshield-tri.is-full.at-strict   .ms-opt.is-now { color:var(--ink-danger); }
+.mshield-tri.is-full.at-custom   .ms-opt.is-now { color:var(--fg-2); }
+
+/* Custom is a state the page reports, not a destination. It is a span rather
+   than a link, so it takes no pointer and does not respond to hover. */
+.mshield-tri.is-full .ms-opt.is-static { cursor:default; }
+.mshield-tri.is-full .ms-opt.is-static:hover { color:var(--fg-3); }
+.mshield-tri.is-full.at-custom .ms-opt.is-static:hover { color:var(--fg-2); }
+
+@media ( max-width: 782px ) {
+    .mshield-tri.is-full .ms-opt { padding:9px 4px; font-size:12px; }
+}
 
 /* ---------- Stat cards ---------- */
 .mshield-statcard { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 17px; box-shadow:var(--shadow); }
@@ -256,6 +374,15 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     background:var(--brand-soft); border:1px solid rgba(56,88,233,.22); font-size:13px; color:var(--fg); line-height:1.5;
 }
 
+/* A banner for something actually wrong, rather than something worth knowing.
+   Used by the checkout-conflict warning, which reports a store that cannot take
+   orders -- the one message that should outrank everything else on the page. */
+.mshield-banner.is-danger {
+    background:rgba(214,54,56,.08);
+    border-color:rgba(214,54,56,.30);
+}
+.mshield-banner.is-danger strong { color:var(--ink-danger); }
+
 /* ---------- Drawer ---------- */
 .mshield-drawer-overlay { position:fixed; inset:0; z-index:100000; background:rgba(15,18,22,.42); }
 .mshield-drawer {
@@ -296,21 +423,35 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-app .mshield-table th { background:var(--surface-2); font-weight:600; color:var(--fg-2); }
 .mshield-app .mshield-table code { background:var(--surface-2); border-radius:4px; padding:2px 6px; font-family:'JetBrains Mono',monospace; }
 
-/* Enable checkboxes in settings views become toggle switches. */
-.mshield-app .form-table input[type="checkbox"] {
+/* Enable checkboxes in settings views become toggle switches.
+ *
+ * Both settings tables, because the same control appears in both: .form-table
+ * for the plain settings rows, .mshield-table for the ones that live in a grid
+ * -- the per-signal switches on Scoring and the AI Review column on Blocking,
+ * which were rendering as bare checkboxes next to toggles everywhere else.
+ *
+ * Deliberately not every checkbox under .mshield-app. The log list's row
+ * selection is a different kind of control that should keep looking like a
+ * checkbox, and it sits in .mshield-logrow rather than in either table. */
+.mshield-app .form-table input[type="checkbox"],
+.mshield-app .mshield-table input[type="checkbox"] {
     appearance:none !important; -webkit-appearance:none !important;
     width:42px !important; height:24px !important; min-width:42px; border-radius:20px !important;
     background:var(--fg-3) !important; position:relative; cursor:pointer; border:0 !important;
     margin:0 6px 0 0; box-shadow:none !important; vertical-align:middle; flex:none;
 }
-.mshield-app .form-table input[type="checkbox"]::before {
+.mshield-app .form-table input[type="checkbox"]::before,
+.mshield-app .mshield-table input[type="checkbox"]::before {
     content:"" !important; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%;
     background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.28); transition:left .16s ease; margin:0;
     color:transparent;
 }
-.mshield-app .form-table input[type="checkbox"]:checked { background:var(--ok) !important; }
-.mshield-app .form-table input[type="checkbox"]:checked::before { left:21px; }
+.mshield-app .form-table input[type="checkbox"]:checked,
+.mshield-app .mshield-table input[type="checkbox"]:checked { background:var(--ok) !important; }
+.mshield-app .form-table input[type="checkbox"]:checked::before,
+.mshield-app .mshield-table input[type="checkbox"]:checked::before { left:21px; }
 .mshield-app .form-table label { display:inline-flex; align-items:center; gap:2px; }
+.mshield-app .mshield-table .mshield-sig-field.is-toggle { align-items:center; }
 
 /* Radio-bubble groups (segmented choices). */
 .mshield-radios { display:flex; flex-wrap:wrap; gap:8px; }
@@ -364,3 +505,402 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
        narrow to read, so let the nav wrap again. */
     .mshield-navcards { grid-auto-flow:row; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); }
 }
+
+/* ---------- Scoring and Blocking tables ---------- */
+
+.mshield-app .mshield-table .mshield-sig-name { font-weight:650; color:var(--fg); }
+.mshield-app .mshield-table .mshield-sig-key {
+    font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:var(--fg-3);
+    background:transparent; padding:0;
+}
+
+/* Per-signal configuration, on the signal's own row. */
+.mshield-app .mshield-sig-config { display:flex; flex-wrap:wrap; gap:8px; margin-top:7px; }
+.mshield-app .mshield-sig-field {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:12px; color:var(--fg-2); min-width:0;
+}
+.mshield-app .mshield-sig-field input[type="number"] { width:82px; }
+.mshield-app .mshield-sig-field input[type="text"],
+.mshield-app .mshield-sig-field input[type="password"] { width:190px; }
+.mshield-app .mshield-sig-field textarea { width:100%; }
+/* A checkbox reads as a statement, not as a field beside another field, so it
+   takes the whole line rather than sharing one. */
+.mshield-app .mshield-sig-field.is-toggle { flex-basis:100%; }
+.mshield-app .mshield-sig-field.is-radios { flex-basis:100%; align-items:flex-start; }
+.mshield-app .mshield-sig-field.is-radios .mshield-radios { gap:6px; }
+.mshield-app .mshield-sig-field.is-radios .mshield-radio { padding:5px 11px; font-size:12px; }
+
+/* The "?" that explains what a signal means. Hover is not enough: it has to
+   answer the keyboard too, or the explanation is unreachable without a mouse. */
+.mshield-app .mshield-tip {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:15px; height:15px; margin-left:5px; border-radius:50%;
+    background:var(--surface-2); border:1px solid var(--line);
+    color:var(--fg-3); font-size:10px; font-weight:700; cursor:help;
+    position:relative; vertical-align:middle;
+}
+.mshield-app .mshield-tip::after {
+    content:attr(data-tip); position:absolute; left:50%; bottom:calc(100% + 7px);
+    transform:translateX(-50%); width:250px; padding:8px 10px; border-radius:7px;
+    background:var(--fg); color:var(--bg); font-size:11.5px; font-weight:500;
+    line-height:1.45; text-align:left; white-space:normal;
+    box-shadow:var(--shadow-lg); opacity:0; visibility:hidden; z-index:20;
+    transition:opacity .12s ease;
+}
+.mshield-app .mshield-tip:hover::after,
+.mshield-tip:focus-visible::after { opacity:1; visibility:visible; }
+.mshield-app .mshield-tip:focus-visible { outline:2px solid var(--brand); outline-offset:1px; }
+
+/* ---------- The trust scale ---------- */
+
+.mshield-scale { display:flex; gap:8px; margin:14px 0 4px; flex-wrap:wrap; }
+.mshield-scale > span {
+    flex:1 1 0; min-width:118px; box-sizing:border-box;
+    padding:11px 12px 12px; border-radius:9px;
+    background:var(--surface); border:1px solid var(--line); border-top:3px solid var(--line);
+    text-align:center;
+}
+.mshield-scale .ms-range {
+    display:block; font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-size:11px; color:var(--fg-3); margin-top:5px;
+}
+.mshield-scale .ms-name { display:block; font-size:12.5px; font-weight:650; margin-top:3px; }
+
+.mshield-scale .s-banned   { border-top-color:var(--ink-danger); }
+.mshield-scale .s-rejected { border-top-color:var(--ink-danger); }
+.mshield-scale .s-high     { border-top-color:var(--ink-orange); }
+.mshield-scale .s-elevated { border-top-color:var(--ink-warn); }
+.mshield-scale .s-low      { border-top-color:var(--ink-lime); }
+.mshield-scale .s-trusted  { border-top-color:var(--ink-ok); }
+
+/* ---------- The trust dial ---------- */
+
+/* Unscoped on purpose: the order panel draws the same gauge outside .mshield-app,
+   and welding it to .mshield-scale is what stopped it being reusable. */
+.mshield-gauge { display:block; width:100%; height:auto; }
+.mshield-gauge .track { stroke:var(--line); }
+/* Ticked, so the arc reads as a scale rather than as a bar. */
+.mshield-gauge .dial { stroke:currentColor; opacity:.30; stroke-dasharray:2 3; stroke-linecap:round; }
+/* Near-solid over the ticks: the same dash pattern language, but reading as one
+   continuous run so the value is obviously the value. */
+.mshield-gauge .value { stroke:currentColor; stroke-dasharray:10 1; stroke-linecap:round; }
+/* currentColor throughout, so the dial takes the ramp from whichever s-* wrapper
+   it sits inside. A colour on the SVG itself would beat the ramp on its
+   ancestor and grey out every state. */
+.mshield-gauge .value-text { fill:currentColor; font-weight:700; }
+.mshield-gauge .label-text { fill:var(--fg-3); font-size:8px; }
+
+/* ---------- The severity ramp ---------- */
+
+/* One statement per level, carrying every arm that needs the colour. Three arms,
+   because the same level appears in three different shapes:
+     .mshield-app .s-X                       the cards and dials on a plugin screen
+     .mshield-scope.s-X                      the Rating column on WooCommerce's own
+                                             order list, where there is no
+                                             .mshield-app ancestor at all -- the
+                                             descendant form resolved to nothing
+                                             there and every rating rendered in
+                                             the default text colour
+     .mshield-stepper .ms-value.s-X          the force-level bubble, at the depth
+                                             that beats .ms-value's own rule
+   Two copies of this ramp is how the old scale drifted away from the ladder. */
+.mshield-app .s-banned,   .mshield-scope.s-banned,   .mshield-app .mshield-stepper .ms-value.s-banned   { color:var(--ink-danger); }
+.mshield-app .s-rejected, .mshield-scope.s-rejected, .mshield-app .mshield-stepper .ms-value.s-rejected { color:var(--ink-danger); }
+.mshield-app .s-high,     .mshield-scope.s-high,     .mshield-app .mshield-stepper .ms-value.s-high     { color:var(--ink-orange); }
+.mshield-app .s-elevated, .mshield-scope.s-elevated, .mshield-app .mshield-stepper .ms-value.s-elevated { color:var(--ink-warn); }
+.mshield-app .s-low,      .mshield-scope.s-low,      .mshield-app .mshield-stepper .ms-value.s-low      { color:var(--ink-lime); }
+.mshield-app .s-trusted,  .mshield-scope.s-trusted,  .mshield-app .mshield-stepper .ms-value.s-trusted  { color:var(--ink-ok); }
+.mshield-app .s-none,     .mshield-scope.s-none,     .mshield-app .mshield-stepper .ms-value.s-none     { color:var(--fg-3); }
+
+/* ---------- Supported processors ---------- */
+
+.mshield-supported {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:10px; margin:14px 0 4px;
+}
+.mshield-app .mshield-supcard {
+    display:flex; flex-direction:column; align-items:flex-start; gap:7px;
+    padding:13px; border-radius:9px;
+    background:var(--surface); border:1px solid var(--line); color:var(--fg-2);
+}
+.mshield-app .mshield-supcard.is-active { border-color:var(--brand); color:var(--brand); }
+.mshield-app .mshield-supcard .ms-name { font-size:13px; font-weight:650; color:var(--fg); }
+.mshield-app .mshield-supcard .ms-caps { font-size:11.5px; color:var(--fg-3); }
+
+/* The brand marks. authorize.svg is the only one with no width or height on its
+   root element, so it has no intrinsic size -- sizing the image with auto
+   dimensions under max-* constraints needs one, and it rendered at the wrong
+   scale while the other four looked fine. So the box is definite on both axes
+   and object-fit does the scaling, which works whatever the file declares. */
+.mshield-app .mshield-supcard .ms-logo {
+    display:block; width:118px; height:34px; padding:5px 9px;
+    border-radius:7px; background:#fff; box-sizing:border-box;
+}
+.mshield-app .mshield-supcard .ms-logo img {
+    width:100%; height:100%; display:block;
+    object-fit:contain; object-position:left center;
+}
+
+/* ---------- Force-level stepper ---------- */
+/* A coloured bubble between two arrows, in place of a select, so the chosen
+   level carries the same colour it has on the trust dials above. */
+.mshield-app .mshield-stepper {
+    display:flex; align-items:center; gap:2px;
+    background:var(--surface-2); border:1px solid var(--line); border-radius:999px;
+    padding:2px; width:100%; box-sizing:border-box;
+}
+.mshield-app .mshield-stepper .ms-step {
+    display:inline-flex; align-items:center; justify-content:center; flex:none;
+    width:22px; height:22px; padding:0; margin:0;
+    border:0; border-radius:50%; background:transparent; cursor:pointer;
+    color:var(--fg-3); line-height:0;
+}
+.mshield-app .mshield-stepper .ms-step:hover:not(:disabled) { background:var(--surface); color:var(--fg); }
+.mshield-app .mshield-stepper .ms-step:focus-visible { outline:2px solid var(--brand); outline-offset:1px; }
+/* Stepping clamps rather than wraps, so the ends really are ends. */
+.mshield-app .mshield-stepper .ms-step:disabled { opacity:.3; cursor:default; }
+
+.mshield-app .mshield-stepper .ms-value {
+    flex:1 1 auto; min-width:0; text-align:center;
+    padding:2px 4px; font-size:11.5px; font-weight:650; line-height:1.35;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+/* "Scoring only" is the absence of a forced level, so it stays neutral -- the
+   ramp colours mean "this signal can force THIS outcome on its own". */
+.mshield-app .mshield-stepper .ms-value.s-none { color:var(--fg-3); font-weight:600; }
+
+/* Blocking's Action steppers. An action is a choice, not a severity, so there
+   is no ramp to follow -- one colour throughout. Written to the same depth as
+   the level rules so it wins wherever an action key happens to collide with a
+   level key. */
+.mshield-app .mshield-stepper.is-plain .ms-value { color:var(--fg); }
+
+/* ---------- Order screen panel ----------
+   The metabox lives outside the plugin's own screens, so it carries .mshield-app
+   itself to pick up the design tokens and the data-theme attribute. Everything
+   here is scoped to .mshield-orderbox: WooCommerce's order screen is a dense
+   page belonging to somebody else, and a stray rule from this file landing on
+   its fields would be a bug nobody would think to look here for. */
+/* .mshield-app is written for the plugin's own screens: it caps its width,
+   paints the page background and insets itself from the WP content column.
+   Inside a metabox all three are wrong — the box IS the surface, and the panel
+   should fill it. */
+.mshield-app.mshield-orderbox {
+    width:100%;
+    max-width:none;
+    margin:0;
+    background:none;
+    font-size:12.5px; line-height:1.5;
+}
+
+/* The badge, always first. */
+.mshield-orderbox .ms-badge { text-align:center; padding:2px 0 10px; }
+/* Centred: the gauge is narrower than the metabox, so without the auto margins
+   it sits off to one side of a badge whose text is centred under it. */
+.mshield-orderbox .ms-badge .mshield-gauge { max-width:108px; margin:0 auto 6px; }
+.mshield-orderbox .ms-badge .ms-level {
+    display:block; font-size:13px; font-weight:700; letter-spacing:.01em; color:currentColor;
+}
+.mshield-orderbox .ms-badge .mshield-hint { text-align:left; margin-top:7px; }
+
+.mshield-orderbox .ms-quiet { margin:0 0 10px; color:var(--fg-2); }
+.mshield-orderbox .ms-eyebrow {
+    display:block; font-size:10.5px; font-weight:700; letter-spacing:.07em;
+    text-transform:uppercase; color:var(--fg-3); margin-bottom:7px;
+}
+
+/* Why it scored what it scored. The cost sits hard right so the column of
+   numbers reads down as the weighting it is. */
+.mshield-orderbox .ms-reasons { margin:0 0 12px; padding:0; list-style:none; }
+.mshield-orderbox .ms-reasons li {
+    display:flex; gap:8px; align-items:baseline; justify-content:space-between;
+    padding:6px 0; margin:0; border-bottom:1px solid var(--line-2);
+}
+.mshield-orderbox .ms-reasons li:last-child { border-bottom:0; }
+/* The row is a two-column flex, so the sentence and its link share one column.
+   A third child would land the link between the two and push the cost around. */
+.mshield-orderbox .ms-reasons .ms-detail { min-width:0; }
+.mshield-orderbox .ms-reasons .ms-why { color:var(--fg-2); display:block; }
+.mshield-orderbox .ms-reasons .ms-cost {
+    flex:none; font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-size:11.5px; font-weight:600; color:var(--fg-3);
+}
+.mshield-orderbox .ms-reasons .ms-tune {
+    display:inline-block; margin-top:3px;
+    font-size:11.5px; color:var(--fg-3); text-decoration:none;
+    border-bottom:1px solid var(--line);
+}
+.mshield-orderbox .ms-reasons .ms-tune:hover,
+.mshield-orderbox .ms-reasons .ms-tune:focus {
+    color:var(--brand); border-bottom-color:var(--brand);
+}
+
+/* The row an "Adjust setting" link landed on. A settings table is a wall of
+   near-identical rows, so the jump needs to say which one it meant. */
+.mshield-app tr.is-flash > td,
+.mshield-app tr.is-flash > th {
+    background:var(--brand-soft);
+    animation:mshield-flash 2.6s ease-out 1;
+}
+@keyframes mshield-flash {
+    0%, 55% { background:var(--brand-soft); }
+    100%    { background:transparent; }
+}
+@media ( prefers-reduced-motion: reduce ) {
+    .mshield-app tr.is-flash > td,
+    .mshield-app tr.is-flash > th { animation:none; }
+}
+
+/* The refusal messages a customer actually reads, shown on the Blocking tab so
+   a merchant can see what their note gets appended to. */
+.mshield-app .mshield-examples { margin:8px 0 14px; padding:0; list-style:none; }
+.mshield-app .mshield-examples li {
+    position:relative; padding:7px 11px 7px 26px; margin:0 0 5px;
+    background:var(--surface-2); border:1px solid var(--line-2); border-radius:6px;
+    color:var(--fg-2); font-size:12.5px; line-height:1.5;
+}
+.mshield-app .mshield-examples li:before {
+    content:'\201C'; position:absolute; left:9px; top:6px;
+    color:var(--fg-3); font-size:16px; line-height:1.2;
+}
+
+.mshield-orderbox .ms-buttons { display:flex; gap:8px; margin:12px 0 0; }
+.mshield-orderbox .ms-buttons .button { flex:1; justify-content:center; text-align:center; }
+.mshield-orderbox .ms-aitoggle {
+    display:flex; gap:7px; align-items:center; margin-top:9px; color:var(--fg-2);
+}
+
+.mshield-orderbox .ms-verdict,
+.mshield-orderbox .ms-decide {
+    margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+}
+
+/* Fraud / Clean. Two halves of one control rather than two buttons, so it reads
+   as a state that is currently one thing and could be the other -- which is
+   exactly what it is, since either can be chosen again at any time. */
+.mshield-orderbox .ms-verdict-pair {
+    display:flex; gap:2px; border:1px solid var(--line); border-radius:8px; overflow:hidden;
+}
+.mshield-orderbox .ms-choice {
+    flex:1; padding:7px 4px; text-align:center; text-decoration:none;
+    font-size:12px; font-weight:650; color:var(--fg-2); background:var(--surface-2);
+}
+.mshield-orderbox .ms-choice:hover { background:var(--line-2); color:var(--fg); }
+.mshield-orderbox .ms-choice.is-clean.is-on { background:rgba(0,163,42,.13); color:var(--ink-ok); }
+.mshield-orderbox .ms-choice.is-fraud.is-on { background:rgba(214,54,56,.12); color:var(--ink-danger); }
+
+/* What happened to the customer's money -- the merchant's first question on a
+   held order, so it is stated before the buttons rather than under them. */
+.mshield-orderbox .ms-money { margin:0 0 4px; font-weight:600; color:var(--fg); }
+.mshield-orderbox .ms-buttons .button.ms-block { color:var(--ink-danger); }
+
+/* ---------- Rating column on the orders list ----------
+   Lives inside WooCommerce's own table, so it carries .mshield-scope for the
+   tokens and nothing else — .mshield-app would paint a background and inset
+   itself inside the cell. The colour comes from the s-* ramp on this same
+   element, shared with the trust dials and the steppers. */
+.mshield-rating {
+    display:inline-flex; align-items:baseline; gap:6px; white-space:nowrap;
+}
+.mshield-rating .ms-score {
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-size:14px; font-weight:700; color:currentColor; line-height:1;
+}
+.mshield-rating .ms-name { font-size:11.5px; font-weight:600; color:currentColor; opacity:.9; }
+.mshield-rating .ms-none { font-size:12px; color:var(--fg-3); }
+/* A rating worked out after the fact could not replay the bot, timing or device
+   layers. The asterisk is the column's only room to say so; the cell's title
+   attribute carries the sentence. */
+.mshield-rating .ms-partial { font-size:12px; color:var(--fg-3); font-weight:700; }
+
+/* WooCommerce sizes its own order columns and leaves ours to fend for itself;
+   without this the label wraps to two lines on a narrow screen. */
+.wp-list-table .column-mshield_rating { width:8em; }
+
+/* ---------- Fraud Review queue ----------
+   A CSS grid rather than a <table>: .mshield-table restyles every checkbox
+   inside it into a toggle switch, and a row of action links reads better as a
+   grid track than as a table cell. Shares .mshield-loglist / .mshield-logfoot
+   with the Logs list; only the column template is its own. */
+.mshield-queuerow {
+    display:grid;
+    grid-template-columns:84px 116px 168px 132px minmax(170px,1fr) 92px 96px 218px;
+    align-items:center; gap:12px; min-width:1060px;
+    padding:12px 16px; border-bottom:1px solid var(--line-2); font-size:13px;
+}
+.mshield-queuerow > * { min-width:0; }
+.mshield-queuerow > span { overflow-wrap:anywhere; }
+.mshield-queuerow:hover { background:var(--surface-2); }
+.mshield-queuerow.is-head {
+    padding:10px 16px; border-bottom:1px solid var(--line); font-size:11px; font-weight:700;
+    letter-spacing:.07em; text-transform:uppercase; color:var(--fg-3); background:var(--surface);
+}
+/* The head row must not take the hover tint — it is not a row you can act on. */
+.mshield-queuerow.is-head:hover { background:var(--surface); }
+
+.mshield-queuerow .ms-ordernum { font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:700; text-decoration:none; }
+.mshield-queuerow .ms-name { display:block; font-weight:600; }
+.mshield-queuerow .ms-name + .mshield-hint { margin-top:1px; }
+.mshield-queuerow .ms-money { color:var(--fg-2); }
+.mshield-queuerow .ms-total { font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; }
+.mshield-queuerow .ms-age { color:var(--fg-3); font-size:12.5px; }
+
+/* Right-aligned so the buttons line up down the page however many a row has —
+   a card-flagged order that is already paid gets Review alone. */
+.mshield-queuerow .ms-rowactions { display:flex; gap:6px; justify-content:flex-end; flex-wrap:nowrap; }
+.mshield-queuerow .ms-rowactions .mshield-btn { white-space:nowrap; }
+.mshield-queuerow .ms-rowactions .ms-block { color:var(--ink-danger); }
+
+/* The back link that stands in for the tab cards on a screen reached from
+   WooCommerce -> Orders rather than from the tab row. */
+.mshield-back { margin:0 0 18px; font-size:13px; font-weight:600; }
+.mshield-back a { text-decoration:none; color:var(--brand); }
+
+/* ---------- WordPress dashboard widget ----------
+   Sits inside somebody else's postbox, so it carries .mshield-scope for the
+   tokens and nothing else — .mshield-app would paint a background and inset
+   itself, which reads as a panel floating inside a panel. Everything is scoped
+   to .mshield-dashwidget: the WP dashboard is a crowded screen belonging to
+   other plugins, and a stray rule from this file landing on one of their
+   widgets would be a bug nobody would think to look here for. */
+.mshield-dashwidget { display:flex; flex-direction:column; gap:14px; font-size:13px; }
+
+/* The stripe is the dashboard hero's left-hand side. It is a report here, not a
+   control, so it carries no toggle and needs no room for one. */
+.mshield-dashwidget .mshield-hero { padding:13px 15px; gap:12px; box-shadow:none; }
+.mshield-dashwidget .mshield-hero .ms-ico { width:34px; height:34px; }
+.mshield-dashwidget .mshield-hero-title { font-size:14px; }
+.mshield-dashwidget .mshield-hero-meta { font-size:12px; }
+
+.mshield-dashwidget .ms-charthead { display:flex; align-items:baseline; gap:10px; margin-bottom:7px; }
+.mshield-dashwidget .ms-charthead .mshield-eyebrow { margin-bottom:0; }
+.mshield-dashwidget .mshield-legend { font-size:11.5px; gap:12px; margin-bottom:6px; }
+/* Shorter than the settings screen's: a widget column is a third the width, and
+   the chart keeps its 760-unit viewBox, so it scales rather than crops. */
+.mshield-dashwidget .mshield-chartbox { min-height:120px; }
+
+.mshield-dashwidget .ms-queue {
+    display:flex; align-items:center; gap:12px;
+    padding:11px 13px; border-radius:10px;
+    background:var(--surface-2); border:1px solid var(--line);
+}
+/* Amber only when there is something to do. A queue that is always shouting is
+   a queue nobody reads. */
+.mshield-dashwidget .ms-queue.has-work {
+    background:rgba(219,166,23,.10); border-color:rgba(219,166,23,.30);
+}
+.mshield-dashwidget .ms-queue-count { font-size:13.5px; font-weight:650; }
+.mshield-dashwidget .ms-queue.has-work .ms-queue-count { color:var(--ink-warn); }
+.mshield-dashwidget .ms-queue .mshield-hint { margin-top:2px; }
+.mshield-dashwidget .ms-queue .mshield-btn { flex:none; }
+
+/* The checkout-is-closed warning inside the dashboard widget. Red rather than
+   the widget's usual amber: amber is "there is work waiting", this is "nobody
+   can buy anything". */
+.mshield-dashwidget .ms-conflict {
+    padding:11px 13px; border-radius:10px; line-height:1.5;
+    background:rgba(214,54,56,.08); border:1px solid rgba(214,54,56,.30);
+}
+.mshield-dashwidget .ms-conflict strong { display:block; color:var(--ink-danger); margin-bottom:2px; }
+.mshield-dashwidget .ms-conflict a { font-weight:600; white-space:nowrap; }
