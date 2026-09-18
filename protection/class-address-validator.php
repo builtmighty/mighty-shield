@@ -12,6 +12,8 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class address_validator {
 
@@ -67,34 +69,77 @@ class address_validator {
     }
 
     /**
-     * Validate billing/shipping address for suspicious patterns.
+     * Score the billing/shipping address for suspicious patterns.
+     *
+     * This used to refuse at the threshold and say nothing below it. Now the
+     * score IS the output: assess() emits address_fake with confidence scaled
+     * to how far the score got, so an address at the threshold costs the full
+     * weight — 80, which rejects on its own, exactly where the old cliff was —
+     * and one at half the threshold costs half, which is a ramp rather than a
+     * cliff and is the whole reason scoring exists.
      *
      * @since   1.0.0
      *
      * @param   array    $data   Checkout posted data.
-     * @param   object   $errors WP_Error object.
+     * @param   object   $errors WP_Error object, unused — this layer does not refuse.
      */
     public function validate_address( $data, $errors ) {
 
         if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
+        $verdict = self::assess( $data );
+
+        if( (int) $verdict['score'] <= 0 ) return;
+
+        db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'flagged', $verdict['reason'] );
+
+    }
+
+    /**
+     * Score the address and record what it found.
+     *
+     * The one place this check turns into a signal, called by both checkouts.
+     * The Store API path used to call score_address() and act on the number
+     * without ever recording it, so an address that looked made up blocked on
+     * one checkout and scored nothing on the other.
+     *
+     * Emission is the only thing this does. There used to be a `blockable` key
+     * beside the score — score >= threshold — and two callers refused on it.
+     * It was the last reader of the old all-or-nothing threshold, and it said
+     * nothing the scaled confidence below does not say better.
+     *
+     * @since   2.0.0
+     *
+     * @param   array   $data   Normalised billing fields.
+     * @return  array   [ 'score', 'threshold', 'signals', 'reason' ]
+     */
+    public static function assess( $data ) {
+
         $result  = self::score_address( $data );
-        $score   = $result['score'];
-        $signals = $result['signals'];
+        $score   = (int) $result['score'];
+        $signals = (array) $result['signals'];
 
-        // Get threshold based on sensitivity.
-        $sensitivity = settings::get( 'mshield_address_sensitivity' );
-        $threshold   = isset( self::THRESHOLDS[ $sensitivity ] ) ? self::THRESHOLDS[ $sensitivity ] : self::THRESHOLDS['medium'];
+        $threshold = self::block_threshold();
 
-        // Check if score exceeds threshold.
-        if( $score >= $threshold ) {
+        $reason = 'Address validation score ' . $score . '/' . $threshold . ': ' . implode( ', ', $signals );
 
-            $ip = ip_utils::get_client_ip();
-            db::log_event( $ip, 'classic_checkout', 'blocked', 'Address validation failed (score: ' . $score . '/' . $threshold . '): ' . implode( ', ', $signals ) );
+        // Emit for any non-zero score, not just at/above the block threshold.
+        // A score of 6 against a threshold of 7 is real evidence, and under the
+        // old all-or-nothing model it produced nothing at all. Scaling
+        // confidence by how far the score got means a near-miss contributes
+        // partial weight and can still compound with other signals into a risk level.
+        if( $score > 0 && $threshold > 0 ) {
 
-            $errors->add( 'mighty_shield_address', __( 'Please verify your billing information and try again.', 'mighty-shield' ) );
+            risk_context::add( 'address_fake', $reason, min( 1.0, $score / $threshold ) );
 
         }
+
+        return [
+            'score'     => $score,
+            'threshold' => $threshold,
+            'signals'   => $signals,
+            'reason'    => $reason,
+        ];
 
     }
 

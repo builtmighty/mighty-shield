@@ -2,12 +2,13 @@
 /**
  * AI Client.
  *
- * Sends a fraud-review prompt to the configured provider and returns a 1-10
- * rating. Every failure path fails open — a provider outage must never hold a
+ * Sends a fraud-review prompt to the configured provider and returns a
+ * structured verdict carrying a 1-100 trust rating — the same scale the rest of
+ * the plugin uses, so nothing converts it. Every failure path fails open — a provider outage must never hold a
  * legitimate order, so callers receive a WP_Error and take no action.
  *
  * @package MightyShield
- * @since   1.9.0
+ * @since   1.8.0
  */
 namespace MightyShield\Includes;
 
@@ -20,26 +21,136 @@ class ai_client {
      * checkout request and a truncated call is a wasted call. Filterable via
      * mshield_ai_timeout for stores that would rather cap it tighter.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     const TIMEOUT = 10;
 
     /**
-     * Output cap. The prompt asks for only an "x/10", so this is a cost guard.
+     * Output cap.
+     *
+     * Was 32 back when the model was asked for nothing but a bare number. The
+     * structured verdict carries reasons the merchant actually reads, and a
+     * truncated response is a wasted call, so this is sized for the schema
+     * rather than shaved to the bone.
+     *
+     * @since   1.8.0
+     */
+    const MAX_TOKENS = 1024;
+
+    /**
+     * The verdict schema every provider is held to.
+     *
+     * Replaces scraping a number out of prose. A regex over free text fails in
+     * ways that matter here: an unparseable reply used to mean the order went
+     * through unreviewed, and "rating 8, but note the address is fake" parsed
+     * as a clean 8. Constraining the output means the fields are always
+     * present and always the right type.
+     *
+     * NO minimum/maximum, deliberately. A strict tool schema is a restricted
+     * subset of JSON Schema, and Anthropic rejects numeric bounds outright:
+     *
+     *   400 tools.0.custom: For 'integer' type, properties maximum, minimum
+     *       are not supported
+     *
+     * which took the whole AI review offline. The ranges are stated in each
+     * description, where the model actually reads them, and enforced in
+     * validate(), which clamps both. Nothing was lost by removing them: the
+     * bounds were never what kept the values in range.
      *
      * @since   1.9.0
      */
-    const MAX_TOKENS = 32;
+    const VERDICT_SCHEMA = [
+        'type'       => 'object',
+        'properties' => [
+            'trust' => [
+                'type'        => 'integer',
+                'description' => 'How trustworthy this order looks, 1-100. 100 is a completely ordinary order from a real customer; 1 is blatant fraud.',
+            ],
+            'verdict' => [
+                'type'        => 'string',
+                'enum'        => [ 'allow', 'review', 'deny' ],
+                'description' => 'allow: nothing here warrants friction. review: a person should look before this ships. deny: this should not go through.',
+            ],
+            'reasons' => [
+                'type'        => 'array',
+                'items'       => [ 'type' => 'string' ],
+                'description' => 'Short, concrete reasons for the rating, each referring to specific evidence in the order. These are shown to the shop owner, so write them for a person deciding whether to ship.',
+            ],
+            'confidence' => [
+                'type'        => 'number',
+                'description' => 'How confident you are in this assessment, 0-1. Be honest: a low confidence is more useful than a confident guess.',
+            ],
+        ],
+        'required'             => [ 'trust', 'verdict', 'reasons', 'confidence' ],
+        'additionalProperties' => false,
+    ];
+
+    /**
+     * Tool name the model fills in to return its verdict.
+     *
+     * @since   1.9.0
+     */
+    const VERDICT_TOOL = 'record_fraud_assessment';
+
+    /**
+     * Whether AI review can actually run.
+     *
+     * Switched on AND holding a key for the selected provider. The two are
+     * separate settings on separate rows, so "enabled" alone has never been
+     * enough — an install with the toggle on and the key blank would queue
+     * calls that can only fail.
+     *
+     * @since   1.9.1
+     *
+     * @return  bool
+     */
+    public static function is_ready() {
+
+        if( settings::get( 'mshield_ai_enabled' ) !== 'yes' ) return false;
+
+        return self::provider_key() !== '';
+
+    }
+
+    /**
+     * The API key for the currently selected provider.
+     *
+     * Anthropic is the default arm of the provider switch in review(), so an
+     * unrecognised provider resolves to the Anthropic key here too. The two
+     * must agree or is_ready() would vouch for a key review() never uses.
+     *
+     * @since   1.9.1
+     *
+     * @return  string
+     */
+    private static function provider_key() {
+
+        switch( settings::get( 'mshield_ai_provider' ) ) {
+            case 'openai':
+                return trim( (string) settings::get( 'mshield_ai_openai_key' ) );
+            case 'gemini':
+                return trim( (string) settings::get( 'mshield_ai_gemini_key' ) );
+            case 'anthropic':
+            default:
+                return trim( (string) settings::get( 'mshield_ai_anthropic_key' ) );
+        }
+
+    }
 
     /**
      * Review a prompt and return the rating.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $prompt
-     * @return  int|\WP_Error   Rating 1-10, or WP_Error on any failure.
+     * @return  array|\WP_Error  Verdict [ trust, verdict, reasons, confidence ],
+     *                           or WP_Error on any failure.
      */
     public static function review( $prompt ) {
+
+        if( ! self::within_budget() ) {
+            return new \WP_Error( 'mshield_ai_capped', 'Daily AI review limit reached' );
+        }
 
         $provider = settings::get( 'mshield_ai_provider' );
 
@@ -61,74 +172,191 @@ class ai_client {
             return $response;
         }
 
-        $rating = self::parse_rating( $response );
+        $verdict = self::validate( $response );
 
-        if( is_wp_error( $rating ) ) {
-            self::degrade( $rating->get_error_message() );
-            return $rating;
+        if( is_wp_error( $verdict ) ) {
+            self::degrade( $verdict->get_error_message() );
+            return $verdict;
         }
 
         // A successful review means the provider is healthy — clear any
         // lingering degraded flag so the admin notice disappears.
-        if( get_option( 'mshield_ai_degraded' ) ) {
-            delete_option( 'mshield_ai_degraded' );
-        }
+        if( get_option( 'mshield_ai_degraded' ) ) self::clear_degraded();
 
-        return $rating;
+        return $verdict;
 
     }
 
     /**
-     * Extract a 1-10 rating from the model's reply.
+     * One real request to the configured provider, to prove it answers.
      *
-     * An unparseable reply is an error, never 0 — a zero would read as
-     * maximally fraudulent and hold every order on a malformed response.
+     * Deliberately the same call review() makes, minimal prompt aside. A ping
+     * that skipped the tool definition and the strict schema would pass while
+     * real reviews returned HTTP 400 -- which is exactly the failure this store
+     * hit, and exactly what a Test Connection button is for.
      *
-     * @since   1.9.0
+     * It does not count against the daily budget and does not record a degraded
+     * state: the merchant is standing at the screen watching the result, so
+     * emailing them about it would be noise, and a deliberate test with a key
+     * half-typed should not raise a store-wide alarm.
      *
-     * @param   string  $text
-     * @return  int|\WP_Error
+     * @since   2.0.1
+     *
+     * @return  true|\WP_Error
      */
-    public static function parse_rating( $text ) {
+    public static function ping() {
 
-        $text = trim( (string) $text );
-
-        if( $text === '' ) {
-            return new \WP_Error( 'mshield_ai_empty', 'AI returned an empty response' );
+        if( self::provider_key() === '' ) {
+            return new \WP_Error( 'mshield_ai_nokey', sprintf(
+                /* translators: %s: provider name. */
+                __( 'No %s API key is saved. Enter one and save the page first: the key fields are write-only, so this tests what is stored, not what is typed.', 'mighty-shield' ),
+                self::provider_name()
+            ) );
         }
 
-        // Preferred shape: "7/10", "7 / 10", "Rating: 3/10".
-        if( preg_match( '/\b(\d{1,2})\s*\/\s*10\b/', $text, $m ) ) {
-            return self::clamp( (int) $m[1] );
+        $prompt = 'Connection test. Record a verdict of clean with trust 100 and confidence 0.';
+
+        switch( settings::get( 'mshield_ai_provider' ) ) {
+            case 'openai':
+                $response = self::call_openai( $prompt );
+                break;
+            case 'gemini':
+                $response = self::call_gemini( $prompt );
+                break;
+            case 'anthropic':
+            default:
+                $response = self::call_anthropic( $prompt );
+                break;
         }
 
-        // Fallback: a bare leading number.
-        if( preg_match( '/^\D{0,20}?(\d{1,2})\b/', $text, $m ) ) {
-            return self::clamp( (int) $m[1] );
-        }
+        if( is_wp_error( $response ) ) return $response;
 
-        return new \WP_Error( 'mshield_ai_parse', 'Could not parse a rating from the AI response' );
+        // The verdict's content does not matter -- the model was asked for a
+        // fixed answer about nothing. That it came back in the agreed shape is
+        // the whole result.
+        $verdict = self::validate( $response );
+
+        return is_wp_error( $verdict ) ? $verdict : true;
 
     }
 
     /**
-     * Clamp a rating into 1-10.
+     * Whether another provider call is allowed today.
+     *
+     * A cap matters here specifically because the caller is a checkout: an
+     * attacker who can submit orders can otherwise spend the store's API
+     * budget at will. Counted per UTC day and stored as a plain transient, so
+     * hitting the cap costs nothing.
+     *
+     * Reaching the cap fails open — orders keep going through, unreviewed —
+     * which matches how every other external dependency in this plugin
+     * behaves, and is logged so the merchant finds out.
      *
      * @since   1.9.0
      *
-     * @param   int     $rating
+     * @return  bool
+     */
+    private static function within_budget() {
+
+        $cap = (int) settings::get( 'mshield_ai_daily_cap' );
+        if( $cap <= 0 ) return true;
+
+        $key   = 'mshield_ai_calls_' . gmdate( 'Ymd' );
+        $count = (int) get_transient( $key );
+
+        if( $count >= $cap ) {
+
+            // Log once per day rather than on every blocked call.
+            if( ! get_transient( 'mshield_ai_cap_logged' ) ) {
+
+                set_transient( 'mshield_ai_cap_logged', 1, DAY_IN_SECONDS );
+
+                db::log_event(
+                    ip_utils::get_client_ip(),
+                    'system',
+                    'degraded',
+                    sprintf( 'Daily AI review limit of %d reached — further orders are going through unreviewed today', $cap )
+                );
+
+            }
+
+            return false;
+
+        }
+
+        // Two days, so a call late in the day cannot expire the counter early.
+        set_transient( $key, $count + 1, 2 * DAY_IN_SECONDS );
+
+        return true;
+
+    }
+
+    /**
+     * How many provider calls have been made today.
+     *
+     * @since   1.9.0
+     *
      * @return  int
      */
-    private static function clamp( $rating ) {
+    public static function calls_today() {
 
-        return max( 1, min( 10, $rating ) );
+        return (int) get_transient( 'mshield_ai_calls_' . gmdate( 'Ymd' ) );
 
     }
+
+    /**
+     * Validate and normalise a provider verdict.
+     *
+     * The schema is enforced provider-side, but this is a security boundary
+     * and the response comes from a third party over the network — so the
+     * shape is checked again here rather than trusted.
+     *
+     * @since   1.9.0
+     *
+     * @param   mixed   $verdict
+     * @return  array|\WP_Error
+     */
+    public static function validate( $verdict ) {
+
+        if( ! is_array( $verdict ) ) {
+            return new \WP_Error( 'mshield_ai_shape', 'AI returned no usable verdict' );
+        }
+
+        foreach( [ 'trust', 'verdict' ] as $field ) {
+            if( ! isset( $verdict[ $field ] ) ) {
+                return new \WP_Error( 'mshield_ai_shape', 'AI verdict is missing the "' . $field . '" field' );
+            }
+        }
+
+        if( ! \in_array( $verdict['verdict'], [ 'allow', 'review', 'deny' ], true ) ) {
+            return new \WP_Error( 'mshield_ai_shape', 'AI returned an unrecognised verdict' );
+        }
+
+        // Clamped rather than rejected: a model that answers 0 or 105 has still
+        // told us what it thinks, and failing the whole review over an
+        // off-by-one would just send an order through unexamined.
+        $trust = (int) $verdict['trust'];
+
+        $reasons = [];
+        foreach( (array) ( $verdict['reasons'] ?? [] ) as $reason ) {
+            $reason = sanitize_text_field( (string) $reason );
+            if( $reason !== '' ) $reasons[] = $reason;
+        }
+
+        return [
+            'trust'      => max( 1, min( 100, $trust ) ),
+            'verdict'    => $verdict['verdict'],
+            'reasons'    => $reasons,
+            'confidence' => max( 0.0, min( 1.0, (float) ( $verdict['confidence'] ?? 0.5 ) ) ),
+        ];
+
+    }
+
 
     /**
      * Anthropic Messages API.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $prompt
      * @return  string|\WP_Error
@@ -145,23 +373,40 @@ class ai_client {
         ], [
             'model'      => settings::get( 'mshield_ai_anthropic_model' ),
             'max_tokens' => self::MAX_TOKENS,
-            'messages'   => [ [ 'role' => 'user', 'content' => $prompt ] ],
+            // strict:true on the tool definition guarantees the arguments
+            // validate against the schema exactly, and forcing tool_choice
+            // means the model cannot answer in prose instead.
+            'tools'      => [ [
+                'name'         => self::VERDICT_TOOL,
+                'description'  => 'Record your fraud assessment of this order.',
+                'strict'       => true,
+                'input_schema' => self::VERDICT_SCHEMA,
+            ] ],
+            'tool_choice' => [ 'type' => 'tool', 'name' => self::VERDICT_TOOL ],
+            'messages'    => [ [ 'role' => 'user', 'content' => $prompt ] ],
         ] );
 
         if( is_wp_error( $response ) ) return $response;
 
-        if( ! isset( $response['content'][0]['text'] ) ) {
-            return new \WP_Error( 'mshield_ai_shape', 'Unexpected Anthropic response shape' );
+        // The verdict comes back as the tool_use block's input, which is
+        // already decoded. Never string-match the serialized form: escaping
+        // varies between models.
+        foreach( (array) ( $response['content'] ?? [] ) as $block ) {
+
+            if( ( $block['type'] ?? '' ) === 'tool_use' && is_array( $block['input'] ?? null ) ) {
+                return $block['input'];
+            }
+
         }
 
-        return $response['content'][0]['text'];
+        return new \WP_Error( 'mshield_ai_shape', 'Anthropic returned no verdict' );
 
     }
 
     /**
      * OpenAI Chat Completions API.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $prompt
      * @return  string|\WP_Error
@@ -182,25 +427,39 @@ class ai_client {
         }
 
         $response = self::post( 'https://api.openai.com/v1/chat/completions', $headers, [
-            'model'      => settings::get( 'mshield_ai_openai_model' ),
-            'max_tokens' => self::MAX_TOKENS,
-            'messages'   => [ [ 'role' => 'user', 'content' => $prompt ] ],
+            'model'           => settings::get( 'mshield_ai_openai_model' ),
+            'max_tokens'      => self::MAX_TOKENS,
+            'response_format' => [
+                'type'        => 'json_schema',
+                'json_schema' => [
+                    'name'   => self::VERDICT_TOOL,
+                    'strict' => true,
+                    'schema' => self::VERDICT_SCHEMA,
+                ],
+            ],
+            'messages'        => [ [ 'role' => 'user', 'content' => $prompt ] ],
         ] );
 
         if( is_wp_error( $response ) ) return $response;
 
-        if( ! isset( $response['choices'][0]['message']['content'] ) ) {
+        $content = $response['choices'][0]['message']['content'] ?? null;
+
+        if( ! is_string( $content ) ) {
             return new \WP_Error( 'mshield_ai_shape', 'Unexpected OpenAI response shape' );
         }
 
-        return $response['choices'][0]['message']['content'];
+        $decoded = json_decode( $content, true );
+
+        return is_array( $decoded )
+            ? $decoded
+            : new \WP_Error( 'mshield_ai_shape', 'OpenAI returned a verdict that was not valid JSON' );
 
     }
 
     /**
      * Google Gemini generateContent API.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $prompt
      * @return  string|\WP_Error
@@ -211,27 +470,47 @@ class ai_client {
         if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', 'No Gemini API key configured' );
 
         $model = rawurlencode( settings::get( 'mshield_ai_gemini_model' ) );
-        $url   = add_query_arg( 'key', $key, 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent' );
+        $url   = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent';
 
-        $response = self::post( $url, [ 'Content-Type' => 'application/json' ], [
+        // Gemini rejects additionalProperties in responseSchema, so it gets a
+        // trimmed copy. The schema still pins the field names and types.
+        $schema = self::VERDICT_SCHEMA;
+        unset( $schema['additionalProperties'] );
+
+        // The key goes in a header, not the query string. A URL ends up in proxy
+        // logs, server access logs and error reports; a header does not.
+        $response = self::post( $url, [
+            'Content-Type'   => 'application/json',
+            'x-goog-api-key' => $key,
+        ], [
             'contents'         => [ [ 'parts' => [ [ 'text' => $prompt ] ] ] ],
-            'generationConfig' => [ 'maxOutputTokens' => self::MAX_TOKENS ],
+            'generationConfig' => [
+                'maxOutputTokens'  => self::MAX_TOKENS,
+                'responseMimeType' => 'application/json',
+                'responseSchema'   => $schema,
+            ],
         ] );
 
         if( is_wp_error( $response ) ) return $response;
 
-        if( ! isset( $response['candidates'][0]['content']['parts'][0]['text'] ) ) {
+        $content = $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
+
+        if( ! is_string( $content ) ) {
             return new \WP_Error( 'mshield_ai_shape', 'Unexpected Gemini response shape' );
         }
 
-        return $response['candidates'][0]['content']['parts'][0]['text'];
+        $decoded = json_decode( $content, true );
+
+        return is_array( $decoded )
+            ? $decoded
+            : new \WP_Error( 'mshield_ai_shape', 'Gemini returned a verdict that was not valid JSON' );
 
     }
 
     /**
      * Shared JSON POST with error normalization.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $url
      * @param   array   $headers
@@ -250,22 +529,26 @@ class ai_client {
 
         $code = wp_remote_retrieve_response_code( $response );
 
-        if( $code === 401 || $code === 403 ) {
-            return new \WP_Error( 'mshield_ai_auth', sprintf( 'AI provider rejected the API key (HTTP %d)', $code ) );
-        }
-
-        if( $code === 429 ) {
-            return new \WP_Error( 'mshield_ai_limit', 'AI provider rate limit reached (HTTP 429)' );
-        }
-
         if( $code !== 200 ) {
-            return new \WP_Error( 'mshield_ai_http', sprintf( 'AI provider returned HTTP %d', $code ) );
+
+            // Carry the provider's own message through on every arm, not just
+            // the generic one. The 401 and 429 arms used to report the status
+            // code alone, which is backwards: those two are the ones a merchant
+            // can actually act on, and the body says which of the several keys
+            // on this screen was rejected.
+            $message = api_error::explain( self::provider_name(), $code, api_error::detail( $response ) );
+
+            if( $code === 401 || $code === 403 ) return new \WP_Error( 'mshield_ai_auth', $message );
+            if( $code === 429 )                  return new \WP_Error( 'mshield_ai_limit', $message );
+
+            return new \WP_Error( 'mshield_ai_http', $message );
+
         }
 
         $decoded = json_decode( wp_remote_retrieve_body( $response ), true );
 
         if( ! is_array( $decoded ) ) {
-            return new \WP_Error( 'mshield_ai_json', 'Failed to parse the AI provider response' );
+            return new \WP_Error( 'mshield_ai_json', __( 'The AI provider replied, but the response could not be read as JSON.', 'mighty-shield' ) );
         }
 
         return $decoded;
@@ -273,9 +556,30 @@ class ai_client {
     }
 
     /**
+     * What to call the configured provider in a message a merchant reads.
+     *
+     * @since   2.0.1
+     *
+     * @return  string
+     */
+    public static function provider_name() {
+
+        switch( settings::get( 'mshield_ai_provider' ) ) {
+            case 'openai':
+                return 'OpenAI';
+            case 'gemini':
+                return 'Google Gemini';
+            case 'anthropic':
+            default:
+                return 'Anthropic';
+        }
+
+    }
+
+    /**
      * Record a degraded state and alert the admin, throttled to once a day.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $error
      */
@@ -303,18 +607,36 @@ class ai_client {
             $error
         );
 
-        $recipients = class_exists( '\MightyShield\Admin\admin_page' )
-            ? \MightyShield\Admin\admin_page::notification_recipients()
-            : [ get_option( 'admin_email' ) ];
+        // settings::notification_recipients(), not admin_page — the method was
+        // moved there in 1.8.0 precisely because the checkout path needs it,
+        // but this call site was left behind. Since admin_page is always loaded
+        // the class_exists() guard was always true, so every provider failure
+        // called a method that does not exist and fatalled the checkout —
+        // turning the deliberate fail-open into a hard failure at exactly the
+        // moment it was supposed to get out of the shopper's way.
+        wp_mail( settings::notification_recipients(), '[MightyShield] AI order review is unavailable', $message );
 
-        wp_mail( $recipients, '[MightyShield] AI order review is unavailable', $message );
+    }
+
+    /**
+     * Forget the degraded state entirely.
+     *
+     * The throttle goes with the option, or the next real failure would record
+     * the state without emailing anybody about it for up to a day.
+     *
+     * @since   2.0.1
+     */
+    public static function clear_degraded() {
+
+        delete_option( 'mshield_ai_degraded' );
+        delete_transient( 'mshield_ai_alerted' );
 
     }
 
     /**
      * Admin notice while the provider is degraded.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public static function render_degraded_notice() {
 
@@ -326,13 +648,15 @@ class ai_client {
         if( ( time() - (int) $degraded['time'] ) > DAY_IN_SECONDS ) return;
 
         printf(
-            '<div class="notice notice-error"><p><strong>%s</strong> %s</p></div>',
+            '<div class="notice notice-error"><p><strong>%s</strong> %s <a href="%s">%s</a></p></div>',
             esc_html__( 'MightyShield:', 'mighty-shield' ),
             esc_html( sprintf(
                 /* translators: %s: API error message. */
-                __( 'AI order review is unavailable and orders are NOT being reviewed. Last error: %s. Check your provider credentials under AI Detection.', 'mighty-shield' ),
+                __( 'AI order review is unavailable and orders are NOT being reviewed. Last error: %s', 'mighty-shield' ),
                 $degraded['message']
-            ) )
+            ) ),
+            \MightyShield\Admin\admin_page::dismiss_url( 'mshield_ai_degraded' ),
+            esc_html__( 'Dismiss', 'mighty-shield' )
         );
 
     }

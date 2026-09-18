@@ -14,7 +14,7 @@
  * the gateway's OWN captured-state meta rather than trusting our own.
  *
  * @package MightyShield
- * @since   1.9.0
+ * @since   1.8.0
  */
 namespace MightyShield\Includes;
 
@@ -23,14 +23,14 @@ class ai_capture {
     /**
      * Order ID currently being forced to authorize-only.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     private static $order_id = 0;
 
     /**
      * Registered teardown callbacks.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     private static $teardown = [];
 
@@ -42,7 +42,7 @@ class ai_capture {
      * Square is a renamespaced fork, which matters only if you reach for the
      * framework's classes directly — the public gateway API is identical.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     const SKYVERGE = [
         'square_credit_card',
@@ -54,7 +54,7 @@ class ai_capture {
     /**
      * Gateways with their own per-order authorize-only filter.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     const NATIVE = [
         'stripe_cc',
@@ -72,7 +72,7 @@ class ai_capture {
      * captured and voided (see capture()/void()) when the merchant has set
      * PayPal's global intent to Authorize.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $gateway    Gateway ID.
      * @return  bool
@@ -89,7 +89,7 @@ class ai_capture {
      * Drives both the settings UI and its sanitize callback, so the store can
      * never be left on a verdict action it cannot honor.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @return  bool
      */
@@ -108,7 +108,7 @@ class ai_capture {
     /**
      * Gateway IDs available at checkout that can authorize-only.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @return  array
      */
@@ -129,7 +129,7 @@ class ai_capture {
     /**
      * Force an order to authorize without capturing.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  bool    True only when authorize-only was actually arranged.
@@ -148,7 +148,21 @@ class ai_capture {
 
         // Tear down once payment has been taken, so a later order in the same
         // request is unaffected.
-        add_action( 'woocommerce_checkout_order_processed', [ __CLASS__, 'teardown' ], 999 );
+        //
+        // NOT on woocommerce_checkout_order_processed. This is CALLED from that
+        // hook (risk_recorder::record_classic at priority 50), and WordPress
+        // runs a callback added at a later priority inside the in-flight
+        // do_action -- so a teardown at 999 fired before the action returned,
+        // and WooCommerce only reaches process_order_payment() afterwards
+        // (class-wc-checkout.php:1427, then :1445). Every authorize-only filter
+        // was therefore removed before the gateway was ever called: the card was
+        // charged in full while the order note said it had only been authorized.
+        //
+        // adapter_stripe::request_3ds() does the same job for 3-D Secure and
+        // omits this hook for the same reason; that one worked.
+        //
+        // shutdown still bounds the filters to this request, and is_target()
+        // scopes them to one order id regardless.
         add_action( 'woocommerce_payment_complete', [ __CLASS__, 'teardown' ], 999 );
         add_action( 'shutdown', [ __CLASS__, 'teardown' ], 1 );
 
@@ -211,7 +225,7 @@ class ai_capture {
      * uncaptured. Filtering only one produces a captured order that claims to
      * be authorized, or vice versa.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string  $gateway    Gateway ID.
      * @return  bool
@@ -233,7 +247,7 @@ class ai_capture {
     /**
      * Register a scoped filter and record its teardown.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   string      $hook
      * @param   callable    $callback
@@ -257,7 +271,7 @@ class ai_capture {
      * paths. Returning false there makes the callback fall through to the
      * gateway's own value, which is what we want.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   mixed   $order
      * @return  bool
@@ -273,7 +287,7 @@ class ai_capture {
     /**
      * Remove every filter this class registered.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      */
     public static function teardown() {
 
@@ -289,7 +303,7 @@ class ai_capture {
     /**
      * Resolve the gateway object handling an order.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  \WC_Payment_Gateway|null
@@ -313,7 +327,7 @@ class ai_capture {
      * records intent, not outcome, and telling a merchant funds are merely
      * reserved when they were actually taken is the worst failure here.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  bool
@@ -335,10 +349,26 @@ class ai_capture {
                 return $order->get_meta( '_intention_status' ) === 'requires_capture';
 
             case 'stripe_cc':
-                // Payment Plugins stores the intent id; the authoritative status
-                // lives on the intent, but an uncaptured order reliably still
-                // has one alongside an on-hold status.
-                return ! empty( $order->get_meta( '_payment_intent_id' ) ) && $order->has_status( 'on-hold' );
+                // Payment Plugins keeps the authoritative captured flag on the
+                // Stripe intent rather than on the order, and this runs on every
+                // panel render, so it cannot ask the API. What it can do is
+                // require positive evidence of an authorization instead of
+                // inferring one:
+                //
+                //   - MightyShield arranged an authorize-only charge for THIS
+                //     order (_mshield_hold is 'authorized', not 'paid'), and
+                //   - the gateway has not captured it since, because its capture
+                //     path calls payment_complete(), which takes the order out
+                //     of on-hold.
+                //
+                // The old test was "has an intent id and is on-hold", which is
+                // equally true of an order that was CHARGED and then held, and
+                // of any manual on-hold. Blocking one of those called
+                // void_charge(), whose succeeded branch issues a full refund,
+                // and reported "nothing to refund" while the money went back.
+                return $order->get_meta( '_mshield_hold' ) === 'authorized'
+                    && ! empty( $order->get_meta( '_payment_intent_id' ) )
+                    && $order->has_status( 'on-hold' );
 
             case 'ppcp-gateway':
                 return strtoupper( (string) $order->get_meta( '_ppcp_paypal_intent' ) ) === 'AUTHORIZE'
@@ -353,7 +383,7 @@ class ai_capture {
     /**
      * Capture a previously authorized order.
      *
-     * @since   1.9.0
+     * @since   1.8.0
      *
      * @param   \WC_Order   $order
      * @return  true|\WP_Error
@@ -364,6 +394,8 @@ class ai_capture {
         $id      = $order->get_payment_method();
 
         if( ! $gateway ) return new \WP_Error( 'mshield_no_gateway', __( 'The payment gateway for this order is not available.', 'mighty-shield' ) );
+
+        try {
 
         if( \in_array( $id, self::SKYVERGE, true ) ) {
 
@@ -393,8 +425,13 @@ class ai_capture {
                 }
                 \WC_Stripe_Order_Handler::get_instance()->capture_payment( $order->get_id() );
                 // The handler reports through order notes rather than a return
-                // value, so re-read the gateway's own state as the verdict.
-                return self::is_authorized( $order )
+                // value, so re-read the gateway's own state as the verdict --
+                // from a FRESH order. capture_payment() loads and saves its own
+                // instance, so the one passed in here still says 'no' after a
+                // successful capture, and a captured order was being reported to
+                // the merchant as "Capture failed. The order is still on hold."
+                $fresh = wc_get_order( $order->get_id() );
+                return ( ! $fresh || self::is_authorized( $fresh ) )
                     ? new \WP_Error( 'mshield_capture_failed', __( 'Stripe did not capture the authorization. Check the order notes.', 'mighty-shield' ) )
                     : true;
 
@@ -412,17 +449,53 @@ class ai_capture {
 
         }
 
+        } catch( \Throwable $e ) {
+
+            // A gateway that throws is reporting a failure. Without this it
+            // surfaced as a fatal on admin-post.php, which loses the "the order
+            // remains on hold" message the caller exists to show.
+            return new \WP_Error( 'mshield_capture_exception', $e->getMessage() );
+
+        }
+
         return new \WP_Error( 'mshield_no_capture', __( 'Capturing is not supported for this gateway.', 'mighty-shield' ) );
 
     }
 
     /**
+     * Returned by void() when the release was requested but the processor gave
+     * us nothing to check it against.
+     *
+     * Not a success and not a failure. The merchant-facing wording has to
+     * differ, because "the authorization was released, there is nothing to
+     * refund" is a claim about somebody's money and must not be made on a
+     * request whose outcome we never saw.
+     *
+     * @since   2.0.0
+     */
+    const UNCONFIRMED = 'unconfirmed';
+
+    /**
      * Void / release an authorization without capturing it.
      *
-     * @since   1.9.0
+     * Three outcomes, not two. Some gateways report what happened and some do
+     * not, and flattening "we could not tell" into "it worked" is how a
+     * merchant ends up believing a customer's funds were released when they
+     * were not.
+     *
+     *   true          the processor confirmed the release
+     *   WP_Error      the processor confirmed a failure, or threw
+     *   UNCONFIRMED   the request went out; the API returned nothing to check
+     *
+     * Every call is wrapped: a gateway that throws is reporting a failure, and
+     * without this it surfaced as a fatal on admin-post.php rather than as the
+     * WP_Error the caller is written to handle.
+     *
+     * @since   1.8.0
+     * @since   2.0.0 Verifies where the gateway allows it; never claims success it did not see.
      *
      * @param   \WC_Order   $order
-     * @return  true|\WP_Error
+     * @return  true|string|\WP_Error
      */
     public static function void( $order ) {
 
@@ -431,34 +504,65 @@ class ai_capture {
 
         if( ! $gateway ) return new \WP_Error( 'mshield_no_gateway', __( 'The payment gateway for this order is not available.', 'mighty-shield' ) );
 
-        if( \in_array( $id, self::SKYVERGE, true ) ) {
-            // The framework routes an uncaptured full-amount refund to a void.
-            // Partial amounts are rejected, so always pass the full total.
-            $result = $gateway->process_refund( $order->get_id(), $order->get_total() );
-            return is_wp_error( $result ) ? $result : true;
-        }
+        try {
 
-        switch( $id ) {
-
-            case 'stripe_cc':
-                $result = $gateway->void_charge( $order );
-                return is_wp_error( $result ) ? $result : true;
-
-            case 'stripe':
-                if( ! class_exists( '\WC_Stripe_Order_Handler' ) ) {
-                    return new \WP_Error( 'mshield_no_void', __( 'Stripe order handler unavailable.', 'mighty-shield' ) );
-                }
-                \WC_Stripe_Order_Handler::get_instance()->cancel_payment( $order->get_id() );
-                return true;
-
-            case 'woocommerce_payments':
-                $gateway->cancel_authorization( $order );
-                return true;
-
-            case 'ppcp-gateway':
-                // Refunding an authorize-intent order voids it.
+            if( \in_array( $id, self::SKYVERGE, true ) ) {
+                // The framework routes an uncaptured full-amount refund to a void.
+                // Partial amounts are rejected, so always pass the full total.
                 $result = $gateway->process_refund( $order->get_id(), $order->get_total() );
                 return is_wp_error( $result ) ? $result : true;
+            }
+
+            switch( $id ) {
+
+                case 'stripe_cc':
+                    // void_charge() returns null when the intent is already
+                    // cancelled or in a status it does not handle, and null is
+                    // not a WP_Error -- so "nothing happened" was being reported
+                    // as a confirmed release, and block() cancelled the order
+                    // saying the authorization had been released.
+                    $result = $gateway->void_charge( $order );
+
+                    if( is_wp_error( $result ) ) return $result;
+
+                    return $result ? true : self::UNCONFIRMED;
+
+                case 'stripe':
+                    if( ! class_exists( '\WC_Stripe_Order_Handler' ) ) {
+                        return new \WP_Error( 'mshield_no_void', __( 'Stripe order handler unavailable.', 'mighty-shield' ) );
+                    }
+                    // cancel_payment() refunds the pre-auth internally and
+                    // returns nothing, and the refund id it produces is written
+                    // by the webhook rather than synchronously — so there is
+                    // genuinely nothing to read back at this point.
+                    \WC_Stripe_Order_Handler::get_instance()->cancel_payment( $order->get_id() );
+                    return self::UNCONFIRMED;
+
+                case 'woocommerce_payments':
+                    // Returns [ status, id, message, http_code ]. Canceled is
+                    // the only status that means the money was released; the
+                    // gateway writes its own failure note for the rest.
+                    $result = $gateway->cancel_authorization( $order );
+
+                    if( is_array( $result ) && isset( $result['status'] ) && $result['status'] === 'canceled' ) return true;
+
+                    return new \WP_Error(
+                        'mshield_void_failed',
+                        ! empty( $result['message'] )
+                            ? $result['message']
+                            : __( 'The processor did not confirm the authorization was cancelled.', 'mighty-shield' )
+                    );
+
+                case 'ppcp-gateway':
+                    // Refunding an authorize-intent order voids it.
+                    $result = $gateway->process_refund( $order->get_id(), $order->get_total() );
+                    return is_wp_error( $result ) ? $result : true;
+
+            }
+
+        } catch( \Throwable $e ) {
+
+            return new \WP_Error( 'mshield_void_exception', $e->getMessage() );
 
         }
 

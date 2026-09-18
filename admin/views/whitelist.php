@@ -26,7 +26,7 @@ $wp_role_names = wp_roles()->get_names();
 
 <div class="mshield-section">
     <h2><?php esc_html_e( 'Add Allowlist Entry', 'mighty-shield' ); ?></h2>
-    <p class="description"><?php esc_html_e( 'Allowlisted IPs, users, roles, and email addresses bypass ALL MightyShield checks — no blocks, no flags. Use for trusted staff, offices, and known-good customers.', 'mighty-shield' ); ?></p>
+    <p class="description"><?php esc_html_e( 'Allowlisted IPs, users, roles, and email addresses bypass ALL MightyShield checks, with no blocks and no flags. Use for trusted staff, offices, and known-good customers.', 'mighty-shield' ); ?></p>
     <form method="post">
         <?php wp_nonce_field( 'mshield_whitelist_action' ); ?>
         <table class="form-table">
@@ -124,7 +124,11 @@ $wp_role_names = wp_roles()->get_names();
                             'mshield_remove_ip'
                         );
                         ?>
-                        <a href="<?php echo esc_url( $remove_url ); ?>" class="button button-small" onclick="return confirm('<?php esc_attr_e( 'Remove this entry from the allowlist?', 'mighty-shield' ); ?>');"><?php esc_html_e( 'Remove', 'mighty-shield' ); ?></a>
+                        <a href="<?php echo esc_url( $remove_url ); ?>" class="button button-small" <?php /* esc_js, not esc_attr. esc_attr turns an apostrophe into &#039;, the
+         browser decodes attribute entities before the JS parser sees the string,
+         and the handler then breaks on any translation containing one -- so
+         Remove silently stopped working in those languages. */ ?>
+                           onclick="return confirm('<?php echo esc_js( __( 'Remove this entry from the allowlist?', 'mighty-shield' ) ); ?>');"><?php esc_html_e( 'Remove', 'mighty-shield' ); ?></a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

@@ -43,6 +43,9 @@ $pill_class = [
     'rate_limited' => 'is-rate',
     'flagged'      => 'is-flag',
     'exempt'       => 'is-exempt',
+    // Not a verdict on the request -- a layer stood down. Quiet on purpose,
+    // rather than falling through to an unstyled pill.
+    'degraded'     => 'is-muted',
 ];
 $action_labels = [
     'blocked'      => __( 'Blocked', 'mighty-shield' ),
@@ -62,7 +65,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" style="margin-top:1px;flex:none"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
         <div>
             <?php printf( esc_html__( 'Log entries are retained for %d days.', 'mighty-shield' ), $retention ); ?>
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=mighty-shield&tab=firewall' ) ); ?>" style="font-weight:600"><?php esc_html_e( 'Change retention', 'mighty-shield' ); ?></a>
+            <a href="#mshield-log-settings" style="font-weight:600"><?php esc_html_e( 'Change retention', 'mighty-shield' ); ?></a>
             <?php esc_html_e( 'or', 'mighty-shield' ); ?>
             <a href="<?php echo esc_url( $export_url ); ?>" style="font-weight:600"><?php esc_html_e( 'export as CSV', 'mighty-shield' ); ?></a>.
         </div>
@@ -92,6 +95,13 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
             <option value="rate_limited" <?php selected( $filter_action, 'rate_limited' ); ?>><?php esc_html_e( 'Rate-limited', 'mighty-shield' ); ?></option>
             <option value="flagged" <?php selected( $filter_action, 'flagged' ); ?>><?php esc_html_e( 'Flagged', 'mighty-shield' ); ?></option>
             <option value="exempt" <?php selected( $filter_action, 'exempt' ); ?>><?php esc_html_e( 'Exempt (allowlisted)', 'mighty-shield' ); ?></option>
+            <?php /* 'degraded' is how MightyShield records its own problems -- a
+                     service that stopped answering, a challenge that is switched
+                     on but never reaching the form. It was the one class of event
+                     with a colour and a label but no way to filter for it, which
+                     made the plugin's own diagnostics the hardest thing to find
+                     in its own log. */ ?>
+            <option value="degraded" <?php selected( $filter_action, 'degraded' ); ?>><?php esc_html_e( 'Needs attention', 'mighty-shield' ); ?></option>
         </select>
 
         <button type="submit" class="mshield-btn"><?php esc_html_e( 'Filter', 'mighty-shield' ); ?></button>
@@ -181,7 +191,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
                 <span class="mshield-mono" style="font-size:12.5px"><?php echo esc_html( $log->ip ); ?></span>
                 <span class="mshield-mono" style="font-size:12px;color:var(--fg-2)"><?php echo esc_html( $log->endpoint ); ?></span>
                 <span><?php echo esc_html( $log->reason ); ?></span>
-                <span class="mshield-pill mshield-tag-pill <?php echo esc_attr( $pc ); ?>" style="justify-self:start"><?php echo esc_html( $al ); ?></span>
+                <span class="mshield-pill <?php echo esc_attr( $pc ); ?>" style="justify-self:start"><span class="dot"></span><?php echo esc_html( $al ); ?></span>
                 <span class="details-link"><?php esc_html_e( 'Details', 'mighty-shield' ); ?></span>
             </div>
             <?php endforeach; ?>
@@ -215,6 +225,42 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
         <form method="post">
             <?php wp_nonce_field( 'mshield_clear_logs_action' ); ?>
             <button type="submit" name="mshield_clear_logs" value="1" class="mshield-btn is-danger" onclick="return confirm('<?php echo esc_js( __( 'Are you sure? This will delete all log entries.', 'mighty-shield' ) ); ?>');"><?php esc_html_e( 'Clear All Logs', 'mighty-shield' ); ?></button>
+        </form>
+    </div>
+
+    <!-- Log Settings -->
+    <?php /* Moved here from the Access tab in 1.9.3, next to the logs it governs.
+             This is the only Settings API form on the page, so it carries its own
+             group -- registering an option to a group with no field submitting it
+             makes options.php write null over it on every save of that group. */ ?>
+    <div class="mshield-card" id="mshield-log-settings">
+        <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Log Settings', 'mighty-shield' ); ?></div>
+        <form method="post" action="options.php">
+            <?php settings_fields( 'mshield_logs' ); ?>
+            <table class="form-table" role="presentation">
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Log Retention', 'mighty-shield' ); ?></th>
+                    <td>
+                        <input type="number" name="mshield_log_retention_days" value="<?php echo esc_attr( settings::get( 'mshield_log_retention_days' ) ); ?>" min="1" max="365" class="small-text" />
+                        <?php esc_html_e( 'days', 'mighty-shield' ); ?>
+                        <p class="description"><?php esc_html_e( 'Entries older than this are cleaned up daily.', 'mighty-shield' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Customer History', 'mighty-shield' ); ?></th>
+                    <td>
+                        <input type="number" name="mshield_entity_retention_days" value="<?php echo esc_attr( settings::get( 'mshield_entity_retention_days' ) ); ?>" min="0" max="3650" class="small-text" />
+                        <?php esc_html_e( 'days', 'mighty-shield' ); ?>
+                        <p class="description">
+                            <?php esc_html_e( 'How long MightyShield remembers the customers, addresses, cards and networks behind past orders. This is the memory the scoring reads, so it is kept far longer than the log.', 'mighty-shield' ); ?>
+                        </p>
+                        <p class="description">
+                            <?php esc_html_e( 'A chargeback, a refund, a fraud verdict or a refused checkout is never forgotten while the record is still in use — only quiet, clean records that nothing links to any more are cleared out. Set to 0 to keep everything.', 'mighty-shield' ); ?>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            <?php submit_button(); ?>
         </form>
     </div>
 

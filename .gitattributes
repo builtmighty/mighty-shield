@@ -1,0 +1,33 @@
+# Line endings.
+#
+# The repository baseline is LF. Without this file a checkout from a
+# Windows-aware client rewrites the whole tree to CRLF, which shows up as ~200
+# modified files and buries real changes — `git diff` becomes unusable for
+# review. eol=lf pins the working tree to LF on every platform, matching the
+# vendored .editorconfig (end_of_line=lf).
+* text=auto eol=lf
+
+# Binaries: never touch these.
+*.mo    binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.zip   binary
+*.pdf   binary
+
+# Gettext catalogs are text, but must stay LF like everything else.
+*.po    text eol=lf
+*.pot   text eol=lf
+
+# Keep development-only files out of the release archive built by
+# .github/workflows/build-release.yml.
+/.github        export-ignore
+/.claude        export-ignore
+/.gitattributes export-ignore

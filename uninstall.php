@@ -13,82 +13,51 @@ if( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) { die; }
 global $wpdb;
 
 // Remove custom tables.
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mshield_log" );
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mshield_rate_limits" );
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mshield_ip_data" );
+//
+// mshield_entities in particular holds hashed customer identities, so leaving
+// it behind after an uninstall would mean retaining data the store no longer
+// has any reason to keep.
+foreach( [ 'mshield_log', 'mshield_rate_limits', 'mshield_ip_data',
+           'mshield_risk', 'mshield_entities', 'mshield_entity_links' ] as $table ) {
+    $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}" );
+}
+
+// Background reviews were retired in 1.9.2 -- reviews run during checkout, so
+// nothing is queued. Still cancelled here: an install upgrading from an older
+// version can have jobs sitting in Action Scheduler, and leaving them would
+// have it firing at a plugin that no longer exists.
+if( function_exists( 'as_unschedule_all_actions' ) ) {
+    as_unschedule_all_actions( 'mshield_ai_review_order' );
+}
 
 // Remove options.
-$options = [
-    'mshield_enabled',
-    'mshield_block_store_api',
-    'mshield_firewall_mode',
-    'mshield_store_api_checks',
-    'mshield_ip_whitelist',
-    'mshield_rate_checkout_limit',
-    'mshield_rate_checkout_window',
-    'mshield_velocity_email_threshold',
-    'mshield_velocity_order_threshold',
-    'mshield_failed_payment_threshold',
-    'mshield_temp_block_duration',
-    'mshield_blocked_email_domains',
-    'mshield_min_order_amount',
-    'mshield_suspicious_amount_action',
-    'mshield_address_sensitivity',
-    'mshield_smarty_enabled',
-    'mshield_smarty_auth_id',
-    'mshield_smarty_auth_token',
-    'mshield_smarty_action',
-    'mshield_zip_state_enabled',
-    'mshield_zip_state_action',
-    'mshield_honeypot_enabled',
-    'mshield_honeypot_action',
-    'mshield_timing_enabled',
-    'mshield_timing_min_seconds',
-    'mshield_timing_action',
-    'mshield_timing_missing_action',
-    'mshield_fingerprint_enabled',
-    'mshield_fingerprint_action',
-    'mshield_fingerprint_missing_action',
-    'mshield_fingerprint_velocity_threshold',
-    'mshield_captcha_provider',
-    'mshield_captcha_site_key',
-    'mshield_captcha_secret_key',
-    'mshield_captcha_action',
-    'mshield_ip_blocklist',
-    'mshield_smarty_degraded',
-    'mshield_captcha_degraded',
-    'mshield_version',
-    'mshield_log_retention_days',
-    'mshield_ai_enabled',
-    'mshield_ai_provider',
-    'mshield_ai_anthropic_key',
-    'mshield_ai_anthropic_model',
-    'mshield_ai_openai_key',
-    'mshield_ai_openai_org',
-    'mshield_ai_openai_model',
-    'mshield_ai_gemini_key',
-    'mshield_ai_gemini_model',
-    'mshield_ai_method',
-    'mshield_ai_sensitivity',
-    'mshield_ai_sig_address_velocity',
-    'mshield_ai_velocity_orders',
-    'mshield_ai_velocity_days',
-    'mshield_ai_sig_email_mismatch',
-    'mshield_ai_sig_high_value',
-    'mshield_ai_high_value_amount',
-    'mshield_ai_sig_ip_mismatch',
-    'mshield_ai_rating_threshold',
-    'mshield_ai_verdict_action',
-    'mshield_ai_notify_admin',
-    'mshield_ai_notify_emails',
-    'mshield_ai_degraded',
-];
+//
+// Matched by prefix rather than listed by name. The list this replaces had to
+// be updated by hand every time a setting was added, and had already fallen
+// about twenty entries behind — including the entity hashing salt, which is
+// exactly the kind of thing that should not outlive the plugin.
+$wpdb->query(
+    $wpdb->prepare(
+        "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+        $wpdb->esc_like( 'mshield_' ) . '%'
+    )
+);
+
+// Site options too, on multisite.
+if( is_multisite() ) {
+    $wpdb->query(
+        $wpdb->prepare(
+            "DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s",
+            $wpdb->esc_like( 'mshield_' ) . '%'
+        )
+    );
+}
+
+// Order meta and order notes are deliberately left alone. They are part of the
+// order record — why an order was held, and what was decided about it — and
+// deleting them would quietly rewrite the store's own history.
 
 delete_metadata( 'user', 0, 'mshield_admin_theme', '', true );
-
-foreach( $options as $option ) {
-    delete_option( $option );
-}
 
 // Clear scheduled cron events.
 wp_clear_scheduled_hook( 'mshield_daily_cleanup' );

@@ -39,9 +39,6 @@ class api_firewall {
         // Hook into REST API dispatch at earliest priority.
         add_filter( 'rest_pre_dispatch', [ $this, 'intercept_request' ], 1, 3 );
 
-        // Register daily cleanup cron.
-        add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\db', 'cleanup' ] );
-
     }
 
     /**
@@ -69,6 +66,21 @@ class api_firewall {
         // mode, real shoppers are allowed and only blocklisted IPs are stopped
         // (handled by ip_blocklist), so block-based checkout keeps working.
         if( settings::get( 'mshield_firewall_mode' ) !== 'whitelist' ) {
+            return $result;
+        }
+
+        // Whitelist mode exists for classic-checkout stores, where no real
+        // shopper ever touches the Store API. On a store whose checkout IS the
+        // block one, the same setting turns every customer away -- and not only
+        // at checkout: these patterns cover /cart too, so add-to-cart and the
+        // mini-cart break with it.
+        //
+        // That was the shipped default, and this store's own log recorded 84
+        // denials across 8 addresses in a week before anybody noticed. So the
+        // mode still means what it says; it simply no longer applies to a
+        // checkout the shoppers are using. Everything else -- the blocklist, the
+        // scoring ladder, every layer -- still runs.
+        if( \MightyShield\Admin\admin_page::uses_block_checkout() ) {
             return $result;
         }
 
