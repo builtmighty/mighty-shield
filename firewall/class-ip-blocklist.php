@@ -14,6 +14,8 @@ namespace MightyShield\Firewall;
 
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class ip_blocklist {
 
@@ -59,8 +61,15 @@ class ip_blocklist {
 
         if( ! self::is_blocked( $ip ) ) return;
 
+        risk_context::add( 'ip_blocklisted', 'IP is on the blocklist' );
+
         db::log_event( $ip, 'classic_checkout', 'blocked', 'Blocklisted IP' );
-        wc_add_notice( __( 'Your access has been restricted. Please contact support.', 'mighty-shield' ), 'error' );
+        // Deliberately NOT gated on response::may_refuse(). Every other legacy
+        // layer waits for enforce mode, because each of those is a heuristic
+        // verdict the merchant may not agree with. A blocklist is not a verdict
+        // -- it is the merchant, or a previous ban, naming an address. Observing
+        // an instruction you have already given is not a thing anybody asked for.
+        wc_add_notice( response::with_note( __( 'Your access has been restricted. Please contact support.', 'mighty-shield' ) ), 'error' );
 
     }
 
@@ -96,6 +105,8 @@ class ip_blocklist {
         if( $uid && ( ip_whitelist::is_user_whitelisted( $uid ) || ip_whitelist::is_role_whitelisted( $uid ) ) ) return $result;
 
         if( ! self::is_blocked( $ip ) ) return $result;
+
+        risk_context::add( 'ip_blocklisted', 'IP is on the blocklist' );
 
         db::log_event( $ip, $route, 'blocked', 'Store API access denied — blocklisted IP' );
 

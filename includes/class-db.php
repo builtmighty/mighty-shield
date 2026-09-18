@@ -11,7 +11,220 @@ namespace MightyShield\Includes;
 class db {
 
     /**
+     * Schema version.
+     *
+     * Tracked separately from MSHIELD_VERSION, and bumped whenever any table
+     * definition in create_tables() changes.
+     *
+     * The plugin version cannot do this job: maybe_upgrade() stamps it as soon
+     * as it runs, so a schema change made after that point — a column added in
+     * a patch release, or any change during development on an install that has
+     * already loaded the new version — would never be applied, leaving the code
+     * writing to columns that do not exist. Gating on a dedicated counter makes
+     * the schema converge no matter what order things happened in.
+     *
+     * @since   1.9.0
+     */
+    const SCHEMA_VERSION = 8;
+
+    /**
+     * Bring the schema up to date if it is behind.
+     *
+     * Safe to call on every load: it is one autoloaded option read in the
+     * common case, and dbDelta only runs when the stored version is behind.
+     *
+     * @since   1.9.0
+     */
+    public static function maybe_upgrade_schema() {
+
+        global $wpdb;
+
+        $installed = (int) get_option( 'mshield_db_version', 0 );
+
+        if( $installed >= self::SCHEMA_VERSION ) return;
+
+        self::create_tables();
+
+        // Schema 3 renamed mshield_risk.score to trust when the rating was
+        // inverted (1-100, higher is better). dbDelta adds the new column but
+        // cannot rename, so the old one has to be dropped explicitly — leaving
+        // both would be genuinely dangerous here: a stale "score" of 15 reads
+        // as low risk under the old scale and as nearly-worst under the new one.
+        if( $installed > 0 && $installed < 3 ) {
+
+            $table = $wpdb->prefix . 'mshield_risk';
+
+            $has_score = $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = 'score'",
+                $table
+            ) );
+
+            if( $has_score ) {
+                // Carry any existing values across before dropping, inverting
+                // them onto the new scale so historic rows stay comparable.
+                $wpdb->query( "UPDATE {$table} SET trust = GREATEST(1, 100 - score) WHERE trust = 0" );
+                $wpdb->query( "ALTER TABLE {$table} DROP COLUMN score" );
+            }
+
+        }
+
+        // Schema 5 renamed mshield_risk.band to risk_level, and band_source to
+        // risk_level_source. "Band" was borrowed from tax and credit-score
+        // bands and meant nothing to the people reading these screens. dbDelta
+        // has already added the new columns, empty, so copy the values across
+        // before dropping the old ones. Dropping band takes idx_band with it.
+        //
+        // 1.9.0 is unreleased, so this only ever runs on a development install
+        // carrying the older build -- it is not load-bearing for any shipped
+        // site, and can be deleted once no sandbox is on the old schema.
+        //
+        // Unlike the score -> trust rename this is purely a name change, so
+        // there is nothing to convert and an interrupted upgrade is safe to
+        // repeat: the guard is the column's existence, not the version.
+        if( $installed > 0 && $installed < 5 ) {
+
+            $table = $wpdb->prefix . 'mshield_risk';
+
+            // Literal legacy names. These are historical strings, not the
+            // current vocabulary -- a global rename that rewrites the left-hand
+            // side here turns the loop into "copy risk_level onto itself, then
+            // drop it", which destroys the column it was meant to create.
+            $renames = [ 'band' => 'risk_level', 'band_source' => 'risk_level_source' ];
+
+            foreach( $renames as $from => $to ) {
+
+                // Belt and braces against exactly that: never drop a column
+                // that is its own rename target.
+                if( $from === $to ) continue;
+
+                $has_old = $wpdb->get_var( $wpdb->prepare(
+                    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s",
+                    $table,
+                    $from
+                ) );
+
+                if( ! $has_old ) continue;
+
+                $wpdb->query( "UPDATE {$table} SET {$to} = {$from} WHERE {$to} = ''" );
+                $wpdb->query( "ALTER TABLE {$table} DROP COLUMN {$from}" );
+
+            }
+
+        }
+
+        // Schema 6 renamed the three configurable risk levels once their action
+        // became a setting: a level called "detained" that had been configured
+        // only to flag was lying about itself. monitored -> low,
+        // challenged -> elevated, detained -> high. trusted, rejected and
+        // banned are unchanged.
+        //
+        // Same rule as above: these left-hand strings are historical. A global
+        // rename that rewrites them turns each pair into a self-map, and the
+        // guard inside rename_levels() is then the only thing between this and
+        // a no-op that looks like it worked.
+        if( $installed > 0 && $installed < 6 ) {
+
+            self::rename_levels( [ 'monitored' => 'low', 'challenged' => 'elevated', 'detained' => 'high' ] );
+
+        }
+
+        // Schema 7 added mshield_risk.rated_by, telling a rating scored at
+        // checkout apart from one a reviewer asked for later. The two are not
+        // the same statement: the manual one cannot replay the bot, timing or
+        // device layers, so it is partial by construction. dbDelta adds the
+        // column; existing rows keep the '' default, which is correct — every
+        // row that predates this was scored at checkout.
+
+        // Schema 8 added mshield_entities.refused_count, so a checkout the
+        // plugin turned away leaves something behind. Until now every entity
+        // write took an order id, and a refusal happens before an order exists
+        // — so the graph learned only from orders that got through, and an
+        // attacker refused fifty times arrived at the fifty-first with a clean
+        // record. dbDelta adds the column at its 0 default, which is right:
+        // no historic refusal was ever counted, so none can be claimed.
+
+        update_option( 'mshield_db_version', self::SCHEMA_VERSION, true );
+
+    }
+
+    /**
+     * Rewrite stored risk-level keys after a rename.
+     *
+     * Four places hold a level key: the risk table's column, the mirror on the
+     * order, the per-level threshold option NAMES, and the per-signal floor
+     * option VALUES. Missing any one leaves a store half-renamed — thresholds
+     * silently falling back to defaults, or a signal floor pointing at a level
+     * that no longer exists.
+     *
+     * @since   1.9.1
+     *
+     * @param   array   $levels     old key => new key.
+     */
+    private static function rename_levels( $levels ) {
+
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'mshield_risk';
+
+        foreach( $levels as $from => $to ) {
+
+            // A self-map would rewrite a column onto itself and rename an
+            // option to the name it already has.
+            if( $from === $to ) continue;
+
+            $wpdb->query( $wpdb->prepare(
+                "UPDATE {$table} SET risk_level = %s WHERE risk_level = %s",
+                $to,
+                $from
+            ) );
+
+            $wpdb->query( $wpdb->prepare(
+                "UPDATE {$wpdb->postmeta} SET meta_value = %s
+                 WHERE meta_key = '_mshield_risk_level' AND meta_value = %s",
+                $to,
+                $from
+            ) );
+
+            // HPOS keeps order meta in its own table when it is in use.
+            $hpos = $wpdb->prefix . 'wc_orders_meta';
+            if( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $hpos ) ) === $hpos ) {
+                $wpdb->query( $wpdb->prepare(
+                    "UPDATE {$hpos} SET meta_value = %s
+                     WHERE meta_key = '_mshield_risk_level' AND meta_value = %s",
+                    $to,
+                    $from
+                ) );
+            }
+
+            $old_opt = 'mshield_level_' . $from . '_threshold';
+            $stored  = get_option( $old_opt, null );
+
+            if( $stored !== null ) {
+                update_option( 'mshield_level_' . $to . '_threshold', $stored );
+                delete_option( $old_opt );
+            }
+
+            $wpdb->query( $wpdb->prepare(
+                "UPDATE {$wpdb->options} SET option_value = %s
+                 WHERE option_name LIKE %s AND option_value = %s",
+                $to,
+                'mshield\\_sig\\_%\\_floor',
+                $from
+            ) );
+
+        }
+
+        wp_cache_flush();
+
+    }
+
+    /**
      * Create tables.
+     *
+     * dbDelta is idempotent — it adds missing tables and columns and leaves
+     * existing data alone — so this doubles as the migration path.
      *
      * @since   1.0.0
      */
@@ -24,25 +237,30 @@ class db {
         // Log table.
         $log_table = $wpdb->prefix . 'mshield_log';
         $sql_log = "CREATE TABLE {$log_table} (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            PRIMARY KEY  (id),
             ip VARCHAR(45) NOT NULL DEFAULT '',
             endpoint VARCHAR(255) NOT NULL DEFAULT '',
             action VARCHAR(50) NOT NULL DEFAULT '',
             reason VARCHAR(255) NOT NULL DEFAULT '',
             request_data TEXT,
+            order_id bigint(20) unsigned NOT NULL DEFAULT 0,
+            trust FLOAT NULL DEFAULT NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_ip (ip),
             INDEX idx_action (action),
+            INDEX idx_order (order_id),
             INDEX idx_created (created_at)
         ) {$charset_collate};";
 
         // Rate limits table.
         $rate_table = $wpdb->prefix . 'mshield_rate_limits';
         $sql_rate = "CREATE TABLE {$rate_table} (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            PRIMARY KEY  (id),
             identifier VARCHAR(255) NOT NULL DEFAULT '',
             action_type VARCHAR(50) NOT NULL DEFAULT '',
-            count INT UNSIGNED NOT NULL DEFAULT 0,
+            count int(10) unsigned NOT NULL DEFAULT 0,
             window_start DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             window_end DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             UNIQUE INDEX idx_identifier_action (identifier, action_type),
@@ -58,14 +276,300 @@ class db {
             region VARCHAR(100) NOT NULL DEFAULT '',
             country VARCHAR(10) NOT NULL DEFAULT '',
             org VARCHAR(191) NOT NULL DEFAULT '',
+            asname VARCHAR(191) NOT NULL DEFAULT '',
+            proxy tinyint(4) NOT NULL DEFAULT -1,
+            hosting tinyint(4) NOT NULL DEFAULT -1,
+            mobile tinyint(4) NOT NULL DEFAULT -1,
             fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (ip)
+        ) {$charset_collate};";
+
+        // Per-order risk verdicts. Separate from the log because a log row is
+        // an event and this is a decision — one row per order, queryable by
+        // risk level and outcome so the review queue and the tuning reports can be
+        // built on it.
+        $risk_table = $wpdb->prefix . 'mshield_risk';
+        $sql_risk = "CREATE TABLE {$risk_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            PRIMARY KEY  (id),
+            order_id bigint(20) unsigned NOT NULL DEFAULT 0,
+            trust FLOAT NOT NULL DEFAULT 0,
+            risk_level VARCHAR(20) NOT NULL DEFAULT '',
+            risk_level_source VARCHAR(64) NOT NULL DEFAULT '',
+            action_taken VARCHAR(32) NOT NULL DEFAULT '',
+            signals TEXT,
+            ai_rating tinyint(3) unsigned NULL DEFAULT NULL,
+            ai_verdict VARCHAR(20) NOT NULL DEFAULT '',
+            outcome VARCHAR(20) NOT NULL DEFAULT '',
+            rated_by VARCHAR(16) NOT NULL DEFAULT '',
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE INDEX idx_order (order_id),
+            INDEX idx_risk_level (risk_level),
+            INDEX idx_outcome (outcome),
+            INDEX idx_created (created_at)
+        ) {$charset_collate};";
+
+        // Identity graph. Values are HMAC-hashed before they get here, so this
+        // table holds no readable PII.
+        $entities_table = $wpdb->prefix . 'mshield_entities';
+        $sql_entities = "CREATE TABLE {$entities_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            PRIMARY KEY  (id),
+            entity_type VARCHAR(20) NOT NULL DEFAULT '',
+            entity_hash CHAR(64) NOT NULL DEFAULT '',
+            first_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            order_count int(10) unsigned NOT NULL DEFAULT 0,
+            approved_count int(10) unsigned NOT NULL DEFAULT 0,
+            denied_count int(10) unsigned NOT NULL DEFAULT 0,
+            refund_count int(10) unsigned NOT NULL DEFAULT 0,
+            chargeback_count int(10) unsigned NOT NULL DEFAULT 0,
+            refused_count int(10) unsigned NOT NULL DEFAULT 0,
+            reputation FLOAT NOT NULL DEFAULT 0,
+            UNIQUE INDEX idx_type_hash (entity_type, entity_hash),
+            INDEX idx_hash (entity_hash),
+            INDEX idx_reputation (reputation)
+        ) {$charset_collate};";
+
+        // Identity-to-order links. This is what makes "a different email, but
+        // the same device as two denied orders" answerable.
+        $links_table = $wpdb->prefix . 'mshield_entity_links';
+        $sql_links = "CREATE TABLE {$links_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            PRIMARY KEY  (id),
+            entity_id bigint(20) unsigned NOT NULL DEFAULT 0,
+            order_id bigint(20) unsigned NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE INDEX idx_entity_order (entity_id, order_id),
+            INDEX idx_order (order_id)
         ) {$charset_collate};";
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta( $sql_log );
         dbDelta( $sql_rate );
         dbDelta( $sql_ipdata );
+        dbDelta( $sql_risk );
+        dbDelta( $sql_entities );
+        dbDelta( $sql_links );
+
+    }
+
+    /**
+     * Store the risk verdict for an order.
+     *
+     * One row per order, keyed by the UNIQUE index on order_id.
+     *
+     * ⚠ This is a REPLACE, not an UPDATE. MySQL deletes the conflicting row and
+     * inserts a new one, so EVERY column not present in $verdict reverts to its
+     * default — a re-rate that omits `outcome` erases a recorded chargeback, one
+     * that omits `created_at` moves the row into today's statistics window, and
+     * one that omits `ai_rating` nulls it. Any caller re-rating an existing
+     * order must read get_risk() first and carry those forward; see
+     * rescore::persist() for the pattern.
+     *
+     * @since   1.9.0
+     *
+     * @param   int     $order_id   Order ID.
+     * @param   array   $verdict    Keys: trust, risk_level, risk_level_source,
+     *                              action_taken, signals, ai_rating, ai_verdict,
+     *                              outcome, rated_by, created_at.
+     */
+    public static function save_risk( $order_id, $verdict ) {
+
+        global $wpdb;
+
+        $order_id = (int) $order_id;
+        if( $order_id <= 0 ) return;
+
+        $signals = isset( $verdict['signals'] ) ? $verdict['signals'] : [];
+        if( is_array( $signals ) ) $signals = (string) wp_json_encode( $signals );
+
+        // These match the column names, so a row written here reads back
+        // through get_risk() under exactly the same keys.
+        $level  = $verdict['risk_level']        ?? '';
+        $source = $verdict['risk_level_source'] ?? '';
+
+        $data = [
+            'order_id'          => $order_id,
+            'trust'             => (float) ( $verdict['trust'] ?? 0 ),
+            'risk_level'        => substr( sanitize_text_field( $level ), 0, 20 ),
+            'risk_level_source' => substr( sanitize_text_field( $source ), 0, 64 ),
+            'action_taken'      => substr( sanitize_text_field( $verdict['action_taken'] ?? '' ), 0, 32 ),
+            'signals'           => $signals,
+            'ai_verdict'        => substr( sanitize_text_field( $verdict['ai_verdict'] ?? '' ), 0, 20 ),
+            'outcome'           => substr( sanitize_text_field( $verdict['outcome'] ?? '' ), 0, 20 ),
+            'rated_by'          => substr( sanitize_text_field( $verdict['rated_by'] ?? '' ), 0, 16 ),
+            // Supplied by a caller re-rating an existing order, so the row keeps
+            // its place in the statistics windows. See the REPLACE warning above.
+            'created_at'        => ! empty( $verdict['created_at'] )
+                ? substr( sanitize_text_field( $verdict['created_at'] ), 0, 19 )
+                : gmdate( 'Y-m-d H:i:s' ),
+        ];
+
+        $format = [ '%d', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ];
+
+        // Nullable: an unrated order must store NULL, not 0, or "0/10" would
+        // read as the most fraudulent rating possible.
+        if( isset( $verdict['ai_rating'] ) && $verdict['ai_rating'] !== null ) {
+            $data['ai_rating'] = (int) $verdict['ai_rating'];
+            $format[]          = '%d';
+        }
+
+        $wpdb->replace( $wpdb->prefix . 'mshield_risk', $data, $format );
+
+    }
+
+    /**
+     * Read the stored risk verdict for an order.
+     *
+     * @since   1.9.0
+     *
+     * @param   int     $order_id
+     * @return  array|null
+     */
+    public static function get_risk( $order_id ) {
+
+        global $wpdb;
+
+        $row = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}mshield_risk WHERE order_id = %d",
+            (int) $order_id
+        ), ARRAY_A );
+
+        return $row ?: null;
+
+    }
+
+    /**
+     * Record the final outcome of an order against its risk row.
+     *
+     * @since   1.9.0
+     *
+     * @param   int     $order_id
+     * @param   string  $outcome    approved | denied | refunded | chargeback.
+     */
+    public static function set_risk_outcome( $order_id, $outcome ) {
+
+        global $wpdb;
+
+        $wpdb->update(
+            $wpdb->prefix . 'mshield_risk',
+            [ 'outcome' => substr( sanitize_text_field( $outcome ), 0, 20 ) ],
+            [ 'order_id' => (int) $order_id ],
+            [ '%s' ],
+            [ '%d' ]
+        );
+
+    }
+
+    /**
+     * How often each signal actually fired, over a period.
+     *
+     * This is what turns tuning from guesswork into data: a weight is only
+     * defensible next to the rate at which the signal trips and what those
+     * orders turned out to be.
+     *
+     * Tallied in PHP rather than SQL. The signals column is TEXT holding JSON,
+     * and JSON_EXTRACT over a TEXT column is both non-portable across the MySQL
+     * and MariaDB versions stores actually run, and unindexable — so it would
+     * be a full scan either way. Capping the row count keeps an admin screen
+     * responsive on a busy store.
+     *
+     * @since   1.9.0
+     *
+     * @param   int     $days   Days to look back.
+     * @param   int     $limit  Maximum rows to sample.
+     * @return  array   [ signal_key => [ 'count' => int, 'levels' => [ level => int ] ] ]
+     */
+    public static function get_signal_stats( $days = 30, $limit = 2000 ) {
+
+        global $wpdb;
+
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT risk_level, signals FROM {$wpdb->prefix}mshield_risk
+             WHERE created_at >= DATE_SUB( %s, INTERVAL %d DAY )
+             ORDER BY id DESC
+             LIMIT %d",
+            gmdate( 'Y-m-d H:i:s' ),
+            max( 1, (int) $days ),
+            max( 1, (int) $limit )
+        ), ARRAY_A );
+
+        $out = [];
+
+        foreach( $rows as $row ) {
+
+            $signals = json_decode( (string) $row['signals'], true );
+            if( ! is_array( $signals ) ) continue;
+
+            foreach( $signals as $signal ) {
+
+                $key = is_array( $signal ) ? ( $signal['key'] ?? '' ) : '';
+                if( $key === '' ) continue;
+
+                if( ! isset( $out[ $key ] ) ) {
+                    $out[ $key ] = [ 'count' => 0, 'levels' => [] ];
+                }
+
+                $out[ $key ]['count']++;
+
+                $level = (string) $row['risk_level'];
+                $out[ $key ]['levels'][ $level ] = ( $out[ $key ]['levels'][ $level ] ?? 0 ) + 1;
+
+            }
+
+        }
+
+        uasort( $out, function( $a, $b ) { return $b['count'] <=> $a['count']; } );
+
+        return $out;
+
+    }
+
+    /**
+     * Total risk rows in a period, so trip rates have a denominator.
+     *
+     * @since   1.9.0
+     *
+     * @param   int     $days
+     * @return  int
+     */
+    public static function get_risk_count( $days = 30 ) {
+
+        global $wpdb;
+
+        return (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}mshield_risk
+             WHERE created_at >= DATE_SUB( %s, INTERVAL %d DAY )",
+            gmdate( 'Y-m-d H:i:s' ),
+            max( 1, (int) $days )
+        ) );
+
+    }
+
+    /**
+     * Count orders per risk level over a period, with how each was resolved.
+     *
+     * Drives the tuning report — a fraud tool that cannot show its own
+     * false-positive rate cannot be tuned.
+     *
+     * @since   1.9.0
+     *
+     * @param   int     $days   Days to look back.
+     * @return  array   Rows of risk_level, outcome, total.
+     */
+    public static function get_risk_level_stats( $days = 30 ) {
+
+        global $wpdb;
+
+        return $wpdb->get_results( $wpdb->prepare(
+            "SELECT risk_level, outcome, COUNT(*) as total
+             FROM {$wpdb->prefix}mshield_risk
+             WHERE created_at >= DATE_SUB( %s, INTERVAL %d DAY )
+             GROUP BY risk_level, outcome",
+            gmdate( 'Y-m-d H:i:s' ),
+            max( 1, (int) $days )
+        ), ARRAY_A );
 
     }
 
@@ -78,11 +582,13 @@ class db {
      * @param   string  $endpoint   Route or endpoint identifier.
      * @param   string  $action     Action taken (blocked, rate_limited, flagged).
      * @param   string  $reason     Reason for the action.
+     * @param   int     $order_id   Order this event belongs to, when known.
+     * @param   float   $trust      Trust rating at the time, when known.
      * @param   string  $data       Optional request data. When empty, a compact
      *                              JSON forensics blob (user agent, billing
      *                              email, request URI) is captured automatically.
      */
-    public static function log_event( $ip, $endpoint, $action, $reason = '', $data = '' ) {
+    public static function log_event( $ip, $endpoint, $action, $reason = '', $data = '', $order_id = 0, $trust = null ) {
 
         global $wpdb;
 
@@ -101,10 +607,26 @@ class db {
                 'action'       => sanitize_text_field( $action ),
                 'reason'       => sanitize_text_field( substr( $reason, 0, 255 ) ),
                 'request_data' => sanitize_textarea_field( $data ),
+                // Recorded so a log row can be tied back to the order it
+                // belongs to. Without it, investigating an incident meant
+                // matching on IP and timestamp by eye.
+                'order_id'     => (int) $order_id,
                 'created_at'   => gmdate( 'Y-m-d H:i:s' ),
             ],
-            [ '%s', '%s', '%s', '%s', '%s', '%s' ]
+            [ '%s', '%s', '%s', '%s', '%s', '%d', '%s' ]
         );
+
+        // Nullable on purpose: a row with no rating stores NULL, not 0, since
+        // 0 would read as the worst possible rating rather than "not rated".
+        if( $trust !== null ) {
+            $wpdb->update(
+                $wpdb->prefix . 'mshield_log',
+                [ 'trust' => (float) $trust ],
+                [ 'id' => (int) $wpdb->insert_id ],
+                [ '%f' ],
+                [ '%d' ]
+            );
+        }
 
     }
 
@@ -243,6 +765,7 @@ class db {
         $defaults = [
             'action'   => '',
             'ip'       => '',
+            'order_id' => 0,
             'search'   => '',
             'days'     => 0,
             'per_page' => 50,
@@ -257,7 +780,7 @@ class db {
         list( $where_sql, $values ) = self::build_log_where( $args );
 
         // Sanitize orderby.
-        $allowed_orderby = [ 'id', 'ip', 'endpoint', 'action', 'created_at' ];
+        $allowed_orderby = [ 'id', 'ip', 'endpoint', 'action', 'order_id', 'trust', 'created_at' ];
         $orderby = in_array( $args['orderby'], $allowed_orderby, true ) ? $args['orderby'] : 'created_at';
         $order   = strtoupper( $args['order'] ) === 'ASC' ? 'ASC' : 'DESC';
 
@@ -313,6 +836,11 @@ class db {
         if( ! empty( $args['action'] ) ) {
             $where[]  = 'action = %s';
             $values[] = $args['action'];
+        }
+
+        if( ! empty( $args['order_id'] ) ) {
+            $where[]  = 'order_id = %d';
+            $values[] = (int) $args['order_id'];
         }
 
         if( ! empty( $args['ip'] ) ) {
@@ -604,9 +1132,15 @@ class db {
                 'region'     => substr( sanitize_text_field( $data['region'] ?? '' ), 0, 100 ),
                 'country'    => substr( sanitize_text_field( $data['country'] ?? '' ), 0, 10 ),
                 'org'        => substr( sanitize_text_field( $data['org'] ?? '' ), 0, 191 ),
+                'asname'     => substr( sanitize_text_field( $data['asname'] ?? '' ), 0, 191 ),
+                // -1 means "the provider did not report this", which is
+                // distinct from 0 ("reported, and it is not a proxy").
+                'proxy'      => isset( $data['proxy'] ) ? (int) $data['proxy'] : -1,
+                'hosting'    => isset( $data['hosting'] ) ? (int) $data['hosting'] : -1,
+                'mobile'     => isset( $data['mobile'] ) ? (int) $data['mobile'] : -1,
                 'fetched_at' => gmdate( 'Y-m-d H:i:s' ),
             ],
-            [ '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
+            [ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s' ]
         );
 
     }
@@ -646,6 +1180,114 @@ class db {
              LEFT JOIN {$wpdb->prefix}mshield_log l ON l.ip = d.ip
              WHERE l.ip IS NULL"
         );
+
+        self::prune_entities();
+
+    }
+
+    /**
+     * Prune the identity graph.
+     *
+     * This ran nowhere until 2.2.0. The two entity tables were the only ones
+     * the daily cleanup did not touch, and they grow on every checkout — this
+     * store had 6,072 identities and 19,579 links with no upper bound. Now that
+     * refused checkouts are recorded too, every throwaway address a bot invents
+     * gets a row, so a prune is not housekeeping any more.
+     *
+     * What survives is the point:
+     *
+     *   anything adverse   a denial, a chargeback, a refund or a refusal is the
+     *                      whole reason the table exists, and is kept
+     *                      regardless of age
+     *   anything recent    seen inside the retention window
+     *   anything linked    still attached to an order that still exists
+     *
+     * So what actually goes is the long tail: an identity seen once, months
+     * ago, that behaved perfectly and whose order has since been deleted.
+     * Forgetting that costs a returning customer nothing — trust needs three
+     * orders, and one of them would have to be older than the retention window
+     * with the order gone.
+     *
+     * Entity retention is deliberately its own setting and defaults to a year,
+     * because the log's 30 days is far too short a memory for fraud history.
+     *
+     * @since   2.2.0
+     *
+     * @return  int     Identities removed.
+     */
+    public static function prune_entities() {
+
+        global $wpdb;
+
+        $days = (int) get_option( 'mshield_entity_retention_days', 365 );
+
+        // Zero or negative switches pruning off entirely, for a merchant who
+        // would rather pay for the rows than forget anything.
+        if( $days < 1 ) return 0;
+
+        $now = gmdate( 'Y-m-d H:i:s' );
+
+        // Links whose order has been deleted. Done first, so an identity whose
+        // only order is gone becomes unlinked and eligible below.
+        //
+        // Orders live in wp_posts under legacy storage and wc_orders under
+        // HPOS, and a store can be mid-migration with both. An id present in
+        // EITHER is a live order, so the delete requires it to be missing from
+        // both -- checking only one table would throw away the link graph of
+        // every order on a store using the other.
+        $hpos = $wpdb->prefix . 'wc_orders';
+        $has_hpos = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $hpos ) ) === $hpos;
+
+        $wpdb->query(
+            "DELETE l FROM {$wpdb->prefix}mshield_entity_links l
+             LEFT JOIN {$wpdb->posts} p ON p.ID = l.order_id"
+            . ( $has_hpos ? " LEFT JOIN {$hpos} o ON o.id = l.order_id" : '' )
+            . " WHERE p.ID IS NULL"
+            . ( $has_hpos ? ' AND o.id IS NULL' : '' )
+        );
+
+        $removed = 0;
+
+        // Batched, like the log prune above: a first run on a neglected store
+        // could otherwise lock the table for a long time.
+        //
+        // Select then delete, in two statements. A multi-table DELETE cannot
+        // carry a LIMIT in MySQL or MariaDB -- the join form with `LIMIT 5000`
+        // on the end is a syntax error, not a slow query, so the whole prune
+        // silently did nothing. Collecting ids first keeps the batching and
+        // uses a single-table delete, which does accept one.
+        do {
+
+            $ids = $wpdb->get_col( $wpdb->prepare(
+                "SELECT e.id
+                   FROM {$wpdb->prefix}mshield_entities e
+                   LEFT JOIN {$wpdb->prefix}mshield_entity_links l ON l.entity_id = e.id
+                  WHERE l.entity_id IS NULL
+                    AND e.last_seen < DATE_SUB(%s, INTERVAL %d DAY)
+                    AND e.denied_count = 0
+                    AND e.chargeback_count = 0
+                    AND e.refund_count = 0
+                    AND e.refused_count = 0
+                  LIMIT 5000",
+                $now,
+                $days
+            ) );
+
+            if( empty( $ids ) ) break;
+
+            $ids = array_map( 'intval', $ids );
+
+            // Integers straight from the database and cast again, so the IN
+            // list needs no placeholders and cannot carry anything but digits.
+            $wpdb->query(
+                "DELETE FROM {$wpdb->prefix}mshield_entities WHERE id IN (" . implode( ',', $ids ) . ')'
+            );
+
+            $removed += count( $ids );
+
+        } while( count( $ids ) >= 5000 );
+
+        return $removed;
 
     }
 

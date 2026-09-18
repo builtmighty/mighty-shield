@@ -13,6 +13,7 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
 
 class zip_state_validator {
 
@@ -34,79 +35,72 @@ class zip_state_validator {
 
         if( settings::get( 'mshield_zip_state_enabled' ) !== 'yes' ) return;
 
-        add_action( 'woocommerce_after_checkout_validation', [ $this, 'block_zip_state_mismatch' ], 15, 2 );
-        add_action( 'woocommerce_checkout_order_processed', [ $this, 'flag_zip_state_mismatch' ], 5, 3 );
+        add_action( 'woocommerce_after_checkout_validation', [ $this, 'assess_checkout' ], 15, 2 );
 
     }
 
     /**
-     * Block ZIP/state mismatch before order creation.
+     * Score the ZIP against the state. Runs before any order exists.
+     *
+     * This check used to refuse on its own, and shipped that way. A mismatched
+     * postcode is a typo far more often than it is fraud, so it is worth 35
+     * trust and nothing else -- enough to put an otherwise ordinary order into
+     * Elevated, not enough to turn anyone away by itself. A merchant who wants
+     * it to refuse raises its weight on the Scoring tab.
      *
      * @since   1.0.0
      *
      * @param   array    $data   Checkout posted data.
-     * @param   object   $errors WP_Error object.
+     * @param   object   $errors WP_Error object, unused — this layer does not refuse.
      */
-    public function block_zip_state_mismatch( $data, $errors ) {
+    public function assess_checkout( $data, $errors ) {
 
         if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
-        $action = settings::get( 'mshield_zip_state_action' );
-        if( $action !== 'block' ) return;
+        $reason = self::assess(
+            isset( $data['billing_country'] ) ? $data['billing_country'] : '',
+            isset( $data['billing_state'] ) ? $data['billing_state'] : '',
+            isset( $data['billing_postcode'] ) ? $data['billing_postcode'] : ''
+        );
 
-        $country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
-        if( $country !== 'US' ) return;
+        if( $reason === null ) return;
 
-        $state   = isset( $data['billing_state'] ) ? trim( $data['billing_state'] ) : '';
-        $zipcode = isset( $data['billing_postcode'] ) ? trim( $data['billing_postcode'] ) : '';
-
-        $result = self::verify_zip_state( $state, $zipcode );
-
-        if( $result !== true && $result !== null ) {
-
-            $ip = ip_utils::get_client_ip();
-            db::log_event( $ip, 'classic_checkout', 'blocked', $result );
-            $errors->add( 'mighty_shield_zip_state', __( 'Please verify your billing ZIP code and state.', 'mighty-shield' ) );
-
-        }
+        db::log_event( ip_utils::get_client_ip(), 'classic_checkout', 'flagged', $reason );
 
     }
 
     /**
-     * Flag ZIP/state mismatch after order creation.
+     * Check the ZIP against the state and record a mismatch.
      *
-     * @since   1.0.0
+     * The one place this check turns into a signal, called by both checkouts.
+     * The Store API called verify_zip_state() and blocked on the answer without
+     * ever recording it, so a mismatch cost an order nothing on the block
+     * checkout unless the setting was turned all the way up to block.
      *
-     * @param   int     $order_id   Order ID.
-     * @param   array   $posted     Posted data.
-     * @param   object  $order      WC_Order object.
+     * verify_zip_state() is deliberately tri-state: true is a match, a string
+     * is a mismatch, and null means the prefix is not in the map and nothing
+     * can be said. Only a string is evidence, which is why the test below is
+     * written out rather than collapsed to a boolean.
+     *
+     * @since   2.0.0
+     *
+     * @param   string  $country    Billing country code.
+     * @param   string  $state      Billing state.
+     * @param   string  $zipcode    Billing postcode.
+     * @return  string|null Mismatch reason, or null when there is nothing to report.
      */
-    public function flag_zip_state_mismatch( $order_id, $posted, $order ) {
+    public static function assess( $country, $state, $zipcode ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
+        // The map is US-only, so there is nothing to check anywhere else.
+        if( $country !== 'US' ) return null;
 
-        $action = settings::get( 'mshield_zip_state_action' );
-        if( $action === 'block' ) return;
+        $result = self::verify_zip_state( trim( (string) $state ), trim( (string) $zipcode ) );
 
-        if( $order->get_billing_country() !== 'US' ) return;
+        if( $result === true || $result === null ) return null;
 
-        $state   = $order->get_billing_state();
-        $zipcode = $order->get_billing_postcode();
-        $result  = self::verify_zip_state( $state, $zipcode );
+        risk_context::add( 'zip_state_mismatch', $result );
 
-        if( $result !== true && $result !== null ) {
-
-            $ip = ip_utils::get_client_ip();
-            db::log_event( $ip, 'classic_checkout', 'flagged', $result );
-            $order->add_order_note( 'MightyShield: ' . $result );
-            $order->update_meta_data( '_mshield_flagged', 'zip_state_mismatch' );
-            $order->save();
-
-            if( $action === 'notify' ) {
-                $this->send_admin_notification( $order, $result );
-            }
-
-        }
+        return $result;
 
     }
 
@@ -164,7 +158,13 @@ class zip_state_validator {
         // Build mapping: 3-digit prefix => array of valid state abbreviations.
         $ranges = [
             [ '005', '005', [ 'NY' ] ],
-            [ '006', '009', [ 'PR' ] ],
+            // Puerto Rico is 006-007 and 009. The US Virgin Islands sit inside
+            // that range at 008 -- lumping them in as PR meant a VI customer
+            // entering their own territory was told their ZIP "belongs to PR",
+            // with no way through on a check that ships set to refuse.
+            [ '006', '007', [ 'PR' ] ],
+            [ '008', '008', [ 'VI' ] ],
+            [ '009', '009', [ 'PR' ] ],
             [ '010', '027', [ 'MA' ] ],
             [ '028', '029', [ 'RI' ] ],
             [ '030', '038', [ 'NH' ] ],
@@ -217,7 +217,10 @@ class zip_state_validator {
             [ '910', '928', [ 'CA' ] ],
             [ '930', '961', [ 'CA' ] ],
             [ '967', '968', [ 'HI' ] ],
-            [ '969', '969', [ 'GU' ] ],
+            // 969 is not just Guam. The Northern Marianas, Micronesia, the
+            // Marshall Islands and Palau all live in it, and every one of them
+            // was refused.
+            [ '969', '969', [ 'GU', 'MP', 'FM', 'MH', 'PW' ] ],
             [ '970', '979', [ 'OR' ] ],
             [ '980', '994', [ 'WA' ] ],
             [ '995', '999', [ 'AK' ] ],
@@ -237,35 +240,6 @@ class zip_state_validator {
         }
 
         return self::$zip_state_map;
-
-    }
-
-    /**
-     * Send admin notification email.
-     *
-     * @since   1.0.0
-     *
-     * @param   object  $order  WC_Order object.
-     * @param   string  $reason Reason for flagging.
-     */
-    private function send_admin_notification( $order, $reason ) {
-
-        $admin_email = get_option( 'admin_email' );
-        $subject     = sprintf( '[MightyShield] ZIP/State mismatch on order #%d', $order->get_id() );
-        $message     = sprintf(
-            "A ZIP/state mismatch was detected by MightyShield.\n\nOrder: #%d\nReason: %s\nCustomer: %s (%s)\nAddress: %s, %s %s\nIP: %s\n\nReview this order: %s",
-            $order->get_id(),
-            $reason,
-            $order->get_formatted_billing_full_name(),
-            $order->get_billing_email(),
-            $order->get_billing_city(),
-            $order->get_billing_state(),
-            $order->get_billing_postcode(),
-            $order->get_customer_ip_address(),
-            $order->get_edit_order_url()
-        );
-
-        wp_mail( $admin_email, $subject, $message );
 
     }
 

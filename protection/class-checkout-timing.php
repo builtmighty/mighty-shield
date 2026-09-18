@@ -4,9 +4,11 @@
  *
  * Stamps the checkout form with a signed timestamp token and measures how long
  * the shopper took to submit. Implausibly fast submissions are automated. The
- * token is HMAC-signed so it cannot be forged. A missing/invalid token is
- * flagged by default (protects against page caching stripping the field), but
- * can be set to block via mshield_timing_missing_action when under attack.
+ * token is HMAC-signed so it cannot be forged.
+ *
+ * Both outcomes are scores, not verdicts: an impossible submit time is worth a
+ * lot, a token that never came back is worth a little, and the blocking engine
+ * decides what either is worth doing something about.
  *
  * @package MightyShield
  * @since   1.2.0
@@ -16,6 +18,7 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
 
 class checkout_timing {
 
@@ -29,8 +32,7 @@ class checkout_timing {
         if( settings::get( 'mshield_timing_enabled' ) !== 'yes' ) return;
 
         add_action( 'woocommerce_after_checkout_billing_form', [ $this, 'render_field' ] );
-        add_action( 'woocommerce_after_checkout_validation', [ $this, 'block_field' ], 1, 2 );
-        add_action( 'woocommerce_checkout_order_processed', [ $this, 'flag_field' ], 5, 3 );
+        add_action( 'woocommerce_after_checkout_validation', [ $this, 'assess_checkout' ], 1, 2 );
 
     }
 
@@ -46,111 +48,107 @@ class checkout_timing {
     }
 
     /**
-     * Block checkout on an implausibly fast submission (action = block).
+     * Score the submission time. Runs before any order exists, and only scores.
+     *
+     * Neither outcome refuses here. timing_fast costs 45 and timing_missing
+     * costs 20, and the total decides — which is the right shape for a check
+     * whose miss case is a cache plugin stripping a hidden field rather than a
+     * bot.
+     *
+     * The temp block survives, and is now keyed on the layer's own temp_block
+     * flag rather than on a setting: a genuinely impossible submit time blocks
+     * the address, a missing token never does.
      *
      * @since   1.2.0
      *
      * @param   array    $data   Checkout posted data.
-     * @param   object   $errors WP_Error object.
+     * @param   object   $errors WP_Error object, unused — this layer does not refuse.
      */
-    public function block_field( $data, $errors ) {
+    public function assess_checkout( $data, $errors ) {
 
         if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
-        if( settings::get( 'mshield_timing_action' ) !== 'block' ) return;
-
-        $result = $this->evaluate();
-        if( $result['reason'] === null ) return;
-
-        $ip = ip_utils::get_client_ip();
-
-        if( $result['blockable'] ) {
-
-            db::log_event( $ip, 'classic_checkout', 'blocked', $result['reason'] );
-
-            // Only strong signals (genuinely fast submit) escalate to an
-            // IP-wide temp-block.
-            if( ! empty( $result['temp_block'] ) ) {
-                $duration = (int) settings::get( 'mshield_temp_block_duration' );
-                set_transient( 'mshield_tempblock_' . md5( $ip ), true, $duration );
-            }
-
-            $errors->add( 'mighty_shield_timing', __( 'This order could not be processed. Please try again.', 'mighty-shield' ) );
-            return;
-
-        }
-
-        // Non-blockable signal (missing/invalid token) — record only.
-        db::log_event( $ip, 'classic_checkout', 'flagged', $result['reason'] );
-
-    }
-
-    /**
-     * Flag an order on an implausibly fast submission (action = flag / notify).
-     *
-     * @since   1.2.0
-     *
-     * @param   int     $order_id   Order ID.
-     * @param   array   $posted     Posted data.
-     * @param   object  $order      WC_Order object.
-     */
-    public function flag_field( $order_id, $posted, $order ) {
-
-        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
-
-        $action = settings::get( 'mshield_timing_action' );
-        if( $action === 'block' ) return;
-
         $result = $this->evaluate();
         if( $result['reason'] === null ) return;
 
         $ip = ip_utils::get_client_ip();
 
         db::log_event( $ip, 'classic_checkout', 'flagged', $result['reason'] );
-        $order->add_order_note( 'MightyShield: ' . $result['reason'] );
-        $order->update_meta_data( '_mshield_flagged', 'checkout_timing' );
-        $order->save();
 
-        if( $action === 'notify' ) {
-            $this->send_admin_notification( $order, $result['reason'] );
+        if( ! empty( $result['temp_block'] ) ) {
+            // Through rate_limiter, not by hand. The hand-rolled version
+            // stored a bare true with no reason and wrote no log entry, so
+            // three of the four ways a shopper gets temporarily blocked left
+            // nothing in the Logs at all -- and "why can this customer not
+            // check out" is the first question a merchant asks.
+            rate_limiter::temp_block_ip( $ip, __( 'Checkout submitted faster than a person can fill it in', 'mighty-shield' ) );
         }
 
     }
 
     /**
-     * Evaluate the submitted timing token.
+     * Evaluate the timing token carried on this request.
+     *
+     * Classic reads it from $_POST; the Store API carries it in the request
+     * extensions. Only the transport differs, so only the read lives here and
+     * the judgement lives in assess().
      *
      * @since   1.2.0
      *
-     * @return  array   [ 'blockable' => bool, 'reason' => string|null ]
+     * @return  array   [ 'temp_block' => bool, 'reason' => string|null ]
      */
     private function evaluate() {
 
-        $token   = isset( $_POST['mshield_ct_token'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_ct_token'] ) ) : '';
-        $elapsed = self::verify_token( $token );
+        return self::assess( isset( $_POST['mshield_ct_token'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_ct_token'] ) ) : '' );
+
+    }
+
+    /**
+     * Judge a timing token and record what it found.
+     *
+     * The one place this check turns into a signal, called by both checkouts.
+     * The Store API used to carry its own copy of this logic that only recorded
+     * anything when the action was set to block, so on the default "flag"
+     * setting a missing token produced nothing at all.
+     *
+     * Emission is unconditional, and emission is all this does. What the store
+     * makes of the signal is the blocking engine's business.
+     *
+     * @since   2.0.0
+     *
+     * @param   string  $token  Submitted timing token, or '' if absent.
+     * @return  array   [ 'temp_block' => bool, 'reason' => string|null ]
+     */
+    public static function assess( $token ) {
+
+        $elapsed = self::verify_token( (string) $token );
 
         // Missing / forged / invalid token. A scripted checkout that never
-        // rendered our field lands here. Whether that blocks is governed by
-        // mshield_timing_missing_action: "flag" (default; guards against page
-        // caching stripping the field) or "block" (recommended under attack).
+        // rendered our field lands here -- and so does a real shopper behind a
+        // page cache that stripped the field, which is why this is the cheap
+        // signal and never a temp block.
         if( $elapsed === null ) {
-            $missing_blockable = ( settings::get( 'mshield_timing_missing_action' ) === 'block' );
-            // Weaker signal — reject the order but do not IP temp-block, to
-            // avoid locking out a shopper if caching ever strips the field.
-            return [ 'blockable' => $missing_blockable, 'temp_block' => false, 'reason' => 'Checkout timing token missing or invalid' ];
+            risk_context::add( 'timing_missing', 'Checkout timing token missing or invalid' );
+
+            return [ 'temp_block' => false, 'reason' => 'Checkout timing token missing or invalid' ];
         }
 
         $min = (int) settings::get( 'mshield_timing_min_seconds' );
 
         if( $elapsed < $min ) {
+
+            risk_context::add(
+                'timing_fast',
+                sprintf( 'Checkout submitted in %ds (minimum %ds) — likely automated', $elapsed, $min )
+            );
+
             return [
-                'blockable'  => true,
                 'temp_block' => true,
                 'reason'     => sprintf( 'Checkout submitted too fast: %ds (minimum %ds) — likely automated', $elapsed, $min ),
             ];
         }
 
-        return [ 'blockable' => false, 'temp_block' => false, 'reason' => null ];
+        return [ 'temp_block' => false, 'reason' => null ];
 
     }
 
@@ -193,32 +191,6 @@ class checkout_timing {
         if( $elapsed < 0 || $elapsed > 7200 ) return null;
 
         return $elapsed;
-
-    }
-
-    /**
-     * Send admin notification email.
-     *
-     * @since   1.2.0
-     *
-     * @param   object  $order  WC_Order object.
-     * @param   string  $reason Reason for flagging.
-     */
-    private function send_admin_notification( $order, $reason ) {
-
-        $admin_email = get_option( 'admin_email' );
-        $subject     = sprintf( '[MightyShield] Fast checkout on order #%d', $order->get_id() );
-        $message     = sprintf(
-            "A checkout was submitted implausibly fast (likely automated) on an order flagged by MightyShield.\n\nOrder: #%d\nReason: %s\nCustomer: %s (%s)\nIP: %s\n\nReview this order: %s",
-            $order->get_id(),
-            $reason,
-            $order->get_formatted_billing_full_name(),
-            $order->get_billing_email(),
-            $order->get_customer_ip_address(),
-            $order->get_edit_order_url()
-        );
-
-        wp_mail( $admin_email, $subject, $message );
 
     }
 

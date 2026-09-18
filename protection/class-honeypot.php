@@ -12,6 +12,7 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
 
 class honeypot {
 
@@ -25,8 +26,7 @@ class honeypot {
         if( settings::get( 'mshield_honeypot_enabled' ) !== 'yes' ) return;
 
         add_action( 'woocommerce_after_checkout_billing_form', [ $this, 'render_field' ] );
-        add_action( 'woocommerce_after_checkout_validation', [ $this, 'block_field' ], 1, 2 );
-        add_action( 'woocommerce_checkout_order_processed', [ $this, 'flag_field' ], 5, 3 );
+        add_action( 'woocommerce_after_checkout_validation', [ $this, 'assess_checkout' ], 1, 2 );
 
     }
 
@@ -45,69 +45,39 @@ class honeypot {
     }
 
     /**
-     * Block checkout when the honeypot field is filled.
+     * Score the honeypot. Runs before any order exists, and only scores.
      *
-     * Runs before order creation. Only active when the configured action is
-     * "block".
+     * Whether a filled trap field turns a customer away is not decided here any
+     * more. This emits the signal; the honeypot signal carries a `rejected`
+     * floor, so risk_recorder refuses the checkout at priority 99 — the one
+     * place in the plugin that refuses anything.
+     *
+     * The temp block stays, because it is not a refusal: it is a fact about the
+     * address recorded for the next request to score against, and honeypot is
+     * the least ambiguous evidence the plugin has. No person can see the field.
      *
      * @since   1.0.0
      *
      * @param   array    $data   Checkout posted data.
-     * @param   object   $errors WP_Error object.
+     * @param   object   $errors WP_Error object, unused — this layer does not refuse.
      */
-    public function block_field( $data, $errors ) {
+    public function assess_checkout( $data, $errors ) {
 
         if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
-        if( settings::get( 'mshield_honeypot_action' ) !== 'block' ) return;
 
         if( ! $this->is_triggered() ) return;
 
         $ip    = ip_utils::get_client_ip();
         $value = $this->get_value();
-        db::log_event( $ip, 'classic_checkout', 'blocked', 'Honeypot field filled (bot detected): "' . substr( $value, 0, 100 ) . '"' );
 
-        // Temp-block the IP.
-        $duration = (int) settings::get( 'mshield_temp_block_duration' );
-        set_transient( 'mshield_tempblock_' . md5( $ip ), true, $duration );
+        risk_context::add( 'honeypot', 'Honeypot field filled (bot detected)' );
 
-        $errors->add( 'mighty_shield_honeypot', __( 'This order could not be processed. Please contact support.', 'mighty-shield' ) );
+        db::log_event( $ip, 'classic_checkout', 'flagged', 'Honeypot field filled (bot detected): "' . substr( $value, 0, 100 ) . '"' );
 
-    }
-
-    /**
-     * Flag an order when the honeypot field is filled.
-     *
-     * Runs after order creation. Active when the configured action is "flag"
-     * or "notify".
-     *
-     * @since   1.0.0
-     *
-     * @param   int     $order_id   Order ID.
-     * @param   array   $posted     Posted data.
-     * @param   object  $order      WC_Order object.
-     */
-    public function flag_field( $order_id, $posted, $order ) {
-
-        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
-
-        $action = settings::get( 'mshield_honeypot_action' );
-        if( $action === 'block' ) return;
-
-        if( ! $this->is_triggered() ) return;
-
-        $ip     = ip_utils::get_client_ip();
-        $value  = $this->get_value();
-        $reason = 'Honeypot field filled (bot detected): "' . substr( $value, 0, 100 ) . '"';
-
-        db::log_event( $ip, 'classic_checkout', 'flagged', $reason );
-        $order->add_order_note( 'MightyShield: ' . $reason );
-        $order->update_meta_data( '_mshield_flagged', 'honeypot' );
-        $order->save();
-
-        if( $action === 'notify' ) {
-            $this->send_admin_notification( $order, $reason );
-        }
+        // Temp-block the IP, through rate_limiter rather than by hand: the
+        // hand-rolled version stored a bare true with no reason and wrote no log
+        // entry, so this block left nothing behind to explain itself.
+        rate_limiter::temp_block_ip( $ip, __( 'Filled the hidden trap field on checkout', 'mighty-shield' ) );
 
     }
 
@@ -134,32 +104,6 @@ class honeypot {
     private function get_value() {
 
         return isset( $_POST['mshield_hp_field'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_hp_field'] ) ) : '';
-
-    }
-
-    /**
-     * Send admin notification email.
-     *
-     * @since   1.0.0
-     *
-     * @param   object  $order  WC_Order object.
-     * @param   string  $reason Reason for flagging.
-     */
-    private function send_admin_notification( $order, $reason ) {
-
-        $admin_email = get_option( 'admin_email' );
-        $subject     = sprintf( '[MightyShield] Honeypot triggered on order #%d', $order->get_id() );
-        $message     = sprintf(
-            "The checkout honeypot field was filled on an order flagged by MightyShield (likely a bot).\n\nOrder: #%d\nReason: %s\nCustomer: %s (%s)\nIP: %s\n\nReview this order: %s",
-            $order->get_id(),
-            $reason,
-            $order->get_formatted_billing_full_name(),
-            $order->get_billing_email(),
-            $order->get_customer_ip_address(),
-            $order->get_edit_order_url()
-        );
-
-        wp_mail( $admin_email, $subject, $message );
 
     }
 

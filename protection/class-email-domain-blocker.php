@@ -12,6 +12,8 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
+use MightyShield\Includes\risk_context;
+use MightyShield\Includes\response;
 
 class email_domain_blocker {
 
@@ -213,12 +215,18 @@ class email_domain_blocker {
     }
 
     /**
-     * Check billing email domain.
+     * Score the billing email domain. Runs before any order exists.
+     *
+     * This used to refuse the checkout itself. It still turns a disposable
+     * address away on a store that has not touched the setting — the signal is
+     * worth 80, which is inside the rejected band on its own — but the refusal
+     * is the engine's now, and the weight is a number on the Scoring tab rather
+     * than a decision buried in this file.
      *
      * @since   1.0.0
      *
      * @param   array    $data   Checkout posted data.
-     * @param   object   $errors WP_Error object.
+     * @param   object   $errors WP_Error object, unused — this layer does not refuse.
      */
     public function check_email( $data, $errors ) {
 
@@ -231,9 +239,9 @@ class email_domain_blocker {
 
             $ip     = ip_utils::get_client_ip();
             $domain = strtolower( substr( strrchr( $email, '@' ), 1 ) );
-            db::log_event( $ip, 'classic_checkout', 'blocked', "Disposable email domain: {$domain}" );
+            risk_context::add( 'email_disposable', "Disposable or blocked email domain: {$domain}" );
 
-            $errors->add( 'mighty_shield_email', __( 'Please use a valid, non-disposable email address.', 'mighty-shield' ) );
+            db::log_event( $ip, 'classic_checkout', 'flagged', "Disposable email domain: {$domain}" );
 
         }
 
