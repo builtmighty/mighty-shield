@@ -43,7 +43,6 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\db;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\settings;
-use MightyShield\Includes\exempt;
 use MightyShield\Includes\risk_context;
 use MightyShield\Includes\ai_detection;
 
@@ -92,8 +91,6 @@ class order_signals {
      * @param   \WP_Error   $errors
      */
     public function assess_validation( $data, $errors ) {
-
-        if( exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
         self::emit( self::from_checkout( $data ) );
 
@@ -218,22 +215,17 @@ class order_signals {
      *
      * @since   1.9.2
      *
+     * The $stored argument is gone with the exemption test it existed to
+     * switch. Scoring no longer asks whether anyone is allowlisted -- an order
+     * is assessed the same way whether it is being checked out or re-rated
+     * afterwards, and the allowlist is consulted once, at the point something
+     * would be done about the answer. See class-exempt.
+     *
      * @param   \WC_Order   $order
-     * @param   bool        $stored     True when the order is being assessed
-     *                                  after the fact rather than during its own
-     *                                  checkout. Switches the exemption test to
-     *                                  the order's identity instead of the
-     *                                  request's — see exempt::is_exempt_order().
      */
-    public function assess( $order, $stored = false ) {
+    public function assess( $order ) {
 
         if( ! is_a( $order, 'WC_Order' ) ) return;
-
-        $skip = $stored
-            ? exempt::is_exempt_order( $order )
-            : exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() );
-
-        if( $skip ) return;
 
         self::emit( self::from_order( $order ) );
 

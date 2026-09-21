@@ -55,13 +55,20 @@ class ip_blocklist {
      */
     public function check_checkout() {
 
-        if( \MightyShield\Includes\exempt::is_exempt( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
-
         $ip = ip_utils::get_client_ip();
 
+        // is_blocked() already lets a whitelisted IP through, so what remains
+        // here is a blocklisted address being used by a whitelisted user, role
+        // or proven email.
         if( ! self::is_blocked( $ip ) ) return;
 
+        // Emitted before the allowlist is consulted. "This address is on the
+        // blocklist" is true whoever is using it, and the score is where that
+        // belongs -- an allowlisted shopper arriving from a banned address is
+        // exactly the thing a merchant reading the report wants to see.
         risk_context::add( 'ip_blocklisted', 'IP is on the blocklist' );
+
+        if( \MightyShield\Includes\exempt::suppresses_action( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
 
         db::log_event( $ip, 'classic_checkout', 'blocked', 'Blocklisted IP' );
         // Deliberately NOT gated on response::may_refuse(). Every other legacy

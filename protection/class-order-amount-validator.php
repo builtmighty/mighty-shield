@@ -37,8 +37,6 @@ class order_amount_validator {
      */
     public function assess_checkout( $data, $errors ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         // No order exists yet at validation time, so the cart is the only total
         // there is. The Store API reads its draft order instead. The two can
         // differ once fees are involved.

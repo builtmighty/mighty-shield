@@ -50,8 +50,6 @@ class velocity_detector {
      */
     public function assess_checkout( $data, $errors ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         $this->check_thresholds( ip_utils::get_client_ip() );
 
     }
@@ -65,8 +63,6 @@ class velocity_detector {
      * @param   \WP_REST_Request   $request
      */
     public function assess_draft( $order, $request ) {
-
-        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $this->check_thresholds( ip_utils::get_client_ip() );
 
@@ -110,8 +106,6 @@ class velocity_detector {
     private function track( $order ) {
 
         if( ! is_object( $order ) || ! method_exists( $order, 'get_billing_email' ) ) return;
-
-        if( \MightyShield\Includes\exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $ip    = ip_utils::get_client_ip();
         $email = $order->get_billing_email() ?? '';

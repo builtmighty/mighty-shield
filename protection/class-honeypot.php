@@ -63,8 +63,6 @@ class honeypot {
      */
     public function assess_checkout( $data, $errors ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         if( ! $this->is_triggered() ) return;
 
         $ip    = ip_utils::get_client_ip();

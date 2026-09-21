@@ -21,7 +21,6 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
-use MightyShield\Includes\exempt;
 use MightyShield\Includes\risk_context;
 use MightyShield\Includes\ip_data;
 
@@ -167,8 +166,6 @@ class store_api {
      */
     public function prepare( $order, $request ) {
 
-        if( exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
-
         $this->warm_ip_cache();
         $this->record_device( $request );
 
@@ -254,8 +251,6 @@ class store_api {
     public function validate( $order, $request ) {
 
         $email = $order->get_billing_email();
-
-        if( exempt::is_exempt( $email, $order->get_user_id() ) ) return;
 
         $ip = ip_utils::get_client_ip();
 

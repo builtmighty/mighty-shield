@@ -46,6 +46,7 @@ namespace MightyShield\Protection;
 
 use MightyShield\Includes\db;
 use MightyShield\Includes\entities;
+use MightyShield\Includes\exempt;
 use MightyShield\Includes\settings;
 use MightyShield\Includes\response;
 use MightyShield\Includes\risk_context;
@@ -224,13 +225,19 @@ class card_signals {
         // table by definition at this point.
         $action = actions::resolve_post_payment( risk_levels::action( $verdict['risk_level'] ) );
 
+        // dispatch() will decline to act on an allowlisted shopper, so say so
+        // in the row rather than recording an action that never happened. The
+        // rating itself stands either way -- the allowlist suppresses the
+        // response, not the verdict. See class-exempt.
+        $exempt = exempt::suppresses_action_for_order( $order );
+
         // Persist before acting, and keep the row's place in the reporting
         // windows: this is the same order re-rated, not a new one.
         db::save_risk( $order->get_id(), [
             'trust'             => $verdict['trust'],
             'risk_level'        => $verdict['risk_level'],
             'risk_level_source' => $verdict['risk_level_source'],
-            'action_taken'      => response::is_enforcing() ? $action : 'observed',
+            'action_taken'      => $exempt ? 'exempt' : ( response::is_enforcing() ? $action : 'observed' ),
             'signals'           => risk_context::to_array()['signals'],
             'rated_by'          => 'card',
             'created_at'        => $stored['created_at'] ?? '',
@@ -243,7 +250,7 @@ class card_signals {
         $order->update_meta_data( '_mshield_risk_level', $verdict['risk_level'] );
         $order->save();
 
-        if( response::is_enforcing() && $action !== actions::NONE ) {
+        if( ! $exempt && response::is_enforcing() && $action !== actions::NONE ) {
 
             response::dispatch( $order, $action, sprintf(
                 'The payment processor answered after checkout. Trust rating %s/100 → %s. Signals: %s.',

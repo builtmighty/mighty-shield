@@ -54,6 +54,25 @@ $observing = $now['observing'];
         </div>
     <?php endif; ?>
 
+    <?php /* AI review switched on with nothing behind it.
+             Deliberately only this case. A store that never turned AI on is not
+             misconfigured and does not need telling about a feature it declined,
+             and a standing nag for an unused option is how a merchant learns to
+             scroll past the banner that matters. But "switched on and silently
+             reviewing nothing" reads, from every screen a merchant looks at, as
+             "switched on" -- so that one is worth interrupting for. */ ?>
+    <?php if( settings::get( 'mshield_ai_enabled' ) === 'yes' && ! \MightyShield\Includes\ai_client::is_ready() ) : ?>
+        <div class="mshield-banner ms-degraded">
+            <div>
+                <strong><?php esc_html_e( 'AI review is switched on but has no provider.', 'mighty-shield' ); ?></strong>
+                <?php esc_html_e( 'No order has been or will be reviewed until an API key is saved. Scoring is unaffected — every other check is still running.', 'mighty-shield' ); ?>
+            </div>
+            <a class="mshield-btn is-primary is-small" href="<?php echo esc_url( admin_url( 'admin.php?page=mighty-shield&tab=ai' ) ); ?>">
+                <?php esc_html_e( 'Add a key', 'mighty-shield' ); ?>
+            </a>
+        </div>
+    <?php endif; ?>
+
 
     <!-- Interactive events trend chart -->
     <div class="mshield-card">

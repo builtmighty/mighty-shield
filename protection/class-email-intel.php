@@ -22,7 +22,6 @@ namespace MightyShield\Protection;
 
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
-use MightyShield\Includes\exempt;
 use MightyShield\Includes\risk_context;
 
 class email_intel {
@@ -87,8 +86,6 @@ class email_intel {
 
         $email = $data['billing_email'] ?? '';
 
-        if( exempt::is_exempt( $email ) ) return;
-
         self::assess( $email );
 
     }
@@ -102,8 +99,6 @@ class email_intel {
      * @param   \WP_REST_Request    $request
      */
     public function evaluate_store_api( $order, $request ) {
-
-        if( exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         self::assess( $order->get_billing_email() );
 

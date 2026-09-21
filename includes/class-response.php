@@ -696,6 +696,20 @@ class response {
      */
     public static function dispatch( $order, $action, $reason = '' ) {
 
+        // The enforcement boundary. Scoring has already happened and the row is
+        // already written by the time anything gets here, so this is the single
+        // place an allowlist can be honoured without also erasing the verdict.
+        //
+        // It is repeated here rather than left to the callers because the
+        // post-payment path (card_signals) reaches dispatch() from a gateway
+        // webhook, on a request the shopper is not making -- so it cannot rely
+        // on the checkout-time check having run at all.
+        //
+        // Judged on the ORDER, not on whoever is making this request -- see
+        // suppresses_action_for_order() for why the two differ and why it
+        // matters here.
+        if( exempt::suppresses_action_for_order( $order ) ) return actions::NONE;
+
         $action = actions::resolve( $action, $order );
 
         switch( $action ) {

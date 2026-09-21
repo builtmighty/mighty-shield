@@ -38,8 +38,6 @@ class rate_limiter {
      */
     public function check_checkout_rate() {
 
-        if( \MightyShield\Includes\exempt::is_exempt( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
-
         $ip = ip_utils::get_client_ip();
 
         // A temporary block costs trust; it does not turn anyone away.

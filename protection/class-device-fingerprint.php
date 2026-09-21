@@ -139,8 +139,6 @@ class device_fingerprint {
 
         if( self::is_review_refresh() ) return;
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         $country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
         $result  = $this->evaluate( $country );
         $ip      = ip_utils::get_client_ip();
@@ -394,8 +392,6 @@ class device_fingerprint {
     public function record_velocity() {
 
         if( self::is_review_refresh() ) return;
-
-        if( \MightyShield\Includes\exempt::is_exempt( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
 
         $raw = isset( $_POST['mshield_device_data'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_device_data'] ) ) : '';
         if( empty( $raw ) ) return;

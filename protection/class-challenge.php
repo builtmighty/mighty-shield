@@ -121,7 +121,7 @@ class challenge {
         if( ! self::on( $surface ) ) return false;
         if( ! captcha::is_ready() ) return false;
 
-        return ! exempt::is_exempt();
+        return ! exempt::suppresses_action();
 
     }
 

@@ -85,8 +85,6 @@ class address_validator {
      */
     public function validate_address( $data, $errors ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         $verdict = self::assess( $data );
 
         if( (int) $verdict['score'] <= 0 ) return;

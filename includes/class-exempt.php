@@ -2,8 +2,35 @@
 /**
  * Exemption helper.
  *
- * Central "is this visitor whitelisted?" check used by every protection to
- * bypass all blocks and flags for trusted IPs, users, and email addresses.
+ * Central "is this visitor whitelisted?" check for trusted IPs, users, and
+ * email addresses.
+ *
+ * An exemption suppresses ENFORCEMENT, not scoring. Every detector runs, every
+ * signal is emitted and a risk row is written for an allowlisted shopper
+ * exactly as it is for anyone else -- the allowlist only stops MightyShield
+ * acting on the verdict it reached.
+ *
+ * It used to be the other way round: this was called at the top of all ~30
+ * detectors, which returned before emitting anything. The verdict was not
+ * suppressed, it was never formed, so an allowlisted order left no trace in
+ * mshield_risk at all. On a store that allowlisted a role its own customers
+ * hold, that silently emptied the history the tuning report and the review
+ * queue are both built on.
+ *
+ * Three entry points, and which one to reach for:
+ *
+ *   suppresses_action()           the visitor making THIS request. Right on the
+ *                                 checkout path, where the visitor is the
+ *                                 shopper. Will not trust a typed email.
+ *   suppresses_action_for_order() the order itself, whoever is asking. Right on
+ *                                 a webhook or anywhere wp-admin can reach.
+ *   is_exempt_order()             the order, trusting its stored email too.
+ *                                 Only for an administrator looking at an order
+ *                                 they can already see.
+ *
+ * There are seven call sites between them, all at points where something is
+ * about to be done to somebody. If a new one appears at the top of a method
+ * that scores, it is the old bug growing back.
  *
  * @package MightyShield
  * @since   1.4.0
@@ -97,6 +124,75 @@ class exempt {
         self::log_once( $reason );
 
         return true;
+
+    }
+
+    /**
+     * Whether MightyShield should decline to ACT on the verdict it reached.
+     *
+     * The enforcement boundary, and the name to call at one. Identical in
+     * behaviour to is_exempt() -- the difference is what it says at the call
+     * site, which is the whole point: a detector that calls is_exempt() and
+     * returns is skipping the scoring too, and that is the bug this name
+     * exists to make obvious.
+     *
+     * Call this where an action is about to be taken, never at the top of a
+     * method that scores.
+     *
+     * @since   2.3.0
+     *
+     * @param   string    $email     Billing email, where one is available.
+     * @param   int|null  $user_id   Explicit user ID (e.g. order customer).
+     * @return  bool
+     */
+    public static function suppresses_action( $email = '', $user_id = null ) {
+
+        return self::is_exempt( $email, $user_id );
+
+    }
+
+    /**
+     * The same question, asked about a STORED order rather than a request.
+     *
+     * Needed because the enforcement boundary is not always reached from the
+     * shopper's own request. A gateway webhook arrives as nobody, and an
+     * administrator poking an order arrives as themselves -- and activation
+     * allowlists both the administrator role and the server's own address, so
+     * suppresses_action() would answer "yes, exempt" for an order belonging to
+     * a customer who is nothing of the sort.
+     *
+     * Deliberately NOT is_exempt_order(), which additionally trusts the stored
+     * billing address. That is right where it is used -- an administrator
+     * looking at an order they can already see -- and wrong here, because this
+     * also runs on the checkout path, where the address is whatever the shopper
+     * just typed. Trusting it would let anyone who learned an allowlisted
+     * address opt out of enforcement by typing it, which is the hole
+     * owns_email() exists to close.
+     *
+     * So: the order's own IP and its own user, both of which are facts about
+     * the order rather than claims made by whoever is looking at it.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order   $order
+     * @return  bool
+     */
+    public static function suppresses_action_for_order( $order ) {
+
+        if( ! is_a( $order, 'WC_Order' ) ) return false;
+
+        $ip = (string) $order->get_customer_ip_address();
+
+        if( $ip !== '' && ip_whitelist::is_whitelisted( $ip ) ) return true;
+
+        $user_id = (int) $order->get_user_id();
+
+        if( $user_id > 0 ) {
+            if( ip_whitelist::is_user_whitelisted( $user_id ) ) return true;
+            if( ip_whitelist::is_role_whitelisted( $user_id ) ) return true;
+        }
+
+        return false;
 
     }
 

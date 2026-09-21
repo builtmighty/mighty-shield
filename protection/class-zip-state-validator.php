@@ -55,8 +55,6 @@ class zip_state_validator {
      */
     public function assess_checkout( $data, $errors ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         $reason = self::assess(
             isset( $data['billing_country'] ) ? $data['billing_country'] : '',
             isset( $data['billing_state'] ) ? $data['billing_state'] : '',

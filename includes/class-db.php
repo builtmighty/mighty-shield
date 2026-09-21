@@ -25,7 +25,19 @@ class db {
      *
      * @since   1.9.0
      */
-    const SCHEMA_VERSION = 8;
+    const SCHEMA_VERSION = 9;
+
+    /**
+     * How long cached IP intelligence stays useful, in days.
+     *
+     * Longer than the log's 30-day default on purpose: geolocation and ASN
+     * change rarely, the data costs a rate-limited external call to replace,
+     * and the point of introducing this was to stop the cache expiring in step
+     * with the log. See cleanup().
+     *
+     * @since   2.3.0
+     */
+    const IP_DATA_TTL_DAYS = 90;
 
     /**
      * Bring the schema up to date if it is behind.
@@ -145,6 +157,42 @@ class db {
         // record. dbDelta adds the column at its 0 default, which is right:
         // no historic refusal was ever counted, so none can be claimed.
 
+        // Schema 9 narrowed mshield_rate_limits.identifier from 255 to 191 and
+        // added mshield_log.idx_action_created. dbDelta adds the index on its
+        // own, but it will not reliably narrow a column that a UNIQUE index is
+        // built on -- it compares definitions and can decide the existing one is
+        // close enough -- so that half is done here.
+        //
+        // Failure is survivable and deliberately not fatal: an install where the
+        // column is already 191, or where the ALTER is refused, keeps working
+        // exactly as it did. The width only matters on row formats where the
+        // wider index could not have been created in the first place.
+        if( $installed > 0 && $installed < 9 ) {
+
+            $rate_table = $wpdb->prefix . 'mshield_rate_limits';
+
+            // Guarded rather than assumed: MODIFY on a column that is not there
+            // is an error worth not raising, and this table is the one whose
+            // absence is the very problem being fixed.
+            $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $rate_table ) );
+
+            if( $exists ) {
+
+                // Nothing can be longer than 65 characters by construction, but
+                // a truncating MODIFY on a UNIQUE index would collide rather
+                // than truncate, so check before touching it.
+                $too_long = (int) $wpdb->get_var(
+                    "SELECT COUNT(*) FROM {$rate_table} WHERE CHAR_LENGTH( identifier ) > 191"
+                );
+
+                if( $too_long === 0 ) {
+                    $wpdb->query( "ALTER TABLE {$rate_table} MODIFY identifier VARCHAR(191) NOT NULL DEFAULT ''" );
+                }
+
+            }
+
+        }
+
         update_option( 'mshield_db_version', self::SCHEMA_VERSION, true );
 
     }
@@ -250,7 +298,13 @@ class db {
             INDEX idx_ip (ip),
             INDEX idx_action (action),
             INDEX idx_order (order_id),
-            INDEX idx_created (created_at)
+            INDEX idx_created (created_at),
+            -- Every aggregate this table feeds -- get_stats, get_daily_stats,
+            -- get_hourly_stats, get_top_blocked_ips -- filters on action AND a
+            -- created_at range. MySQL can only pick one single-column index for
+            -- that, so it was reading far more rows than it returned on the one
+            -- table that grows without bound.
+            INDEX idx_action_created (action, created_at)
         ) {$charset_collate};";
 
         // Rate limits table.
@@ -258,7 +312,16 @@ class db {
         $sql_rate = "CREATE TABLE {$rate_table} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             PRIMARY KEY  (id),
-            identifier VARCHAR(255) NOT NULL DEFAULT '',
+            -- 191, not 255. This column and action_type together form a UNIQUE
+            -- index, and at 255 that index is 1,220 bytes under utf8mb4 -- past
+            -- InnoDB's 767-byte limit for COMPACT and REDUNDANT row formats.
+            -- Where that limit applies, dbDelta fails with error 1071 and this
+            -- table is silently never created, taking rate limiting, device
+            -- velocity, distinct-email velocity and the account guard with it.
+            -- Real identifiers are md5-derived and at most 65 characters, so
+            -- nothing is lost. WordPress core caps its own indexed varchars at
+            -- 191 for exactly this reason.
+            identifier VARCHAR(191) NOT NULL DEFAULT '',
             action_type VARCHAR(50) NOT NULL DEFAULT '',
             count int(10) unsigned NOT NULL DEFAULT 0,
             window_start DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -443,6 +506,18 @@ class db {
     /**
      * Record the final outcome of an order against its risk row.
      *
+     * Creates the row when there is not one yet, rather than matching nothing
+     * and returning as though it had worked.
+     *
+     * outcomes::record() fires for every order that completes, is refunded or
+     * is disputed -- including orders placed before the plugin was installed,
+     * and orders it never scored. Those have no risk row, so the UPDATE matched
+     * nothing and the outcome was lost. On the store this was found on, 65
+     * orders carried an outcome in their meta and 8 had reached this table, so
+     * the tuning report was averaging over 8 orders while appearing to describe
+     * all of them. An outcome with no rating still says something useful -- the
+     * report counts it as unrated rather than not counting it at all.
+     *
      * @since   1.9.0
      *
      * @param   int     $order_id
@@ -452,13 +527,33 @@ class db {
 
         global $wpdb;
 
-        $wpdb->update(
+        $order_id = (int) $order_id;
+        $outcome  = substr( sanitize_text_field( $outcome ), 0, 20 );
+
+        $updated = $wpdb->update(
             $wpdb->prefix . 'mshield_risk',
-            [ 'outcome' => substr( sanitize_text_field( $outcome ), 0, 20 ) ],
-            [ 'order_id' => (int) $order_id ],
+            [ 'outcome' => $outcome ],
+            [ 'order_id' => $order_id ],
             [ '%s' ],
             [ '%d' ]
         );
+
+        if( $updated ) return;
+
+        // No rating to attach it to. Record the outcome on its own, marked as
+        // such: risk_level is left empty rather than guessed, so nothing reads
+        // it as a verdict this plugin reached.
+        //
+        // Not save_risk(), which REPLACEs -- a race with the recorder would
+        // throw away the verdict it had just written. INSERT IGNORE loses to
+        // the real row instead, and the outcome lands on the next status change.
+        $wpdb->query( $wpdb->prepare(
+            'INSERT IGNORE INTO ' . $wpdb->prefix . 'mshield_risk
+                ( order_id, outcome, rated_by ) VALUES ( %d, %s, %s )',
+            $order_id,
+            $outcome,
+            'unrated'
+        ) );
 
     }
 
@@ -599,34 +694,37 @@ class db {
             $data = self::capture_forensics();
         }
 
-        $wpdb->insert(
-            $wpdb->prefix . 'mshield_log',
-            [
-                'ip'           => sanitize_text_field( $ip ),
-                'endpoint'     => sanitize_text_field( substr( $endpoint, 0, 255 ) ),
-                'action'       => sanitize_text_field( $action ),
-                'reason'       => sanitize_text_field( substr( $reason, 0, 255 ) ),
-                'request_data' => sanitize_textarea_field( $data ),
-                // Recorded so a log row can be tied back to the order it
-                // belongs to. Without it, investigating an incident meant
-                // matching on IP and timestamp by eye.
-                'order_id'     => (int) $order_id,
-                'created_at'   => gmdate( 'Y-m-d H:i:s' ),
-            ],
-            [ '%s', '%s', '%s', '%s', '%s', '%d', '%s' ]
-        );
+        $row = [
+            'ip'           => sanitize_text_field( $ip ),
+            'endpoint'     => sanitize_text_field( substr( $endpoint, 0, 255 ) ),
+            'action'       => sanitize_text_field( $action ),
+            'reason'       => sanitize_text_field( substr( $reason, 0, 255 ) ),
+            'request_data' => sanitize_textarea_field( $data ),
+            // Recorded so a log row can be tied back to the order it
+            // belongs to. Without it, investigating an incident meant
+            // matching on IP and timestamp by eye.
+            'order_id'     => (int) $order_id,
+            'created_at'   => gmdate( 'Y-m-d H:i:s' ),
+        ];
+
+        $format = [ '%s', '%s', '%s', '%s', '%s', '%d', '%s' ];
 
         // Nullable on purpose: a row with no rating stores NULL, not 0, since
         // 0 would read as the worst possible rating rather than "not rated".
+        // Omitting the key entirely is what gets NULL; passing null through
+        // $wpdb->insert() would be formatted as the string "".
+        //
+        // In the insert rather than an UPDATE straight after it. The old form
+        // cost two queries on every logged event that carried a rating, on the
+        // request path, and the UPDATE ran unguarded on a failed insert — where
+        // insert_id is whatever the last successful insert on this connection
+        // returned, so a failure wrote the rating onto an unrelated row.
         if( $trust !== null ) {
-            $wpdb->update(
-                $wpdb->prefix . 'mshield_log',
-                [ 'trust' => (float) $trust ],
-                [ 'id' => (int) $wpdb->insert_id ],
-                [ '%f' ],
-                [ '%d' ]
-            );
+            $row['trust'] = (float) $trust;
+            $format[]     = '%f';
         }
+
+        $wpdb->insert( $wpdb->prefix . 'mshield_log', $row, $format );
 
     }
 
@@ -1174,22 +1272,95 @@ class db {
             $now
         ) );
 
-        // Drop cached IP data for IPs no longer present in the log.
-        $wpdb->query(
+        // Drop cached IP data that is both stale and unreferenced.
+        //
+        // This used to key the cache's lifetime to the LOG's, deleting any IP
+        // absent from it. The log keeps 30 days, so a returning customer's
+        // geolocation was discarded every month and bought again from the
+        // provider — and worse, the cache emptied out precisely when the log
+        // was pruned hardest, which is after an attack. The IP intelligence is
+        // read on the checkout path and skipped on a miss, so a cold cache is
+        // signals that never fire.
+        //
+        // fetched_at is what should have governed this all along: it was
+        // written on every save and read by nothing. An IP is now kept while it
+        // is either still in the log or still fresh, and goes when it is
+        // neither. IP_DATA_TTL is deliberately longer than the log default so
+        // the two no longer move together.
+        $wpdb->query( $wpdb->prepare(
             "DELETE d FROM {$wpdb->prefix}mshield_ip_data d
              LEFT JOIN {$wpdb->prefix}mshield_log l ON l.ip = d.ip
-             WHERE l.ip IS NULL"
-        );
+             WHERE l.ip IS NULL
+               AND d.fetched_at < DATE_SUB(%s, INTERVAL %d DAY)",
+            $now,
+            self::IP_DATA_TTL_DAYS
+        ) );
+
+        // Drop risk rows for orders that no longer exist.
+        //
+        // The only table the cleanup still never touched. It grows one row per
+        // order for ever, and the docblock on prune_entities() claiming the
+        // entity tables were the last untouched pair was simply wrong.
+        //
+        // Age alone is the wrong test here — a two-year-old chargeback is the
+        // most valuable row in the table — so this prunes on the same basis as
+        // the entity links: the order is gone, so the row describes nothing and
+        // nothing can navigate to it. HPOS and legacy storage both checked,
+        // matching prune_entities().
+        self::prune_risk();
 
         self::prune_entities();
 
     }
 
     /**
+     * Drop risk rows whose order no longer exists.
+     *
+     * Batched and select-then-delete for the same reason prune_entities() is:
+     * a multi-table DELETE cannot take a LIMIT.
+     *
+     * @since   2.3.0
+     */
+    private static function prune_risk() {
+
+        global $wpdb;
+
+        $has_hpos = (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . 'wc_orders' ) );
+
+        $exists = "SELECT 1 FROM {$wpdb->posts} p WHERE p.ID = r.order_id";
+
+        if( $has_hpos ) {
+            $exists .= " UNION ALL SELECT 1 FROM {$wpdb->prefix}wc_orders o WHERE o.id = r.order_id";
+        }
+
+        do {
+
+            $ids = $wpdb->get_col(
+                "SELECT r.id FROM {$wpdb->prefix}mshield_risk r
+                 WHERE r.order_id > 0 AND NOT EXISTS ( {$exists} )
+                 LIMIT 1000"
+            );
+
+            if( empty( $ids ) ) break;
+
+            $ids = array_map( 'intval', $ids );
+
+            $wpdb->query(
+                "DELETE FROM {$wpdb->prefix}mshield_risk
+                 WHERE id IN (" . implode( ',', $ids ) . ')'
+            );
+
+        } while( count( $ids ) >= 1000 );
+
+    }
+
+    /**
      * Prune the identity graph.
      *
-     * This ran nowhere until 2.2.0. The two entity tables were the only ones
-     * the daily cleanup did not touch, and they grow on every checkout — this
+     * This ran nowhere until 2.2.0. The two entity tables were among the ones
+     * the daily cleanup did not touch — mshield_risk was the other, and was not
+     * pruned until 2.3.0, so the claim this sentence used to make was wrong
+     * when it was written. They grow on every checkout — this
      * store had 6,072 identities and 19,579 links with no upper bound. Now that
      * refused checkouts are recorded too, every throwaway address a bot invents
      * gets a row, so a prune is not housekeeping any more.

@@ -30,7 +30,6 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
-use MightyShield\Includes\exempt;
 use MightyShield\Includes\ai_detection;
 use MightyShield\Includes\ai_client;
 use MightyShield\Includes\risk_context;
@@ -99,8 +98,6 @@ class ai_reviewer {
      */
     public function review_classic( $data, $errors ) {
 
-        if( exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         $this->review( self::snapshot_from_checkout( $data ) );
 
     }
@@ -120,7 +117,6 @@ class ai_reviewer {
     public function review_store_api( $order, $request ) {
 
         if( ! is_a( $order, 'WC_Order' ) ) return;
-        if( exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $this->review( self::snapshot_from_order( $order ) );
 
@@ -153,17 +149,16 @@ class ai_reviewer {
     /**
      * Review one order because a person asked for it.
      *
-     * Skips both gates that guard the automatic path, deliberately:
+     * Skips the gate that guards the automatic path, deliberately:
+     * worth_reviewing() exists to decide whether a verdict is worth paying for
+     * on an order nobody has looked at, and a reviewer who clicked the button
+     * has already decided.
      *
-     *   worth_reviewing()  exists to decide whether a verdict is worth paying
-     *                      for on an order nobody has looked at. A reviewer who
-     *                      clicked the button has already decided.
-     *   is_exempt()        asks whether the CURRENT REQUEST is allowlisted, and
-     *                      in wp-admin that is the administrator, not the
-     *                      shopper. The order's own exemption was checked by
-     *                      rescore before it got here.
+     * There is no longer an exemption gate to skip. The allowlist stopped being
+     * consulted at scoring time -- it is read once, where an action would be
+     * taken -- so an allowlisted shopper's order is reviewable like any other.
      *
-     * Everything after the gates is identical to the checkout path, so a manual
+     * Everything after the gate is identical to the checkout path, so a manual
      * review is the same call, the same prompt and the same meta as an
      * automatic one.
      *
@@ -235,11 +230,12 @@ class ai_reviewer {
      * @since   2.2.0
      *
      * @param   \WC_Order   $order
+     * @return  array|null  The verdict that was written, or null when none ran.
      */
     public static function persist( $order ) {
 
-        if( self::$pending === null ) return;
-        if( ! is_a( $order, 'WC_Order' ) ) return;
+        if( self::$pending === null ) return null;
+        if( ! is_a( $order, 'WC_Order' ) ) return null;
 
         $pending = self::$pending;
 
@@ -261,6 +257,12 @@ class ai_reviewer {
         if( settings::get( 'mshield_ai_notify_admin' ) === 'yes' ) {
             self::notify_admin( $order, $pending['rating'], $pending['reasons'] );
         }
+
+        // Handed back so the caller can put it in the risk row as well as on
+        // the order. $pending is cleared above, so this is the only chance --
+        // and without it mshield_risk.ai_verdict had no writer at all and
+        // ai_rating was only ever set by a manual re-rate.
+        return $pending;
 
     }
 

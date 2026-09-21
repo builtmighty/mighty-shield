@@ -89,12 +89,12 @@ class rescore {
             return new \WP_Error( 'mshield_no_order', __( 'That order could not be loaded.', 'mighty-shield' ) );
         }
 
-        if( exempt::is_exempt_order( $order ) ) {
-            return new \WP_Error(
-                'mshield_exempt',
-                __( 'This customer is on the allowlist, so MightyShield does not rate their orders.', 'mighty-shield' )
-            );
-        }
+        // An allowlisted customer's orders are rated like anyone else's. This
+        // used to refuse outright, which made the one screen an administrator
+        // could use to find out WHY an order was let through the one screen
+        // that would not tell them. The allowlist decides what is done about a
+        // rating, not whether one exists -- and a re-rate does nothing about
+        // anything, so there is nothing here for it to suppress.
 
         // risk_context is process-global static state with no production
         // callers of reset(). An admin request can already have signals in it —
@@ -139,11 +139,12 @@ class rescore {
             require_once MSHIELD_PATH . 'protection/class-order-signals.php';
         }
 
-        // The second argument switches the exemption test to the ORDER's
-        // identity. Without it the check asks whether the administrator is
-        // allowlisted, which on most stores is yes, and every signal below
-        // would silently return nothing.
-        ( new \MightyShield\Protection\order_signals() )->assess( $order, true );
+        // No exemption argument any more: assess() does not test the allowlist
+        // at all. It used to, and getting the test wrong here meant asking
+        // whether the ADMINISTRATOR was allowlisted -- which on most stores is
+        // yes, because activation allowlists the server's own address, so every
+        // signal below silently returned nothing while appearing to run.
+        ( new \MightyShield\Protection\order_signals() )->assess( $order );
 
         // Identity history — the only source of the trust-earning signal, and
         // the reason a re-rate is worth doing at all on an old order.

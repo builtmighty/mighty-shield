@@ -141,7 +141,7 @@ class risk_recorder {
     public function refuse_classic( $data, $errors ) {
 
         if( ! response::is_enforcing() ) return;
-        if( exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
+        if( exempt::suppresses_action( $data['billing_email'] ?? '' ) ) return;
 
         $identities = entities::for_checkout( $data );
 
@@ -183,7 +183,7 @@ class risk_recorder {
 
         if( ! response::is_enforcing() ) return;
         if( ! class_exists( '\Automattic\WooCommerce\StoreApi\Exceptions\RouteException' ) ) return;
-        if( exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
+        if( exempt::suppresses_action( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $identities = entities::for_order( $order );
 
@@ -274,8 +274,9 @@ class risk_recorder {
      */
     public function warm_ip_cache() {
 
-        if( exempt::is_exempt( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
-
+        // Deliberately not gated on the allowlist. The network signals are part
+        // of the score, and an allowlisted order is scored like any other -- it
+        // just is not acted on. The cost is one cached lookup per new IP.
         $ip = ip_utils::get_client_ip();
         if( empty( $ip ) ) return;
 
@@ -301,13 +302,18 @@ class risk_recorder {
         if( isset( $this->recorded[ $order_id ] ) ) return;
         $this->recorded[ $order_id ] = true;
 
-        if( exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
+        // An allowlisted shopper is still scored, still recorded, and still
+        // shows up in the tuning report -- the exemption only decides whether
+        // anything is DONE about the verdict, further down. Returning here
+        // instead is what left this store with nine risk rows against seventy
+        // orders and no indication anything was missing.
+        $exempt = exempt::suppresses_action( $order->get_billing_email(), $order->get_user_id() );
 
         // The AI answered at validation, before this order existed. Its rating
         // is already in risk_context; this puts the rating, the verdict and the
         // model's reasons onto the order now that there is one. A no-op when no
         // review ran, which is most orders.
-        ai_reviewer::persist( $order );
+        $ai = ai_reviewer::persist( $order );
 
         // Identity history — the signals that only memory can provide.
         $identities = entities::for_order( $order );
@@ -330,7 +336,7 @@ class risk_recorder {
         // "authorized and held" for an order the processor could only flag
         // would be worse than no report.
         $chosen   = risk_levels::action( $verdict['risk_level'] );
-        $resolved = $enforcing ? actions::resolve( $chosen, $order ) : $chosen;
+        $resolved = ( $enforcing && ! $exempt ) ? actions::resolve( $chosen, $order ) : $chosen;
 
         // Settle the reject-to-hold fallback BEFORE anything is written down.
         //
@@ -342,7 +348,7 @@ class risk_recorder {
         // This used to happen after save_risk(), so the row claimed
         // action_taken=reject for an order that was actually held, and the
         // report disagreed with the order in front of it.
-        if( $enforcing && $resolved === actions::REJECT ) $resolved = actions::HOLD_UNPAID;
+        if( $enforcing && ! $exempt && $resolved === actions::REJECT ) $resolved = actions::HOLD_UNPAID;
 
         // Persist BEFORE acting. The hold-before-payment action terminates the
         // request on classic checkout to stop WooCommerce reaching the payment
@@ -351,8 +357,16 @@ class risk_recorder {
             'trust'             => $verdict['trust'],
             'risk_level'        => $verdict['risk_level'],
             'risk_level_source' => $verdict['risk_level_source'],
-            'action_taken'      => $enforcing ? $resolved : 'observed',
+            'action_taken'      => $exempt ? 'exempt' : ( $enforcing ? $resolved : 'observed' ),
             'signals'           => risk_context::to_array()['signals'],
+            // The AI verdict goes in the row as well as on the order. It used
+            // to go only on the order, which left mshield_risk.ai_verdict with
+            // no writer anywhere -- the other two save_risk() callers only ever
+            // copied it forward from itself -- and ai_rating set only by a
+            // manual re-rate. Both columns read as "no AI has ever run here" on
+            // a store where it had run on every order.
+            'ai_rating'         => $ai !== null ? (int) $ai['rating'] : null,
+            'ai_verdict'        => $ai['verdict'] ?? '',
         ] );
 
         // Mirrored onto the order so the risk level is visible in the admin without
@@ -371,10 +385,16 @@ class risk_recorder {
                 risk_levels::label( $verdict['risk_level'] ),
                 $verdict['risk_level_source'],
                 implode( '; ', risk_context::reasons() ),
-                $enforcing ? '' : ' No action taken — scoring is in observation mode.'
+                $exempt
+                    ? ' No action taken — this shopper is allowlisted.'
+                    : ( $enforcing ? '' : ' No action taken — scoring is in observation mode.' )
             ) );
 
         }
+
+        // The verdict is on record and visible on the order. The allowlist
+        // stops here, at the one place that acts on it.
+        if( $exempt ) return;
 
         if( ! $enforcing ) return;
 

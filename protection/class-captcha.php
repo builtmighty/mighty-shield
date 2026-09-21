@@ -104,6 +104,7 @@ class captcha {
         // the very key they had just cleared, which reads as fixed.
         if( is_admin() ) {
             add_action( 'admin_notices', [ $this, 'render_degraded_notice' ] );
+            add_action( 'admin_notices', [ $this, 'render_conflict_notice' ] );
         }
 
         if( $this->provider !== 'turnstile' && $this->provider !== 'recaptcha_v3' ) return;
@@ -147,8 +148,6 @@ class captcha {
      * @param   \WP_Error   $errors
      */
     public function assess( $data, $errors ) {
-
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
         $verdict = self::assess_surface( 'checkout' );
 
@@ -467,6 +466,10 @@ class captcha {
 
         self::enqueue( $surface );
 
+        // Server-side proof that this surface serves a challenge, which is what
+        // lets assess_surface() tell a stripped marker from a missing widget.
+        self::mark_rendering( $surface );
+
         // One field name for both providers. Turnstile would inject its own
         // cf-turnstile-response, but rendering explicitly means the token comes
         // back through a callback, so it can go wherever we like -- and every
@@ -537,6 +540,60 @@ class captcha {
         $age = time() - (int) $ts;
 
         return $age >= 0 && $age <= DAY_IN_SECONDS;
+
+    }
+
+    /**
+     * The key under which a surface's "this really does render" note lives.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $surface
+     * @return  string
+     */
+    private static function renders_key( $surface ) {
+
+        return 'mshield_cap_renders_' . preg_replace( '/[^a-z_]/', '', (string) $surface );
+
+    }
+
+    /**
+     * Note that this surface served a challenge to somebody.
+     *
+     * Refreshed at most once a day per surface, so a busy form is not a write
+     * per page view.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $surface
+     */
+    private static function mark_rendering( $surface ) {
+
+        $key  = self::renders_key( $surface );
+        $seen = (int) get_transient( $key );
+
+        if( $seen && ( time() - $seen ) < DAY_IN_SECONDS ) return;
+
+        set_transient( $key, time(), self::RENDERS_TTL );
+
+    }
+
+    /**
+     * Whether this surface is known to put a challenge in front of visitors.
+     *
+     * Deliberately a transient. An object cache evicting it costs a window in
+     * which a stripped marker reads as a missing widget again -- which is the
+     * fail-OPEN direction, and therefore the right way for this to break. The
+     * next visitor who loads the form re-arms it.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $surface
+     * @return  bool
+     */
+    public static function renders( $surface ) {
+
+        return (bool) get_transient( self::renders_key( $surface ) );
 
     }
 
@@ -672,6 +729,38 @@ class captcha {
 
             if( ! $was_shown ) {
 
+                // Unless this surface is known to render one.
+                //
+                // The marker is signed, so it cannot be forged -- but it is
+                // still a field the client sends, and the branch above treats
+                // its absence as innocence. Omitting two fields therefore
+                // converted "asked and failed" into "never asked" and walked
+                // through: on the store this was found on, one address reset
+                // passwords past a challenge that was refusing ~300 other
+                // attempts, and the only trace was a daily "failing open" note.
+                //
+                // renders() is server-side and cannot be influenced from the
+                // request, so once this form has served a challenge to anybody,
+                // a submission without a marker is a removal, not an absence.
+                // The circuit breaker still sits behind this via passes(): if
+                // nothing has passed anywhere for six hours, the keys are the
+                // likelier explanation and everyone is let through regardless.
+                //
+                // Checkout is deliberately excluded. The marker is a hidden
+                // input printed by widget(), so a shopper whose Turnstile
+                // SCRIPT was blocked still sends it and lands on UNANSWERED
+                // rather than here -- but a theme or page builder that rebuilds
+                // the checkout form and drops fields it does not recognise
+                // would put every genuine customer in this branch. On the spam
+                // surfaces that costs a retry; on checkout, captcha_failed
+                // carries a rejected floor, so it would refuse every order on
+                // the store until the breaker noticed. Failing a password reset
+                // closed is worth it, failing revenue closed is not, and the
+                // bypass this exists to shut was on the reset form.
+                if( $surface !== 'checkout' && self::renders( $surface ) ) {
+                    return $seen[ $surface ] = self::FAILED;
+                }
+
                 self::report_missing( $surface );
 
                 return $seen[ $surface ] = self::NOT_ASKED;
@@ -725,6 +814,18 @@ class captcha {
      * @since   2.1.1
      */
     const MISSING_BEFORE_ALERT = 5;
+
+    /**
+     * How long a surface is remembered as one that really does render.
+     *
+     * Long enough that a quiet form -- lost-password on a small store may go
+     * days without a legitimate visit -- does not forget between callers, short
+     * enough that switching the surface off and removing the widget stops
+     * mattering within a week.
+     *
+     * @since   2.3.0
+     */
+    const RENDERS_TTL = WEEK_IN_SECONDS;
 
     /**
      * The counter's lifetime. Long enough to span a quiet night on a small
@@ -1150,6 +1251,64 @@ class captcha {
                 /* translators: %s: provider error code. */
                 __( 'The bot challenge is misconfigured (%s) and is failing open so it does not block checkout. Verify your Site Key and Secret Key on the Shielding tab.', 'mighty-shield' ),
                 $degraded['message']
+            ) )
+        );
+
+    }
+
+    /**
+     * Warn when a second captcha plugin is running the same surfaces.
+     *
+     * Two Turnstile implementations on one wp-login form race each other: both
+     * render a widget, the provider issues one token per widget, and whichever
+     * script wins puts its token in its own field. The loser sees an empty
+     * field on a form it believes it rendered, which is indistinguishable from
+     * a shopper with an ad blocker -- so one of the two intermittently fails
+     * open while the other refuses, and neither is wrong about what it saw.
+     *
+     * This is the most likely explanation for a surface that mostly enforces
+     * and occasionally does not, so it is worth naming rather than leaving a
+     * merchant to read it as a MightyShield fault.
+     *
+     * Detected by function, not by plugin slug, so a renamed or forked copy is
+     * still caught.
+     *
+     * @since   2.3.0
+     */
+    public function render_conflict_notice() {
+
+        if( ! current_user_can( 'manage_woocommerce' ) ) return;
+
+        if( $this->provider !== 'turnstile' && $this->provider !== 'recaptcha_v3' ) return;
+
+        $others = [];
+
+        // Both verified present on a live install; the plugin defines no
+        // constant to test, so these are the stable handles it does expose.
+        if( function_exists( 'cfturnstile_field_show' ) || function_exists( 'cfturnstile_check' ) ) {
+            $others[] = 'Simple Cloudflare Turnstile';
+        }
+
+        if( class_exists( 'Advanced_NoCaptcha_ReCaptcha' ) ) {
+            $others[] = 'Advanced noCaptcha & invisible Captcha';
+        }
+
+        // Deliberately short. A name that does not match costs a missed
+        // warning; a name that matches something else accuses a merchant of a
+        // conflict they do not have, and they would be right to switch this
+        // plugin off over it. Only symbols confirmed to belong to the plugin
+        // named go in here.
+        $others = apply_filters( 'mshield_conflicting_captcha_plugins', $others );
+
+        if( empty( $others ) ) return;
+
+        printf(
+            '<div class="notice notice-warning"><p><strong>%s</strong> %s</p></div>',
+            esc_html__( 'MightyShield:', 'mighty-shield' ),
+            esc_html( sprintf(
+                /* translators: %s: comma-separated plugin names. */
+                __( '%s is also running a bot challenge. Two challenges on one form compete for the same token and each will intermittently let requests through that the other would refuse. Run one or the other — either switch the bot challenge off on the Shielding tab, or disable the other plugin on the forms MightyShield covers.', 'mighty-shield' ),
+                implode( ', ', $others )
             ) )
         );
 

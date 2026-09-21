@@ -66,8 +66,6 @@ class checkout_timing {
      */
     public function assess_checkout( $data, $errors ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         $result = $this->evaluate();
         if( $result['reason'] === null ) return;
 

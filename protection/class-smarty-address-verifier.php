@@ -123,8 +123,6 @@ class smarty_address_verifier {
      */
     public function assess_checkout( $data, $errors ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         $reason = self::assess( $data );
         if( $reason === null ) return;
 

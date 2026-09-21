@@ -20,7 +20,6 @@ namespace MightyShield\Protection;
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
-use MightyShield\Includes\exempt;
 use MightyShield\Includes\risk_context;
 
 class account_guard {
@@ -95,6 +94,63 @@ class account_guard {
     }
 
     /**
+     * Record a threshold breach without letting the attacker size the log.
+     *
+     * This used to write one row per attempt for as long as the attempt kept
+     * coming, with the running count interpolated into the reason so no two
+     * rows ever collapsed. One address produced 34,682 rows across three days
+     * and 6,066 distinct reason strings inside a single hour, which is 86% of
+     * one store's entire event log: the detection was the largest single
+     * consumer of the table it was supposed to make readable, and an
+     * unauthenticated visitor decided how big it got.
+     *
+     * So: one row per order of magnitude. The breach is recorded when the count
+     * first passes the limit, again at ten times the limit, again at a hundred,
+     * and so on. A flood of 34,682 leaves four rows instead of 34,682, and the
+     * four say something the 34,682 did not -- how far past the line it went.
+     *
+     * The live count is still exact; it lives in the rate-limit table, which is
+     * what the signal reads. This only governs how often it is written down.
+     *
+     * The tier marker is a transient rather than a row in that table, and an
+     * object cache evicting one costs a duplicate log row -- unlike the
+     * counting in bump(), where eviction would silently disable the detection
+     * and so deliberately does not use them.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $type       Counter name, for the transient key.
+     * @param   string  $endpoint   Log endpoint.
+     * @param   int     $count      Current count.
+     * @param   int     $limit      Configured threshold.
+     * @param   string  $template   sprintf template taking count then limit.
+     * @return  bool                True when this call actually wrote a row.
+     */
+    private static function log_breach( $type, $endpoint, $count, $limit, $template ) {
+
+        if( $limit < 1 || $count <= $limit ) return false;
+
+        $ip = ip_utils::get_client_ip();
+        if( empty( $ip ) ) return false;
+
+        // 0 at the limit, 1 at ten times it, 2 at a hundred.
+        $tier = (int) floor( log10( $count / $limit ) );
+
+        $key = 'mshield_breach_' . $type . '_' . $tier . '_' . md5( $ip );
+
+        if( get_transient( $key ) ) return false;
+
+        set_transient( $key, 1, self::WINDOW );
+
+        // $data left empty so log_event() still captures the user agent, which
+        // is the most useful thing about a credential-stuffing row.
+        db::log_event( $ip, $endpoint, 'flagged', sprintf( $template, $count, $limit ) );
+
+        return true;
+
+    }
+
+    /**
      * A new account was created.
      *
      * @since   1.9.0
@@ -103,22 +159,15 @@ class account_guard {
      */
     public function on_registration( $user_id ) {
 
-        if( exempt::is_exempt( '', $user_id ) ) return;
-
         $count = self::bump( 'registrations' );
 
-        $limit = (int) settings::get( 'mshield_registration_threshold' );
-
-        if( $limit > 0 && $count > $limit ) {
-
-            db::log_event(
-                ip_utils::get_client_ip(),
-                'registration',
-                'flagged',
-                sprintf( 'Registration velocity: %d accounts created in the last hour (limit %d)', $count, $limit )
-            );
-
-        }
+        self::log_breach(
+            'registrations',
+            'registration',
+            $count,
+            (int) settings::get( 'mshield_registration_threshold' ),
+            'Registration velocity: %d accounts created in the last hour (limit %d)'
+        );
 
     }
 
@@ -133,17 +182,36 @@ class account_guard {
 
         $count = self::bump( 'login_failures' );
 
-        $limit = (int) settings::get( 'mshield_login_failure_threshold' );
+        $breached = self::log_breach(
+            'login_failures',
+            'login',
+            $count,
+            (int) settings::get( 'mshield_login_failure_threshold' ),
+            'Login failures: %d in the last hour (limit %d) — possible credential stuffing'
+        );
 
-        if( $limit > 0 && $count > $limit ) {
-
-            db::log_event(
-                ip_utils::get_client_ip(),
-                'login',
-                'flagged',
-                sprintf( 'Login failures: %d in the last hour (limit %d) — possible credential stuffing', $count, $limit )
-            );
-
+        // Carry the finding somewhere it is acted on.
+        //
+        // The detection named credential stuffing and then did nothing about
+        // it: login_failures is worth 35 at CHECKOUT, and an attacker working
+        // through wp-login is not checking out. A temporary block is scored
+        // (ip_temp_blocked, worth 60), so the address arrives at any later
+        // checkout already distrusted, which is the one place this plugin is
+        // entitled to act.
+        //
+        // Deliberately NOT a login refusal or a tarpit on wp-login. Both were
+        // considered. A refusal keyed on an IP locks out everyone behind the
+        // same office or carrier NAT -- the precise reasoning that took the
+        // refusal off the checkout temp block, see class-rate-limiter. A tarpit
+        // holds a PHP worker for 3-8 seconds per attempt, which at the observed
+        // 1.7 attempts/second would hold most of a small host's workers and
+        // finish the job the attacker started.
+        //
+        // Gated on log_breach() having actually written, because
+        // temp_block_ip() logs a row of its own -- calling it per attempt would
+        // reintroduce the flood through a second door.
+        if( $breached ) {
+            rate_limiter::temp_block_ip( ip_utils::get_client_ip(), 'Repeated login failures' );
         }
 
     }
@@ -192,8 +260,6 @@ class account_guard {
      */
     public function emit( $data, $errors ) {
 
-        if( exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         self::assess( get_current_user_id() );
 
     }
@@ -207,8 +273,6 @@ class account_guard {
      * @param   \WP_REST_Request    $request
      */
     public function emit_store_api( $order, $request ) {
-
-        if( exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         self::assess( $order->get_user_id() );
 
