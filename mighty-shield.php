@@ -493,6 +493,12 @@ function load() {
     // has never set a MaxMind licence key.
     add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\ip_data', 'maybe_update_asn_database' ] );
 
+    // Re-learn what a large order looks like on this store. Daily is often
+    // enough for a figure derived from a year of orders, and it must not be
+    // done on a checkout request: it is two aggregate queries over the whole
+    // order table.
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\db', 'learn_high_value' ] );
+
     // Personal data export and erasure.
     //
     // Above the mshield_enabled guard, and it has to stay there. Switching

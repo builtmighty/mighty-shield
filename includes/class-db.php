@@ -1276,6 +1276,116 @@ class db {
     }
 
     /**
+     * How many completed orders before the learned high-value figure is
+     * trusted.
+     *
+     * Below this a percentile is just "the biggest of a handful", which moves
+     * every time anybody buys anything. Better to say nothing.
+     *
+     * @since   2.3.0
+     */
+    const HIGH_VALUE_MIN_ORDERS = 40;
+
+    /**
+     * Work out what a large order looks like on this store.
+     *
+     * The 95th percentile of completed order totals over the last year, stored
+     * in mshield_high_value_learned and read by
+     * order_signals::high_value_threshold() when the merchant has not set a
+     * figure of their own.
+     *
+     * Percentile rather than a multiple of the average, which is what the
+     * other fraud plugins use. An average is dragged by its outliers, and
+     * outliers are the exact thing this is trying to find: one £40,000 trade
+     * order on a £60 store lifts the mean enough that nothing looks large
+     * afterwards, which disables the signal at precisely the moment it
+     * started mattering. A percentile cannot be moved by one order.
+     *
+     * Completed only. Cancelled and failed orders are disproportionately the
+     * fraudulent ones, so including them would teach the store that fraud is
+     * normal.
+     *
+     * @since   2.3.0
+     *
+     * @return  float   The figure written, or 0.0 when there was nothing to learn.
+     */
+    public static function learn_high_value() {
+
+        global $wpdb;
+
+        $hpos = $wpdb->prefix . 'wc_orders';
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $use_hpos = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $hpos ) ) === $hpos;
+
+        if( $use_hpos ) {
+
+            $count_sql = "SELECT COUNT(*) FROM {$hpos}
+                           WHERE status = 'wc-completed'
+                             AND type = 'shop_order'
+                             AND date_created_gmt > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 365 DAY)";
+
+            $page_sql  = "SELECT total_amount FROM {$hpos}
+                           WHERE status = 'wc-completed'
+                             AND type = 'shop_order'
+                             AND date_created_gmt > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 365 DAY)
+                           ORDER BY total_amount + 0 ASC
+                           LIMIT 1 OFFSET %d";
+
+        } else {
+
+            $count_sql = "SELECT COUNT(*) FROM {$wpdb->posts} p
+                          INNER JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_order_total'
+                           WHERE p.post_type = 'shop_order'
+                             AND p.post_status = 'wc-completed'
+                             AND p.post_date_gmt > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 365 DAY)";
+
+            $page_sql  = "SELECT m.meta_value FROM {$wpdb->posts} p
+                          INNER JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_order_total'
+                           WHERE p.post_type = 'shop_order'
+                             AND p.post_status = 'wc-completed'
+                             AND p.post_date_gmt > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 365 DAY)
+                           ORDER BY m.meta_value + 0 ASC
+                           LIMIT 1 OFFSET %d";
+
+        }
+
+        // Table and column names are chosen from the two literals above; the
+        // only bound value is the offset.
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $total = (int) $wpdb->get_var( $count_sql );
+
+        if( $total < self::HIGH_VALUE_MIN_ORDERS ) {
+
+            // Not enough to say anything. Clear rather than leave a stale
+            // figure standing: a store whose history was just pruned should
+            // fall silent, not keep enforcing a number nothing supports.
+            delete_option( 'mshield_high_value_learned' );
+
+            return 0.0;
+
+        }
+
+        // The value with 95% of orders at or below it. floor() keeps the
+        // offset inside the result set at every size.
+        $offset = (int) floor( $total * 0.95 );
+        if( $offset >= $total ) $offset = $total - 1;
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $value = (float) $wpdb->get_var( $wpdb->prepare( $page_sql, $offset ) );
+
+        if( $value <= 0 ) {
+            delete_option( 'mshield_high_value_learned' );
+            return 0.0;
+        }
+
+        update_option( 'mshield_high_value_learned', round( $value, 2 ), false );
+
+        return $value;
+
+    }
+
+    /**
      * Cleanup expired data.
      *
      * @since   1.0.0

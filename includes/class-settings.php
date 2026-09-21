@@ -34,6 +34,18 @@ class settings {
         'mshield_temp_block_duration'       => 3600,
         'mshield_blocked_email_domains'     => '',
         'mshield_min_order_amount'          => '1.00',
+        // 0 disables, and that is the right default: a ceiling is a statement
+        // about one store's normal order, and there is no figure that is
+        // sensible for both a coffee shop and a jeweller.
+        'mshield_max_order_amount'          => '0',
+        // Both empty by default. MightyShield ships no opinion about any
+        // country -- a blocked-country list belongs to the merchant's licence,
+        // tax position and shipping contracts, not to a fraud plugin, and a
+        // shipped "high risk" list is a guess about people that would be wrong
+        // somewhere on every store.
+        'mshield_blocked_countries'         => '',
+        'mshield_high_risk_countries'       => '',
+        'mshield_phone_voip_prefixes'       => '',
         'mshield_address_sensitivity'       => 'medium',
         'mshield_smarty_enabled'            => 'no',
         'mshield_smarty_auth_id'            => '',

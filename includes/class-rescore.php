@@ -60,6 +60,16 @@ class rescore {
         'high_value',
         'ip_geo_mismatch',
         'ip_datacenter',
+        // Added in 2.3.0. Every one reads a field stored on the order, so
+        // unlike the bot, timing and device layers these genuinely do
+        // reproduce -- a re-rate reaches the same answer the checkout did.
+        'address_bill_ship_mismatch',
+        'phone_area_mismatch',
+        'phone_voip',
+        'country_blocked',
+        'country_high_risk',
+        'amount_over_ceiling',
+        'first_order',
         'entity_chargeback',
         'entity_denied',
         'entity_linked_bad',

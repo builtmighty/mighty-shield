@@ -870,6 +870,35 @@ class entities {
     public static function assess( $set ) {
 
         $rows = self::get_many( $set );
+
+        // Nobody on this order has bought here before.
+        //
+        // Emitted before the early return below, which is the whole reason it
+        // lives here: an order with no history at all produces no rows, and
+        // returning first would make the one case this describes the one case
+        // it could not see.
+        //
+        // "Has bought" means a completed order, not merely a row. A row is
+        // also created by record_refusal(), so an attacker refused twelve
+        // times has twelve rows and still has never bought anything -- which
+        // is exactly the shape this should catch, not exempt.
+        //
+        // Silent when $set is empty: that is an order with no extractable
+        // identity, which is a data problem rather than a new customer.
+        if( ! empty( $set ) ) {
+
+            $bought = false;
+
+            foreach( $rows as $row ) {
+                if( (int) $row['order_count'] > 0 ) { $bought = true; break; }
+            }
+
+            if( ! $bought ) {
+                risk_context::add( 'first_order', 'No previous order from this email, phone, address, device or card' );
+            }
+
+        }
+
         if( empty( $rows ) ) return [];
 
         $worst_bad     = null;

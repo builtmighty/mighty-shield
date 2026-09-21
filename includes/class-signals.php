@@ -135,6 +135,62 @@ class signals {
             'weight' => 30.0,
             'floor'  => 'none',
         ],
+        'address_bill_ship_mismatch' => [
+            'label'  => 'Billing and delivery addresses disagree',
+            'desc'   => 'The card is registered at one address and the goods go to another. Ordinary for a gift or a work delivery, so it counts for little on its own — but it is on almost every stolen-card order.',
+            'group'  => 'identity',
+            // Deliberately low, and the reasoning matters because every
+            // competitor weights this heavily.
+            //
+            // It is the most common fraud heuristic there is and also one of
+            // the most common legitimate shapes: gifts, work addresses,
+            // parcel lockers, students, anyone who has moved recently. On a
+            // store that sells gifts it describes a large minority of real
+            // customers, which is exactly what the Scoring tab's "how often
+            // did this fire" column is there to reveal.
+            //
+            // 20 is enough to matter next to address_velocity and
+            // email_name_mismatch -- the three together are the drop-address
+            // profile -- and not enough to detain a birthday present.
+            'weight' => 20.0,
+            'floor'  => 'none',
+        ],
+        'phone_area_mismatch' => [
+            'label'  => 'US phone area code is from a different state',
+            'desc'   => 'The number belongs to a state the order has nothing to do with. Weak on its own: mobile numbers follow people when they move.',
+            'group'  => 'identity',
+            // Very weak, and it has to stay that way. Area codes stopped
+            // meaning geography when numbers became portable -- someone who
+            // grew up in Ohio keeps a 614 number for life. It is worth
+            // something only alongside other things.
+            'weight' => 10.0,
+            'floor'  => 'none',
+        ],
+        'phone_voip' => [
+            'label'  => 'Phone number is a virtual line',
+            'desc'   => 'The number belongs to a service that hands out disposable numbers rather than to a carrier, so it cannot be used to reach anyone later.',
+            'group'  => 'identity',
+            'weight' => 20.0,
+            'floor'  => 'none',
+        ],
+        'country_blocked' => [
+            'label'  => 'Country you do not sell to',
+            'desc'   => 'The order is going somewhere on your blocked list. A statement you made, not a judgement MightyShield formed.',
+            'group'  => 'identity',
+            // A floor, and one of only six. This is not evidence about the
+            // order -- it is the merchant saying "not there", and a decision
+            // the merchant already made should not have to win an argument
+            // against a trust score.
+            'weight' => 100.0,
+            'floor'  => 'rejected',
+        ],
+        'country_high_risk' => [
+            'label'  => 'Country you treat as higher risk',
+            'desc'   => 'Somewhere you still sell to, but want looked at. Contributes to the rating; never decides on its own.',
+            'group'  => 'identity',
+            'weight' => 30.0,
+            'floor'  => 'none',
+        ],
 
         // Network.
         'ip_blocklisted' => [
@@ -326,9 +382,21 @@ class signals {
         ],
         'high_value' => [
             'label'  => 'Order total is large',
-            'desc'   => 'Not suspicious by itself — it simply raises what is at stake if the order turns out to be fraud.',
+            'desc'   => 'Not suspicious by itself — it simply raises what is at stake if the order turns out to be fraud. Judged against your own order history unless you set a figure.',
             'group'  => 'order',
             'weight' => 15.0,
+            'floor'  => 'none',
+        ],
+        'amount_over_ceiling' => [
+            'label'  => 'Order total is above your ceiling',
+            'desc'   => 'A hard limit you set. Different from the check above, which scales with your own takings — this one is a number you chose and does not move.',
+            'group'  => 'order',
+            // Off by default (the ceiling ships at 0, which disables it).
+            // Heavier than high_value because it is a deliberate line rather
+            // than a statistic, but still short of deciding alone: a real
+            // customer placing a genuinely large order is a good day, not an
+            // incident.
+            'weight' => 40.0,
             'floor'  => 'none',
         ],
 
@@ -413,6 +481,24 @@ class signals {
             'group'  => 'history',
             // Everyone is new once. Only meaningful alongside something else.
             'weight' => 15.0,
+            'floor'  => 'none',
+        ],
+        'first_order' => [
+            'label'  => 'Nobody on this order has bought here before',
+            'desc'   => 'Not the email, the phone, the address, the device or the card. Every store wants first-time customers, so this is close to weightless — it is here so the rating can tell "new" apart from "known good".',
+            'group'  => 'history',
+            // 5, and it should stay near there.
+            //
+            // Competitors flag first-time buyers prominently, and on a growing
+            // store that describes most of the order book. The useful work is
+            // already done by entity_trusted, which pays 40 trust BACK to a
+            // customer with real history -- the gap between a first order and
+            // a tenth is 45 points, and this is only the smaller, honest half
+            // of it.
+            //
+            // Charging a new customer heavily for being new is how a fraud
+            // tool starts refusing growth.
+            'weight' => 5.0,
             'floor'  => 'none',
         ],
 
@@ -540,7 +626,24 @@ class signals {
             [ 'option' => 'mshield_min_order_amount', 'type' => 'decimal', 'label' => 'Minimum order total', 'min' => 0, 'max' => 100000 ],
         ],
         'high_value' => [
-            [ 'option' => 'mshield_ai_high_value_amount', 'type' => 'decimal', 'label' => 'High-value threshold', 'min' => 0, 'max' => 1000000 ],
+            [ 'option' => 'mshield_ai_high_value_amount', 'type' => 'decimal',
+              'label'  => 'High-value threshold (0 = work it out from my orders)', 'min' => 0, 'max' => 1000000 ],
+        ],
+        'amount_over_ceiling' => [
+            [ 'option' => 'mshield_max_order_amount', 'type' => 'decimal',
+              'label'  => 'Never accept above (0 = no ceiling)', 'min' => 0, 'max' => 10000000 ],
+        ],
+        'country_blocked' => [
+            [ 'option' => 'mshield_blocked_countries', 'type' => 'textarea',
+              'label'  => 'Countries you do not sell to — two-letter codes, one per line' ],
+        ],
+        'country_high_risk' => [
+            [ 'option' => 'mshield_high_risk_countries', 'type' => 'textarea',
+              'label'  => 'Countries to treat as higher risk — two-letter codes, one per line' ],
+        ],
+        'phone_voip' => [
+            [ 'option' => 'mshield_phone_voip_prefixes', 'type' => 'textarea',
+              'label'  => 'Extra virtual-line area codes, one per line' ],
         ],
         'honeypot' => [
             [ 'option' => 'mshield_honeypot_enabled', 'type' => 'check', 'label' => 'Add a hidden trap field to checkout' ],
