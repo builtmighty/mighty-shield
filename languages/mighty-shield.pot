@@ -1,0 +1,3808 @@
+# Copyright (C) 2026 Built Mighty
+# This file is distributed under the GPL-2.0-or-later license.
+msgid ""
+msgstr ""
+"Project-Id-Version: MightyShield 2.3.0\n"
+"Report-Msgid-Bugs-To: https://builtmighty.com\n"
+"POT-Creation-Date: 2026-09-21 01:10+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Domain: mighty-shield\n"
+
+#: admin/class-fraud-review.php:651 admin/views/logs.php:211
+msgid "%1$d / %2$d"
+msgstr ""
+
+#: protection/class-captcha.php:968
+msgid "%1$d challenges in a row failed on the %2$s form, from several different networks and with none passing, so it is no longer refusing anybody there. This is usually a mismatched site key and secret key, or a domain that is not registered with the provider."
+msgstr ""
+
+#: admin/views/blocking.php:274
+msgid "%1$d turned out fine, %2$d turned out bad"
+msgstr ""
+
+#: includes/class-api-error.php:153
+msgid "%1$s is having trouble at their end (HTTP %2$d). Nothing to change here; it should clear on its own."
+msgstr ""
+
+#: includes/class-api-error.php:162
+msgid "%1$s refused the request (HTTP %2$d)."
+msgstr ""
+
+#: includes/class-api-error.php:128
+msgid "%1$s rejected the credentials (HTTP %2$d). The key or token is wrong, or it is not being sent in a form %1$s accepts."
+msgstr ""
+
+#: includes/class-trust-badge.php:187
+msgid "%1$s: trust %2$d to %3$d"
+msgstr ""
+
+#: admin/class-admin-page.php:911
+msgid "%d IP addresses added to the allowlist."
+msgstr ""
+
+#: admin/class-admin-page.php:910
+msgid "%d IP addresses added to the blocklist."
+msgstr ""
+
+#: admin/class-fraud-review.php:525
+msgid "%s ago"
+msgstr ""
+
+#: admin/class-admin-page.php:1384
+msgid "%s answered and returned a verdict in the expected shape."
+msgstr ""
+
+#: admin/views/logs.php:136
+msgid "%s entries"
+msgstr ""
+
+#: protection/class-captcha.php:1312
+msgid "%s is also running a bot challenge. Two challenges on one form compete for the same token and each will intermittently let requests through that the other would refuse. Run one or the other — either switch the bot challenge off on the Shielding tab, or disable the other plugin on the forms MightyShield covers."
+msgstr ""
+
+#: includes/class-api-error.php:145
+msgid "%s is rate limiting this store (HTTP 429). Nothing is wrong with the configuration; the calls are arriving faster than the plan allows."
+msgstr ""
+
+#: admin/views/blocking.php:264
+msgid "%s orders"
+msgstr ""
+
+#: includes/class-trust-badge.php:189
+msgid "%s: reachable only from a signal"
+msgstr ""
+
+#: admin/class-setup-wizard.php:552
+msgid "&larr; Back"
+msgstr ""
+
+#: admin/views/documentation.php:421
+msgid "1 hour"
+msgstr ""
+
+#: admin/views/documentation.php:420
+msgid "20 per hour"
+msgstr ""
+
+#: admin/views/dashboard.php:94
+msgid "24 hours"
+msgstr ""
+
+#: admin/views/documentation.php:412
+msgid "3 orders / 30 days"
+msgstr ""
+
+#: admin/views/payment.php:81
+msgid "3-D Secure"
+msgstr ""
+
+#: admin/views/dashboard.php:92 admin/views/dashboard.php:116
+msgid "30 days"
+msgstr ""
+
+#: admin/views/dashboard.php:93 admin/views/dashboard.php:115
+msgid "7 days"
+msgstr ""
+
+#: admin/views/blocking.php:407
+msgid "A challenge from Cloudflare or Google, shown to visitors so software can be told apart from people. It guards checkout and, below, the other places spam arrives."
+msgstr ""
+
+#: admin/views/logs.php:258
+msgid "A chargeback, a refund, a fraud verdict or a refused checkout is never forgotten while the record is still in use — only quiet, clean records that nothing links to any more are cleared out. Set to 0 to keep everything."
+msgstr ""
+
+#: admin/views/documentation.php:417
+msgid "A checkout completed faster than this was almost certainly not typed by a person."
+msgstr ""
+
+#: admin/views/dashboard.php:49
+msgid "A couple of minutes now, and MightyShield will be doing what you actually want rather than what it defaults to."
+msgstr ""
+
+#: admin/views/documentation.php:451
+msgid "A hard ceiling on how many orders can be sent for review in a day, so a flood of traffic cannot run up a bill. 0 means no limit."
+msgstr ""
+
+#: admin/views/documentation.php:561
+msgid "A heavy mark against. Enough on its own to push the next order to a level you will see."
+msgstr ""
+
+#: admin/views/documentation.php:250
+msgid "A hidden trap field, a signed timer, and, if you have turned them on, the device check and the bot challenge are placed in the form."
+msgstr ""
+
+#: admin/views/documentation.php:563
+msgid "A mark against, lighter than one of yours. Three of them is enough for the next attempt to be treated as a known bad address."
+msgstr ""
+
+#: admin/views/documentation.php:532
+msgid "A rating worked out afterwards is a partial one"
+msgstr ""
+
+#: admin/views/documentation.php:574
+msgid "A real customer was blocked"
+msgstr ""
+
+#: admin/views/ai.php:134
+msgid "A review costs money and adds a couple of seconds to checkout, so it runs only on the risk levels you choose and only during checkout, where its verdict can still change what happens to the order."
+msgstr ""
+
+#: admin/views/blocking.php:399
+msgid "A run of failures from different networks with none passing means the keys are the likelier fault, so it stopped refusing people there. One success puts it back."
+msgstr ""
+
+#: admin/views/documentation.php:313
+msgid "A safe way to get set up without risking real orders:"
+msgstr ""
+
+#: admin/views/documentation.php:502
+msgid "A single address, or a range in CIDR form. Your own office is the usual case."
+msgstr ""
+
+#: admin/views/documentation.php:559
+msgid "A small credit. Three of these with nothing bad is what earns Trusted."
+msgstr ""
+
+#: admin/views/documentation.php:358
+msgid "A summary on the main WordPress dashboard, so the state of your protection is the first thing you see when you log in. It reports and does not change anything."
+msgstr ""
+
+#: admin/views/documentation.php:560
+msgid "A very small mark against. Most refunds are ordinary returns and only matter in volume."
+msgstr ""
+
+#: admin/views/setup/step-protection.php:60
+msgid "A week of observing costs nothing and tells you a lot."
+msgstr ""
+
+#: admin/views/blocking.php:475
+msgid "A wrong key fails open, but a blocked script means no token at all, and that is refused, which on the login form locks everyone out. Allowlist your own address on the Access tab before turning it on."
+msgstr ""
+
+#: admin/views/ai.php:53
+msgid "AI Credentials"
+msgstr ""
+
+#: admin/views/ai.php:35
+msgid "AI Detection"
+msgstr ""
+
+#: admin/class-admin-page.php:1760 admin/views/documentation.php:214 admin/views/documentation.php:441
+msgid "AI Review"
+msgstr ""
+
+#: admin/class-admin-page.php:1249 includes/class-ai-client.php:657
+msgid "AI order review is unavailable and orders are NOT being reviewed. Last error: %s"
+msgstr ""
+
+#: admin/views/setup/step-done.php:112
+msgid "AI review"
+msgstr ""
+
+#: admin/views/dashboard.php:67
+msgid "AI review is switched on but has no provider."
+msgstr ""
+
+#: admin/views/documentation.php:252
+msgid "AI review, if you use it."
+msgstr ""
+
+#: admin/views/setup/step-done.php:114
+msgid "AI tab"
+msgstr ""
+
+#: admin/views/documentation.php:533
+msgid "About half the checks look at the visit rather than the order: whether a hidden trap field was filled in, how fast the form was completed, what the browser reported, how many orders that address placed in the previous quarter hour. None of that is kept, and re running it now would measure your own browser sitting in the admin."
+msgstr ""
+
+#: admin/views/blocking.php:104 admin/views/blocking.php:105
+msgid "Above the Low threshold"
+msgstr ""
+
+#: admin/class-admin-page.php:1768 admin/views/documentation.php:217 admin/views/documentation.php:496
+msgid "Access"
+msgstr ""
+
+#: firewall/class-api-firewall.php:126 firewall/class-ip-blocklist.php:124
+msgid "Access denied."
+msgstr ""
+
+#: admin/views/blocking.php:73 admin/views/documentation.php:329 admin/views/logs.php:145
+msgid "Action"
+msgstr ""
+
+#: admin/views/blocking.php:160
+msgid "Action for %s"
+msgstr ""
+
+#: admin/views/blocklist.php:56 admin/views/whitelist.php:91
+msgid "Actions"
+msgstr ""
+
+#: admin/class-admin-page.php:1692 admin/views/payment.php:73
+msgid "Active"
+msgstr ""
+
+#: admin/class-admin-page.php:1693
+msgid "Active. Orders are blocked and held by their rating"
+msgstr ""
+
+#: admin/views/whitelist.php:28
+msgid "Add Allowlist Entry"
+msgstr ""
+
+#: admin/views/logs.php:131
+msgid "Add IP to allowlist"
+msgstr ""
+
+#: admin/views/dashboard.php:71
+msgid "Add a key"
+msgstr ""
+
+#: admin/views/whitelist.php:73
+msgid "Add to Allowlist"
+msgstr ""
+
+#: admin/views/blocklist.php:39
+msgid "Add to Blocklist"
+msgstr ""
+
+#: admin/views/blocking.php:542
+msgid "Add your own line to the end of every refusal"
+msgstr ""
+
+#: admin/views/documentation.php:469
+msgid "Add your own line to the end of every refusal."
+msgstr ""
+
+#: admin/views/blocklist.php:55 admin/views/whitelist.php:90
+msgid "Added"
+msgstr ""
+
+#: includes/class-response.php:318
+msgid "Additional card verification (3-D Secure) was required for this order."
+msgstr ""
+
+#: admin/class-order-panel.php:611
+msgid "Address could not be verified"
+msgstr ""
+
+#: admin/views/documentation.php:409
+msgid "Address sensitivity"
+msgstr ""
+
+#: admin/views/documentation.php:412
+msgid "Address velocity"
+msgstr ""
+
+#: admin/views/setup/step-done.php:107
+msgid "Address verification"
+msgstr ""
+
+#: admin/class-admin-page.php:1250
+msgid "Address verification (Smarty) is degraded and has fallen back to a basic ZIP/State check. Last error: %s"
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:109
+msgid "Address verification (Smarty) is degraded and is falling back to a basic ZIP and state check. Full USPS verification is NOT running. Last error: %s"
+msgstr ""
+
+#: admin/views/documentation.php:510
+msgid "Addresses refused outright, before any check runs. Entries stay until you remove them. MightyShield adds one itself in two cases: when you block an order in review, and when an order is rated Banned."
+msgstr ""
+
+#: admin/class-order-panel.php:363
+msgid "Adjust setting"
+msgstr ""
+
+#: admin/views/documentation.php:319
+msgid "Adjust the thresholds until the risk levels match your own judgement, then set the switch on the <a href=\"%s\">Dashboard</a> to Active."
+msgstr ""
+
+#: admin/views/documentation.php:254
+msgid "After payment."
+msgstr ""
+
+#: admin/views/documentation.php:255
+msgid "Afterwards."
+msgstr ""
+
+#: admin/class-setup-wizard.php:522
+msgid "Alerts"
+msgstr ""
+
+#: admin/views/setup/step-done.php:52
+msgid "Alerts go to"
+msgstr ""
+
+#: admin/views/logs.php:93
+msgid "All actions"
+msgstr ""
+
+#: admin/class-admin-page.php:926
+msgid "All logs have been cleared."
+msgstr ""
+
+#: admin/views/logs.php:86
+msgid "All time"
+msgstr ""
+
+#: admin/views/blocking.php:247
+msgid "Allowed"
+msgstr ""
+
+#: admin/views/documentation.php:499
+msgid "Allowlist"
+msgstr ""
+
+#: admin/class-admin-page.php:1115
+msgid "Allowlist IP"
+msgstr ""
+
+#: admin/class-admin-page.php:724
+msgid "Allowlist entry removed."
+msgstr ""
+
+#: admin/views/documentation.php:475
+msgid "Allowlist mode."
+msgstr ""
+
+#: admin/views/documentation.php:315
+msgid "Allowlist yourself first. On the <a href=\"%s\">Access</a> tab, add your own IP address or your WordPress user account, so you can never be blocked while testing."
+msgstr ""
+
+#: admin/views/whitelist.php:79
+msgid "Allowlisted Entries"
+msgstr ""
+
+#: admin/views/whitelist.php:29
+msgid "Allowlisted IPs, users, roles, and email addresses bypass ALL MightyShield checks, with no blocks and no flags. Use for trusted staff, offices, and known-good customers."
+msgstr ""
+
+#: admin/views/documentation.php:323
+msgid "Always allowlist your own IP or account before switching protection to Active. That is what keeps you from locking yourself out of your own checkout."
+msgstr ""
+
+#: admin/views/documentation.php:428
+msgid "An account younger than this when it orders is treated as brand new."
+msgstr ""
+
+#: admin/views/documentation.php:416
+msgid "An invisible field on the checkout. A person never sees it; a bot fills it in. Almost no false positives."
+msgstr ""
+
+#: admin/views/documentation.php:442
+msgid "An optional second opinion. After the checks have scored an order, a language model is shown everything MightyShield already knows about it and asked for its own rating out of 100."
+msgstr ""
+
+#: admin/views/blocking.php:55
+msgid "An order falls to the most severe risk level whose threshold its rating is at or below, and that level decides what happens to it. Rejected and Banned are fixed: they are refused before an order exists, so your payment processor is never contacted."
+msgstr ""
+
+#: admin/views/ai.php:161
+msgid "An order is scored first. If it lands on one of these levels it goes to the model, and the rating that comes back is what the blocking engine then acts on."
+msgstr ""
+
+#: admin/views/documentation.php:551
+msgid "An order leaves the queue the moment you rule on it, whether you do that here or on the order itself. Orders that failed the card checks after paying appear as a warning rather than something to approve or block: the money is already taken and the order is on its way, so the decision is whether to refund and cancel it yourself."
+msgstr ""
+
+#: admin/views/documentation.php:527
+msgid "An order placed before MightyShield was installed, or while it was switched off, has no rating. Rate Order works one out from what the order still contains. It changes nothing about the order and will not hold or cancel anything, however badly it scores."
+msgstr ""
+
+#: admin/views/documentation.php:299
+msgid "An order starts at 100 and spends trust as checks notice things. But an order with nothing known about the customer is capped at 94, which is Low. The top of the scale has to be earned by a clean run of past orders, because knowing nothing about someone is not the same as trusting them."
+msgstr ""
+
+#: admin/views/documentation.php:448
+msgid "Anthropic"
+msgstr ""
+
+#: admin/views/ai.php:60
+msgid "Anthropic (Claude)"
+msgstr ""
+
+#: admin/views/ai.php:70
+msgid "Anthropic API Key"
+msgstr ""
+
+#: admin/views/documentation.php:448
+msgid "Anthropic, OpenAI or Google. Each has its own key field and its own model name, which you can change if you want a cheaper or a stronger one."
+msgstr ""
+
+#: admin/views/documentation.php:500
+msgid "Anything here bypasses MightyShield entirely. Four kinds of entry:"
+msgstr ""
+
+#: admin/views/logs.php:134
+msgid "Apply"
+msgstr ""
+
+#: admin/views/blocking.php:341
+msgid "Apply the server-side fraud checks to block-based (Store API) checkout."
+msgstr ""
+
+#: admin/class-order-panel.php:644
+msgid "Approve"
+msgstr ""
+
+#: admin/class-order-panel.php:643
+msgid "Approve & Capture"
+msgstr ""
+
+#: admin/views/documentation.php:529 admin/views/documentation.php:549
+msgid "Approve and Block."
+msgstr ""
+
+#: admin/class-order-panel.php:900
+msgid "Approve failed. The authorization could not be captured: %s. The order remains on hold."
+msgstr ""
+
+#: admin/views/documentation.php:537
+msgid "Approve moves the order to Processing. Block cancels it and blocks the address, then tells you to refund from the order items panel. It will not refund automatically, because that is real money moving and it should be a decision you make with the amount in front of you."
+msgstr ""
+
+#: admin/class-order-panel.php:666
+msgid "Approve moves the order to Processing. Block cancels the order and blocks the IP, then tells you how to refund. It will not refund automatically."
+msgstr ""
+
+#: admin/class-order-panel.php:659
+msgid "Approve sends the customer back to pay. Block cancels the order and blocks the IP. There is nothing to refund."
+msgstr ""
+
+#: admin/class-order-panel.php:663
+msgid "Approve takes the money and moves the order to Processing. Block releases the authorization, cancels the order and blocks the IP, leaving nothing to refund."
+msgstr ""
+
+#: admin/class-order-panel.php:922
+msgid "Approved in review."
+msgstr ""
+
+#: admin/views/logs.php:227
+msgid "Are you sure? This will delete all log entries."
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:34
+msgid "Around forty of them. Does the billing address exist. Has this card been declined here before. Did the checkout form get filled in faster than a person can type. Each one that trips is called a signal."
+msgstr ""
+
+#: admin/views/payment.php:82
+msgid "Authorize & hold"
+msgstr ""
+
+#: admin/views/payment.php:121
+msgid "Authorize without charging"
+msgstr ""
+
+#: admin/views/blocking.php:507
+msgid "Automated card testing depends on getting a fast, consistent answer. Refusing slowly, with a message that varies and reads like an ordinary bank decline, means an attacker cannot tell what tripped or time their way around it. Genuine customers are never refused, so this does not affect them."
+msgstr ""
+
+#: admin/views/documentation.php:468
+msgid "Automated card testing relies on a quick, consistent answer. Refusing slowly, with a message that varies and reads like an ordinary bank decline, means an attacker cannot work out what tripped or time their way around it. Genuine customers are never refused, so it does not affect them. It does hold a server process for the length of the delay, which is the only reason to turn it off. The delay is random between a minimum and a maximum you set, 3 and 8 seconds by default, and the randomness is the point: a fixed delay is itself a signal."
+msgstr ""
+
+#: admin/views/payment.php:136 admin/views/payment.php:147 admin/views/payment.php:158
+msgid "Available"
+msgstr ""
+
+#: includes/class-scoring-profiles.php:431
+msgid "Balanced"
+msgstr ""
+
+#: admin/views/documentation.php:372
+msgid "Balanced."
+msgstr ""
+
+#: admin/views/documentation.php:291
+msgid "Banned"
+msgstr ""
+
+#: admin/views/documentation.php:295
+msgid "Banned has no rating range because no rating can produce it. It is reachable only when a check forces it, and only one does by default: an order linked to a previous chargeback."
+msgstr ""
+
+#: admin/views/documentation.php:562
+msgid "Bans the next order outright, whatever it scores."
+msgstr ""
+
+#: admin/views/documentation.php:437
+msgid "Before you have any orders"
+msgstr ""
+
+#: admin/views/documentation.php:384
+msgid "Behavior."
+msgstr ""
+
+#: admin/views/blocking.php:552
+msgid "Being vague protects the store, but it leaves the occasional real customer with no idea who to talk to. This is where you give them a way through. It is added to the end of every refusal, whatever caused it."
+msgstr ""
+
+#: admin/views/blocking.php:511
+msgid "Between"
+msgstr ""
+
+#: admin/views/payment.php:149
+msgid "Billing address and security code results are read after payment. This needs webhooks set up in your provider's dashboard. Without them the results never arrive and the checks are simply skipped."
+msgstr ""
+
+#: admin/class-fraud-review.php:572 admin/class-order-panel.php:488
+msgid "Block"
+msgstr ""
+
+#: admin/views/blocking.php:330
+msgid "Block Checkout Protection"
+msgstr ""
+
+#: admin/views/blocklist.php:19
+msgid "Block IP Address"
+msgstr ""
+
+#: admin/views/logs.php:130
+msgid "Block IP permanently"
+msgstr ""
+
+#: admin/views/blocking.php:305
+msgid "Block Store API"
+msgstr ""
+
+#: admin/class-order-panel.php:1007
+msgid "Block attempted. The release was sent to the payment processor, which did not report back whether it completed, so the order has been left on hold. Check the authorization in your processor dashboard, then block it again or cancel it by hand."
+msgstr ""
+
+#: admin/views/documentation.php:482
+msgid "Block checkout protection"
+msgstr ""
+
+#: admin/class-order-panel.php:980
+msgid "Block failed. The authorization could not be released: %s. The order remains on hold."
+msgstr ""
+
+#: admin/class-admin-page.php:1116
+msgid "Block permanently"
+msgstr ""
+
+#: admin/views/blocking.php:319
+msgid "Block/One-page checkout: allow shoppers, block only blocklisted IPs"
+msgstr ""
+
+#: admin/class-dashboard-widget.php:206 admin/views/blocking.php:249 admin/views/dashboard.php:86 admin/views/dashboard.php:105
+#: admin/views/logs.php:51 admin/views/logs.php:94
+msgid "Blocked"
+msgstr ""
+
+#: admin/views/blocklist.php:45
+msgid "Blocked IPs"
+msgstr ""
+
+#: admin/views/documentation.php:407
+msgid "Blocked email domains"
+msgstr ""
+
+#: admin/class-order-panel.php:954
+msgid "Blocked in review. No payment was ever taken, so there is nothing to refund."
+msgstr ""
+
+#: admin/class-order-panel.php:1021
+msgid "Blocked in review. The authorization was released."
+msgstr ""
+
+#: admin/class-order-panel.php:1049
+msgid "Blocked in review. The payment was already captured, so refund it from the order items panel."
+msgstr ""
+
+#: admin/views/documentation.php:349
+msgid "Blocked, rate limited and flagged events over 24 hours, 7 days or 30 days. Hovering gives you the numbers for any single point."
+msgstr ""
+
+#: admin/views/documentation.php:509
+msgid "Blocklist"
+msgstr ""
+
+#: admin/views/documentation.php:476
+msgid "Blocklist mode."
+msgstr ""
+
+#: admin/views/blocking.php:360
+msgid "Bot Challenge"
+msgstr ""
+
+#: admin/views/setup/step-done.php:38
+msgid "Bot challenge"
+msgstr ""
+
+#: protection/class-captcha.php:163 protection/class-store-api.php:463
+msgid "Bot challenge (%1$s): %2$s"
+msgstr ""
+
+#: admin/class-setup-wizard.php:424
+msgid "Bot challenge left off."
+msgstr ""
+
+#: protection/class-challenge.php:337
+msgid "Bot challenge refused (%1$s): %2$s%3$s"
+msgstr ""
+
+#: admin/class-setup-wizard.php:425
+msgid "Bot challenge saved."
+msgstr ""
+
+#: admin/views/documentation.php:467
+msgid "Bot challenge."
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:58
+msgid "Both are free. Turnstile does not track visitors, which is the usual reason to prefer it."
+msgstr ""
+
+#: admin/views/setup/step-done.php:102
+msgid "Both are optional, both cost money with a third party, and neither is worth stalling a first run over. They are there when you want them."
+msgstr ""
+
+#: admin/class-setup-wizard.php:521
+msgid "Bots"
+msgstr ""
+
+#: includes/class-privacy.php:262
+msgid "Browser"
+msgstr ""
+
+#: admin/class-order-panel.php:614
+msgid "Browser looked automated"
+msgstr ""
+
+#: protection/class-device-fingerprint.php:160
+msgid "Browser reported itself as automated"
+msgstr ""
+
+#: admin/views/documentation.php:249
+msgid "Browsing."
+msgstr ""
+
+#: admin/views/logs.php:129
+msgid "Bulk actions"
+msgstr ""
+
+#: admin/views/documentation.php:415 admin/views/documentation.php:449
+msgid "Button"
+msgstr ""
+
+#: admin/views/documentation.php:517
+msgid "By time, by what happened, or by searching for an address, an email or a reason."
+msgstr ""
+
+#: includes/class-ai-capture.php:411 includes/class-ai-capture.php:443
+msgid "Capture failed."
+msgstr ""
+
+#: admin/class-order-panel.php:907
+msgid "Capture failed: %s. The order is still on hold."
+msgstr ""
+
+#: includes/class-ai-capture.php:463
+msgid "Capturing is not supported for this gateway."
+msgstr ""
+
+#: admin/views/payment.php:83 admin/views/payment.php:120
+msgid "Card checks"
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:38
+msgid "Card testing is someone running stolen card numbers through your checkout to find the ones that still work. It is automated, it is the most common thing that happens to a small store, and a bot challenge stops most of it for free."
+msgstr ""
+
+#: includes/class-scoring-profiles.php:435
+msgid "Cautious"
+msgstr ""
+
+#: admin/views/documentation.php:373
+msgid "Cautious."
+msgstr ""
+
+#: admin/views/setup/step-done.php:80
+msgid "Change"
+msgstr ""
+
+#: admin/class-admin-page.php:1890
+msgid "Change it on Shielding"
+msgstr ""
+
+#: admin/views/logs.php:68
+msgid "Change retention"
+msgstr ""
+
+#: admin/class-order-panel.php:448
+msgid "Change this any time. Switching the verdict takes back whatever the previous one did to this customer's standing."
+msgstr ""
+
+#: admin/views/documentation.php:562
+msgid "Chargeback"
+msgstr ""
+
+#: includes/class-privacy.php:208
+msgid "Chargebacks"
+msgstr ""
+
+#: admin/views/documentation.php:318
+msgid "Check <a href=\"%s\">Scoring</a>. It shows how often each check actually fires on your traffic. Anything firing on most of your orders is describing your customers rather than your fraudsters, so lower what it costs or switch it off."
+msgstr ""
+
+#: admin/views/setup/step-done.php:90
+msgid "Check the bot challenge works"
+msgstr ""
+
+#: admin/views/documentation.php:408
+msgid "Check the domain can receive mail"
+msgstr ""
+
+#: includes/class-privacy.php:284
+msgid "Checkout and login events this store recorded against this email address."
+msgstr ""
+
+#: admin/views/documentation.php:420
+msgid "Checkout attempts per hour"
+msgstr ""
+
+#: admin/class-order-panel.php:613
+msgid "Checkout completed implausibly fast"
+msgstr ""
+
+#: admin/views/blocking.php:471
+msgid "Checkout is always covered. A failed challenge refuses a login, registration or password reset; a comment is held for moderation instead, because losing a real reader's comment outright is worse than making them wait."
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:111
+msgid "Checkout is always protected once a provider is set. These four are the account pages, which are separate because a mistake on them locks people out of their accounts rather than out of a purchase."
+msgstr ""
+
+#: protection/class-checkout-timing.php:84
+msgid "Checkout submitted faster than a person can fill it in"
+msgstr ""
+
+#: includes/class-privacy.php:212
+msgid "Checkouts refused"
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:33
+msgid "Checks look at each order"
+msgstr ""
+
+#: admin/views/documentation.php:413
+msgid "Checks that a US postcode belongs to the state given with it."
+msgstr ""
+
+#: admin/views/documentation.php:414
+msgid "Checks the delivery address against a real postal database. Needs a Smarty account and its two credentials. Off unless you have one."
+msgstr ""
+
+#: admin/views/documentation.php:245
+msgid "Checks work together rather than separately. Three small concerns that individually would not be worth acting on can add up to a rating that is. That is the whole point of a rating: an order that looks slightly odd in several unrelated ways is more suspicious than one that looks odd in a single way."
+msgstr ""
+
+#: admin/views/ai.php:54
+msgid "Choose a provider and enter its connection details. Small, fast models are the right tier here. Reviews run inline with checkout, so latency and per-order cost matter more than raw capability."
+msgstr ""
+
+#: admin/views/blocking.php:318
+msgid "Classic checkout: block all non-allowlisted IPs"
+msgstr ""
+
+#: admin/class-order-panel.php:427
+msgid "Clean"
+msgstr ""
+
+#: admin/views/documentation.php:528
+msgid "Clean or Fraud."
+msgstr ""
+
+#: admin/views/logs.php:109
+msgid "Clear"
+msgstr ""
+
+#: admin/views/logs.php:227
+msgid "Clear All Logs"
+msgstr ""
+
+#: admin/views/logs.php:224
+msgid "Clear all log entries. This action cannot be undone."
+msgstr ""
+
+#: admin/views/blocking.php:416 admin/views/setup/step-challenge.php:53 admin/views/setup/step-done.php:44
+msgid "Cloudflare Turnstile"
+msgstr ""
+
+#: admin/views/documentation.php:467
+msgid "Cloudflare Turnstile or Google reCAPTCHA v3, and which pages it guards."
+msgstr ""
+
+#: admin/views/ai.php:239
+msgid "Comma-separated. Leave blank to use the site admin address."
+msgstr ""
+
+#: admin/views/blocking.php:460
+msgid "Comments"
+msgstr ""
+
+#: admin/views/documentation.php:226 admin/views/documentation.php:572
+msgid "Common situations"
+msgstr ""
+
+#: admin/views/documentation.php:559
+msgid "Completed"
+msgstr ""
+
+#: admin/class-setup-wizard.php:574
+msgid "Continue &rarr;"
+msgstr ""
+
+#: admin/views/blocking.php:301
+msgid "Controls access to the WooCommerce Store API cart and checkout endpoints (/wc/store/v1/…). Choose the mode that matches your checkout."
+msgstr ""
+
+#: includes/class-ip-data.php:466
+msgid "Could not download the MaxMind ASN database."
+msgstr ""
+
+#: admin/class-order-panel.php:987
+msgid "Could not release the authorization: %s. The order is still on hold."
+msgstr ""
+
+#: includes/class-ip-data.php:512
+msgid "Could not write the MaxMind ASN database to the uploads directory."
+msgstr ""
+
+#: admin/class-admin-page.php:1124
+msgid "Country"
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:27
+msgid "Creating an account"
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:378
+msgid "Credentials were sent as %s. Use Test Connection on the Scoring tab to find the form this server can actually deliver."
+msgstr ""
+
+#: admin/views/blocking.php:397
+msgid "Currently letting everybody through on:"
+msgstr ""
+
+#: includes/class-scoring-profiles.php:443
+msgid "Custom"
+msgstr ""
+
+#: admin/views/documentation.php:375
+msgid "Custom."
+msgstr ""
+
+#: admin/class-fraud-review.php:446
+msgid "Customer"
+msgstr ""
+
+#: admin/views/ai.php:190
+msgid "Customer Details"
+msgstr ""
+
+#: admin/views/logs.php:250
+msgid "Customer History"
+msgstr ""
+
+#: admin/views/ai.php:203
+msgid "Daily Limit"
+msgstr ""
+
+#: admin/views/documentation.php:451
+msgid "Daily limit"
+msgstr ""
+
+#: admin/class-admin-page.php:1525
+msgid "Dark"
+msgstr ""
+
+#: admin/class-admin-page.php:1755 admin/views/documentation.php:211 admin/views/documentation.php:345
+msgid "Dashboard"
+msgstr ""
+
+#: admin/views/documentation.php:212 admin/views/documentation.php:357
+msgid "Dashboard widget"
+msgstr ""
+
+#: includes/class-privacy.php:243
+msgid "Date"
+msgstr ""
+
+#: admin/views/documentation.php:405 admin/views/documentation.php:445
+msgid "Default"
+msgstr ""
+
+#: admin/views/ai.php:80
+msgid "Default: claude-haiku-4-5, the fastest and lowest cost Claude model, well suited to per-order scoring."
+msgstr ""
+
+#: admin/views/logs.php:55
+msgid "Degraded"
+msgstr ""
+
+#: admin/views/blocking.php:504
+msgid "Delay refused checkouts by a random amount"
+msgstr ""
+
+#: admin/views/logs.php:132
+msgid "Delete entries"
+msgstr ""
+
+#: admin/class-admin-page.php:890
+msgid "Deleted %d log entries."
+msgstr ""
+
+#: includes/class-privacy.php:436
+msgid "Depending on which optional features this store has enabled, checkout details may be sent to MaxMind, Smarty, Cloudflare, Google or an AI provider to be checked. See the plugin listing for exactly what each service receives."
+msgstr ""
+
+#: admin/views/logs.php:195
+msgid "Details"
+msgstr ""
+
+#: admin/views/documentation.php:418
+msgid "Device check"
+msgstr ""
+
+#: admin/views/documentation.php:422
+msgid "Different emails per hour"
+msgstr ""
+
+#: admin/class-admin-page.php:1677
+msgid "Disabled"
+msgstr ""
+
+#: admin/views/documentation.php:360
+msgid "Disabled, Observing or Active. There is no switch on it, because changing that belongs on the screen that explains what the three mean."
+msgstr ""
+
+#: admin/class-admin-page.php:1678
+msgid "Disabled. No orders are checked"
+msgstr ""
+
+#: admin/class-admin-page.php:1268 includes/class-ai-client.php:661 protection/class-smarty-address-verifier.php:113
+msgid "Dismiss"
+msgstr ""
+
+#: admin/views/ai.php:195
+msgid "Do not send customers' personal details to the AI provider"
+msgstr ""
+
+#: admin/class-admin-page.php:1538
+msgid "Documentation"
+msgstr ""
+
+#: admin/views/documentation.php:520
+msgid "Downloads the current filtered view as a spreadsheet file."
+msgstr ""
+
+#: admin/views/setup/step-scoring.php:37
+msgid "Each check that trips takes a set number of points off an order. This picks all of those numbers at once. Pick whichever sounds like your store, and change any individual one later."
+msgstr ""
+
+#: admin/views/documentation.php:327
+msgid "Each risk level is set to one action. These are all of them, with what each one does to the customer's money. Reject comes first because it is the one that stops the order happening at all; the rest run from the gentlest to the most disruptive."
+msgstr ""
+
+#: admin/views/documentation.php:557
+msgid "Effect on the next order"
+msgstr ""
+
+#: admin/views/whitelist.php:20
+msgid "Email"
+msgstr ""
+
+#: admin/class-admin-page.php:999
+msgid "Email %s added to allowlist."
+msgstr ""
+
+#: admin/views/whitelist.php:39
+msgid "Email address"
+msgstr ""
+
+#: admin/views/documentation.php:504
+msgid "Email address."
+msgstr ""
+
+#: admin/views/documentation.php:453
+msgid "Email me about reviews"
+msgstr ""
+
+#: admin/views/setup/step-alerts.php:38
+msgid "Email me when MightyShield needs attention"
+msgstr ""
+
+#: admin/views/ai.php:231
+msgid "Email me when a review comes back badly rated."
+msgstr ""
+
+#: admin/views/ai.php:39
+msgid "Enable AI Detection"
+msgstr ""
+
+#: admin/views/documentation.php:447
+msgid "Enable AI review"
+msgstr ""
+
+#: admin/views/blocking.php:310
+msgid "Enable Store API access control."
+msgstr ""
+
+#: admin/views/blocking.php:336
+msgid "Enable Store API checks"
+msgstr ""
+
+#: admin/class-admin-page.php:1111 admin/views/logs.php:143
+msgid "Endpoint"
+msgstr ""
+
+#: admin/views/blocklist.php:28
+msgid "Enter an IP address or CIDR range. Your current IP: "
+msgstr ""
+
+#: admin/views/logs.php:246
+msgid "Entries older than this are cleaned up daily."
+msgstr ""
+
+#: admin/class-admin-page.php:1109
+msgid "Event detail"
+msgstr ""
+
+#: admin/views/dashboard.php:81
+msgid "Events over the past 30 days"
+msgstr ""
+
+#: admin/views/documentation.php:403
+msgid "Every check has its own settings on its row. These are the ones with numbers worth knowing about."
+msgstr ""
+
+#: admin/views/documentation.php:367
+msgid "Every check in one table, with what it costs and how often it has actually fired on your traffic. This is where you tune MightyShield to your own customers."
+msgstr ""
+
+#: admin/views/documentation.php:251
+msgid "Every check runs and each one that notices something takes trust away. Some checks can force a risk level on their own, whatever the rating says."
+msgstr ""
+
+#: admin/views/documentation.php:515
+msgid "Every event MightyShield recorded, newest first. Click a row for the full detail, including where the address is and what the request looked like."
+msgstr ""
+
+#: admin/views/documentation.php:489
+msgid "Every method currently available at your checkout, with a straight yes or no on each of the three capabilities."
+msgstr ""
+
+#: admin/class-dashboard-widget.php:258
+msgid "Every order MightyShield stopped has been dealt with."
+msgstr ""
+
+#: admin/views/documentation.php:244
+msgid "Every order gets a trust rating from 1 to 100. 100 is completely ordinary; 1 is as bad as it gets. Each check that notices something costs the order some trust, and the rating that comes out decides what happens next."
+msgstr ""
+
+#: admin/views/scoring.php:119
+msgid "Every order is rated from 1 to 100."
+msgstr ""
+
+#: admin/views/setup/step-protection.php:43
+msgid "Every order is rated, recorded and shown to you, and none of them are changed. Nothing a customer does is affected. This is where we suggest starting."
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:42
+msgid "Every order starts at 100. Each signal takes points off, and how many is yours to set. An order nobody can fault keeps its 100."
+msgstr ""
+
+#: admin/views/whitelist.php:62
+msgid "Every user in this role bypasses all checks. Be careful with broad roles like Customer, which would exempt all such users."
+msgstr ""
+
+#: admin/views/documentation.php:505
+msgid "Everyone with that role. Be careful with broad roles: allowlisting Customer exempts every registered shopper on your site."
+msgstr ""
+
+#: admin/views/setup/step-done.php:124
+msgid "Everything MightyShield does, setting by setting, is written up in the %s."
+msgstr ""
+
+#: admin/views/payment.php:104
+msgid "Everything on the Scoring and Shielding tabs works the same on every payment method, because it is judged before the payment is taken. The two things below depend on what the payment provider itself is willing to tell us, so they vary."
+msgstr ""
+
+#: admin/views/setup/step-protection.php:34
+msgid "Everything so far decides how orders are rated. This decides whether anything is done about the rating."
+msgstr ""
+
+#: admin/views/logs.php:54
+msgid "Exempt"
+msgstr ""
+
+#: admin/views/logs.php:97
+msgid "Exempt (allowlisted)"
+msgstr ""
+
+#: admin/views/logs.php:113
+msgid "Export"
+msgstr ""
+
+#: admin/views/documentation.php:520
+msgid "Export."
+msgstr ""
+
+#: admin/views/payment.php:119
+msgid "Extra card verification"
+msgstr ""
+
+#: admin/class-order-panel.php:578 admin/class-order-panel.php:609
+msgid "Failed card checks"
+msgstr ""
+
+#: admin/views/documentation.php:427
+msgid "Failed coupons per hour"
+msgstr ""
+
+#: admin/views/documentation.php:426
+msgid "Failed logins per hour"
+msgstr ""
+
+#: admin/views/documentation.php:424
+msgid "Failed payments per hour"
+msgstr ""
+
+#: admin/class-order-panel.php:610
+msgid "Filled a hidden trap field"
+msgstr ""
+
+#: protection/class-honeypot.php:80
+msgid "Filled the hidden trap field on checkout"
+msgstr ""
+
+#: admin/views/logs.php:107
+msgid "Filter"
+msgstr ""
+
+#: admin/views/documentation.php:517
+msgid "Filters."
+msgstr ""
+
+#: admin/views/documentation.php:575
+msgid "Find them in the <a href=\"%1$s\">Logs</a> and read the reason. Allowlist their address from the detail panel if it was a one off. If the same check is catching several real customers, open <a href=\"%2$s\">Scoring</a>, find that check, and either lower its cost or switch it off. If a threshold is the problem, raise it on <a href=\"%3$s\">Shielding</a>."
+msgstr ""
+
+#: admin/class-setup-wizard.php:524 admin/class-setup-wizard.php:574
+msgid "Finish"
+msgstr ""
+
+#: admin/views/dashboard.php:52
+msgid "Finish setup"
+msgstr ""
+
+#: admin/views/scoring.php:360
+msgid "Fires on most orders, so probably too noisy to be worth its cost."
+msgstr ""
+
+#: admin/views/blocking.php:315
+msgid "Firewall Mode"
+msgstr ""
+
+#: includes/class-privacy.php:184
+msgid "First seen"
+msgstr ""
+
+#: admin/class-dashboard-widget.php:139
+msgid "Fix it"
+msgstr ""
+
+#: admin/views/setup/step-protection.php:73
+msgid "Fix this: block only the addresses MightyShield has judged, and let everyone else through"
+msgstr ""
+
+#: admin/views/blocking.php:125
+msgid "Fixed. This level is defined by what it does."
+msgstr ""
+
+#: admin/class-dashboard-widget.php:208 admin/class-fraud-review.php:496 admin/views/dashboard.php:88 admin/views/dashboard.php:107
+#: admin/views/logs.php:53 admin/views/logs.php:96
+msgid "Flagged"
+msgstr ""
+
+#: admin/class-order-panel.php:623
+msgid "Flagged at checkout by %s"
+msgstr ""
+
+#: admin/class-order-panel.php:608
+msgid "Flagged by its rating"
+msgstr ""
+
+#: includes/class-response.php:788
+msgid "Flagged by the risk rating."
+msgstr ""
+
+#: includes/class-response.php:585
+msgid "Flagged for review."
+msgstr ""
+
+#: admin/views/documentation.php:503
+msgid "Follows the person rather than where they are, so it survives a changing home address."
+msgstr ""
+
+#: includes/class-scoring-profiles.php:436
+msgid "For a store seeing more fraud than it used to. Everything specific costs more, and device information starts being collected."
+msgstr ""
+
+#: admin/views/documentation.php:373
+msgid "For a store seeing more fraud than it used to. The checks that point at a specific problem cost more, and MightyShield starts collecting device information at checkout."
+msgstr ""
+
+#: admin/views/documentation.php:374 includes/class-scoring-profiles.php:440
+msgid "For a store under attack, or one selling things worth stealing. Expect to review more orders by hand."
+msgstr ""
+
+#: admin/views/documentation.php:466
+msgid "For each level: the rating at or below which it applies, what it does, and whether the order still reaches your processor. The last column shows how orders at that level actually turned out, which is what tells you whether a threshold is right."
+msgstr ""
+
+#: admin/views/documentation.php:252
+msgid "For the risk levels you choose, a model looks at the order and gives its own rating. By default it can only lower the number, never raise it."
+msgstr ""
+
+#: admin/views/scoring.php:183
+msgid "Force level"
+msgstr ""
+
+#: admin/views/scoring.php:315
+msgid "Force level for %s"
+msgstr ""
+
+#: admin/views/documentation.php:394
+msgid "Force level."
+msgstr ""
+
+#: admin/class-order-panel.php:428 admin/views/documentation.php:561
+msgid "Fraud"
+msgstr ""
+
+#: admin/class-fraud-review.php:69 admin/class-fraud-review.php:76 admin/class-fraud-review.php:372 admin/views/documentation.php:222
+#: admin/views/documentation.php:543
+msgid "Fraud Review"
+msgstr ""
+
+#: admin/class-admin-page.php:215
+msgid "Fraud checks now run on the block-based checkout as well as the classic one. Previously they only ran on classic, so stores using the newer checkout were unprotected. Each check still does exactly what you have it set to do."
+msgstr ""
+
+#: admin/views/blocking.php:437
+msgid "From the Cloudflare dashboard, under Turnstile."
+msgstr ""
+
+#: admin/views/blocking.php:440
+msgid "From the Google reCAPTCHA admin console. Must be a v3 key."
+msgstr ""
+
+#: admin/views/documentation.php:518
+msgid "From the detail panel you can allowlist an address or block it permanently."
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:80
+msgid "From the same place, and from the same site as the key above. A key from one site with a secret from another is rejected on every request."
+msgstr ""
+
+#: admin/views/payment.php:160
+msgid "Funds can be reserved and released without ever being taken."
+msgstr ""
+
+#: admin/views/ai.php:109
+msgid "Gemini API Key"
+msgstr ""
+
+#: admin/class-admin-page.php:1118
+msgid "Get IP"
+msgstr ""
+
+#: admin/views/documentation.php:204
+msgid "Getting started"
+msgstr ""
+
+#: admin/class-setup-wizard.php:523
+msgid "Go live"
+msgstr ""
+
+#: admin/views/documentation.php:272
+msgid "Goes through and is marked for you to look at. The customer notices nothing."
+msgstr ""
+
+#: admin/views/documentation.php:271
+msgid "Goes through untouched."
+msgstr ""
+
+#: admin/views/ai.php:62
+msgid "Google Gemini"
+msgstr ""
+
+#: admin/views/setup/step-done.php:45
+msgid "Google reCAPTCHA"
+msgstr ""
+
+#: admin/views/blocking.php:417 admin/views/setup/step-challenge.php:54
+msgid "Google reCAPTCHA v3"
+msgstr ""
+
+#: admin/views/documentation.php:427
+msgid "Guessing at discount codes in bulk is its own kind of attack."
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:379
+msgid "HTTP Basic"
+msgstr ""
+
+#: admin/class-order-panel.php:570 admin/class-order-panel.php:574
+msgid "Held after payment"
+msgstr ""
+
+#: admin/views/documentation.php:539
+msgid "Held before payment."
+msgstr ""
+
+#: admin/class-order-panel.php:607
+msgid "Held by its rating"
+msgstr ""
+
+#: includes/class-response.php:700
+msgid "Held for review after payment. The money has been taken but the order will not be fulfilled until you release it."
+msgstr ""
+
+#: includes/class-response.php:660
+msgid "Held for review. The card was authorized but not charged. Approving captures the payment; refusing voids it with nothing to refund."
+msgstr ""
+
+#: includes/class-response.php:661
+msgid "Held for review. This payment method cannot authorize without charging, so it was handled as a hold before payment instead."
+msgstr ""
+
+#: admin/class-order-panel.php:568
+msgid "Held on an authorization"
+msgstr ""
+
+#: admin/class-dashboard-widget.php:257
+msgid "Held or flagged, and waiting on a decision."
+msgstr ""
+
+#: admin/views/documentation.php:538
+msgid "Held with the payment only authorized."
+msgstr ""
+
+#: admin/views/documentation.php:537
+msgid "Held with the payment taken."
+msgstr ""
+
+#: admin/views/documentation.php:225
+msgid "Help"
+msgstr ""
+
+#: admin/views/setup/step-done.php:65
+msgid "Here is where you have landed. Every line has a tab behind it, and none of it is permanent."
+msgstr ""
+
+#: admin/views/documentation.php:416
+msgid "Hidden trap field"
+msgstr ""
+
+#: admin/views/documentation.php:452
+msgid "Hide customer details"
+msgstr ""
+
+#: admin/views/documentation.php:411
+msgid "High value amount"
+msgstr ""
+
+#: admin/views/documentation.php:387
+msgid "History."
+msgstr ""
+
+#: admin/views/documentation.php:206 admin/views/documentation.php:243
+msgid "How an order is judged"
+msgstr ""
+
+#: admin/views/documentation.php:223 admin/views/documentation.php:553
+msgid "How it learns"
+msgstr ""
+
+#: admin/class-setup-wizard.php:519
+msgid "How it works"
+msgstr ""
+
+#: admin/views/logs.php:255
+msgid "How long MightyShield remembers the customers, addresses, cards and networks behind past orders. This is the memory the scoring reads, so it is kept far longer than the log."
+msgstr ""
+
+#: admin/views/documentation.php:421
+msgid "How long an address stays temporarily blocked after tripping a hard check. It clears itself. A temporary block costs an order trust rather than refusing it, because the address may be a whole office or a mobile network."
+msgstr ""
+
+#: admin/views/documentation.php:548
+msgid "How long the order has been sitting there. A held order nobody has looked at for three days is the thing this screen exists to put in front of you."
+msgstr ""
+
+#: admin/views/documentation.php:425
+msgid "How many accounts one address may create in an hour."
+msgstr ""
+
+#: admin/views/documentation.php:420
+msgid "How many checkout attempts one address may make in the window before it is rate limited."
+msgstr ""
+
+#: admin/views/documentation.php:519
+msgid "How many days of log entries to keep. Older entries are removed automatically once a day."
+msgstr ""
+
+#: admin/views/documentation.php:422
+msgid "How many different email addresses one network may use in an hour. Card testing looks exactly like this."
+msgstr ""
+
+#: admin/views/documentation.php:426
+msgid "How many failed sign ins one address may make before it counts against an order from them."
+msgstr ""
+
+#: admin/views/documentation.php:362
+msgid "How many orders are held or flagged with nobody having ruled on them, and a button into the review queue. It only turns amber when there is something to do."
+msgstr ""
+
+#: admin/views/documentation.php:419
+msgid "How many orders one device may place in an hour before it counts against them."
+msgstr ""
+
+#: admin/views/documentation.php:423
+msgid "How many orders one network may place in a quarter of an hour."
+msgstr ""
+
+#: admin/views/documentation.php:412
+msgid "How many orders to the same delivery address, over how many days, before it looks like a drop address."
+msgstr ""
+
+#: admin/views/documentation.php:393
+msgid "How much of the 100 an order loses when this check notices something. A check that is only partly sure costs proportionally less, which is what lets several small concerns add up without any one of them taking over."
+msgstr ""
+
+#: admin/views/scoring.php:184
+msgid "How often it fires"
+msgstr ""
+
+#: admin/views/documentation.php:395
+msgid "How often it fires."
+msgstr ""
+
+#: admin/views/setup/step-scoring.php:34
+msgid "How strict should the scoring be?"
+msgstr ""
+
+#: admin/views/documentation.php:384
+msgid "How the checkout was filled in: the hidden trap field, how long it took, what the browser says about itself, whether anything was typed or clicked, and the bot challenge."
+msgstr ""
+
+#: admin/views/documentation.php:379
+msgid "How the checks are grouped"
+msgstr ""
+
+#: admin/views/documentation.php:255
+msgid "How the order turned out is remembered against everyone connected to it, and counts towards the next one. A checkout that was refused is remembered too, so somebody turned away does not arrive at their next attempt looking like a stranger."
+msgstr ""
+
+#: admin/views/scoring.php:121
+msgid "How this works"
+msgstr ""
+
+#: admin/views/documentation.php:409
+msgid "How willing the made up address check is to call an address nonsense. High catches more and objects to more unusual real addresses."
+msgstr ""
+
+#: admin/views/documentation.php:590
+msgid "I want to turn everything off"
+msgstr ""
+
+#: admin/class-admin-page.php:989
+msgid "IP %s added to allowlist."
+msgstr ""
+
+#: admin/class-admin-page.php:771
+msgid "IP %s added to blocklist."
+msgstr ""
+
+#: admin/views/blocklist.php:52
+msgid "IP Address"
+msgstr ""
+
+#: admin/views/blocklist.php:25
+msgid "IP Address / CIDR"
+msgstr ""
+
+#: admin/class-admin-page.php:1110 admin/views/logs.php:142 admin/views/whitelist.php:18 includes/class-privacy.php:255
+msgid "IP address"
+msgstr ""
+
+#: admin/views/whitelist.php:37
+msgid "IP address / CIDR"
+msgstr ""
+
+#: admin/class-admin-page.php:740
+msgid "IP address added to blocklist."
+msgstr ""
+
+#: admin/views/documentation.php:502
+msgid "IP address or range."
+msgstr ""
+
+#: admin/class-admin-page.php:756
+msgid "IP address removed from blocklist."
+msgstr ""
+
+#: admin/class-admin-page.php:1117
+msgid "IP location"
+msgstr ""
+
+#: admin/views/whitelist.php:47
+msgid "IP/CIDR, username or email, or email address"
+msgstr ""
+
+#: admin/views/whitelist.php:49
+msgid "IP: e.g. 192.168.1.1 or 10.0.0.0/8. User: a username, email, or user ID. Email: a full email address."
+msgstr ""
+
+#: includes/class-privacy.php:180
+msgid "Identity type"
+msgstr ""
+
+#: admin/views/documentation.php:382
+msgid "Identity."
+msgstr ""
+
+#: admin/views/documentation.php:493
+msgid "If a level is set to ask for 3-D Secure and the customer pays with a method that cannot, that order is flagged instead. If a level is set to authorize and hold and the method cannot reserve money, the order is held before payment instead. Nothing is skipped; something less is done, and the order note says which."
+msgstr ""
+
+#: admin/views/documentation.php:370
+msgid "If you would rather not judge forty-five checks one at a time, pick a profile at the top of the tab and it sets every trust cost at once. You can still change any individual row afterwards."
+msgstr ""
+
+#: admin/views/documentation.php:578
+msgid "If your checkout page uses the Checkout block, set the Store API Firewall on <a href=\"%s\">Shielding</a> to Blocklist mode. In Allowlist mode that firewall refuses the cart and checkout to every customer, which looks exactly like a broken shop. MightyShield warns you about this combination, but it is worth checking first whenever the checkout misbehaves."
+msgstr ""
+
+#: admin/views/documentation.php:479
+msgid "If your checkout stops working"
+msgstr ""
+
+#: admin/views/documentation.php:322
+msgid "Important"
+msgstr ""
+
+#: admin/views/documentation.php:354
+msgid "In Observing the individual checks really do still block. What is not happening is the trust rating being acted on. So an order that trips the hidden trap field is still refused; an order that merely scores badly is recorded and let through."
+msgstr ""
+
+#: admin/views/blocking.php:383
+msgid "In the last %3$d days it turned away %1$d visitors, and %2$d more could not be confirmed either way."
+msgstr ""
+
+#: admin/views/payment.php:75
+msgid "Inactive"
+msgstr ""
+
+#: admin/class-setup-wizard.php:186
+msgid "Installed, but not set up yet. The setup takes a couple of minutes and explains what each part does."
+msgstr ""
+
+#: admin/class-admin-page.php:742 admin/class-admin-page.php:986
+msgid "Invalid IP address or CIDR format."
+msgstr ""
+
+#: admin/class-admin-page.php:1320
+msgid "Invalid IP."
+msgstr ""
+
+#: admin/class-order-panel.php:753
+msgid "Invalid MightyShield order request."
+msgstr ""
+
+#: admin/class-admin-page.php:1050
+msgid "Invalid allowlist entry type."
+msgstr ""
+
+#: admin/class-admin-page.php:996
+msgid "Invalid email address."
+msgstr ""
+
+#: admin/views/documentation.php:443
+msgid "It is off until you add an API key, and it is only asked about the risk levels you choose, so it never costs you anything on ordinary orders. If the provider is unreachable or you have hit your daily cap, the order simply proceeds on its checks alone."
+msgstr ""
+
+#: includes/class-api-error.php:171
+msgid "It said: %s"
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:25
+msgid "It takes about two minutes to set up. Nothing you choose here is permanent, and every one of these settings has its own tab afterwards."
+msgstr ""
+
+#: admin/views/ai.php:73 admin/views/ai.php:89 admin/views/ai.php:112
+msgid "Key is saved. Leave blank to keep existing key."
+msgstr ""
+
+#: admin/views/documentation.php:399
+msgid "Known good customer has a negative cost. It is the only check that adds trust rather than spending it, and it is the only way an order can reach Trusted. A customer earns it with three or more orders and a clean history, and loses it the moment anything connected to them goes bad."
+msgstr ""
+
+#: admin/views/blocklist.php:32 admin/views/blocklist.php:53 admin/views/whitelist.php:66 admin/views/whitelist.php:88
+msgid "Label"
+msgstr ""
+
+#: admin/views/logs.php:87
+msgid "Last 24 hours"
+msgstr ""
+
+#: admin/views/blocking.php:75 admin/views/logs.php:89
+msgid "Last 30 days"
+msgstr ""
+
+#: admin/class-dashboard-widget.php:199 admin/views/logs.php:88
+msgid "Last 7 days"
+msgstr ""
+
+#: includes/class-privacy.php:188
+msgid "Last seen"
+msgstr ""
+
+#: admin/views/blocking.php:572
+msgid "Leave it empty and refusals read exactly as they do above."
+msgstr ""
+
+#: admin/views/documentation.php:316
+msgid "Leave it in Observe mode. Orders are rated and recorded but nothing new is enforced. This is how it arrives, and it is the right place to start."
+msgstr ""
+
+#: protection/class-honeypot.php:43
+msgid "Leave this empty"
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:29
+msgid "Leaving a comment"
+msgstr ""
+
+#: admin/views/scoring.php:321
+msgid "Less severe"
+msgstr ""
+
+#: admin/views/setup/step-protection.php:61
+msgid "Let it watch your real orders, then look at the Dashboard and the Fraud Review queue. If the orders it would have held are the ones you would have held, switch it on. If it is flagging your regulars, lower the strictness first. That switch is on every MightyShield page."
+msgstr ""
+
+#: admin/class-admin-page.php:1525
+msgid "Light"
+msgstr ""
+
+#: admin/views/blocking.php:566
+msgid "Links work, so a phone number or an email address can be tapped. Bold and italic work too. In full: %s."
+msgstr ""
+
+#: admin/class-admin-page.php:1122
+msgid "Location"
+msgstr ""
+
+#: admin/views/logs.php:242
+msgid "Log Retention"
+msgstr ""
+
+#: admin/views/logs.php:237
+msgid "Log Settings"
+msgstr ""
+
+#: admin/views/logs.php:67
+msgid "Log entries are retained for %d days."
+msgstr ""
+
+#: admin/views/blocking.php:457
+msgid "Login"
+msgstr ""
+
+#: admin/views/blocking.php:474
+msgid "Login is off by default."
+msgstr ""
+
+#: admin/class-admin-page.php:1769 admin/views/dashboard.php:159 admin/views/documentation.php:218 admin/views/documentation.php:514
+msgid "Logs"
+msgstr ""
+
+#: admin/class-admin-page.php:1121
+msgid "Looking up…"
+msgstr ""
+
+#: admin/views/documentation.php:418
+msgid "Looks at what the browser reports about itself, to spot automated browsers. Off by default because it needs JavaScript and can be noisy."
+msgstr ""
+
+#: admin/views/documentation.php:408
+msgid "Looks up whether anything is actually listening for email at that domain. A domain that cannot receive mail is not a real customer."
+msgstr ""
+
+#: admin/class-admin-page.php:1125 admin/class-admin-page.php:1324
+msgid "Lookup failed. Please try again."
+msgstr ""
+
+#: admin/views/blocking.php:459
+msgid "Lost password"
+msgstr ""
+
+#: admin/views/documentation.php:450
+msgid "Lower only"
+msgstr ""
+
+#: admin/views/documentation.php:450
+msgid "Lower only means the model can take trust away but never give it back, so it can never talk a bad order into looking fine. Lower or raise lets it rescue an order the checks were too harsh on."
+msgstr ""
+
+#: admin/views/ai.php:182
+msgid "Lower or raise the rating"
+msgstr ""
+
+#: admin/views/logs.php:223
+msgid "Maintenance"
+msgstr ""
+
+#: admin/views/documentation.php:394
+msgid "Makes one check decide the outcome on its own, whatever the rating says. Use it only for things a real customer essentially cannot do, such as filling in a hidden trap field. Anything genuinely ambiguous should be left on scoring only, so the rating can weigh it against everything else."
+msgstr ""
+
+#: admin/views/documentation.php:415
+msgid "Makes one real call to Smarty with the credentials you have saved, and tells you exactly what came back. It also works out which of the two ways of sending credentials your server can actually deliver, and keeps that. Save the page before testing: the token field is write-only, so the test uses what is stored, not what is typed. Costs one lookup from your Smarty account."
+msgstr ""
+
+#: admin/views/whitelist.php:116
+msgid "Manual"
+msgstr ""
+
+#: protection/class-outcomes.php:207
+msgid "Marked as clean by a reviewer. Any penalty this order placed on the customer has been taken back."
+msgstr ""
+
+#: admin/class-order-panel.php:851
+msgid "Marked as clean. Any penalty this order placed on the customer has been taken back."
+msgstr ""
+
+#: protection/class-outcomes.php:206
+msgid "Marked as fraud by a reviewer. Future orders from this customer, address, card or network will be scored accordingly."
+msgstr ""
+
+#: admin/class-order-panel.php:850
+msgid "Marked as fraud. MightyShield will weigh this against future orders from the same customer, address, card or network."
+msgstr ""
+
+#: admin/views/documentation.php:395
+msgid "Measured on your own orders over the last 30 days. This is the most useful column on the page. A check firing on half your orders is describing your customers, not your fraudsters."
+msgstr ""
+
+#: admin/views/documentation.php:409
+msgid "Medium"
+msgstr ""
+
+#: admin/class-admin-page.php:190 admin/class-admin-page.php:191 admin/class-admin-page.php:1533 admin/class-dashboard-widget.php:63
+#: admin/class-order-panel.php:85 admin/views/documentation.php:231 includes/class-privacy.php:94 includes/class-privacy.php:111
+msgid "MightyShield"
+msgstr ""
+
+#: admin/views/setup/step-alerts.php:27
+msgid "MightyShield emails you when something needs a person: an order held for review, or one of the services it relies on failing. These are rare and they are not marketing."
+msgstr ""
+
+#: includes/class-privacy.php:175
+msgid "MightyShield fraud history"
+msgstr ""
+
+#: includes/class-privacy.php:433
+msgid "MightyShield fraud prevention"
+msgstr ""
+
+#: includes/class-privacy.php:337
+msgid "MightyShield has kept this store's fraud history for this email address — how many orders it placed, and how many were refunded, reported as fraud or charged back. It is stored as a one-way salted hash rather than as the address itself, so it cannot be read back or turned into contact details; it can only be recognised if the same address is used again. It is kept because erasing it would let a chargeback be cleared by asking to be forgotten, and is permitted for fraud prevention and for defending legal claims. It is destroyed if MightyShield is uninstalled."
+msgstr ""
+
+#: admin/views/documentation.php:240
+msgid "MightyShield installs in Observe mode. It rates every order and records what it would have done, without doing it. Your existing checks carry on working exactly as before. When you are ready, turn enforcement on with the three way switch on the <a href=\"%s\">Dashboard</a>."
+msgstr ""
+
+#: admin/class-admin-page.php:1720
+msgid "MightyShield is actively protecting your store."
+msgstr ""
+
+#: admin/class-admin-page.php:1722
+msgid "MightyShield is not checking any orders."
+msgstr ""
+
+#: admin/views/blocking.php:531
+msgid "MightyShield picks one of these at random each time, so nobody can submit the same order twice and learn anything from the difference in the answer. None of them says what tripped, on purpose. These cover refusals that come from the rating; an individual check that refuses on its own says something specific instead, because the customer usually needs to fix it, as with a mistyped postcode."
+msgstr ""
+
+#: admin/views/documentation.php:235
+msgid "MightyShield protects your WooCommerce store from fraudulent and automated orders. The most common is card testing, where an attacker runs many stolen cards through your checkout to find the ones that still work."
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:22
+msgid "MightyShield reads every order before you do"
+msgstr ""
+
+#: includes/class-privacy.php:283
+msgid "MightyShield security log"
+msgstr ""
+
+#: admin/class-fraud-review.php:341
+msgid "MightyShield settings"
+msgstr ""
+
+#: admin/class-setup-wizard.php:110 admin/class-setup-wizard.php:111
+msgid "MightyShield setup"
+msgstr ""
+
+#: admin/views/setup/step-protection.php:69
+msgid "MightyShield ships with its firewall set to allow only listed addresses, and the list holds your server and nothing else. On a store using the newer block checkout, that turns every shopper away before they can pay. Nothing you have chosen caused this; it is the default, and it is wrong for your store."
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:79
+msgid "MightyShield starts in observing mode: it rates and records orders and changes none of them. The last step of this setup is where you decide whether to go further, and it is fine to leave it observing for a week first."
+msgstr ""
+
+#: admin/views/payment.php:32
+msgid "MightyShield supports these payment processors specifically, so it can ask for extra card verification, hold an authorization without taking the money, or read back the card checks. Every other processor still gets the full scoring pipeline and the full response ladder."
+msgstr ""
+
+#: admin/views/documentation.php:563
+msgid "MightyShield turned the checkout away"
+msgstr ""
+
+#: admin/views/documentation.php:232
+msgid "MightyShield works 24/7 to keep bots, card testers, scammers, fraudsters, and the people running stolen cards from making more work for you, so that you can get on with selling instead of cleaning up after them. It is built to be fine-tuned to your customers rather than somebody else's, and everything below explains how to do that by specifying what each setting does and when to reach for it."
+msgstr ""
+
+#: admin/class-admin-page.php:214 admin/class-admin-page.php:1265 admin/class-order-panel.php:1121 admin/class-setup-wizard.php:185
+#: includes/class-ai-client.php:654 protection/class-captcha.php:1251 protection/class-captcha.php:1309 protection/class-smarty-address-verifier.php:106
+msgid "MightyShield:"
+msgstr ""
+
+#: admin/class-order-panel.php:920
+msgid "MightyShield: approved in review."
+msgstr ""
+
+#: admin/class-order-panel.php:958 admin/class-order-panel.php:1027 admin/class-order-panel.php:1053
+msgid "MightyShield: blocked in review."
+msgstr ""
+
+#: includes/class-response.php:507
+msgid "MightyShield: detained for review."
+msgstr ""
+
+#: includes/class-response.php:496
+msgid "MightyShield: held for review before payment. No charge has been attempted and the payment processor was never contacted."
+msgstr ""
+
+#: includes/class-response.php:733
+msgid "MightyShield: held for review."
+msgstr ""
+
+#: includes/class-response.php:553
+msgid "MightyShield: released for payment."
+msgstr ""
+
+#: includes/class-response.php:552
+msgid "MightyShield: released from review. The customer can now pay for this order."
+msgstr ""
+
+#: admin/views/documentation.php:417
+msgid "Minimum checkout seconds"
+msgstr ""
+
+#: admin/views/documentation.php:410
+msgid "Minimum order amount"
+msgstr ""
+
+#: admin/views/ai.php:77 admin/views/ai.php:100 admin/views/ai.php:116
+msgid "Model"
+msgstr ""
+
+#: admin/views/scoring.php:334
+msgid "More severe"
+msgstr ""
+
+#: admin/views/ai.php:212
+msgid "Most reviews to run in one day. 0 means no limit. Used today: %d. Once the limit is reached, orders carry on as normal without a review, and a note is added to your logs."
+msgstr ""
+
+#: admin/views/documentation.php:577
+msgid "My checkout stopped working"
+msgstr ""
+
+#: admin/views/blocking.php:547
+msgid "Need help with this order? Call us on &lt;a href=&quot;tel:5551234567&quot;&gt;(555) 123-4567&lt;/a&gt;."
+msgstr ""
+
+#: admin/views/logs.php:104
+msgid "Needs attention"
+msgstr ""
+
+#: admin/views/documentation.php:383
+msgid "Network."
+msgstr ""
+
+#: admin/class-order-panel.php:539
+msgid "Never charged"
+msgstr ""
+
+#: admin/views/documentation.php:428
+msgid "New account minutes"
+msgstr ""
+
+#: admin/class-fraud-review.php:658 admin/views/logs.php:213
+msgid "Next"
+msgstr ""
+
+#: admin/views/blocking.php:179
+msgid "Next action"
+msgstr ""
+
+#: admin/views/documentation.php:274 admin/views/documentation.php:275 admin/views/documentation.php:291
+msgid "No"
+msgstr ""
+
+#: includes/class-ai-client.php:214
+msgid "No %s API key is saved. Enter one and save the page first: the key fields are write-only, so this tests what is stored, not what is typed."
+msgstr ""
+
+#: admin/views/blocklist.php:47
+msgid "No IP addresses have been blocked yet."
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:269
+msgid "No Smarty Auth ID and Auth Token are saved. Enter them and save the page first: this tests what is stored, not what is typed."
+msgstr ""
+
+#: admin/class-admin-page.php:1014
+msgid "No WordPress user found for that username/email/ID."
+msgstr ""
+
+#: admin/views/blocking.php:222
+msgid "No active payment method can do this."
+msgstr ""
+
+#: admin/views/whitelist.php:81
+msgid "No entries have been allowlisted yet."
+msgstr ""
+
+#: admin/views/logs.php:118
+msgid "No log entries found."
+msgstr ""
+
+#: admin/class-admin-page.php:885
+msgid "No log entries were selected."
+msgstr ""
+
+#: admin/views/dashboard.php:68
+msgid "No order has been or will be reviewed until an API key is saved. Scoring is unaffected — every other check is still running."
+msgstr ""
+
+#: admin/views/payment.php:110
+msgid "No payment methods are currently enabled at checkout, so there is nothing to report."
+msgstr ""
+
+#: admin/views/ai.php:171
+msgid "No reviews will run until a provider is set up above."
+msgstr ""
+
+#: admin/views/setup/step-scoring.php:79
+msgid "None of these refuse an order on their own. They decide how far an order falls, and what happens at each depth is the next thing you will see."
+msgstr ""
+
+#: admin/views/payment.php:138 admin/views/payment.php:152 admin/views/payment.php:163
+msgid "Not available"
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:52
+msgid "Not now"
+msgstr ""
+
+#: admin/views/blocking.php:195
+msgid "Not offered here, because no active payment method can do it: %s."
+msgstr ""
+
+#: admin/views/blocking.php:374
+msgid "Not running."
+msgstr ""
+
+#: admin/views/setup/step-done.php:47
+msgid "Not set up"
+msgstr ""
+
+#: admin/views/documentation.php:375
+msgid "Not something you pick. It appears on its own as soon as you change a row yourself, and goes away again if you set that row back. Switching to a profile while you are on Custom replaces the rows you changed, so MightyShield asks first."
+msgstr ""
+
+#: admin/views/documentation.php:341
+msgid "Nothing fails silently"
+msgstr ""
+
+#: admin/views/documentation.php:249
+msgid "Nothing happens. MightyShield does no work at all on your product and category pages."
+msgstr ""
+
+#: admin/views/blocking.php:392
+msgid "Nothing has been turned away, which usually means the widget is not reaching your forms rather than that nobody has tried. Check the Logs tab, filtered to Needs attention."
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:78
+msgid "Nothing is being acted on yet."
+msgstr ""
+
+#: admin/views/blocking.php:420
+msgid "Nothing is challenged until a provider and both keys are set. A wrong key or a provider outage lets requests through rather than refusing everyone, and emails you once a day until it is fixed."
+msgstr ""
+
+#: admin/views/setup/step-protection.php:53
+msgid "Nothing is checked at all."
+msgstr ""
+
+#: admin/views/documentation.php:239
+msgid "Nothing is enforced until you say so"
+msgstr ""
+
+#: admin/views/documentation.php:447
+msgid "Nothing is sent anywhere until this is on and a key is saved."
+msgstr ""
+
+#: admin/class-fraud-review.php:410
+msgid "Nothing is waiting for you"
+msgstr ""
+
+#: admin/class-dashboard-widget.php:251
+msgid "Nothing needs review"
+msgstr ""
+
+#: admin/class-order-panel.php:297
+msgid "Nothing tripped. This order looked ordinary on every check that ran."
+msgstr ""
+
+#: admin/class-order-panel.php:518
+msgid "Nothing was charged. The order never reached the payment processor."
+msgstr ""
+
+#: admin/views/ai.php:226
+msgid "Notification"
+msgstr ""
+
+#: admin/views/ai.php:236
+msgid "Notification Email(s)"
+msgstr ""
+
+#: admin/class-setup-wizard.php:432
+msgid "Notification settings saved."
+msgstr ""
+
+#: admin/views/ai.php:223
+msgid "Notifications"
+msgstr ""
+
+#: admin/class-admin-page.php:1220
+msgid "Now observing. Orders are rated and recorded, but the rating is not acted on."
+msgstr ""
+
+#: admin/class-admin-page.php:1683
+msgid "Observing"
+msgstr ""
+
+#: admin/class-admin-page.php:1684
+msgid "Observing. Orders are rated and recorded, but not acted on"
+msgstr ""
+
+#: admin/views/blocking.php:415 admin/views/documentation.php:414 admin/views/documentation.php:418 admin/views/documentation.php:447
+#: admin/views/documentation.php:452
+msgid "Off"
+msgstr ""
+
+#: admin/views/documentation.php:408 admin/views/documentation.php:413 admin/views/documentation.php:416 admin/views/documentation.php:453
+#: admin/views/scoring.php:180
+msgid "On"
+msgstr ""
+
+#: admin/views/documentation.php:584
+msgid "On <a href=\"%s\">Scoring</a>, lower the checkout attempts per hour and the different emails per hour, and raise the cost of the checks that are firing on the attack."
+msgstr ""
+
+#: admin/views/documentation.php:583
+msgid "On <a href=\"%s\">Shielding</a>, raise the Rejected threshold so more orders are refused outright, and set Elevated to something firmer than 3-D Secure if your processor cannot do it."
+msgstr ""
+
+#: admin/views/documentation.php:221 admin/views/documentation.php:523
+msgid "On an order"
+msgstr ""
+
+#: admin/views/documentation.php:392
+msgid "On or off."
+msgstr ""
+
+#: admin/views/documentation.php:591
+msgid "On the <a href=\"%s\">Dashboard</a>, set the protection switch to Disabled. Nothing is checked and nothing is recorded until you switch it back. Deactivating the plugin does the same and keeps all your settings and history."
+msgstr ""
+
+#: admin/views/setup/step-done.php:42
+msgid "On, using %s"
+msgstr ""
+
+#: mighty-shield.php:113
+msgid "Onboarding"
+msgstr ""
+
+#: admin/views/documentation.php:398
+msgid "One check gives trust back"
+msgstr ""
+
+#: admin/views/documentation.php:569
+msgid "One thing does outrank your verdict, and it should: a chargeback. If you release an order and the bank later takes the money back, that is recorded against everyone connected to it, exactly as it would be on any other order. Your judgement stands until reality contradicts it."
+msgstr ""
+
+#: admin/views/documentation.php:504
+msgid "Only counts when the customer is signed in to an account carrying that address. Typing it at the checkout proves nothing, so it grants nothing."
+msgstr ""
+
+#: admin/views/ai.php:181
+msgid "Only lower the rating"
+msgstr ""
+
+#: admin/views/ai.php:64
+msgid "Only the selected provider's credentials are used. Keys for the others stay saved if you switch back."
+msgstr ""
+
+#: admin/views/documentation.php:524
+msgid "Open any order and MightyShield is in the right hand column, above the fold. Everything it knows about that order is there, and everything you can do about it."
+msgstr ""
+
+#: admin/class-dashboard-widget.php:271
+msgid "Open queue"
+msgstr ""
+
+#: admin/views/setup/step-done.php:92
+msgid "Open your sign-in page in a private window and sign in. If it goes through, the keys are right. If it does not, the Logs tab will now say exactly what the provider objected to."
+msgstr ""
+
+#: admin/views/ai.php:61
+msgid "OpenAI"
+msgstr ""
+
+#: admin/views/ai.php:86
+msgid "OpenAI API Key"
+msgstr ""
+
+#: admin/views/ai.php:96
+msgid "Optional. Only needed if your key belongs to more than one organization."
+msgstr ""
+
+#: admin/class-fraud-review.php:442 includes/class-privacy.php:269
+msgid "Order"
+msgstr ""
+
+#: admin/class-order-panel.php:932
+msgid "Order approved."
+msgstr ""
+
+#: admin/class-order-panel.php:966
+msgid "Order blocked and cancelled, and the IP added to the blocklist. No payment was taken, so there is nothing to refund."
+msgstr ""
+
+#: admin/class-order-panel.php:967
+msgid "Order blocked and cancelled. No payment was taken, so there is nothing to refund."
+msgstr ""
+
+#: admin/class-order-panel.php:1062
+msgid "Order blocked and cancelled. The payment was already captured, so refund it from the order items panel below and the order is settled."
+msgstr ""
+
+#: admin/class-order-panel.php:1061
+msgid "Order blocked, cancelled, and the IP added to the blocklist. The payment was already captured, so refund it from the order items panel below and the order is settled."
+msgstr ""
+
+#: admin/class-order-panel.php:1041
+msgid "Order blocked. The authorization was released and the order cancelled. Nothing was taken, so there is nothing to refund."
+msgstr ""
+
+#: admin/class-order-panel.php:1040
+msgid "Order blocked. The authorization was released, the order cancelled, and the IP added to the blocklist. Nothing was taken, so there is nothing to refund."
+msgstr ""
+
+#: admin/class-order-panel.php:884
+msgid "Order released. It was never charged, so send the customer this link to pay: %s"
+msgstr ""
+
+#: admin/views/documentation.php:385
+msgid "Order."
+msgstr ""
+
+#: admin/class-fraud-review.php:388
+msgid "Orders MightyShield has stopped or flagged appear here until somebody decides what to do with them."
+msgstr ""
+
+#: admin/views/documentation.php:411
+msgid "Orders at or above this cost a little trust, and a prepaid card used on one is its own check in the Payment group."
+msgstr ""
+
+#: admin/views/documentation.php:410
+msgid "Orders below this are treated as suspicious. Card testers use the cheapest thing in the shop, so set it just under your genuine cheapest item."
+msgstr ""
+
+#: includes/class-privacy.php:196
+msgid "Orders completed"
+msgstr ""
+
+#: admin/class-fraud-review.php:415
+msgid "Orders held before payment, held after it, or flagged by a check land here. An empty queue means every one of them has been dealt with."
+msgstr ""
+
+#: admin/views/documentation.php:423
+msgid "Orders per 15 minutes"
+msgstr ""
+
+#: includes/class-privacy.php:192
+msgid "Orders placed"
+msgstr ""
+
+#: includes/class-privacy.php:200
+msgid "Orders refunded"
+msgstr ""
+
+#: includes/class-privacy.php:204
+msgid "Orders reported as fraud"
+msgstr ""
+
+#: admin/class-admin-page.php:1123
+msgid "Organization"
+msgstr ""
+
+#: admin/views/ai.php:93
+msgid "Organization ID"
+msgstr ""
+
+#: admin/views/documentation.php:568
+msgid "Outcomes only ever get worse: an order recorded as a chargeback will not quietly go back to being fine. Your own Clean or Fraud verdict is the exception. It can be changed as often as you like, in either direction, and changing it takes back whatever the previous verdict did."
+msgstr ""
+
+#: admin/views/documentation.php:205 admin/views/documentation.php:234
+msgid "Overview"
+msgstr ""
+
+#: admin/views/payment.php:84
+msgid "Partial"
+msgstr ""
+
+#: admin/views/dashboard.php:130
+msgid "Past 7 days"
+msgstr ""
+
+#: includes/class-ai-capture.php:450
+msgid "PayPal did not capture the authorization. Check the order notes."
+msgstr ""
+
+#: admin/class-admin-page.php:1767 admin/views/documentation.php:216 admin/views/documentation.php:484
+msgid "Payment"
+msgstr ""
+
+#: admin/views/payment.php:101
+msgid "Payment Methods"
+msgstr ""
+
+#: admin/views/payment.php:118
+msgid "Payment method"
+msgstr ""
+
+#: admin/views/blocking.php:233
+msgid "Payment methods that cannot do this fall back to \"%s\"."
+msgstr ""
+
+#: admin/views/documentation.php:386
+msgid "Payment."
+msgstr ""
+
+#: admin/views/blocklist.php:20
+msgid "Permanently bar an IP address or CIDR range from checkout and the Store API. Blocklist entries never expire until removed. Allowlisted IPs are never blocked."
+msgstr ""
+
+#: admin/views/blocking.php:375
+msgid "Pick a provider and save both keys below. Until then nothing is challenged and no order is affected."
+msgstr ""
+
+#: admin/views/documentation.php:413
+msgid "Postcode and state check"
+msgstr ""
+
+#: admin/class-order-panel.php:612
+msgid "Postcode does not match the state"
+msgstr ""
+
+#: admin/class-fraud-review.php:645 admin/views/logs.php:209
+msgid "Previous"
+msgstr ""
+
+#: admin/views/blocking.php:166
+msgid "Previous action"
+msgstr ""
+
+#: admin/views/payment.php:29
+msgid "Processors"
+msgstr ""
+
+#: admin/views/hero.php:41 admin/views/setup/step-done.php:26
+msgid "Protection"
+msgstr ""
+
+#: admin/class-admin-page.php:1221
+msgid "Protection active. Orders are now blocked and held by their rating."
+msgstr ""
+
+#: admin/class-admin-page.php:1219
+msgid "Protection disabled. No orders are being checked."
+msgstr ""
+
+#: admin/views/hero.php:48
+msgid "Protection state"
+msgstr ""
+
+#: admin/views/ai.php:57 admin/views/blocking.php:412 admin/views/setup/step-challenge.php:48
+msgid "Provider"
+msgstr ""
+
+#: admin/views/documentation.php:448
+msgid "Provider and model"
+msgstr ""
+
+#: admin/views/documentation.php:588
+msgid "Put the thresholds back when it is over. Settings tightened during an attack will refuse real customers on ordinary traffic."
+msgstr ""
+
+#: admin/views/documentation.php:207 admin/views/documentation.php:302
+msgid "Quick start"
+msgstr ""
+
+#: admin/class-order-panel.php:385
+msgid "Rate Order"
+msgstr ""
+
+#: admin/class-dashboard-widget.php:207 admin/views/dashboard.php:87 admin/views/dashboard.php:106 admin/views/logs.php:52
+#: admin/views/logs.php:95
+msgid "Rate-limited"
+msgstr ""
+
+#: includes/class-trust-badge.php:224
+msgid "Rated %1$d out of 100: %2$s"
+msgstr ""
+
+#: admin/class-order-panel.php:825
+msgid "Rated %1$s/100: %2$s. Nothing was done to the order. This is a rating, not an action."
+msgstr ""
+
+#: includes/class-trust-badge.php:226
+msgid "Rated %d out of 100"
+msgstr ""
+
+#: admin/class-order-panel.php:251
+msgid "Rated by hand, so this is a partial rating."
+msgstr ""
+
+#: admin/class-order-column.php:203
+msgid "Rated by hand, so this is a partial rating. The checkout-time bot, timing and device checks could not be replayed."
+msgstr ""
+
+#: admin/class-fraud-review.php:443 admin/class-order-column.php:80 admin/class-order-column.php:87 admin/views/documentation.php:260
+msgid "Rating"
+msgstr ""
+
+#: admin/views/ai.php:178
+msgid "Rating Effect"
+msgstr ""
+
+#: admin/class-order-panel.php:399
+msgid "Rating an order after the fact gives a partial rating."
+msgstr ""
+
+#: admin/views/documentation.php:450
+msgid "Rating effect"
+msgstr ""
+
+#: admin/views/blocking.php:108 admin/views/blocking.php:109
+msgid "Reachable only from a signal, never from a rating"
+msgstr ""
+
+#: admin/views/blocking.php:74
+msgid "Reaches processor"
+msgstr ""
+
+#: admin/views/documentation.php:260
+msgid "Reaches your processor"
+msgstr ""
+
+#: admin/views/documentation.php:390
+msgid "Reading the table"
+msgstr ""
+
+#: admin/class-admin-page.php:1112 admin/views/blocklist.php:54 admin/views/logs.php:144
+msgid "Reason"
+msgstr ""
+
+#: admin/views/documentation.php:560
+msgid "Refunded"
+msgstr ""
+
+#: admin/views/blocking.php:495
+msgid "Refusals"
+msgstr ""
+
+#: admin/views/documentation.php:563
+msgid "Refused"
+msgstr ""
+
+#: admin/views/documentation.php:275
+msgid "Refused at the checkout. No order is created."
+msgstr ""
+
+#: admin/views/documentation.php:291
+msgid "Refused, and the address is added to your blocklist."
+msgstr ""
+
+#: admin/views/documentation.php:476
+msgid "Refuses only addresses on your blocklist. Required if your checkout page uses the Checkout block, because that checkout is built on those endpoints."
+msgstr ""
+
+#: admin/views/documentation.php:475
+msgid "Refuses those endpoints to everyone who is not on your allowlist. Right for a store using the classic checkout, where customers never touch them."
+msgstr ""
+
+#: admin/views/blocking.php:458
+msgid "Registration"
+msgstr ""
+
+#: admin/views/documentation.php:425
+msgid "Registrations per hour"
+msgstr ""
+
+#: admin/views/documentation.php:294
+msgid "Rejected and Banned orders never reach your payment processor, and High defaults to an action that does not either. That is what keeps spam attempts off your decline and dispute figures."
+msgstr ""
+
+#: admin/views/documentation.php:461
+msgid "Rejected is offered too, and is worth considering if you would rather not turn anyone away on arithmetic alone. The review happens before the refusal, so with the rating effect set to lower or raise, a model that recognises an ordinary customer can rescue the order. Orders stopped by a single decisive check, such as a filled trap field or a card with a chargeback against it, are never sent: the model cannot overturn those, so the call would be wasted. Banned is not offered for the same reason."
+msgstr ""
+
+#: admin/views/ai.php:167
+msgid "Rejected is worth considering if you would rather not turn anyone away on arithmetic alone: the review happens before the refusal, so with the rating effect below set to raise as well as lower, a model that recognises an ordinary customer can rescue the order. Orders stopped by a single decisive signal — a hidden trap field, a failed bot challenge, a card with a chargeback — are never sent, because the model cannot overturn those and the call would be wasted."
+msgstr ""
+
+#: admin/views/blocklist.php:73 admin/views/whitelist.php:131
+msgid "Remove"
+msgstr ""
+
+#: admin/views/blocklist.php:73
+msgid "Remove this IP from the blocklist?"
+msgstr ""
+
+#: admin/views/whitelist.php:131
+msgid "Remove this entry from the allowlist?"
+msgstr ""
+
+#: admin/views/documentation.php:424
+msgid "Repeated declines from one address are the clearest sign of card testing there is."
+msgstr ""
+
+#: protection/class-outcomes.php:328
+msgid "Report as fraud (MightyShield)"
+msgstr ""
+
+#: includes/class-privacy.php:216
+msgid "Reputation"
+msgstr ""
+
+#: admin/class-admin-page.php:1114
+msgid "Request data"
+msgstr ""
+
+#: admin/views/ai.php:46
+msgid "Requires valid API credentials below. Every review costs a request to your AI provider."
+msgstr ""
+
+#: admin/class-order-panel.php:540
+msgid "Reserved, not taken"
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:28
+msgid "Resetting a password"
+msgstr ""
+
+#: admin/views/documentation.php:519
+msgid "Retention."
+msgstr ""
+
+#: admin/class-dashboard-widget.php:270 admin/class-fraud-review.php:580
+msgid "Review"
+msgstr ""
+
+#: admin/class-admin-page.php:217
+msgid "Review the setting"
+msgstr ""
+
+#: admin/views/ai.php:133
+msgid "Reviewing"
+msgstr ""
+
+#: admin/views/blocking.php:66 admin/views/documentation.php:260
+msgid "Risk Level"
+msgstr ""
+
+#: admin/views/blocking.php:52
+msgid "Risk Levels"
+msgstr ""
+
+#: admin/views/documentation.php:466
+msgid "Risk levels."
+msgstr ""
+
+#: admin/views/whitelist.php:55
+msgid "Role"
+msgstr ""
+
+#: admin/class-admin-page.php:1046
+msgid "Role %s added to allowlist."
+msgstr ""
+
+#: admin/views/documentation.php:505
+msgid "Role."
+msgstr ""
+
+#: admin/views/documentation.php:518
+msgid "Row actions."
+msgstr ""
+
+#: admin/class-setup-wizard.php:188
+msgid "Run setup"
+msgstr ""
+
+#: admin/views/blocking.php:332
+msgid "Run the fraud checks on the block-based Checkout, which submits through the Store API. Every check works there, including the ones that need something from the browser: the checkout timer, the device check, the hidden decoy field and the bot challenge. The same order is judged the same way whichever checkout your store uses."
+msgstr ""
+
+#: admin/views/blocking.php:379
+msgid "Running."
+msgstr ""
+
+#: admin/views/documentation.php:419
+msgid "Same device order limit"
+msgstr ""
+
+#: admin/class-admin-page.php:1756 admin/views/documentation.php:213 admin/views/documentation.php:366 admin/views/setup/step-done.php:32
+msgid "Scoring"
+msgstr ""
+
+#: admin/views/scoring.php:58
+msgid "Scoring Profile"
+msgstr ""
+
+#: admin/views/scoring.php:29
+msgid "Scoring only"
+msgstr ""
+
+#: admin/views/scoring.php:68
+msgid "Scoring profile"
+msgstr ""
+
+#: admin/views/documentation.php:369
+msgid "Scoring profiles"
+msgstr ""
+
+#: admin/class-setup-wizard.php:393
+msgid "Scoring set to %s."
+msgstr ""
+
+#: admin/class-admin-page.php:862
+msgid "Scoring set to %s. Every trust cost below now follows that profile, and you can still change any of them."
+msgstr ""
+
+#: admin/views/setup/step-done.php:109
+msgid "Scoring tab"
+msgstr ""
+
+#: admin/views/documentation.php:210
+msgid "Screens"
+msgstr ""
+
+#: admin/views/logs.php:82
+msgid "Search IP, email, or reason"
+msgstr ""
+
+#: admin/views/blocking.php:445 admin/views/setup/step-challenge.php:75
+msgid "Secret key"
+msgstr ""
+
+#: admin/views/setup/step-alerts.php:33
+msgid "Send alerts"
+msgstr ""
+
+#: admin/views/ai.php:44
+msgid "Send orders to an AI model for fraud review."
+msgstr ""
+
+#: admin/views/setup/step-alerts.php:44
+msgid "Send to"
+msgstr ""
+
+#: admin/views/ai.php:137
+msgid "Send to Review"
+msgstr ""
+
+#: admin/views/documentation.php:453
+msgid "Sends a message when the model rates an order badly. Leave the address list empty to use the site administrator."
+msgstr ""
+
+#: admin/views/documentation.php:449
+msgid "Sends one real review request to the provider you selected, built exactly the way a live order builds it, and tells you what came back. Because it uses the real request, it catches a model name your provider does not recognise as readily as it catches a bad key. Save the page before testing: key fields are write-only, so the test uses what is stored. It costs one request and does not count against your daily limit."
+msgstr ""
+
+#: admin/views/ai.php:126
+msgid "Sends one real review request to the selected provider, using the same tool definition and schema a live order uses. This tests the saved key, not what is typed above, so save first. It costs one request and does not count against the daily limit."
+msgstr ""
+
+#: admin/views/documentation.php:452
+msgid "Sends the shape of the customer's details rather than the details themselves, so the name, address and email never leave your site. It costs some accuracy, which is why the choice is yours."
+msgstr ""
+
+#: admin/views/setup/step-alerts.php:53
+msgid "Separate several with commas. Left empty, they go to %s, the site administrator address."
+msgstr ""
+
+#: admin/views/scoring.php:61
+msgid "Set every trust cost below at once. Pick the one that sounds like your store, then change any individual row that is catching customers you want to keep."
+msgstr ""
+
+#: admin/views/documentation.php:582
+msgid "Set the switch on the <a href=\"%s\">Dashboard</a> to Active, if it is not already. That is what makes the ratings do anything."
+msgstr ""
+
+#: admin/views/documentation.php:405 admin/views/documentation.php:445
+msgid "Setting"
+msgstr ""
+
+#: mighty-shield.php:101
+msgid "Settings"
+msgstr ""
+
+#: admin/class-admin-page.php:1649
+msgid "Settings saved."
+msgstr ""
+
+#: admin/class-setup-wizard.php:333
+msgid "Setup complete. You can change any of it from these tabs at any time."
+msgstr ""
+
+#: admin/views/dashboard.php:48
+msgid "Setup is not finished."
+msgstr ""
+
+#: admin/class-setup-wizard.php:487
+msgid "Setup progress"
+msgstr ""
+
+#: admin/class-admin-page.php:1766 admin/views/documentation.php:215 admin/views/documentation.php:463
+msgid "Shielding"
+msgstr ""
+
+#: admin/class-admin-page.php:1735
+msgid "Shields are down"
+msgstr ""
+
+#: admin/class-admin-page.php:1734
+msgid "Shields are up"
+msgstr ""
+
+#: admin/class-fraud-review.php:633 admin/views/logs.php:200
+msgid "Showing %1$d of %2$s"
+msgstr ""
+
+#: admin/views/documentation.php:529
+msgid "Shown on orders MightyShield is holding. What they do depends on what happened to the money, which the panel states before the buttons."
+msgstr ""
+
+#: admin/views/scoring.php:181
+msgid "Signal"
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:41
+msgid "Signals subtract from a trust rating"
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:26
+msgid "Signing in"
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:102
+msgid "Signing in is off by default, and it is worth leaving that way until you have seen the rest working. If a challenge ever fails to load on that form, everybody is locked out of the site including you."
+msgstr ""
+
+#: admin/views/blocking.php:432 admin/views/setup/step-challenge.php:64
+msgid "Site key"
+msgstr ""
+
+#: admin/class-setup-wizard.php:562
+msgid "Skip setup"
+msgstr ""
+
+#: admin/class-setup-wizard.php:568
+msgid "Skip this step"
+msgstr ""
+
+#: admin/views/setup/step-scoring.php:73
+msgid "Skip this step to leave them alone."
+msgstr ""
+
+#: admin/views/blocking.php:499
+msgid "Slow down refusals"
+msgstr ""
+
+#: admin/views/documentation.php:468
+msgid "Slow down refusals."
+msgstr ""
+
+#: admin/views/documentation.php:414
+msgid "Smarty address verification"
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:299
+msgid "Smarty answered, but only with the credentials in the query string. This server does not deliver the Authorization header, so that is what MightyShield will use."
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:298
+msgid "Smarty answered. Credentials are being sent as HTTP Basic, which keeps them out of the request URL."
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:311
+msgid "Smarty did not answer on either transport."
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:395
+msgid "Smarty replied, but the response could not be read as JSON."
+msgstr ""
+
+#: admin/views/documentation.php:534
+msgid "So Rate Order works from what is left: the address, the email, the location, the totals, and the customer's own history with you. That is genuinely useful, but a 90 from it is not the same statement as a 90 earned at checkout, and the panel says so wherever it shows one."
+msgstr ""
+
+#: admin/views/blocking.php:57
+msgid "Some actions depend on your processor; which of yours can do what is on the <a href=\"%s\">Payment</a> tab."
+msgstr ""
+
+#: admin/views/whitelist.php:89
+msgid "Source"
+msgstr ""
+
+#: admin/class-admin-page.php:1535
+msgid "Spam and fraud protection for WooCommerce"
+msgstr ""
+
+#: admin/class-order-panel.php:563 admin/class-order-panel.php:606
+msgid "Stopped before payment"
+msgstr ""
+
+#: admin/views/documentation.php:546
+msgid "Stopped before payment, held after it, held on an authorization, failed card checks, or the name of whichever check flagged it."
+msgstr ""
+
+#: admin/views/blocking.php:299 admin/views/documentation.php:472
+msgid "Store API Firewall"
+msgstr ""
+
+#: includes/class-scoring-profiles.php:439
+msgid "Strict"
+msgstr ""
+
+#: admin/views/documentation.php:374
+msgid "Strict."
+msgstr ""
+
+#: admin/class-setup-wizard.php:520
+msgid "Strictness"
+msgstr ""
+
+#: includes/class-ai-capture.php:437
+msgid "Stripe did not capture the authorization. Check the order notes."
+msgstr ""
+
+#: includes/class-ai-capture.php:426 includes/class-ai-capture.php:534
+msgid "Stripe order handler unavailable."
+msgstr ""
+
+#: admin/views/payment.php:27
+msgid "Supported"
+msgstr ""
+
+#: admin/views/documentation.php:488
+msgid "Supported processors."
+msgstr ""
+
+#: admin/views/documentation.php:392
+msgid "Switching a check off stops it contributing anything at all. Prefer lowering its cost first, so it still counts for something."
+msgstr ""
+
+#: admin/class-admin-page.php:1525 admin/views/whitelist.php:114
+msgid "System"
+msgstr ""
+
+#: admin/class-order-panel.php:542
+msgid "Taken in full"
+msgstr ""
+
+#: admin/views/documentation.php:547
+msgid "Taken in full, reserved but not taken, or never charged. Read from your payment processor rather than from what MightyShield asked it to do."
+msgstr ""
+
+#: admin/class-order-panel.php:447
+msgid "Telling MightyShield how this order turned out is what teaches it. It weighs your answer against future orders from the same customer, address, card or network."
+msgstr ""
+
+#: admin/views/documentation.php:421
+msgid "Temporary block length"
+msgstr ""
+
+#: admin/views/documentation.php:511
+msgid "Temporary blocks are separate and do not appear here. They are applied automatically for 24 hours when something trips a hard check, and they clear themselves."
+msgstr ""
+
+#: admin/class-admin-page.php:1411 admin/views/ai.php:124 admin/views/documentation.php:415 admin/views/documentation.php:449
+msgid "Test Connection"
+msgstr ""
+
+#: admin/class-admin-page.php:1119
+msgid "Testing…"
+msgstr ""
+
+#: admin/views/scoring.php:280
+msgid "Tests the saved Auth ID and token from this server, and keeps whichever way of sending them Smarty accepts. Save first, then test. Costs one lookup."
+msgstr ""
+
+#: admin/views/documentation.php:236
+msgid "That costs you more than wasted time. Payment processors judge you on how many of your payments are declined or disputed, so a flood of bad orders can put your account under review, into reserves, or shut it down. Stopping those orders before they ever reach your processor matters as much as catching the fraud itself."
+msgstr ""
+
+#: includes/class-privacy.php:435
+msgid "That history is stored as a one-way salted hash rather than as your details themselves, so it cannot be read back or used to contact you. Security log entries are deleted automatically after the retention period set in the plugin, 30 days by default."
+msgstr ""
+
+#: admin/views/setup/step-done.php:62
+msgid "That is everything"
+msgstr ""
+
+#: includes/class-rescore.php:90
+msgid "That order could not be loaded."
+msgstr ""
+
+#: admin/class-order-panel.php:846
+msgid "That was already the recorded verdict."
+msgstr ""
+
+#: includes/class-api-error.php:137
+msgid "The %s subscription is out of lookups (HTTP 402). The credentials are fine; the account needs topping up."
+msgstr ""
+
+#: includes/class-ai-client.php:553
+msgid "The AI provider replied, but the response could not be read as JSON."
+msgstr ""
+
+#: includes/class-ip-data.php:496
+msgid "The MaxMind archive did not contain the expected database."
+msgstr ""
+
+#: includes/class-ip-data.php:460
+msgid "The MaxMind licence key was refused. A newly created key can take a few minutes to become active."
+msgstr ""
+
+#: admin/views/documentation.php:432
+msgid "The Payment checks answer late"
+msgstr ""
+
+#: admin/class-dashboard-widget.php:137
+msgid "The Store API Firewall is set to Allowlist, and this store uses the block checkout, which needs those endpoints."
+msgstr ""
+
+#: admin/views/documentation.php:512
+msgid "The allowlist always wins. An address on both lists is allowed."
+msgstr ""
+
+#: admin/views/documentation.php:480
+msgid "The block based checkout in Allowlist mode means no customer can reach the cart or the checkout at all. MightyShield now detects that combination and says so at the top of this tab and on your WordPress dashboard, but if you ever see an empty cart or a checkout that will not load, this is the first setting to check."
+msgstr ""
+
+#: protection/class-captcha.php:1254
+msgid "The bot challenge is misconfigured (%s) and is failing open so it does not block checkout. Verify your Site Key and Secret Key on the Shielding tab."
+msgstr ""
+
+#: admin/class-admin-page.php:1251
+msgid "The bot challenge is misconfigured and is failing open so it does not block checkout. Last error: %s"
+msgstr ""
+
+#: protection/class-captcha.php:960
+msgid "The bot challenge on the %2$s form has refused %1$d visitors from several different networks without a single one passing. That pattern is a configuration fault rather than an attack, so it has stopped refusing anybody on that form until one passes. Check that the site key and secret key are from the same provider account and that this domain is registered with them."
+msgstr ""
+
+#: admin/views/documentation.php:350
+msgid "The busiest offenders of the past week, with where they are and a link to their log entries."
+msgstr ""
+
+#: admin/views/documentation.php:349
+msgid "The chart."
+msgstr ""
+
+#: admin/views/documentation.php:250
+msgid "The checkout page loads."
+msgstr ""
+
+#: admin/views/documentation.php:433
+msgid "The checks in the Payment group — whether the billing address matched the card, whether the security code matched, whether it was a prepaid card, what your processor's own fraud scoring said — are the only ones that cannot run at checkout. Your payment processor is the only thing that knows the answers, and it does not answer until the payment has gone through."
+msgstr ""
+
+#: admin/views/documentation.php:402
+msgid "The checks, and what they look at"
+msgstr ""
+
+#: admin/views/documentation.php:273
+msgid "The customer confirms the payment with their bank."
+msgstr ""
+
+#: admin/views/documentation.php:253
+msgid "The decision."
+msgstr ""
+
+#: admin/views/documentation.php:526
+msgid "The dial at the top is the same 1 to 100 scale as the Scoring tab, coloured to match. Underneath are the checks that actually tripped, worst first, with what each one cost."
+msgstr ""
+
+#: admin/views/documentation.php:554
+msgid "The email address, phone number, delivery address, network and card behind every order are remembered and linked together. None of it is stored in readable form: it is all scrambled with a key unique to your site, so the records hold no personal detail and cannot be matched against another store."
+msgstr ""
+
+#: admin/views/documentation.php:253
+msgid "The final rating picks a risk level, the risk level picks an action, and MightyShield checks whether your payment processor can actually carry that action out. Everything is written down before anything is done."
+msgstr ""
+
+#: admin/class-order-panel.php:522
+msgid "The funds are reserved on the card but not taken."
+msgstr ""
+
+#: admin/views/documentation.php:538
+msgid "The funds are reserved on the card but not taken. Approve and Capture takes them and moves the order to Processing. Block releases the reservation, cancels the order and blocks the address, with nothing left to refund."
+msgstr ""
+
+#: admin/views/documentation.php:361
+msgid "The last 7 days."
+msgstr ""
+
+#: admin/class-fraud-review.php:445 admin/views/documentation.php:329
+msgid "The money"
+msgstr ""
+
+#: admin/views/documentation.php:547
+msgid "The money."
+msgstr ""
+
+#: admin/views/blocking.php:215
+msgid "The money:"
+msgstr ""
+
+#: admin/views/documentation.php:488
+msgid "The ones MightyShield was built for specifically, with what each can do and whether you have it active. Every other processor still gets the full scoring pipeline and the full response ladder."
+msgstr ""
+
+#: admin/views/documentation.php:274
+msgid "The order is created and held with no payment attempted."
+msgstr ""
+
+#: admin/views/documentation.php:251
+msgid "The order is submitted."
+msgstr ""
+
+#: admin/views/documentation.php:559
+msgid "The order reached Completed"
+msgstr ""
+
+#: admin/views/documentation.php:560
+msgid "The order was refunded"
+msgstr ""
+
+#: includes/class-ai-capture.php:398 includes/class-ai-capture.php:507
+msgid "The payment gateway for this order is not available."
+msgstr ""
+
+#: admin/class-order-panel.php:525
+msgid "The payment has already been captured in full."
+msgstr ""
+
+#: includes/class-ai-capture.php:555
+msgid "The processor did not confirm the authorization was cancelled."
+msgstr ""
+
+#: admin/views/documentation.php:539
+msgid "The processor was never contacted. Approve sends the order back to Pending and gives you a link to pass to the customer so they can pay. Block cancels it. Either way nothing was charged."
+msgstr ""
+
+#: admin/views/documentation.php:348
+msgid "The protection switch."
+msgstr ""
+
+#: admin/views/documentation.php:308
+msgid "The quickest version of all of this is the %s, which walks through the four decisions that matter and explains each one as it goes. It is safe to run again at any time: nothing is changed until you choose it."
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:49
+msgid "The rating decides what happens"
+msgstr ""
+
+#: admin/views/setup/step-protection.php:48
+msgid "The rating is acted on: risky orders are held for review, and the worst are refused at checkout. Real money and real customers are affected from the next order onwards."
+msgstr ""
+
+#: admin/views/documentation.php:526
+msgid "The rating."
+msgstr ""
+
+#: admin/class-order-panel.php:1017
+msgid "The release was sent to your payment processor, but it did not confirm the authorization was cancelled. The order has been left on hold so it stays in your queue. Check it in your processor dashboard."
+msgstr ""
+
+#: admin/views/ai.php:185
+msgid "The review returns its own rating from 1 to 100, judging the whole order. Lowering only means it can veto trust the checks granted, but never hand any back. Allowing it to raise lets a model that recognises an ordinary customer rescue an order the checks were too harsh on, at the cost of letting one confident wrong answer do the same. Either way it cannot push an order into Trusted; that still takes a clean order history."
+msgstr ""
+
+#: admin/views/ai.php:198
+msgid "The review still sees what it needs: the email domain, whether the address looks plausible, the city and postcode, and the network the order came from. It sees but not the street address, mailbox name, phone number or exact IP. Slightly less accurate, and worth turning on if you would rather those details never left your site."
+msgstr ""
+
+#: admin/views/documentation.php:361
+msgid "The same chart as the Dashboard, over a shorter window because a sidebar column is narrow, with the totals beside it. The Dashboard tab still shows 30 days."
+msgstr ""
+
+#: admin/views/documentation.php:549
+msgid "The same two actions as the panel on the order itself, doing exactly the same things. Clearing ten held orders does not mean opening ten orders."
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:50
+msgid "The score lands in one of six bands, and each band has an action you choose: let it through, add a note for you, ask the shopper for 3-D Secure, hold it for review, or refuse it."
+msgstr ""
+
+#: admin/views/documentation.php:346
+msgid "The state of your protection, and what it has been doing."
+msgstr ""
+
+#: admin/views/documentation.php:360
+msgid "The status stripe."
+msgstr ""
+
+#: admin/views/documentation.php:247
+msgid "The steps, in order"
+msgstr ""
+
+#: admin/views/documentation.php:377
+msgid "The stricter profiles deliberately leave some checks alone. Detecting a VPN, a shared office address, a shopper who never moved the mouse or a browser with no cookies all catch real customers as readily as they catch fraud, so raising them would mean turning away travellers, people using a keyboard alone, and small businesses. Those checks stay where they are on every profile, and the ones that point at automation or a stolen card are what goes up."
+msgstr ""
+
+#: admin/views/documentation.php:380
+msgid "The table is divided into six groups, by what a check is actually looking at. The grouping is there so you can reason about a whole category at once — if your customers keep tripping the Network checks, that is a different problem from tripping the Identity ones."
+msgstr ""
+
+#: admin/class-admin-page.php:1120
+msgid "The test could not be run. Reload the page and try again."
+msgstr ""
+
+#: admin/views/documentation.php:469
+msgid "The three refusal messages are shown above the box so you can see what a refused customer reads. They are deliberately vague, and that vagueness is what stops an attacker learning anything from them. The cost is paid by the occasional real customer who gets caught by mistake and has no idea who to talk to. Put your phone number or your support address here and it is added to the end of every refusal, whatever caused it. Links work, so the number can be tapped on a phone. Leave it empty and nothing changes."
+msgstr ""
+
+#: admin/views/documentation.php:364
+msgid "The widget appears only for people who can manage WooCommerce. To hide it, use Screen Options at the top of the dashboard. That is a per person setting, so hiding it does not take it away from anyone else."
+msgstr ""
+
+#: admin/views/setup/step-welcome.php:87
+msgid "There is a fuller explanation in the %s whenever you want it."
+msgstr ""
+
+#: admin/class-order-panel.php:277
+msgid "These checks cannot be replayed: %s."
+msgstr ""
+
+#: admin/views/blocking.php:225
+msgid "These orders will be handled as \"%s\" instead."
+msgstr ""
+
+#: admin/views/documentation.php:434
+msgid "They are ordinary checks in every other way: they have a trust cost you set here, and it is added to what the checkout already found rather than judged on its own. What differs is what can be done about the result. The money has moved by then, so an order that falls far enough is held before it ships rather than refused. A successful charge that failed the address and the security code is one of the strongest signs of a stolen card there is, and it costs you nothing to stop the parcel."
+msgstr ""
+
+#: admin/views/documentation.php:473
+msgid "This controls access to the WooCommerce cart and checkout endpoints, and it is the one setting here that can close your shop if it is set wrongly."
+msgstr ""
+
+#: includes/class-ai-capture.php:405
+msgid "This gateway does not support capturing."
+msgstr ""
+
+#: includes/class-trust-badge.php:212
+msgid "This order has not been rated"
+msgstr ""
+
+#: admin/class-order-panel.php:473
+msgid "This order is on hold"
+msgstr ""
+
+#: admin/class-order-panel.php:379
+msgid "This order was placed without being rated, either before MightyShield was installed or while it was switched off."
+msgstr ""
+
+#: includes/class-response.php:333
+msgid "This order was rated suspicious, but the payment method does not support additional card verification, so it proceeded without it."
+msgstr ""
+
+#: includes/class-response.php:828
+msgid "This order was set to be refused before it was created, but it already existed by the time the decision ran. It has been held for review instead, and nothing has been charged."
+msgstr ""
+
+#: admin/views/payment.php:165
+msgid "This provider cannot authorize without charging. Orders set to be authorized and held are held before payment instead, so nothing is taken."
+msgstr ""
+
+#: admin/views/payment.php:140
+msgid "This provider has no way to ask for it on a single order. Orders that would have been asked for 3-D Secure go through as normal."
+msgstr ""
+
+#: admin/class-admin-page.php:1888
+msgid "This store uses the block checkout, which is built on the Store API, and the Store API Firewall is set to Allowlist. That combination refuses the cart and the checkout for everyone who is not on your allowlist, so no customer can buy. Set the firewall to Blocklist, or turn it off."
+msgstr ""
+
+#: includes/class-response.php:157
+msgid "This transaction was declined. Please contact your card issuer for more information."
+msgstr ""
+
+#: admin/views/setup/step-scoring.php:58
+msgid "This will overwrite changes you have made."
+msgstr ""
+
+#: admin/views/documentation.php:486
+msgid "Three of the actions need cooperation from the processor: asking for 3-D Secure, reserving money without taking it, and reading back the card checks after payment. Processors differ, so the same risk level can behave differently on two orders paid different ways."
+msgstr ""
+
+#: admin/views/documentation.php:348
+msgid "Three positions, and the control sits at the top of every MightyShield page. Disabled means no orders are checked at all. Observing means orders are rated and recorded but nothing is refused or held because of the rating. Active means the rating decides what happens."
+msgstr ""
+
+#: admin/views/logs.php:141
+msgid "Time"
+msgstr ""
+
+#: admin/views/dashboard.php:129
+msgid "Top Blocked IPs"
+msgstr ""
+
+#: admin/views/documentation.php:350
+msgid "Top blocked addresses."
+msgstr ""
+
+#: admin/class-fraud-review.php:447
+msgid "Total"
+msgstr ""
+
+#: admin/views/dashboard.php:104
+msgid "Total events"
+msgstr ""
+
+#: admin/views/scoring.php:116
+msgid "Trust Rating"
+msgstr ""
+
+#: admin/views/blocking.php:67
+msgid "Trust at or below"
+msgstr ""
+
+#: admin/views/scoring.php:182
+msgid "Trust cost"
+msgstr ""
+
+#: admin/views/documentation.php:393
+msgid "Trust cost."
+msgstr ""
+
+#: includes/class-privacy.php:276
+msgid "Trust rating"
+msgstr ""
+
+#: admin/class-order-column.php:197
+msgid "Trust rating %1$d of 100: %2$s"
+msgstr ""
+
+#: admin/class-admin-page.php:1721
+msgid "Trust ratings are being recorded, not enforced."
+msgstr ""
+
+#: admin/views/ai.php:164
+msgid "Trusted and Low are most orders, so choosing them will cost real money. Elevated and High are the ambiguous ones, where a verdict is most likely to change the outcome."
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:35
+msgid "Turn away the bots before they reach checkout"
+msgstr ""
+
+#: admin/views/documentation.php:585
+msgid "Turn on the bot challenge on <a href=\"%s\">Shielding</a> if you have not. It is the single most effective thing against automated checkout traffic."
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:69
+msgid "Turnstile: your Cloudflare dashboard. reCAPTCHA: the Google admin console, and it must be a v3 key."
+msgstr ""
+
+#: admin/views/documentation.php:342
+msgid "Two actions need something from your payment processor. If yours cannot do it, MightyShield does the next best thing rather than nothing: 3-D Secure verification falls back to flagging, and authorize and hold falls back to holding before payment. The <a href=\"%s\">Payment</a> tab shows which of your processors can do what."
+msgstr ""
+
+#: admin/views/setup/step-done.php:99
+msgid "Two things this setup left alone"
+msgstr ""
+
+#: admin/views/whitelist.php:34 admin/views/whitelist.php:86
+msgid "Type"
+msgstr ""
+
+#: admin/views/documentation.php:544
+msgid "Under WooCommerce, next to Orders, with a count beside it when something is waiting. <a href=\"%s\">The queue</a> is every order MightyShield stopped or flagged that nobody has ruled on yet, gathered in one place so you can work through them instead of hunting for them."
+msgstr ""
+
+#: admin/class-admin-page.php:1359
+msgid "Unknown service."
+msgstr ""
+
+#: admin/class-admin-page.php:1040
+msgid "Unknown user role."
+msgstr ""
+
+#: admin/class-order-column.php:152 admin/class-order-panel.php:245
+msgid "Unrated"
+msgstr ""
+
+#: admin/views/documentation.php:527
+msgid "Unrated orders."
+msgstr ""
+
+#: admin/views/documentation.php:438
+msgid "Until orders have been through the checkout there is nothing to measure, so the How often it fires column shows a dash. It fills in on its own. You do not need to touch any of this; the defaults are sensible for a normal store."
+msgstr ""
+
+#: admin/class-order-panel.php:615
+msgid "Unusually small order"
+msgstr ""
+
+#: admin/views/blocking.php:321
+msgid "Use \"Classic checkout\" only if real customers never use the Store API (shortcode/classic checkout). If your store uses the block-based Checkout, choose the block/one-page option so real shoppers are not blocked."
+msgstr ""
+
+#: admin/class-order-panel.php:393
+msgid "Use AI to Review"
+msgstr ""
+
+#: admin/views/ai.php:119
+msgid "Use a Flash-tier model. Check your provider's current model list, because model IDs change over time."
+msgstr ""
+
+#: admin/views/ai.php:103
+msgid "Use a small, fast model. Check your provider's current model list, because model IDs change over time."
+msgstr ""
+
+#: admin/views/blocking.php:292
+msgid "Use the last column to tune. Plenty of High orders that you went on to approve means the threshold is too cautious and you are holding real customers. Orders that stayed in Low and later turned out bad means it is too generous."
+msgstr ""
+
+#: admin/class-admin-page.php:1113 admin/views/whitelist.php:19
+msgid "User"
+msgstr ""
+
+#: admin/class-admin-page.php:1019
+msgid "User %s added to allowlist."
+msgstr ""
+
+#: admin/views/whitelist.php:21 admin/views/whitelist.php:40
+msgid "User role"
+msgstr ""
+
+#: admin/views/ai.php:36
+msgid "Uses an AI model to review orders that look legitimate to the rule-based layers. It targets stolen-card orders shipped to real, deliverable addresses, where every attribute passes on its own and only the pattern across them is suspicious."
+msgstr ""
+
+#: admin/views/whitelist.php:45 admin/views/whitelist.php:87
+msgid "Value"
+msgstr ""
+
+#: admin/views/dashboard.php:133
+msgid "View all logs →"
+msgstr ""
+
+#: includes/class-ai-capture.php:571
+msgid "Voiding is not supported for this gateway."
+msgstr ""
+
+#: admin/views/documentation.php:317
+msgid "Wait a week or two, then look at <a href=\"%s\">Shielding</a>. It shows how many orders landed at each risk level and how they turned out."
+msgstr ""
+
+#: admin/class-fraud-review.php:448
+msgid "Waiting"
+msgstr ""
+
+#: admin/class-fraud-review.php:371
+msgid "Waiting on you"
+msgstr ""
+
+#: admin/views/documentation.php:548
+msgid "Waiting."
+msgstr ""
+
+#: admin/views/setup/step-protection.php:31
+msgid "Watch first, or act now?"
+msgstr ""
+
+#: admin/views/documentation.php:586
+msgid "Watch the <a href=\"%1$s\">Logs</a> and block the worst addresses permanently from <a href=\"%2$s\">Access</a>."
+msgstr ""
+
+#: admin/views/documentation.php:580
+msgid "We are under active attack"
+msgstr ""
+
+#: includes/class-privacy.php:434
+msgid "We check every order for signs of card fraud. To do that we record the IP address, browser and email address used on checkouts that are blocked or flagged, and we keep a history of how previous orders from the same customer turned out."
+msgstr ""
+
+#: protection/class-challenge.php:313
+msgid "We could not verify that you are a person. Please reload the page and try again."
+msgstr ""
+
+#: includes/class-response.php:155
+msgid "We were unable to process your payment. Please try a different payment method or contact your bank."
+msgstr ""
+
+#: admin/views/documentation.php:208 admin/views/documentation.php:326
+msgid "What MightyShield can do"
+msgstr ""
+
+#: admin/views/documentation.php:353
+msgid "What Observing still does"
+msgstr ""
+
+#: admin/views/blocking.php:528
+msgid "What a refused customer reads"
+msgstr ""
+
+#: admin/views/setup/step-alerts.php:65
+msgid "What actually arrives:"
+msgstr ""
+
+#: admin/views/documentation.php:258
+msgid "What each rating means"
+msgstr ""
+
+#: admin/views/documentation.php:557 includes/class-privacy.php:247
+msgid "What happened"
+msgstr ""
+
+#: admin/views/documentation.php:329
+msgid "What happens"
+msgstr ""
+
+#: admin/views/documentation.php:260
+msgid "What happens by default"
+msgstr ""
+
+#: admin/views/documentation.php:385
+msgid "What is being bought, and for how much."
+msgstr ""
+
+#: admin/views/documentation.php:457
+msgid "What is sent, and to whom"
+msgstr ""
+
+#: admin/views/documentation.php:362
+msgid "What is waiting."
+msgstr ""
+
+#: admin/views/documentation.php:405 admin/views/documentation.php:445
+msgid "What it does"
+msgstr ""
+
+#: admin/views/documentation.php:372
+msgid "What most stores should use, and what MightyShield ships with. Catches the obvious attacks and leaves ordinary customers alone."
+msgstr ""
+
+#: includes/class-scoring-profiles.php:432
+msgid "What most stores should use. Catches the obvious attacks and leaves ordinary customers alone."
+msgstr ""
+
+#: includes/class-privacy.php:176
+msgid "What this store has seen from this identity before. Stored as a one-way salted hash, never as the address itself."
+msgstr ""
+
+#: admin/views/documentation.php:387
+msgid "What you already know about the people behind the order, from the orders they placed before this one. The only group that can give trust back as well as take it."
+msgstr ""
+
+#: admin/views/documentation.php:485
+msgid "What your payment processors can and cannot do, and therefore what MightyShield can ask of them. This tab has no settings. It is a report."
+msgstr ""
+
+#: admin/views/documentation.php:386
+msgid "What your processor says about the card once the payment has gone through. See the note below, because these behave differently from the rest."
+msgstr ""
+
+#: admin/views/documentation.php:555
+msgid "When an order turns out well or badly, that verdict is applied to everything connected to it. The next order from any of them starts with that history behind it. This is what catches someone who changes their email and tries again, because they rarely change everything at once."
+msgstr ""
+
+#: admin/views/blocking.php:453
+msgid "Where it applies"
+msgstr ""
+
+#: admin/views/documentation.php:383
+msgid "Where it came from: your blocklist, temporary blocks, whether the connection is a data centre or a VPN, and whether it resolves anywhere near the delivery address."
+msgstr ""
+
+#: admin/views/documentation.php:557
+msgid "Where it comes from"
+msgstr ""
+
+#: admin/views/documentation.php:464
+msgid "Where the trust rating turns into something happening. This is the tab that decides what your customers actually experience."
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:86
+msgid "Where to ask"
+msgstr ""
+
+#: admin/views/documentation.php:540
+msgid "Which of the three you see is read from your payment processor, not from what MightyShield asked it to do. The two can differ, and being told your money is merely reserved when it has actually been taken is the worst mistake this screen could make."
+msgstr ""
+
+#: admin/views/documentation.php:460
+msgid "Which risk levels get a review is the Send to Review setting on this tab: select the levels you want a second opinion on. Elevated and High are on by default. Trusted and Low are not, because that is most of your orders and reviewing them multiplies the cost for very little."
+msgstr ""
+
+#: admin/views/setup/step-alerts.php:24
+msgid "Who should hear about it?"
+msgstr ""
+
+#: admin/views/documentation.php:497
+msgid "Who skips every check, and who is refused outright."
+msgstr ""
+
+#: admin/views/documentation.php:382
+msgid "Who the order says it is from: the email address, the delivery address, whether the postcode matches the state, whether the address exists at all, and how many other buyers have used it."
+msgstr ""
+
+#: includes/class-privacy.php:251
+msgid "Why"
+msgstr ""
+
+#: admin/views/documentation.php:298
+msgid "Why a new customer is never Trusted"
+msgstr ""
+
+#: admin/views/documentation.php:492
+msgid "Why an action can change per order"
+msgstr ""
+
+#: admin/class-fraud-review.php:444
+msgid "Why it is held"
+msgstr ""
+
+#: admin/views/documentation.php:546
+msgid "Why it is held."
+msgstr ""
+
+#: admin/views/whitelist.php:38
+msgid "WordPress user"
+msgstr ""
+
+#: admin/views/documentation.php:503
+msgid "WordPress user."
+msgstr ""
+
+#: admin/views/documentation.php:220
+msgid "Working orders"
+msgstr ""
+
+#: admin/views/documentation.php:271 admin/views/documentation.php:272 admin/views/documentation.php:273
+msgid "Yes"
+msgstr ""
+
+#: admin/class-order-panel.php:737
+msgid "You do not have permission to review orders."
+msgstr ""
+
+#: admin/class-setup-wizard.php:448
+msgid "You do not have permission to set up MightyShield."
+msgstr ""
+
+#: admin/views/documentation.php:561
+msgid "You marked it, or blocked it in review"
+msgstr ""
+
+#: admin/class-order-column.php:211
+msgid "You marked this order as clean."
+msgstr ""
+
+#: admin/class-order-column.php:209
+msgid "You marked this order as fraud."
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:42
+msgid "You need a free account with Cloudflare or Google. If you would rather do this later, skip the step: everything else in MightyShield works without it."
+msgstr ""
+
+#: admin/views/documentation.php:458
+msgid "Your API key is stored in your database and is only ever sent to the provider you chose. The order details go to that provider and nowhere else. If that matters to you, turn Hide customer details on: the model then sees that an address exists and how it compares to others, but not what it says."
+msgstr ""
+
+#: admin/views/ai.php:73
+msgid "Your Anthropic API key."
+msgstr ""
+
+#: admin/views/ai.php:112
+msgid "Your Google AI Studio API key."
+msgstr ""
+
+#: admin/views/ai.php:89
+msgid "Your OpenAI API key."
+msgstr ""
+
+#: firewall/class-ip-blocklist.php:81
+msgid "Your access has been restricted. Please contact support."
+msgstr ""
+
+#: admin/class-admin-page.php:1887 admin/class-dashboard-widget.php:136
+msgid "Your checkout is closed to customers."
+msgstr ""
+
+#: admin/views/setup/step-protection.php:68
+msgid "Your checkout is currently closed to customers."
+msgstr ""
+
+#: admin/views/ai.php:172
+msgid "Your choice here is remembered and takes effect as soon as one is."
+msgstr ""
+
+#: admin/views/whitelist.php:50
+msgid "Your current IP: "
+msgstr ""
+
+#: admin/views/documentation.php:407
+msgid "Your own list, on top of the built in list of throwaway email providers. One domain per line."
+msgstr ""
+
+#: includes/class-scoring-profiles.php:444
+msgid "Your own trust costs. This appears on its own as soon as you change a row below, and stays until every row matches one of the three again."
+msgstr ""
+
+#: includes/class-response.php:156
+msgid "Your payment could not be authorized. Please check your details and try again."
+msgstr ""
+
+#: admin/views/documentation.php:489
+msgid "Your payment methods."
+msgstr ""
+
+#: admin/views/documentation.php:254
+msgid "Your processor is the only thing that knows whether the billing address and the security code matched the card, and it answers once the payment has gone through. Those answers are checks like any other: they cost trust, they are added to what the checkout already found, and the rating is worked out again. Nothing can be refused by then, so an order that falls far enough is held before it ships instead."
+msgstr ""
+
+#: admin/views/documentation.php:562
+msgid "Your processor reported a dispute"
+msgstr ""
+
+#: admin/views/documentation.php:507
+msgid "Your server's own address is added automatically when the plugin is activated, so that scheduled tasks and admin work are never blocked."
+msgstr ""
+
+#: admin/class-order-panel.php:422
+msgid "Your verdict"
+msgstr ""
+
+#: admin/views/documentation.php:567
+msgid "Your verdict outranks everything"
+msgstr ""
+
+#: admin/views/documentation.php:528
+msgid "Your verdict, and the single most valuable thing on this panel. Change it whenever you like: if a chargeback arrives six months later, mark it Fraud then, and if one turns out to be a family member using the card, mark it Clean and the penalty is taken back off."
+msgstr ""
+
+#: protection/class-captcha.php:1090
+msgid "a challenge was shown but came back with no answer, which usually means the provider script was blocked"
+msgstr ""
+
+#: protection/class-card-signals.php:348
+msgid "a prepaid card was used for a high-value order"
+msgstr ""
+
+#: admin/views/setup/step-alerts.php:66
+msgid "an order held for you to look at, an address-verification or AI service that has stopped responding, or a bot challenge that has started refusing everybody. Each of the last two is sent at most once a day."
+msgstr ""
+
+#: admin/views/blocking.php:517
+msgid "and"
+msgstr ""
+
+#: admin/views/setup/step-done.php:113
+msgid "asks a language model for a second opinion on the orders you are least sure about."
+msgstr ""
+
+#: admin/views/setup/step-done.php:108
+msgid "checks a US billing address against real postal data, so a made-up address is caught before the order is taken."
+msgstr ""
+
+#: admin/views/logs.php:245 admin/views/logs.php:253
+msgid "days"
+msgstr ""
+
+#: admin/views/setup/step-done.php:125 admin/views/setup/step-welcome.php:88
+msgid "documentation"
+msgstr ""
+
+#: admin/views/whitelist.php:68
+msgid "e.g., Office IP, VIP customer"
+msgstr ""
+
+#: admin/views/scoring.php:292
+msgid "earns trust back"
+msgstr ""
+
+#: admin/views/documentation.php:407
+msgid "empty"
+msgstr ""
+
+#: admin/views/logs.php:70
+msgid "export as CSV"
+msgstr ""
+
+#: admin/views/dashboard.php:114
+msgid "last 24h"
+msgstr ""
+
+#: admin/views/blocking.php:521
+msgid "milliseconds"
+msgstr ""
+
+#: admin/views/documentation.php:282 admin/views/documentation.php:291
+msgid "n/a"
+msgstr ""
+
+#: admin/views/scoring.php:351
+msgid "never"
+msgstr ""
+
+#: protection/class-captcha.php:1093
+msgid "no challenge was rendered on this form"
+msgstr ""
+
+#: admin/views/logs.php:69
+msgid "or"
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:379
+msgid "query parameters"
+msgstr ""
+
+#: protection/class-captcha.php:1082
+msgid "reCAPTCHA scored this visitor below %s"
+msgstr ""
+
+#: admin/views/documentation.php:482
+msgid "runs the checks on the block based checkout as well as the classic one. Leave it on. Every check now works the same on both, including the ones that need something from the browser, such as the checkout timer, the device check, the hidden decoy field and the bot challenge, so the same order is judged the same way whichever checkout your store uses."
+msgstr ""
+
+#: admin/views/setup/step-challenge.php:67 admin/views/setup/step-challenge.php:78
+msgid "saved — leave blank to keep"
+msgstr ""
+
+#: admin/views/blocking.php:448 admin/views/scoring.php:266
+msgid "saved. Leave blank to keep"
+msgstr ""
+
+#: admin/class-admin-page.php:1108 admin/views/logs.php:127
+msgid "selected"
+msgstr ""
+
+#: admin/views/documentation.php:309
+msgid "setup walkthrough"
+msgstr ""
+
+#: admin/views/scoring.php:159
+msgid "signal only"
+msgstr ""
+
+#: protection/class-card-signals.php:317
+msgid "the billing postcode did not match the card"
+msgstr ""
+
+#: protection/class-card-signals.php:314
+msgid "the billing street address and postcode did not match the card"
+msgstr ""
+
+#: protection/class-card-signals.php:316
+msgid "the billing street address did not match the card"
+msgstr ""
+
+#: protection/class-card-signals.php:338
+msgid "the card was issued in %1$s but the order ships to %2$s"
+msgstr ""
+
+#: protection/class-captcha.php:1103
+msgid "the challenge passed"
+msgstr ""
+
+#: protection/class-card-signals.php:356
+msgid "the payment processor rated this payment %s risk"
+msgstr ""
+
+#: protection/class-captcha.php:1096
+msgid "the provider could not be reached"
+msgstr ""
+
+#: protection/class-captcha.php:1072
+msgid "the provider judged the token not genuine"
+msgstr ""
+
+#: protection/class-captcha.php:1075
+msgid "the provider rejected the token and said: %s"
+msgstr ""
+
+#: protection/class-captcha.php:1099
+msgid "the secret key was rejected by the provider"
+msgstr ""
+
+#: protection/class-card-signals.php:324
+msgid "the security code did not match"
+msgstr ""
+
+#: protection/class-captcha.php:1087
+msgid "the token had already been used or had expired, which is what a resubmitted form looks like"
+msgstr ""
+
+#: protection/class-captcha.php:315
+msgid "token was signed for \"%1$s\" but this form expects \"%2$s\""
+msgstr ""
+
+#: admin/class-order-column.php:199
+msgid "unknown"
+msgstr ""
