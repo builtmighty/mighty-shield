@@ -88,8 +88,7 @@ class scoring_profiles {
         'email_name_mismatch',  // and appears in two scenarios near an edge
         'address_velocity',     // apartment buildings, offices, dorms, families
         'ip_geo_mismatch',      // gifts, travel, mobile carriers, corporate egress
-        'ip_proxy',             // VPNs are mainstream, and it double-counts the timezone
-        'device_tz_mismatch',   // the other half of that double-count
+        'device_tz_mismatch',   // a VPN is usually what makes the timezone disagree
         'interaction_none',     // keyboard-only and assistive-technology shoppers
         'cookies_none',         // a cookie-stripping CDN would misfire store-wide
         'account_new',          // everyone is new once

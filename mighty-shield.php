@@ -453,6 +453,16 @@ function load() {
     // log table grow without bound.
     add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\db', 'cleanup' ] );
 
+    // Keep the MaxMind ASN database current. Registered beside the cleanup for
+    // the same reason it is: the cron event is scheduled unconditionally at
+    // activation, and the network signals are not something a merchant turns
+    // off, so there is no feature guard to hide this behind.
+    //
+    // Cheap to call. It is one option read and one filemtime unless the
+    // database is actually stale, and it does nothing at all on a store that
+    // has never set a MaxMind licence key.
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\ip_data', 'maybe_update_asn_database' ] );
+
     // Always load admin page so settings are accessible.
     if( is_admin() ) {
         new \MightyShield\Admin\admin_page();

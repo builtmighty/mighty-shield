@@ -349,10 +349,17 @@ class order_signals {
     /**
      * IP location vs shipping address mismatch.
      *
-     * Reads the IP cache only. ip_data::get_or_fetch() is a blocking call with
-     * no backoff, and this runs on the checkout request — an uncached IP skips
-     * the signal rather than costing the shopper five seconds. risk_recorder
-     * warms the cache at the start of checkout for exactly this reason.
+     * Reads the IP cache only, and risk_recorder warms it at the start of
+     * checkout. Since 2.3.0 that warming is a local database read rather than
+     * an HTTP call, so a miss here means the merchant has no MaxMind database
+     * installed at all — in which case the signal stays quiet rather than
+     * guessing.
+     *
+     * Country only. This compared region as well until 2.3.0, back when the
+     * data came from ip-api. WooCommerce's GeoLite2-Country database resolves
+     * to a country and no further, and region was the noisier half anyway: a
+     * shopper on a phone routes through whichever city their carrier terminates
+     * in, which is regularly a different state from the one they live in.
      *
      * @since   1.9.2
      *
@@ -372,15 +379,6 @@ class order_signals {
 
         if( strtoupper( $geo['country'] ) !== $ship_country ) {
             return sprintf( 'IP resolves to %s but the order ships to %s', strtoupper( $geo['country'] ), $ship_country );
-        }
-
-        // Same country — compare region. ip-api returns a short region code and
-        // WooCommerce stores US states the same way, so these line up.
-        $ship_state = strtoupper( (string) $f['state'] );
-        if( $ship_state === '' || empty( $geo['region'] ) ) return null;
-
-        if( strtoupper( $geo['region'] ) !== $ship_state ) {
-            return sprintf( 'IP resolves to %s but the order ships to %s', strtoupper( $geo['region'] ), $ship_state );
         }
 
         return null;

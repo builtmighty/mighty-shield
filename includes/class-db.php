@@ -1244,6 +1244,35 @@ class db {
     }
 
     /**
+     * Drop cached rows that were resolved with nothing to say about the network.
+     *
+     * Called after the ASN database is installed or refreshed. Those rows were
+     * written by ip_data::resolve() at a moment when there was no database to
+     * ask, so they carry hosting = -1 and would otherwise sit in the cache
+     * answering "unknown" for the full 90-day TTL — on exactly the addresses a
+     * merchant has already seen, which are the ones worth re-reading.
+     *
+     * Rows that DID resolve are left alone: an ASN answer does not go stale in
+     * the week between database refreshes.
+     *
+     * @since   2.3.0
+     *
+     * @return  int     Rows dropped.
+     */
+    public static function forget_unresolved_ip_data() {
+
+        global $wpdb;
+
+        // No user input in this statement; hosting is an integer column and
+        // -1 is a literal.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return (int) $wpdb->query(
+            "DELETE FROM {$wpdb->prefix}mshield_ip_data WHERE hosting = -1"
+        );
+
+    }
+
+    /**
      * Cleanup expired data.
      *
      * @since   1.0.0

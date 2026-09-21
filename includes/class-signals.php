@@ -185,17 +185,22 @@ class signals {
             'weight' => 25.0,
             'floor'  => 'none',
         ],
-        'ip_proxy' => [
-            'label'  => 'Order came through a VPN or proxy',
-            'desc'   => 'The real location is hidden. Common among privacy-minded customers, so weighted lightly.',
-            'group'  => 'network',
-            // Deliberately low. VPNs are mainstream now, and this signal is
-            // strongly correlated with device_tz_mismatch — a VPN is usually
-            // what causes the timezone to disagree. Weighting both highly
-            // double-counts one underlying fact and detains real travellers.
-            'weight' => 15.0,
-            'floor'  => 'none',
-        ],
+        // ip_proxy was removed in 2.3.0. It is not a judgement about VPNs
+        // changing — it is that there was never anything behind it.
+        //
+        // The data came from ip-api.com over HTTPS, which that service answers
+        // with 403 unless you pay, so the lookup failed on every install and
+        // this signal had never once fired. Replacing the source did not bring
+        // it back: proxy, VPN and Tor status is a paid MaxMind product with no
+        // free equivalent, and the whole point of the tri-state in ip_data is
+        // that we do not guess when we cannot know.
+        //
+        // Nothing reads it now, and removing the entry is what makes that
+        // true — a signal left in the catalogue is a row on the Scoring tab
+        // with a weight a merchant can tune, which would be a lie about what
+        // the plugin is measuring. A stored mshield_sig_ip_proxy_* override is
+        // harmless: all three accessors resolve through this catalogue and
+        // return early on an unknown key.
 
         // Behavior.
         'honeypot' => [

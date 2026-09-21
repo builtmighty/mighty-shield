@@ -174,17 +174,18 @@ class store_api {
     /**
      * Fetch and cache IP intelligence before anything scores the order.
      *
-     * ip_proxy, ip_datacenter and ip_geo_mismatch all read the cache and skip
-     * on a miss, which is deliberate: they must never make a network call from
-     * inside the scoring pass. The classic path warms the cache for them on
+     * ip_datacenter and ip_geo_mismatch both read the cache and skip on a miss,
+     * which is deliberate: they must never resolve an address from inside the
+     * scoring pass. The classic path warms the cache for them on
      * woocommerce_checkout_process. Nothing warmed it here, so on the block
-     * checkout those three signals could only fire for an address that some
-     * earlier order had already paid to look up. In practice that meant never,
-     * because a first-time attacker is exactly the case they exist for.
+     * checkout those signals could only fire for an address some earlier order
+     * had already looked up. In practice that meant never, because a
+     * first-time attacker is exactly the case they exist for.
      *
-     * Best effort. A miss leaves the three signals unevaluated, which is
-     * precisely today's behaviour, so a slow provider costs evidence rather
-     * than the sale.
+     * Since 2.3.0 the resolution behind this is a local MaxMind database read
+     * rather than an HTTP call, so "warming" now costs microseconds and cannot
+     * fail slowly. The separation is kept anyway: the scoring pass reading only
+     * the cache is what guarantees it stays that way.
      *
      * @since   2.0.0
      */
@@ -193,9 +194,9 @@ class store_api {
         $ip = ip_utils::get_client_ip();
         if( empty( $ip ) ) return;
 
-        // Already cached — no network call. This also makes the repeat fires
-        // of this hook (the block checkout PATCHes the draft order as the
-        // shopper edits it) cost one indexed lookup rather than a request.
+        // Already cached. Keeps the repeat fires of this hook — the block
+        // checkout PATCHes the draft order as the shopper edits it — down to
+        // one indexed lookup.
         if( db::get_ip_data( $ip ) ) return;
 
         ip_data::get_or_fetch( $ip );

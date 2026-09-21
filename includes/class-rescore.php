@@ -58,7 +58,6 @@ class rescore {
         'high_value',
         'ip_geo_mismatch',
         'ip_datacenter',
-        'ip_proxy',
         'entity_chargeback',
         'entity_denied',
         'entity_linked_bad',
@@ -199,13 +198,14 @@ class rescore {
         if( isset( $geo['hosting'] ) && (int) $geo['hosting'] === 1 ) {
             risk_context::add(
                 'ip_datacenter',
-                sprintf( 'IP belongs to a hosting provider or datacenter (%s)', $geo['asname'] ?: $geo['org'] )
+                sprintf( 'IP belongs to a hosting provider or datacenter (%s)', $geo['org'] ?: $geo['asname'] )
             );
         }
 
-        if( isset( $geo['proxy'] ) && (int) $geo['proxy'] === 1 ) {
-            risk_context::add( 'ip_proxy', 'IP is a known proxy, VPN, or Tor exit node' );
-        }
+        // ip_proxy used to be emitted here. It was retired in 2.3.0 along with
+        // the ip-api.com dependency: MaxMind's Anonymous IP database is a paid
+        // product and there is no free source for proxy, VPN or Tor status, so
+        // there is nothing to read. See includes/class-ip-data.php.
 
     }
 

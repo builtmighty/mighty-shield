@@ -264,11 +264,15 @@ class risk_recorder {
     }
 
     /**
-     * Fetch and cache IP intelligence for this visitor.
+     * Resolve and cache IP intelligence for this visitor.
      *
-     * Fail-open and best-effort: a slow or unavailable provider must never
-     * cost a shopper their checkout, so a miss simply leaves the network
-     * signals unevaluated.
+     * Fail-open and best-effort: a missing database must never cost a shopper
+     * their checkout, so a miss simply leaves the network signals unevaluated.
+     *
+     * This used to be the one place on the classic checkout path that made an
+     * outbound HTTP request, and it did so with a five-second timeout against
+     * an endpoint that answered 403 every time. Since 2.3.0 it is a local
+     * MaxMind database read. See includes/class-ip-data.php.
      *
      * @since   1.9.0
      */
@@ -276,11 +280,11 @@ class risk_recorder {
 
         // Deliberately not gated on the allowlist. The network signals are part
         // of the score, and an allowlisted order is scored like any other -- it
-        // just is not acted on. The cost is one cached lookup per new IP.
+        // just is not acted on.
         $ip = ip_utils::get_client_ip();
         if( empty( $ip ) ) return;
 
-        // Already cached — nothing to do, and no network call.
+        // Already cached — nothing to do.
         if( db::get_ip_data( $ip ) ) return;
 
         ip_data::get_or_fetch( $ip );
