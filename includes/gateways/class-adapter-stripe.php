@@ -15,6 +15,8 @@
  */
 namespace MightyShield\Includes\Gateways;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Protection\card_signals;
 
 class adapter_stripe implements gateway_adapter {

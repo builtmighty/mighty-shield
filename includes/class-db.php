@@ -8,6 +8,9 @@
  * @since   1.0.0
  */
 namespace MightyShield\Includes;
+
+defined( 'ABSPATH' ) || exit;
+
 class db {
 
     /**

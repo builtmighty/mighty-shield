@@ -9,6 +9,8 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\db;
 
 class log_viewer {
@@ -33,7 +35,7 @@ class log_viewer {
 
         if( ! isset( $_GET['mshield_export_logs'] ) ) return;
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
-        if( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], 'mshield_export_logs' ) ) return;
+        if( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_export_logs' ) ) return;
 
         // The same filters the screen is showing. The Export button sits inside
         // the filter bar, so narrowing to one address and exporting used to hand

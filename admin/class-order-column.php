@@ -19,6 +19,8 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\risk_levels;
 use MightyShield\Includes\trust_badge;
 use MightyShield\Protection\outcomes;

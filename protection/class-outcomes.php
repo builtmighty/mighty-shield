@@ -25,6 +25,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\db;
 use MightyShield\Includes\entities;
 

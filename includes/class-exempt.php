@@ -37,6 +37,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Firewall\ip_whitelist;
 
 class exempt {

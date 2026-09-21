@@ -24,6 +24,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\risk_context;
 
 class cookie_check {

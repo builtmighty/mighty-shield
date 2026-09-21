@@ -12,6 +12,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class ai_client {
 
     /**

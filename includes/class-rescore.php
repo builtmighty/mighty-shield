@@ -25,6 +25,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class rescore {
 
     /**

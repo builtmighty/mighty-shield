@@ -9,6 +9,8 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
 use MightyShield\Includes\ip_data;
@@ -631,18 +633,11 @@ class admin_page {
      */
     public static function refusal_note_tags() {
 
-        $link = [ 'href' => true, 'title' => true, 'target' => true, 'rel' => true, 'name' => true, 'download' => true ];
-
-        return [
-            'a'      => $link,
-            'b'      => [],
-            'strong' => [],
-            'i'      => [],
-            'em'     => [],
-            'p'      => [],
-            'br'     => [],
-            'abbr'   => [ 'title' => true ],
-        ];
+        // The list moved to response in 2.3.0, which is where the note is
+        // actually rendered. Kept as a passthrough so anything already calling
+        // it by this name keeps working, and so the save-time sanitizer and
+        // the render-time one can never drift apart.
+        return \MightyShield\Includes\response::refusal_note_tags();
 
     }
 
@@ -678,7 +673,7 @@ class admin_page {
 
             $option = sanitize_key( wp_unslash( $_GET['mshield_dismiss'] ) );
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_dismiss_' . $option ) ) {
+            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_dismiss_' . $option ) ) {
                 self::dismiss_degraded( $option );
             }
 
@@ -695,9 +690,9 @@ class admin_page {
         // Add a typed entry to the whitelist (IP / user / email / role).
         if( isset( $_POST['mshield_add_ip'] ) && check_admin_referer( 'mshield_whitelist_action' ) ) {
 
-            $type  = sanitize_text_field( $_POST['mshield_new_type'] ?? 'ip' );
+            $type  = sanitize_text_field( isset( $_POST['mshield_new_type'] ) ? wp_unslash( $_POST['mshield_new_type'] ) : 'ip' );
             $value = ( $type === 'role' )
-                ? sanitize_key( $_POST['mshield_new_role'] ?? '' )
+                ? sanitize_key( isset( $_POST['mshield_new_role'] ) ? wp_unslash( $_POST['mshield_new_role'] ) : '' )
                 : sanitize_text_field( wp_unslash( $_POST['mshield_new_value'] ?? '' ) );
             $label = sanitize_text_field( wp_unslash( $_POST['mshield_new_ip_label'] ?? '' ) );
 
@@ -711,9 +706,9 @@ class admin_page {
         // Remove an entry from the whitelist.
         if( isset( $_GET['mshield_remove_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_remove_ip' ) ) {
+            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_remove_ip' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_remove_ip'] ) );
-                $type  = sanitize_text_field( $_GET['wl_type'] ?? 'ip' );
+                $type  = sanitize_text_field( isset( $_GET['wl_type'] ) ? wp_unslash( $_GET['wl_type'] ) : 'ip' );
                 // 'role' belongs here. The allowlist view offers role entries
                 // and ip_whitelist::remove_entry() has always supported them,
                 // but this list did not -- so the type was coerced to 'ip',
@@ -737,8 +732,8 @@ class admin_page {
         // Add IP to blocklist.
         if( isset( $_POST['mshield_block_add_ip'] ) && check_admin_referer( 'mshield_blocklist_action' ) ) {
 
-            $ip    = sanitize_text_field( $_POST['mshield_block_new_ip'] ?? '' );
-            $label = sanitize_text_field( $_POST['mshield_block_new_ip_label'] ?? '' );
+            $ip    = sanitize_text_field( isset( $_POST['mshield_block_new_ip'] ) ? wp_unslash( $_POST['mshield_block_new_ip'] ) : '' );
+            $label = sanitize_text_field( isset( $_POST['mshield_block_new_ip_label'] ) ? wp_unslash( $_POST['mshield_block_new_ip_label'] ) : '' );
 
             if( ! empty( $ip ) && $this->validate_ip_input( $ip ) ) {
                 ip_blocklist::add_ip( $ip, $label, 'Added manually' );
@@ -755,8 +750,8 @@ class admin_page {
         // Remove IP from blocklist.
         if( isset( $_GET['mshield_block_remove_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_block_remove_ip' ) ) {
-                $ip = sanitize_text_field( $_GET['mshield_block_remove_ip'] );
+            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_block_remove_ip' ) ) {
+                $ip = sanitize_text_field( wp_unslash( $_GET['mshield_block_remove_ip'] ) );
                 ip_blocklist::remove_ip( $ip );
                 set_transient( 'mshield_admin_notice', [ 'ip_unblocked', __( 'IP address removed from blocklist.', 'mighty-shield' ), 'success' ], 30 );
             }
@@ -769,8 +764,8 @@ class admin_page {
         // Block an IP directly from the Logs table.
         if( isset( $_GET['mshield_block_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_block_ip' ) ) {
-                $ip = sanitize_text_field( $_GET['mshield_block_ip'] );
+            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_block_ip' ) ) {
+                $ip = sanitize_text_field( wp_unslash( $_GET['mshield_block_ip'] ) );
                 if( ! empty( $ip ) && $this->validate_ip_input( $ip ) ) {
                     ip_blocklist::add_ip( $ip, '', 'Blocked from logs' );
                     set_transient( 'mshield_admin_notice', [ 'ip_blocked', sprintf( __( 'IP %s added to blocklist.', 'mighty-shield' ), $ip ), 'success' ], 30 );
@@ -785,7 +780,7 @@ class admin_page {
         // Whitelist an IP directly from the Logs table.
         if( isset( $_GET['mshield_whitelist_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_whitelist_ip' ) ) {
+            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_whitelist_ip' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_ip'] ) );
                 set_transient( 'mshield_admin_notice', $this->whitelist_add( 'ip', $value, 'Whitelisted from logs' ), 30 );
             }
@@ -798,7 +793,7 @@ class admin_page {
         // Whitelist an email directly from the Logs table.
         if( isset( $_GET['mshield_whitelist_email'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_whitelist_email' ) ) {
+            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_whitelist_email' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_email'] ) );
                 set_transient( 'mshield_admin_notice', $this->whitelist_add( 'email', $value, 'Whitelisted from logs' ), 30 );
             }
@@ -811,7 +806,7 @@ class admin_page {
         // Whitelist a WP user directly from the Logs table.
         if( isset( $_GET['mshield_whitelist_user'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_whitelist_user' ) ) {
+            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_whitelist_user' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_user'] ) );
                 set_transient( 'mshield_admin_notice', $this->whitelist_add( 'user', $value, 'Whitelisted from logs' ), 30 );
             }
@@ -828,7 +823,7 @@ class admin_page {
 
             $state = sanitize_key( wp_unslash( $_GET['mshield_set_state'] ) );
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_set_state_' . $state ) ) {
+            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_set_state_' . $state ) ) {
 
                 $message = self::apply_state( $state );
 
@@ -857,7 +852,7 @@ class admin_page {
 
             $profile = sanitize_key( wp_unslash( $_GET['mshield_set_profile'] ) );
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_set_profile_' . $profile )
+            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_set_profile_' . $profile )
                 && \MightyShield\Includes\scoring_profiles::apply( $profile ) ) {
 
                 set_transient( 'mshield_admin_notice', [
@@ -882,7 +877,7 @@ class admin_page {
         // Bulk actions on selected log rows.
         if( isset( $_POST['mshield_logs_bulk'] ) && check_admin_referer( 'mshield_logs_bulk_action' ) ) {
 
-            $action = sanitize_text_field( $_POST['mshield_bulk_action'] ?? '' );
+            $action = sanitize_text_field( isset( $_POST['mshield_bulk_action'] ) ? wp_unslash( $_POST['mshield_bulk_action'] ) : '' );
             $ids    = array_filter( array_map( 'absint', (array) ( $_POST['log_ids'] ?? [] ) ) );
 
             if( empty( $ids ) || $action === '' ) {
@@ -1474,7 +1469,7 @@ class admin_page {
      */
     public function render_page() {
 
-        $tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'dashboard';
+        $tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'dashboard';
 
         // Whitelist allowed tabs to prevent path traversal.
         if( isset( self::MERGED_TABS[ $tab ] ) ) {

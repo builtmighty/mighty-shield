@@ -23,6 +23,8 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ai_capture;
 use MightyShield\Includes\ai_client;
 use MightyShield\Includes\db;
@@ -737,7 +739,7 @@ class order_panel {
 
         // $_REQUEST so the handler works whether it arrives by link or form;
         // check_admin_referer() reads the nonce from either.
-        $order_id = isset( $_REQUEST['order_id'] ) ? absint( $_REQUEST['order_id'] ) : 0;
+        $order_id = isset( $_REQUEST['order_id'] ) ? absint( wp_unslash( $_REQUEST['order_id'] ) ) : 0;
         $do       = isset( $_REQUEST['do'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['do'] ) ) : '';
         $use_ai   = isset( $_REQUEST['use_ai'] ) && $_REQUEST['use_ai'] === '1';
 
@@ -786,7 +788,7 @@ class order_panel {
 
             $url = admin_url( 'admin.php?page=mshield-fraud-review' );
 
-            $paged = isset( $_REQUEST['ms_paged'] ) ? absint( $_REQUEST['ms_paged'] ) : 0;
+            $paged = isset( $_REQUEST['ms_paged'] ) ? absint( wp_unslash( $_REQUEST['ms_paged'] ) ) : 0;
             if( $paged > 1 ) $url = add_query_arg( 'paged', $paged, $url );
 
             wp_safe_redirect( $url );
@@ -1099,7 +1101,7 @@ class order_panel {
 
         // HPOS serves the order at ?page=wc-orders&action=edit&id=N; legacy at
         // post.php?post=N&action=edit.
-        $order_id = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : ( isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0 );
+        $order_id = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : ( isset( $_GET['post'] ) ? absint( wp_unslash( $_GET['post'] ) ) : 0 );
         if( ! $order_id ) return;
 
         $notice = get_transient( 'mshield_order_notice_' . $order_id );

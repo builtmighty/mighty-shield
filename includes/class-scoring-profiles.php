@@ -42,6 +42,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class scoring_profiles {
 
     /**

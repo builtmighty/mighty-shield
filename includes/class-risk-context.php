@@ -22,6 +22,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class risk_context {
 
     /**

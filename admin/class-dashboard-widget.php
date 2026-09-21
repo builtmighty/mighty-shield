@@ -18,6 +18,8 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 class dashboard_widget {
 
     /**

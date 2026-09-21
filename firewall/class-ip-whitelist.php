@@ -9,6 +9,8 @@
  */
 namespace MightyShield\Firewall;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 
 class ip_whitelist {
@@ -318,7 +320,7 @@ class ip_whitelist {
 
         // Method 1: SERVER_ADDR.
         if( ! empty( $_SERVER['SERVER_ADDR'] ) ) {
-            $server_ip = sanitize_text_field( $_SERVER['SERVER_ADDR'] );
+            $server_ip = sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) );
             if( filter_var( $server_ip, FILTER_VALIDATE_IP ) ) {
                 self::add_ip( $server_ip, 'Server IP (SERVER_ADDR)', true );
             }

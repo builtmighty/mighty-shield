@@ -18,6 +18,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
 use MightyShield\Includes\exempt;

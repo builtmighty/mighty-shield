@@ -31,6 +31,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class response {
 
     /**
@@ -183,7 +185,62 @@ class response {
 
         if( $note === '' ) return $message;
 
+        // Sanitized again on the way out, not just on the way in.
+        //
+        // admin_page::sanitize_refusal_note() runs wp_kses() when the setting
+        // is saved, which is the real control. This is the second one, and it
+        // exists because the option can be written without ever passing
+        // through that form -- WP-CLI, a migration, an importer, another
+        // plugin -- and what lands here goes straight into a message shown to
+        // a shopper. Escaping at the point of output is the rule; sanitizing
+        // at the point of input is the optimisation.
+        //
+        // Deliberately the same tag list as the form, so a note that saved
+        // cleanly renders identically and a merchant never sees their own
+        // markup silently stripped.
+        $note = wp_kses( $note, self::refusal_note_tags() );
+
+        if( trim( $note ) === '' ) return $message;
+
         return $message . ' ' . $note;
+
+    }
+
+    /**
+     * What a merchant may put in the refusal note.
+     *
+     * Not wp_kses_post, and the difference matters. This note is shown to the
+     * customer by two different renderers: the classic checkout runs it
+     * through wc_kses_notice(), which is wp_kses_post, while the block
+     * checkout runs it through WooCommerce's own sanitizeHTML(), whose
+     * default allowlist is exactly the list below. Allowing anything wider
+     * would mean a merchant pasting a list, seeing it work on one checkout,
+     * and never learning it silently vanished on the other.
+     *
+     * Lives here rather than on the admin page, which owned it until 2.3.0.
+     * The list is a fact about the two renderers, and with_note() -- the thing
+     * that actually renders -- runs on the front end, where admin classes are
+     * not loaded. Naming it across that boundary was a fatal error waiting for
+     * the first store to set a note.
+     *
+     * @since   2.0.0
+     *
+     * @return  array   wp_kses allowed-HTML array.
+     */
+    public static function refusal_note_tags() {
+
+        $link = [ 'href' => true, 'title' => true, 'target' => true, 'rel' => true, 'name' => true, 'download' => true ];
+
+        return [
+            'a'      => $link,
+            'b'      => [],
+            'strong' => [],
+            'i'      => [],
+            'em'     => [],
+            'p'      => [],
+            'br'     => [],
+            'abbr'   => [ 'title' => true ],
+        ];
 
     }
 

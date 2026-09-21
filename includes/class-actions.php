@@ -24,6 +24,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class actions {
 
     const NONE            = 'none';

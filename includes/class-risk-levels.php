@@ -20,6 +20,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class risk_levels {
 
     const TRUSTED  = 'trusted';

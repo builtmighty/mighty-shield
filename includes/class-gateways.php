@@ -22,6 +22,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\Gateways\adapter_null;
 
 class gateways {

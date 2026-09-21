@@ -17,6 +17,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;

@@ -67,7 +67,19 @@ defined( 'MSHIELD_FILE' ) || define( 'MSHIELD_FILE', __FILE__ );
 add_action( 'before_woocommerce_init', function() {
 
     if( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', MSHIELD_FILE, true );
+
+        // Cart and Checkout blocks. The work behind this has been done since
+        // 1.8.0 -- protection/class-store-api.php runs every check on the Store
+        // API path, the collector rides along as extension data, and
+        // risk_recorder refuses through a RouteException -- but the declaration
+        // itself was never made, so WooCommerce listed MightyShield as
+        // incompatible on the Cart & Checkout Blocks screen. A merchant reading
+        // that screen would reasonably have concluded the block checkout was
+        // unprotected, which was the opposite of true.
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', MSHIELD_FILE, true );
+
     }
 
 } );

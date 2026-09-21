@@ -23,6 +23,8 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\settings;
 use MightyShield\Includes\scoring_profiles;
 use MightyShield\Protection\challenge;
@@ -288,7 +290,7 @@ class setup_wizard {
         if( isset( $_GET['mshield_setup_bail'] ) && isset( $_GET['_wpnonce'] ) ) {
 
             if( current_user_can( 'manage_woocommerce' )
-                && wp_verify_nonce( $_GET['_wpnonce'], 'mshield_setup_bail' ) ) {
+                && wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_setup_bail' ) ) {
 
                 // Skipped, not done. Nothing is configured and nothing is
                 // nagged about afterwards -- walking away was a decision, and a

@@ -15,6 +15,8 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\settings;
 use MightyShield\Includes\response;
 
@@ -315,7 +317,7 @@ class fraud_review {
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
 
         $per   = 20;
-        $paged = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+        $paged = isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1;
 
         $res = wc_get_orders( self::pending_args( [
             'limit'    => $per,
