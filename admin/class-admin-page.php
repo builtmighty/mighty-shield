@@ -1084,12 +1084,16 @@ class admin_page {
      */
     public static function enqueue_app_assets() {
 
-        // Design-system fonts (Public Sans + JetBrains Mono).
+        // Design-system fonts (Public Sans + JetBrains Mono), served from this
+        // plugin. These came from fonts.googleapis.com until 2.3.0, which the
+        // plugin directory does not allow -- assets ship with the plugin -- and
+        // which also meant every admin page load handed the merchant's IP to a
+        // third party to render a screen.
         wp_enqueue_style(
             'mshield-fonts',
-            'https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300..800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap',
+            MSHIELD_URI . 'assets/fonts/mshield-fonts.css',
             [],
-            null
+            \MightyShield\asset_version( 'assets/fonts/mshield-fonts.css' )
         );
 
         // Version assets by modification time so edits always bust the cache.

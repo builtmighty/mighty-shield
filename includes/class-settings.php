@@ -115,9 +115,28 @@ class settings {
         // Hard ceiling on provider calls per day. 0 = no cap.
         'mshield_ai_daily_cap'              => 0,
         // Send the shape of the customer's details to the AI provider rather
-        // than the details themselves. Off by default: it costs some accuracy,
-        // and the choice belongs to the store.
-        'mshield_ai_redact_pii'             => 'no',
+        // than the details themselves.
+        //
+        // ON by default since 2.3.0. It shipped off, on the reasoning that it
+        // costs some accuracy and the choice belongs to the store. Both halves
+        // of that are still true, but they are the wrong way round for a
+        // default: the store is opting somebody ELSE's name, street, email,
+        // phone and IP address into being sent to a third party, and a default
+        // that quietly does that is not a choice anybody made.
+        //
+        // The accuracy it costs is small and mostly theoretical. The model is
+        // shown which checks fired and what they cost, which is the evidence it
+        // actually reasons from; a masked street still supports "billing and
+        // shipping disagree", and a masked email still carries its length and
+        // whether it contains digits.
+        //
+        // A store that has ever saved the AI Review tab holds an explicit
+        // value and keeps it, because get() only falls back to this default
+        // when the option is absent. A store that never opened the tab picks
+        // the new default up on upgrade -- deliberately, and there is no
+        // migration notice for it because the change only ever sends LESS
+        // about a customer than it did yesterday.
+        'mshield_ai_redact_pii'             => 'yes',
         'mshield_ai_direction'              => 'lower',
         // Whether to also review Monitored orders. Off by default: that risk level
         // is most orders, so turning it on multiplies the API bill.

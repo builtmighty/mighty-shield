@@ -2,9 +2,9 @@
 Contributors: tylerjohnsondesign
 Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
-Requires at least: 6.0
+Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.2.0
+Stable tag: 2.3.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -13,7 +13,7 @@ WooCommerce firewall for protecting against card spammer orders. Blocks Store AP
 
 == Description ==
 
-MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 45 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
+MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 44 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
 
 Nothing is enforced until you say so. MightyShield installs in Observe mode: it rates every order and records what it would have done, so you can tune it against your own traffic before it touches a single sale.
 
@@ -90,9 +90,80 @@ Smarty verifies US billing addresses against USPS data to catch fake, non-existe
 
 The honeypot adds an invisible field to the checkout form. Real customers never see or fill it, but automated bots do. It is one of very few checks set to decide an order on its own, because a person using your site cannot trip it: the field is off-screen, hidden from screen readers and out of tab order. A filled trap field refuses the checkout and temporarily bars the address.
 
+== Installation ==
+
+1. Install and activate MightyShield. WooCommerce must already be active.
+2. The setup wizard opens on activation. It takes about two minutes and covers scoring strictness, the bot challenge, alerts, and whether to enforce.
+3. Leave it in **Observe** mode to begin with. MightyShield rates every order and records what it would have done, without turning anyone away.
+4. After a week of your own traffic, open **WooCommerce > MightyShield > Scoring**. Any check firing on most of your orders is describing your customers rather than your fraudsters — turn it down.
+5. When the ratings look right, switch to **Enforce** on the Dashboard.
+
+Optional, and worth doing:
+
+* **Network checks.** Set a free MaxMind licence key under **WooCommerce > Settings > Integrations > MaxMind Geolocation**. MightyShield reads that database to tell a home connection from a data centre and to compare where an order was placed with where it ships. Without a key those two checks stay quiet.
+* **Bot challenge.** Add a Cloudflare Turnstile or Google reCAPTCHA key on the Shielding tab.
+* **Address verification.** Add a free Smarty key on the Scoring tab to check US addresses against USPS records.
+* **AI review.** Add an Anthropic, OpenAI or Google key on the AI Review tab, and choose which risk levels are worth spending a call on.
+
+== External services ==
+
+MightyShield works without any of these. Each one is listed with what it sends, when, and who runs it. Everything below fails open: if a service is unavailable, MightyShield loses that evidence and the sale goes through.
+
+**MaxMind GeoLite2** — used to tell a hosting provider from a home connection, and to compare the country an order was placed from with the country it ships to. MightyShield downloads the GeoLite2 ASN database once a week using the licence key you set in WooCommerce's own MaxMind Geolocation integration, and reads it on your own server. Your licence key is sent to MaxMind to authorise the download. **No customer data, and no IP address, is ever sent to MaxMind.** Nothing happens at all unless you have set a licence key.
+Terms: https://www.maxmind.com/en/site-terms-and-conditions | Privacy: https://www.maxmind.com/en/privacy-policy | EULA: https://www.maxmind.com/en/geolite2/eula
+
+**Smarty (US Street Address API)** — verifies that a US billing address exists and is deliverable. Off by default. When you enable it and add a key, the customer's street, city, state and postcode are sent to Smarty at checkout, along with your credentials.
+Terms: https://www.smarty.com/legal/terms-of-service | Privacy: https://www.smarty.com/legal/privacy-policy
+
+**Cloudflare Turnstile** — bot challenge. Off by default. When enabled, the challenge widget is loaded from Cloudflare in the customer's browser, and MightyShield sends Cloudflare the challenge token, your secret key and the customer's IP address to verify it.
+Terms: https://www.cloudflare.com/website-terms/ | Privacy: https://www.cloudflare.com/privacypolicy/
+
+**Google reCAPTCHA v3** — the alternative bot challenge. Off by default. Same shape as Turnstile: the widget loads from Google, and the token, your secret key and the customer's IP address are sent to Google to verify.
+Terms: https://policies.google.com/terms | Privacy: https://policies.google.com/privacy
+
+**disposable-email-domains (GitHub)** — a public, community-maintained list of throwaway email providers. **On by default.** Once a day MightyShield downloads the list from raw.githubusercontent.com. This is a download only — nothing about your store or your customers is sent. Turn it off on the Scoring tab and MightyShield falls back to its built-in list.
+Terms: https://docs.github.com/site-policy/github-terms/github-terms-of-service | Privacy: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+
+**AI review — Anthropic, OpenAI or Google** — a second opinion on orders at the risk levels you choose. Off by default, and it does nothing until you add a key for one provider. When it runs, MightyShield sends that provider the order: billing and shipping address, email, phone, IP address, order value, line items, payment method, which checks fired, and a count of previous orders for that customer. "Redact personal details" on the AI Review tab masks names, streets, email addresses, phone numbers and IP addresses before they are sent, and it is **on by default**.
+Anthropic — Terms: https://www.anthropic.com/legal/commercial-terms | Privacy: https://www.anthropic.com/legal/privacy
+OpenAI — Terms: https://openai.com/policies/terms-of-use | Privacy: https://openai.com/policies/privacy-policy
+Google — Terms: https://ai.google.dev/gemini-api/terms | Privacy: https://policies.google.com/privacy
+
+== Privacy ==
+
+MightyShield stores the following on your own server, and sends none of it anywhere except as described above.
+
+* **Identities are stored hashed, never in the clear.** Email addresses, phone numbers, delivery addresses, device signatures, network blocks and card fingerprints are salted and hashed with a key unique to your site, so MightyShield can recognise a returning customer without holding their details. The salt is deleted when the plugin is uninstalled, which makes the hashes permanently unreadable.
+* **Logs** hold IP addresses, user agents and billing email addresses for blocked and flagged events. Kept 30 days by default; configurable on the Logs tab.
+* **Order ratings** hold the score, the level, and which checks fired. Kept as long as the order exists.
+* **Uninstalling removes all of it** — every table, every setting, and the hashing salt. Order notes and the fraud metadata attached to an order are deliberately left alone, because they are part of your own record of what happened.
+
+MightyShield answers WordPress's personal data export and erase requests, so a customer's stored identities can be found and removed from **Tools > Export Personal Data** and **Tools > Erase Personal Data**.
+
 == Screenshots ==
 
+1. The Dashboard — protection state, recent ratings, and what MightyShield has been doing.
+2. The Scoring tab — every check, what it costs, and how often it has fired on your own orders.
+3. Shielding — the six risk levels, their thresholds, and what each one does.
+4. AI Review — provider, model, spend cap, and which levels are worth a call.
+5. An order's rating, on the order screen.
+6. The review queue.
+
+== Upgrade Notice ==
+
+= 2.3.0 =
+Fixes three network checks that had never worked, and removes a blocking request from every checkout. If you want those checks back, set a free MaxMind licence key under WooCommerce > Settings > Integrations.
+
 == Changelog ==
+
+= 2.3.0 =
+* Fixed: the three network checks — data centre, VPN/proxy, and location mismatch — had never fired on any install. They were fed by ip-api.com over an encrypted connection, which that service refuses unless you pay, so every lookup failed. This also means every checkout was making a request that could take up to five seconds and was always going to fail. Both are gone.
+* Changed: network intelligence now comes from a MaxMind database on your own server, using the free licence key WooCommerce already asks for under Settings > Integrations. Nothing about your customers is sent anywhere, and there is no longer any network request on the checkout path. Without a key, the two remaining network checks stay quiet rather than guessing.
+* Removed: the VPN/proxy check. There is no free source for it — the data is a paid MaxMind product — and a check that cannot fire should not sit on the Scoring tab with a weight you can tune. It is better to be one check shorter and honest about it.
+* Changed: the location-mismatch check now compares countries only. It used to compare region as well, which was the noisier half: a shopper on a phone routes through whichever city their carrier terminates in, regularly a different state from the one they live in.
+* Changed: fonts are now served from the plugin instead of Google Fonts, so opening a MightyShield screen no longer tells Google anything about you.
+* Changed: MightyShield now updates through WordPress.org like any other plugin.
+* New: MightyShield answers WordPress's personal data export and erase requests.
 
 = 2.2.0 =
 * Changed: everything now happens in one order, and it is the order you would expect. An order is scored, then reviewed by AI if you use it, then acted on, then created. Before this, half the scoring ran after the order already existed, which is after the last moment anything can be refused — so the decision to turn a checkout away was made on half the evidence, and the other half could only change what happened to an order that had already gone through.

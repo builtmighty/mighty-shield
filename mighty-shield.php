@@ -1,16 +1,33 @@
 <?php
-/*
-Plugin Name: MightyShield
-Plugin URI: https://builtmighty.com
-Description: WooCommerce firewall for protecting against card spammer orders.
-Version: 2.2.0
-Author: Built Mighty
-Author URI: https://builtmighty.com
-Copyright: Built Mighty
-Text Domain: mighty-shield
-Requires Plugins: woocommerce
-Copyright © 2026 Built Mighty. All Rights Reserved.
-*/
+/**
+ * Plugin Name:       MightyShield
+ * Plugin URI:        https://builtmighty.com
+ * Description:       Scores every WooCommerce order against 44 fraud checks, optionally reviews it with an AI model, and then acts once — hold, challenge, refuse, or let through.
+ * Version:           2.3.0
+ * Requires at least: 6.5
+ * Requires PHP:      8.1
+ * Requires Plugins:  woocommerce
+ * WC requires at least: 8.0
+ * WC tested up to:   11.1
+ * Author:            Built Mighty
+ * Author URI:        https://builtmighty.com
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain:       mighty-shield
+ * Domain Path:       /languages
+ *
+ * MightyShield is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 2 of the License, or (at your option)
+ * any later version.
+ *
+ * MightyShield is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * @package MightyShield
+ */
 
 /**
  * Namespace.
@@ -31,7 +48,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '2.2.0' );
+define( 'MSHIELD_VERSION', '2.3.0' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -432,6 +449,7 @@ function load() {
     require_once MSHIELD_PATH . 'includes/class-ai-capture.php';
     require_once MSHIELD_PATH . 'includes/class-trust-badge.php';
     require_once MSHIELD_PATH . 'includes/class-rescore.php';
+    require_once MSHIELD_PATH . 'includes/class-privacy.php';
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
     require_once MSHIELD_PATH . 'admin/class-order-panel.php';
@@ -462,6 +480,14 @@ function load() {
     // database is actually stale, and it does nothing at all on a store that
     // has never set a MaxMind licence key.
     add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\ip_data', 'maybe_update_asn_database' ] );
+
+    // Personal data export and erasure.
+    //
+    // Above the mshield_enabled guard, and it has to stay there. Switching
+    // protection off stops MightyShield WRITING anything; it does not delete
+    // what a store already holds, and a store still has to be able to answer a
+    // request about it. A privacy obligation is not a feature to toggle.
+    \MightyShield\Includes\privacy::register();
 
     // Always load admin page so settings are accessible.
     if( is_admin() ) {
@@ -546,16 +572,16 @@ function load() {
 }
 
 /**
- * Plugin Updates.
+ * Updates are WordPress.org's job.
  *
- * @since   1.0.0
+ * Until 2.3.0 this file ended by wiring up Plugin Update Checker against the
+ * GitHub repository, which fetched release metadata on a schedule and could
+ * install a ZIP from there. That is a direct conflict with plugin directory
+ * guideline 8 -- a plugin hosted on WordPress.org may not serve its own
+ * updates or install code from anywhere else -- so both it and the vendored
+ * updates/ library are gone.
+ *
+ * Nothing replaces it. WordPress updates a directory-hosted plugin itself.
+ *
+ * @since   2.3.0
  */
-require_once MSHIELD_PATH . 'updates/plugin-update-checker.php';
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
-$mshield_updates = PucFactory::buildUpdateChecker(
-    'https://github.com/builtmighty/mighty-shield',
-    __FILE__,
-    'mighty-shield'
-);
-$mshield_updates->setBranch( 'main' );
-$mshield_updates->getVcsApi()->enableReleaseAssets();
