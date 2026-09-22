@@ -398,6 +398,17 @@ class risk_recorder {
 
         }
 
+        // Tell the merchant, if they asked to be told.
+        //
+        // Above the three returns below, and it has to be: each of them is a
+        // reason not to ACT, and this is not an action. An order that scored
+        // 8 is worth an email whether it was refused, let through because the
+        // store is still in Observe mode, or let through because the shopper
+        // is allowlisted -- and the last two are precisely the cases a
+        // merchant tuning their thresholds needs to see. Putting this after
+        // dispatch() would have made it unreachable in exactly those cases.
+        response::maybe_alert( $order, $verdict );
+
         // The verdict is on record and visible on the order. The allowlist
         // stops here, at the one place that acts on it.
         if( $exempt ) return;

@@ -573,6 +573,34 @@ foreach( $level_rows as $row ) {
                     </p>
                 </td>
             </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Email me about bad orders', 'mighty-shield' ); ?></th>
+                <td>
+                    <label>
+                        <?php esc_html_e( 'Tell me when an order rates at or below', 'mighty-shield' ); ?>
+                        <input type="number" name="mshield_alert_below_trust" min="0" max="99" step="1"
+                               value="<?php echo esc_attr( (int) settings::get( 'mshield_alert_below_trust' ) ); ?>"
+                               class="small-text" />
+                        <?php esc_html_e( 'out of 100', 'mighty-shield' ); ?>
+                    </label>
+                    <p class="description">
+                        <?php esc_html_e( 'Sent whatever MightyShield did about the order — including nothing, in Observe mode, which is when this is most useful. Set it to 0 to switch it off.', 'mighty-shield' ); ?>
+                    </p>
+                    <p class="description">
+                        <?php
+                        printf(
+                            /* translators: 1: rejected threshold, 2: high threshold. */
+                            esc_html__( 'On your current thresholds, %1$s or below is refused outright and %2$s or below is held. Somewhere around those figures is usually what you want.', 'mighty-shield' ),
+                            esc_html( number_format( (float) \MightyShield\Includes\risk_levels::threshold( 'rejected' ), 0 ) ),
+                            esc_html( number_format( (float) \MightyShield\Includes\risk_levels::threshold( 'high' ), 0 ) )
+                        );
+                        ?>
+                    </p>
+                    <p class="mshield-hint">
+                        <?php esc_html_e( 'At most one message an hour. A card-testing run is a hundred bad orders in ten minutes, and the message says how many others there were.', 'mighty-shield' ); ?>
+                    </p>
+                </td>
+            </tr>
         </table>
 
         <script>

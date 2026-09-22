@@ -631,6 +631,93 @@ class response {
     }
 
     /**
+     * Tell the merchant when an order rates badly enough to be worth their
+     * attention, whatever was done about it.
+     *
+     * Deliberately keyed on the RATING rather than on the action taken. The
+     * two answer different questions: an action says what MightyShield did,
+     * and in Observe mode the answer is "nothing" -- which is exactly the mode
+     * a merchant most needs telling, because they are trying to find out
+     * whether enforcement would be safe.
+     *
+     * Throttled per hour, not per order, and for a reason worth stating: a
+     * card-testing run is a hundred orders in ten minutes, each of them
+     * rating terribly. Mailing on every one turns the merchant's inbox into
+     * the attack's second payload, and buries the one message they needed
+     * under ninety-nine copies of it. The count since the last message is
+     * carried in the next one, so nothing is hidden -- only batched.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order   $order
+     * @param   array       $verdict    From risk_context::evaluate().
+     */
+    public static function maybe_alert( $order, $verdict ) {
+
+        $threshold = (float) settings::get( 'mshield_alert_below_trust' );
+
+        // 0 is off, and is the default. A store that has not asked for these
+        // should not start receiving them because it installed an update.
+        if( $threshold <= 0 ) return;
+
+        $trust = isset( $verdict['trust'] ) ? (float) $verdict['trust'] : 100.0;
+
+        if( $trust > $threshold ) return;
+
+        // Count every qualifying order, including the ones inside the quiet
+        // hour, so the next message can say how many there were.
+        $pending = (int) get_transient( 'mshield_alert_pending' ) + 1;
+
+        if( get_transient( 'mshield_alert_sent' ) ) {
+            set_transient( 'mshield_alert_pending', $pending, 2 * HOUR_IN_SECONDS );
+            return;
+        }
+
+        $others = $pending - 1;
+
+        $body = sprintf(
+            "An order rated %s out of 100, at or below the %s you asked to hear about.\n\n"
+            . "Order: #%d\nRating: %s (%s)\nWhat MightyShield did: %s\nCustomer: %s (%s)\n\n%s\n\nReview this order: %s",
+            number_format( $trust, 0 ),
+            number_format( $threshold, 0 ),
+            $order->get_id(),
+            number_format( $trust, 0 ),
+            risk_levels::label( $verdict['risk_level'] ?? '' ),
+            self::is_enforcing() ? __( 'Acted on it', 'mighty-shield' ) : __( 'Nothing — MightyShield is in Observe mode', 'mighty-shield' ),
+            $order->get_formatted_billing_full_name(),
+            $order->get_billing_email(),
+            $others > 0
+                ? sprintf(
+                    /* translators: %d: number of additional low-rated orders. */
+                    _n(
+                        'There was also %d other order rated this low in the last hour.',
+                        'There were also %d other orders rated this low in the last hour.',
+                        $others,
+                        'mighty-shield'
+                    ),
+                    $others
+                )
+                : '',
+            $order->get_edit_order_url()
+        );
+
+        wp_mail(
+            settings::notification_recipients(),
+            sprintf(
+                /* translators: 1: trust rating, 2: order number. */
+                __( '[MightyShield] Order #%2$d rated %1$s/100', 'mighty-shield' ),
+                number_format( $trust, 0 ),
+                $order->get_id()
+            ),
+            $body
+        );
+
+        set_transient( 'mshield_alert_sent', 1, HOUR_IN_SECONDS );
+        delete_transient( 'mshield_alert_pending' );
+
+    }
+
+    /**
      * Reserve the funds without taking them, then hold the order.
      *
      * The gateway is asked to authorize rather than charge, and it sets the

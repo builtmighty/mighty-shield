@@ -46,6 +46,12 @@ class settings {
         'mshield_blocked_countries'         => '',
         'mshield_high_risk_countries'       => '',
         'mshield_phone_voip_prefixes'       => '',
+        // Email the merchant when an order rates at or below this, whatever
+        // was done about it. 0 is off, and is the default: a store that never
+        // asked for these must not start receiving them because it installed
+        // an update. 25 is the rejected band, which is the figure most stores
+        // will want if they want any.
+        'mshield_alert_below_trust'         => 0,
         'mshield_address_sensitivity'       => 'medium',
         'mshield_smarty_enabled'            => 'no',
         'mshield_smarty_auth_id'            => '',
