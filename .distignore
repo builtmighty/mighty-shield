@@ -1,0 +1,38 @@
+# Files that must not ship in the plugin ZIP.
+#
+# The release workflow reads this. It used to rely on .gitattributes
+# export-ignore, which only applies to `git archive` -- the workflow builds
+# with rsync, so export-ignore did nothing at all and every file below was
+# going out in the release.
+
+# Version control and CI
+.git
+.gitignore
+.gitattributes
+.github
+.distignore
+
+# Tooling and editor state
+.claude
+.editorconfig
+.vscode
+.idea
+phpcs.xml
+phpcs.xml.dist
+phpunit.xml
+phpunit.xml.dist
+composer.json
+composer.lock
+package.json
+package-lock.json
+node_modules
+vendor/bin
+
+# Development documentation. readme.txt is what the directory reads; README.md
+# is for the repository and duplicates it.
+README.md
+CONTRIBUTING.md
+
+# Tests
+tests
+.phpunit.result.cache
