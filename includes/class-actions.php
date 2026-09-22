@@ -60,63 +60,42 @@ class actions {
     const CATALOG = [
 
         self::REJECT => [
-            'label'    => 'Reject',
-            'desc'     => 'The checkout is refused before an order exists. The payment processor is never contacted and the customer sees a decline.',
-            'money'    => 'Untouched',
             'gateway'  => false,
             'needs'    => '',
             'fallback' => '',
         ],
 
         self::NONE => [
-            'label'    => 'No action',
-            'desc'     => 'The order goes through untouched. It is still rated and recorded.',
-            'money'    => 'Charged as normal',
             'gateway'  => true,
             'needs'    => '',
             'fallback' => '',
         ],
 
         self::FLAG => [
-            'label'    => 'Flag for review',
-            'desc'     => 'The order goes through and is marked for you to look at later. The customer notices nothing.',
-            'money'    => 'Charged as normal',
             'gateway'  => true,
             'needs'    => '',
             'fallback' => '',
         ],
 
         self::VERIFY_3DS => [
-            'label'    => '3-D Secure verification',
-            'desc'     => 'The customer confirms the payment with their bank. Genuine cardholders pass; someone using a stolen card cannot, and liability for a dispute moves to the card issuer.',
-            'money'    => 'Charged as normal, once verified',
             'gateway'  => true,
             'needs'    => '3ds',
             'fallback' => self::FLAG,
         ],
 
         self::HOLD_PAID => [
-            'label'    => 'Take payment, then hold',
-            'desc'     => 'The card is charged in full and the order is held before fulfilment. Releasing it ships; refusing it means refunding.',
-            'money'    => 'Taken in full',
             'gateway'  => true,
             'needs'    => '',
             'fallback' => '',
         ],
 
         self::HOLD_AUTHORIZED => [
-            'label'    => 'Authorize, then hold',
-            'desc'     => 'The funds are reserved on the card but not taken, and the order is held. Releasing it captures the money; refusing it voids cleanly with nothing to refund.',
-            'money'    => 'Reserved, not taken',
             'gateway'  => true,
             'needs'    => 'auth_only',
             'fallback' => self::HOLD_UNPAID,
         ],
 
         self::HOLD_UNPAID => [
-            'label'    => 'Hold before payment',
-            'desc'     => 'The order is created and held without contacting the payment processor at all. Nothing is charged, authorized, or counted against your merchant account.',
-            'money'    => 'Untouched',
             'gateway'  => false,
             'needs'    => '',
             'fallback' => '',
@@ -155,6 +134,87 @@ class actions {
     }
 
     /**
+     * What each action is called, what it does, and what it does to the money.
+     *
+     * Separate from CATALOG because a const array cannot hold a __() call, and
+     * these lived in one until 2.3.0 — which made every one of them
+     * permanently English however the rest of the admin was translated.
+     *
+     * CATALOG keeps everything that is not language, which is also everything
+     * the checkout path reads.
+     *
+     * @since   2.3.0
+     *
+     * @return  array
+     */
+    private static function strings() {
+
+        // Keyed by locale, not a plain memo.
+        //
+        // A plain static would freeze whichever language happened to be
+        // active at the first call and serve it for the rest of the request.
+        // That is wrong twice: a multilingual plugin can switch locale
+        // mid-request, and anything that reached one of these accessors
+        // before the textdomain loaded would pin the whole catalogue to
+        // English. Keying on the locale costs one function call and makes
+        // both cases correct.
+        static $strings = [];
+
+        $locale = function_exists( 'determine_locale' ) ? determine_locale() : '';
+
+        if( isset( $strings[ $locale ] ) ) return $strings[ $locale ];
+
+        $strings[ $locale ] = [
+
+            self::REJECT => [
+                'label'        => __( 'Reject', 'mighty-shield' ),
+                'desc'         => __( 'The checkout is refused before an order exists. The payment processor is never contacted and the customer sees a decline.', 'mighty-shield' ),
+                'money'        => __( 'Untouched', 'mighty-shield' ),
+            ],
+
+            self::NONE => [
+                'label'        => __( 'No action', 'mighty-shield' ),
+                'desc'         => __( 'The order goes through untouched. It is still rated and recorded.', 'mighty-shield' ),
+                'money'        => __( 'Charged as normal', 'mighty-shield' ),
+            ],
+
+            self::FLAG => [
+                'label'        => __( '3-D Secure verification', 'mighty-shield' ),
+                'desc'         => __( 'The customer confirms the payment with their bank. Genuine cardholders pass; someone using a stolen card cannot, and liability for a dispute moves to the card issuer.', 'mighty-shield' ),
+                'money'        => __( 'Charged as normal, once verified', 'mighty-shield' ),
+            ],
+
+            self::VERIFY_3DS => [
+                'label'        => __( '3-D Secure verification', 'mighty-shield' ),
+                'desc'         => __( 'The customer confirms the payment with their bank. Genuine cardholders pass; someone using a stolen card cannot, and liability for a dispute moves to the card issuer.', 'mighty-shield' ),
+                'money'        => __( 'Charged as normal, once verified', 'mighty-shield' ),
+            ],
+
+            self::HOLD_PAID => [
+                'label'        => __( 'Take payment, then hold', 'mighty-shield' ),
+                'desc'         => __( 'The card is charged in full and the order is held before fulfilment. Releasing it ships; refusing it means refunding.', 'mighty-shield' ),
+                'money'        => __( 'Taken in full', 'mighty-shield' ),
+            ],
+
+            self::HOLD_AUTHORIZED => [
+                'label'        => __( 'Authorize, then hold', 'mighty-shield' ),
+                'desc'         => __( 'The funds are reserved on the card but not taken, and the order is held. Releasing it captures the money; refusing it voids cleanly with nothing to refund.', 'mighty-shield' ),
+                'money'        => __( 'Reserved, not taken', 'mighty-shield' ),
+            ],
+
+            self::HOLD_UNPAID => [
+                'label'        => __( 'Hold before payment', 'mighty-shield' ),
+                'desc'         => __( 'The order is created and held without contacting the payment processor at all. Nothing is charged, authorized, or counted against your merchant account.', 'mighty-shield' ),
+                'money'        => __( 'Untouched', 'mighty-shield' ),
+            ],
+
+        ];
+
+        return $strings[ $locale ];
+
+    }
+
+    /**
      * The human-readable label of an action.
      *
      * @since   1.9.1
@@ -164,7 +224,9 @@ class actions {
      */
     public static function label( $action ) {
 
-        return isset( self::CATALOG[ $action ] ) ? self::CATALOG[ $action ]['label'] : $action;
+        $strings = self::strings();
+
+        return isset( $strings[ $action ]['label'] ) ? $strings[ $action ]['label'] : $action;
 
     }
 
@@ -178,7 +240,9 @@ class actions {
      */
     public static function desc( $action ) {
 
-        return isset( self::CATALOG[ $action ]['desc'] ) ? self::CATALOG[ $action ]['desc'] : '';
+        $strings = self::strings();
+
+        return isset( $strings[ $action ]['desc'] ) ? $strings[ $action ]['desc'] : '';
 
     }
 
@@ -192,7 +256,9 @@ class actions {
      */
     public static function money( $action ) {
 
-        return isset( self::CATALOG[ $action ]['money'] ) ? self::CATALOG[ $action ]['money'] : '';
+        $strings = self::strings();
+
+        return isset( $strings[ $action ]['money'] ) ? $strings[ $action ]['money'] : '';
 
     }
 

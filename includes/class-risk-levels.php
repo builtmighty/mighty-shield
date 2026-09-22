@@ -49,8 +49,6 @@ class risk_levels {
 
         self::TRUSTED => [
             'rank'             => 0,
-            'label'            => 'Trusted',
-            'description'      => 'Known-good, with a clean order history behind it.',
             'contacts_gateway' => true,
             'creates_order'    => true,
             'action'           => actions::NONE,
@@ -59,8 +57,6 @@ class risk_levels {
 
         self::LOW => [
             'rank'             => 1,
-            'label'            => 'Low',
-            'description'      => 'Nothing wrong, nothing vouching for it either. Where an unknown customer starts.',
             'contacts_gateway' => true,
             'creates_order'    => true,
             'action'           => actions::FLAG,
@@ -69,8 +65,6 @@ class risk_levels {
 
         self::ELEVATED => [
             'rank'             => 2,
-            'label'            => 'Elevated',
-            'description'      => 'Something is off, but nothing damning. Ambiguous enough to be worth a check.',
             'contacts_gateway' => true,
             'creates_order'    => true,
             'action'           => actions::VERIFY_3DS,
@@ -79,8 +73,6 @@ class risk_levels {
 
         self::HIGH => [
             'rank'             => 3,
-            'label'            => 'High',
-            'description'      => 'Likely fraud. Enough against it to be worth stopping before fulfilment.',
             'contacts_gateway' => true,
             'creates_order'    => true,
             'action'           => actions::HOLD_UNPAID,
@@ -89,8 +81,6 @@ class risk_levels {
 
         self::REJECTED => [
             'rank'             => 4,
-            'label'            => 'Rejected',
-            'description'      => 'Blatant. Refused at validation; no order is created.',
             'contacts_gateway' => false,
             'creates_order'    => false,
             'action'           => actions::REJECT,
@@ -99,8 +89,6 @@ class risk_levels {
 
         self::BANNED => [
             'rank'             => 5,
-            'label'            => 'Banned',
-            'description'      => 'Known-bad. Refused and persisted to the blocklist.',
             'contacts_gateway' => false,
             'creates_order'    => false,
             'action'           => actions::REJECT,
@@ -407,6 +395,75 @@ class risk_levels {
     }
 
     /**
+     * What each risk level is called, and what it means.
+     *
+     * Separate from LADDER because a const array cannot hold a __() call, and
+     * these lived in one until 2.3.0 — which made every one of them
+     * permanently English however the rest of the admin was translated.
+     *
+     * LADDER keeps everything that is not language, which is also everything
+     * the checkout path reads.
+     *
+     * @since   2.3.0
+     *
+     * @return  array
+     */
+    private static function strings() {
+
+        // Keyed by locale, not a plain memo.
+        //
+        // A plain static would freeze whichever language happened to be
+        // active at the first call and serve it for the rest of the request.
+        // That is wrong twice: a multilingual plugin can switch locale
+        // mid-request, and anything that reached one of these accessors
+        // before the textdomain loaded would pin the whole catalogue to
+        // English. Keying on the locale costs one function call and makes
+        // both cases correct.
+        static $strings = [];
+
+        $locale = function_exists( 'determine_locale' ) ? determine_locale() : '';
+
+        if( isset( $strings[ $locale ] ) ) return $strings[ $locale ];
+
+        $strings[ $locale ] = [
+
+            self::TRUSTED => [
+                'label'        => __( 'Trusted', 'mighty-shield' ),
+                'description'  => __( 'Known-good, with a clean order history behind it.', 'mighty-shield' ),
+            ],
+
+            self::LOW => [
+                'label'        => __( 'Low', 'mighty-shield' ),
+                'description'  => __( 'Nothing wrong, nothing vouching for it either. Where an unknown customer starts.', 'mighty-shield' ),
+            ],
+
+            self::ELEVATED => [
+                'label'        => __( 'Elevated', 'mighty-shield' ),
+                'description'  => __( 'Something is off, but nothing damning. Ambiguous enough to be worth a check.', 'mighty-shield' ),
+            ],
+
+            self::HIGH => [
+                'label'        => __( 'High', 'mighty-shield' ),
+                'description'  => __( 'Likely fraud. Enough against it to be worth stopping before fulfilment.', 'mighty-shield' ),
+            ],
+
+            self::REJECTED => [
+                'label'        => __( 'Rejected', 'mighty-shield' ),
+                'description'  => __( 'Blatant. Refused at validation; no order is created.', 'mighty-shield' ),
+            ],
+
+            self::BANNED => [
+                'label'        => __( 'Banned', 'mighty-shield' ),
+                'description'  => __( 'Known-bad. Refused and persisted to the blocklist.', 'mighty-shield' ),
+            ],
+
+        ];
+
+        return $strings[ $locale ];
+
+    }
+
+    /**
      * The human-readable label of a risk level.
      *
      * @since   1.9.0
@@ -416,7 +473,49 @@ class risk_levels {
      */
     public static function label( $level ) {
 
-        return isset( self::LADDER[ $level ] ) ? self::LADDER[ $level ]['label'] : $level;
+        $strings = self::strings();
+
+        return isset( $strings[ $level ]['label'] ) ? $strings[ $level ]['label'] : $level;
+
+    }
+
+    /**
+     * One line saying what this risk level means, for the admin.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $level
+     * @return  string
+     */
+    public static function description( $level ) {
+
+        $strings = self::strings();
+
+        return isset( $strings[ $level ]['description'] ) ? $strings[ $level ]['description'] : '';
+
+    }
+
+    /**
+     * Every risk level, least to most severe, as key => label.
+     *
+     * For the handful of screens that render the whole ladder. They used to
+     * iterate the LADDER const and read ['label'] off it, which stopped
+     * working when the strings moved out of it — and would not have been
+     * translated even while it did.
+     *
+     * @since   2.3.0
+     *
+     * @return  array
+     */
+    public static function all() {
+
+        $out = [];
+
+        foreach( array_keys( self::LADDER ) as $level ) {
+            $out[ $level ] = self::label( $level );
+        }
+
+        return $out;
 
     }
 

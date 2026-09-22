@@ -328,11 +328,11 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <table>
             <thead><tr><th><?php esc_html_e( 'Action', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'What happens', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'The money', 'mighty-shield' ); ?></th></tr></thead>
             <tbody>
-                <?php foreach( $actions as $act ) : ?>
+                <?php foreach( $actions as $mshield_act_key => $act ) : ?>
                     <tr>
-                        <td><span class="field"><?php echo esc_html( $act['label'] ); ?></span></td>
-                        <td><?php echo esc_html( $act['desc'] ); ?></td>
-                        <td class="default"><?php echo esc_html( $act['money'] ); ?></td>
+                        <td><span class="field"><?php echo esc_html( \MightyShield\Includes\actions::label( $mshield_act_key ) ); ?></span></td>
+                        <td><?php echo esc_html( \MightyShield\Includes\actions::desc( $mshield_act_key ) ); ?></td>
+                        <td class="default"><?php echo esc_html( \MightyShield\Includes\actions::money( $mshield_act_key ) ); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

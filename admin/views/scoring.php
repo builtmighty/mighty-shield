@@ -30,7 +30,7 @@ $floor_choices = [ 'none' => __( 'Scoring only', 'mighty-shield' ) ];
 
 foreach( risk_levels::LADDER as $level_key => $level ) {
     if( $level_key === risk_levels::TRUSTED ) continue;
-    $floor_choices[ $level_key ] = $level['label'];
+    $floor_choices[ $level_key ] = risk_levels::label( $level_key );
 }
 
 $days    = 30;
@@ -148,7 +148,7 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
                 echo trust_badge::span( $lk, $from, $to ); // phpcs:ignore WordPress.Security.EscapeOutput
                 ?>
 
-                <?php echo esc_html( $level['label'] ); ?>
+                <?php echo esc_html( risk_levels::label( $lk ) ); ?>
 
                 <?php
                 /* The dial above already shows the range, so restating "of 100"
@@ -167,7 +167,7 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
 <form method="post" action="options.php">
     <?php settings_fields( 'mshield_scoring' ); ?>
 
-    <?php foreach( signals::GROUPS as $group_key => $group_label ) : ?>
+    <?php foreach( signals::groups() as $group_key => $group_label ) : ?>
 
         <div class="mshield-section">
 

@@ -120,15 +120,11 @@ class scoring_profiles {
     const PROFILES = [
 
         'balanced' => [
-            'label'   => 'Balanced',
-            'blurb'   => 'What most stores should use. Catches the obvious attacks and leaves ordinary customers alone.',
             'weights' => [],
             'options' => [],
         ],
 
         'cautious' => [
-            'label'   => 'Cautious',
-            'blurb'   => 'For a store seeing more fraud than it used to. Everything specific costs more, and device information starts being collected.',
             'weights' => [
                 'email_disposable'   => 52.0,
                 'email_no_mx'        => 47.0,
@@ -155,8 +151,6 @@ class scoring_profiles {
         ],
 
         'strict' => [
-            'label'   => 'Strict',
-            'blurb'   => 'For a store under attack, or one selling things worth stealing. Expect to review more orders by hand.',
             'weights' => [
                 'email_disposable'   => 60.0,
                 'email_no_mx'        => 55.0,

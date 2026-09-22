@@ -88,10 +88,10 @@ foreach( $level_rows as $row ) {
 
                 <tr>
                     <td>
-                        <span class="mshield-sig-name"><?php echo esc_html( $level['label'] ); ?></span>
+                        <span class="mshield-sig-name"><?php echo esc_html( risk_levels::label( $key ) ); ?></span>
                         <span class="mshield-tip" tabindex="0" role="note"
-                              aria-label="<?php echo esc_attr( $level['description'] ); ?>"
-                              data-tip="<?php echo esc_attr( $level['description'] ); ?>">?</span>
+                              aria-label="<?php echo esc_attr( risk_levels::description( $key ) ); ?>"
+                              data-tip="<?php echo esc_attr( risk_levels::description( $key ) ); ?>">?</span>
                     </td>
 
                     <td>
@@ -158,7 +158,7 @@ foreach( $level_rows as $row ) {
                                  aria-label="<?php echo esc_attr( sprintf(
                                      /* translators: %s: risk level name. */
                                      __( 'Action for %s', 'mighty-shield' ),
-                                     $level['label']
+                                     risk_levels::label( $key )
                                  ) ); ?>"
                                  data-choices="<?php echo esc_attr( wp_json_encode( $choices ) ); ?>">
 

@@ -26,28 +26,31 @@ defined( 'ABSPATH' ) || exit;
 class signals {
 
     /**
-     * Signal groups, in display order.
+     * Signal group keys, in display order.
+     *
+     * Keys only since 2.3.0. The labels moved to groups(), because a const
+     * cannot hold a __() call and these are column headings on the Scoring
+     * tab. Anything that renders should call groups(); this is for code that
+     * only needs the order or the set.
      *
      * @since   1.9.0
      */
-    const GROUPS = [
-        'identity' => 'Identity',
-        'network'  => 'Network',
-        'behavior' => 'Behavior',
-        'order'    => 'Order',
-        'payment'  => 'Payment',
-        'history'  => 'History',
-    ];
+    const GROUPS = [ 'identity', 'network', 'behavior', 'order', 'payment', 'history' ];
 
     /**
      * The catalog.
      *
-     * label   Short name, shown in the admin.
-     * desc    One line explaining what it means, shown on hover.
+     * group   Which section of the Scoring tab it appears under.
      * weight  Trust cost when this signal fires. Positive spends trust;
      *         negative earns it back. Scaled by detector confidence.
      * floor   Risk level this signal forces on its own, regardless of total score.
      *         'none' means the signal only contributes weight.
+     *
+     * The label and the description used to live here too, and moved to
+     * strings() in 2.3.0: a const array cannot hold a __() call, so keeping
+     * them here made every one of them permanently English. What is left is
+     * the part that is not language, which is also the part the checkout path
+     * reads — so the hot path still touches a const and nothing else.
      *
      * A floor is reserved for signals a legitimate shopper essentially cannot
      * trip. Everything ambiguous contributes weight and lets the total decide —
@@ -66,30 +69,22 @@ class signals {
         // stock store behaves exactly as it did, and the number is now on a
         // screen where it can be turned down.
         'email_disposable' => [
-            'label'  => 'Disposable email address',
-            'desc'   => 'A throwaway inbox from a service that hands them out freely and deletes them minutes later.',
             'group'  => 'identity',
             'weight' => 80.0,
             'floor'  => 'none',
         ],
         'email_no_mx' => [
-            'label'  => 'Email address cannot receive mail',
-            'desc'   => 'Nothing is listening at that domain, so the customer could never read an order confirmation.',
             'group'  => 'identity',
             'weight' => 40.0,
             'floor'  => 'none',
         ],
         'email_role' => [
-            'label'  => 'Ordered from a shared mailbox',
-            'desc'   => 'An address like sales@ or info@ that belongs to a job rather than a person. Small businesses do order this way, so it means little on its own.',
             'group'  => 'identity',
             // Weak alone — small businesses really do order from info@.
             'weight' => 10.0,
             'floor'  => 'none',
         ],
         'email_name_mismatch' => [
-            'label'  => 'Name does not appear in the email address',
-            'desc'   => 'The delivery name and the email share nothing. Ordinary for older or work addresses, but common on orders placed with someone else\'s details.',
             'group'  => 'identity',
             'weight' => 10.0,
             'floor'  => 'none',
@@ -101,29 +96,21 @@ class signals {
         // where the old hard block sat, while one at half the threshold costs
         // 40 and merely contributes. A cliff became a ramp with the same edge.
         'address_fake' => [
-            'label'  => 'Address looks made up',
-            'desc'   => 'Placeholder text, repeated characters, or a street line too short to be real.',
             'group'  => 'identity',
             'weight' => 80.0,
             'floor'  => 'none',
         ],
         'zip_state_mismatch' => [
-            'label'  => 'US postcode does not match the state',
-            'desc'   => 'The ZIP code belongs to a different state from the one entered — usually a typo, sometimes an address that was never checked.',
             'group'  => 'identity',
             'weight' => 35.0,
             'floor'  => 'none',
         ],
         'address_unverified' => [
-            'label'  => 'Address is not deliverable',
-            'desc'   => 'The postal service does not recognise it. Checked against USPS records, US addresses only.',
             'group'  => 'identity',
             'weight' => 30.0,
             'floor'  => 'none',
         ],
         'address_velocity' => [
-            'label'  => 'Address used by several other buyers',
-            'desc'   => 'The same delivery address has recently taken orders under other names. The pattern of a drop address, though also of flats, offices and families.',
             'group'  => 'identity',
             // The drop-address signature — but also apartment buildings,
             // offices, dorms and families. Tuned so the classic stolen-card
@@ -136,8 +123,6 @@ class signals {
             'floor'  => 'none',
         ],
         'address_bill_ship_mismatch' => [
-            'label'  => 'Billing and delivery addresses disagree',
-            'desc'   => 'The card is registered at one address and the goods go to another. Ordinary for a gift or a work delivery, so it counts for little on its own — but it is on almost every stolen-card order.',
             'group'  => 'identity',
             // Deliberately low, and the reasoning matters because every
             // competitor weights this heavily.
@@ -156,8 +141,6 @@ class signals {
             'floor'  => 'none',
         ],
         'phone_area_mismatch' => [
-            'label'  => 'US phone area code is from a different state',
-            'desc'   => 'The number belongs to a state the order has nothing to do with. Weak on its own: mobile numbers follow people when they move.',
             'group'  => 'identity',
             // Very weak, and it has to stay that way. Area codes stopped
             // meaning geography when numbers became portable -- someone who
@@ -167,15 +150,11 @@ class signals {
             'floor'  => 'none',
         ],
         'phone_voip' => [
-            'label'  => 'Phone number is a virtual line',
-            'desc'   => 'The number belongs to a service that hands out disposable numbers rather than to a carrier, so it cannot be used to reach anyone later.',
             'group'  => 'identity',
             'weight' => 20.0,
             'floor'  => 'none',
         ],
         'identity_blocklisted' => [
-            'label'  => 'Details are on your blocklist',
-            'desc'   => 'The email, phone, name, postcode, city or country on this order matches something you barred.',
             'group'  => 'identity',
             // Same floor as ip_blocklisted, for the same reason: this is the
             // merchant's own instruction, not a verdict MightyShield formed,
@@ -184,8 +163,6 @@ class signals {
             'floor'  => 'banned',
         ],
         'country_blocked' => [
-            'label'  => 'Country you do not sell to',
-            'desc'   => 'The order is going somewhere on your blocked list. A statement you made, not a judgement MightyShield formed.',
             'group'  => 'identity',
             // A floor, and one of only six. This is not evidence about the
             // order -- it is the merchant saying "not there", and a decision
@@ -195,8 +172,6 @@ class signals {
             'floor'  => 'rejected',
         ],
         'country_high_risk' => [
-            'label'  => 'Country you treat as higher risk',
-            'desc'   => 'Somewhere you still sell to, but want looked at. Contributes to the rating; never decides on its own.',
             'group'  => 'identity',
             'weight' => 30.0,
             'floor'  => 'none',
@@ -204,8 +179,6 @@ class signals {
 
         // Network.
         'ip_blocklisted' => [
-            'label'  => 'Address is on your blocklist',
-            'desc'   => 'You or MightyShield barred this network earlier.',
             'group'  => 'network',
             'weight' => 100.0,
             'floor'  => 'banned',
@@ -222,15 +195,11 @@ class signals {
         // 60 still drops a first-time order into High on its own, which is a
         // hold and a look from a human. It just is not a refusal by itself.
         'ip_temp_blocked' => [
-            'label'  => 'Address is under a temporary block',
-            'desc'   => 'Recently blocked for repeated failures or rapid-fire attempts. Lifts by itself.',
             'group'  => 'network',
             'weight' => 60.0,
             'floor'  => 'none',
         ],
         'ip_geo_mismatch' => [
-            'label'  => 'Order placed from a different region',
-            'desc'   => 'The connection resolves somewhere other than the delivery address. Normal for gifts, travel and mobile networks, so it counts most alongside something else.',
             'group'  => 'network',
             // Noisy on its own — gifts, travel, mobile carrier geolocation and
             // corporate egress all trip it. Useful in combination, weak alone.
@@ -247,8 +216,6 @@ class signals {
         // WARP and Zscaler both look like this. It is worth knowing and it is
         // not worth holding an order by itself.
         'ip_datacenter' => [
-            'label'  => 'Order came from a server, not a home connection',
-            'desc'   => 'The connection belongs to a hosting company. Real shoppers rarely buy from inside a data centre.',
             'group'  => 'network',
             'weight' => 25.0,
             'floor'  => 'none',
@@ -272,22 +239,16 @@ class signals {
 
         // Behavior.
         'honeypot' => [
-            'label'  => 'Hidden trap field was filled in',
-            'desc'   => 'The checkout carries a field no person can see or reach. Only software fills it.',
             'group'  => 'behavior',
             'weight' => 100.0,
             'floor'  => 'rejected',
         ],
         'device_automated' => [
-            'label'  => 'Browser is being driven by software',
-            'desc'   => 'The browser openly reports that something is controlling it, which is how automated testing tools behave.',
             'group'  => 'behavior',
             'weight' => 100.0,
             'floor'  => 'rejected',
         ],
         'captcha_failed' => [
-            'label'  => 'Failed the bot challenge',
-            'desc'   => 'Cloudflare or Google judged the visitor not to be a person.',
             'group'  => 'behavior',
             'weight' => 100.0,
             'floor'  => 'rejected',
@@ -303,50 +264,36 @@ class signals {
         // and no floor means a run of them still drags an order down among
         // everything else known about it, while one on its own decides nothing.
         'captcha_unverified' => [
-            'label'  => 'Bot challenge could not be confirmed',
-            'desc'   => 'The challenge was neither passed nor failed. Usually a resubmitted form or a blocked provider script, not a bot.',
             'group'  => 'behavior',
             'weight' => 20.0,
             'floor'  => 'none',
         ],
         'timing_fast' => [
-            'label'  => 'Checkout completed impossibly fast',
-            'desc'   => 'The form was submitted quicker than anyone could read and fill it.',
             'group'  => 'behavior',
             'weight' => 45.0,
             'floor'  => 'none',
         ],
         'timing_missing' => [
-            'label'  => 'Checkout could not be timed',
-            'desc'   => 'The timing marker never came back. Usually page caching stripping it, occasionally a script that skipped the form.',
             'group'  => 'behavior',
             'weight' => 20.0,
             'floor'  => 'none',
         ],
         'device_tz_mismatch' => [
-            'label'  => 'Device clock is set to another country',
-            'desc'   => 'The browser\'s time zone does not match where the order is billed.',
             'group'  => 'behavior',
             'weight' => 25.0,
             'floor'  => 'none',
         ],
         'device_missing' => [
-            'label'  => 'No device information was sent',
-            'desc'   => 'The page\'s scripts never ran. A few people block scripts; most automated checkouts do too.',
             'group'  => 'behavior',
             'weight' => 20.0,
             'floor'  => 'none',
         ],
         'device_headless' => [
-            'label'  => 'Browser is not what it claims to be',
-            'desc'   => 'It says it is one thing but behaves like another — the fingerprint of a browser running on a server with no screen.',
             'group'  => 'behavior',
             'weight' => 55.0,
             'floor'  => 'none',
         ],
         'input_scripted' => [
-            'label'  => 'Checkout was filled in by a script',
-            'desc'   => 'Fields gained values with no typing, pasting or autofill behind them. A person cannot fill a form without the browser noticing.',
             'group'  => 'behavior',
             // Strong: a real customer cannot fill a field without the browser
             // emitting something, however they entered it.
@@ -354,8 +301,6 @@ class signals {
             'floor'  => 'none',
         ],
         'interaction_none' => [
-            'label'  => 'Nobody moved, typed or scrolled',
-            'desc'   => 'Not a single sign of a person on the page. Skipped on phones and tablets, where a quick tap-and-pay genuinely leaves almost nothing.',
             'group'  => 'behavior',
             // Lower than it looks like it should be: keyboard-only shoppers,
             // assistive technology and heavily-autofilled forms all produce
@@ -364,8 +309,6 @@ class signals {
             'floor'  => 'none',
         ],
         'cookies_none' => [
-            'label'  => 'Browser arrived with no cookies',
-            'desc'   => 'Nothing in the cookie jar at all, which a shopper who filled a cart cannot manage. Scripted checkouts skip the jar entirely.',
             'group'  => 'behavior',
             // Suggestive, not conclusive. A CDN or edge rule that strips
             // cookies would misfire on every order, so this compounds with
@@ -375,8 +318,6 @@ class signals {
             'floor'  => 'none',
         ],
         'device_velocity' => [
-            'label'  => 'Too many orders from one device',
-            'desc'   => 'The same device has run through checkout repeatedly, whatever address it came from.',
             'group'  => 'behavior',
             'weight' => 50.0,
             'floor'  => 'none',
@@ -384,22 +325,16 @@ class signals {
 
         // Order.
         'amount_low' => [
-            'label'  => 'Order total is unusually small',
-            'desc'   => 'Tiny charges are how stolen cards get tested before anything expensive is bought.',
             'group'  => 'order',
             'weight' => 35.0,
             'floor'  => 'none',
         ],
         'high_value' => [
-            'label'  => 'Order total is large',
-            'desc'   => 'Not suspicious by itself — it simply raises what is at stake if the order turns out to be fraud. Judged against your own order history unless you set a figure.',
             'group'  => 'order',
             'weight' => 15.0,
             'floor'  => 'none',
         ],
         'amount_over_ceiling' => [
-            'label'  => 'Order total is above your ceiling',
-            'desc'   => 'A hard limit you set. Different from the check above, which scales with your own takings — this one is a number you chose and does not move.',
             'group'  => 'order',
             // Off by default (the ceiling ships at 0, which disables it).
             // Heavier than high_value because it is a deliberate line rather
@@ -423,15 +358,11 @@ class signals {
         // replays the checkout verdict and adds them to it. See
         // card_signals::decide().
         'card_avs_fail' => [
-            'label'  => 'Billing address did not match the card',
-            'desc'   => 'The bank checked the address against its records and said no. One of the strongest stolen-card tells there is.',
             'group'  => 'payment',
             'weight' => 35.0,
             'floor'  => 'none',
         ],
         'card_cvc_fail' => [
-            'label'  => 'Security code did not match',
-            'desc'   => 'The three digits on the back were wrong, which someone holding the real card rarely gets wrong.',
             'group'  => 'payment',
             // 35 each, so AVS and CVC together reach 70 -- a trust rating of 30,
             // inside High, whose default action is to hold. That is exactly what
@@ -442,22 +373,16 @@ class signals {
             'floor'  => 'none',
         ],
         'card_processor_risk' => [
-            'label'  => 'The payment processor rated this risky',
-            'desc'   => 'Stripe Radar, or your processor\'s own fraud scoring, called this payment elevated or highest risk.',
             'group'  => 'payment',
             'weight' => 40.0,
             'floor'  => 'none',
         ],
         'card_prepaid_high_value' => [
-            'label'  => 'Prepaid card on a large order',
-            'desc'   => 'A gift or prepaid card used for an expensive physical order. Untraceable and non-recoverable, which is the appeal.',
             'group'  => 'payment',
             'weight' => 30.0,
             'floor'  => 'none',
         ],
         'card_country_mismatch' => [
-            'label'  => 'Card issued in another country',
-            'desc'   => 'The card was issued somewhere other than where the order ships. Ordinary for expats, travellers and gifts, so it counts most alongside something else.',
             'group'  => 'payment',
             'weight' => 15.0,
             'floor'  => 'none',
@@ -465,37 +390,27 @@ class signals {
 
         // Account behaviour, before the checkout.
         'coupon_bruteforce' => [
-            'label'  => 'Guessing at discount codes',
-            'desc'   => 'A run of invalid codes tried in a short time, which is someone fishing for a working one.',
             'group'  => 'behavior',
             'weight' => 40.0,
             'floor'  => 'none',
         ],
         'login_failures' => [
-            'label'  => 'Repeated failed sign-ins',
-            'desc'   => 'Many wrong passwords from one connection, which usually precedes an attempt to take over an account.',
             'group'  => 'behavior',
             'weight' => 35.0,
             'floor'  => 'none',
         ],
         'registration_velocity' => [
-            'label'  => 'Many new accounts from one connection',
-            'desc'   => 'Accounts being created in bulk rather than by people signing up.',
             'group'  => 'behavior',
             'weight' => 45.0,
             'floor'  => 'none',
         ],
         'account_new' => [
-            'label'  => 'Account created just before ordering',
-            'desc'   => 'Everyone is new once, so this only matters next to something else.',
             'group'  => 'history',
             // Everyone is new once. Only meaningful alongside something else.
             'weight' => 15.0,
             'floor'  => 'none',
         ],
         'first_order' => [
-            'label'  => 'Nobody on this order has bought here before',
-            'desc'   => 'Not the email, the phone, the address, the device or the card. Every store wants first-time customers, so this is close to weightless — it is here so the rating can tell "new" apart from "known good".',
             'group'  => 'history',
             // 5, and it should stay near there.
             //
@@ -515,57 +430,41 @@ class signals {
         // History.
         // 80: it refused on its own before, so it still does.
         'rate_limited' => [
-            'label'  => 'Too many checkout attempts',
-            'desc'   => 'This connection has tried to check out more times than you allow in the window.',
             'group'  => 'history',
             'weight' => 80.0,
             'floor'  => 'none',
         ],
         'velocity_emails' => [
-            'label'  => 'Many different email addresses from one connection',
-            'desc'   => 'One visitor cycling through addresses, which is how card testing looks from the outside.',
             'group'  => 'history',
             'weight' => 55.0,
             'floor'  => 'none',
         ],
         'velocity_orders' => [
-            'label'  => 'Orders placed in rapid succession',
-            'desc'   => 'More orders from one connection in minutes than a shopper would place.',
             'group'  => 'history',
             'weight' => 50.0,
             'floor'  => 'none',
         ],
         'failed_payments' => [
-            'label'  => 'Repeated payment failures',
-            'desc'   => 'A run of declines from one connection — the clearest sign of cards being tried until one works.',
             'group'  => 'history',
             'weight' => 55.0,
             'floor'  => 'none',
         ],
         'entity_chargeback' => [
-            'label'  => 'Linked to a previous chargeback',
-            'desc'   => 'The email, phone, address or card on this order was on an order the bank later reversed.',
             'group'  => 'history',
             'weight' => 100.0,
             'floor'  => 'banned',
         ],
         'entity_denied' => [
-            'label'  => 'Linked to an order you rejected',
-            'desc'   => 'Something on this order matches one you previously turned down in review.',
             'group'  => 'history',
             'weight' => 70.0,
             'floor'  => 'none',
         ],
         'entity_linked_bad' => [
-            'label'  => 'Linked to a poor history',
-            'desc'   => 'Connected to earlier orders that did not end well, without a chargeback or rejection specifically.',
             'group'  => 'history',
             'weight' => 45.0,
             'floor'  => 'none',
         ],
         'entity_trusted' => [
-            'label'  => 'Known good customer',
-            'desc'   => 'A clean run of past orders, so this one starts with the benefit of the doubt. The only signal that adds trust rather than spending it.',
             'group'  => 'history',
             'weight' => -40.0,
             'floor'  => 'none',
@@ -722,7 +621,103 @@ class signals {
      */
     public static function fields( $key ) {
 
-        return isset( self::SETTINGS[ $key ] ) ? self::SETTINGS[ $key ] : [];
+        if( ! isset( self::SETTINGS[ $key ] ) ) return [];
+
+        return array_map( [ __CLASS__, 'translate_field' ], self::SETTINGS[ $key ] );
+
+    }
+
+    /**
+     * The settings-field strings, written out so the translation extractor
+     * can see them.
+     *
+     * translate_field() passes each label to __() as a variable, which makes
+     * it invisible to a scanner -- the string would be translatable at run
+     * time and absent from the .pot file, so no translator would ever be
+     * offered it. Listing them here is the standard way round that.
+     *
+     * Nothing calls this. It exists to be read by tooling, and to fail
+     * loudly in review if somebody adds a field and forgets its string.
+     *
+     * @since   2.3.0
+     *
+     * @codeCoverageIgnore
+     */
+    private static function settings_strings() {
+
+        return [
+            __( 'Extra blocked domains, one per line', 'mighty-shield' ),
+            __( 'Also use the shared list of known throwaway domains', 'mighty-shield' ),
+            __( 'Check that the domain can receive mail', 'mighty-shield' ),
+            __( 'Sensitivity', 'mighty-shield' ),
+            __( 'Low', 'mighty-shield' ),
+            __( 'Medium', 'mighty-shield' ),
+            __( 'High', 'mighty-shield' ),
+            __( 'Check US ZIP against state', 'mighty-shield' ),
+            __( 'Verify US addresses with Smarty', 'mighty-shield' ),
+            __( 'Auth ID', 'mighty-shield' ),
+            __( 'Auth token', 'mighty-shield' ),
+            __( 'Other orders needed', 'mighty-shield' ),
+            __( 'Within days', 'mighty-shield' ),
+            __( 'Minimum order total', 'mighty-shield' ),
+            __( 'High-value threshold (0 = work it out from my orders)', 'mighty-shield' ),
+            __( 'Never accept above (0 = no ceiling)', 'mighty-shield' ),
+            __( 'Countries you do not sell to — two-letter codes, one per line', 'mighty-shield' ),
+            __( 'Countries to treat as higher risk — two-letter codes, one per line', 'mighty-shield' ),
+            __( 'Extra virtual-line area codes, one per line', 'mighty-shield' ),
+            __( 'Add a hidden trap field to checkout', 'mighty-shield' ),
+            __( 'Time how long checkout takes', 'mighty-shield' ),
+            __( 'Minimum seconds', 'mighty-shield' ),
+            __( 'Checkouts allowed per device', 'mighty-shield' ),
+            __( 'Collect device information', 'mighty-shield' ),
+            __( 'reCAPTCHA minimum score', 'mighty-shield' ),
+            __( 'Attempts allowed', 'mighty-shield' ),
+            __( 'Per how many seconds', 'mighty-shield' ),
+            __( 'Block lasts (seconds)', 'mighty-shield' ),
+            __( 'Emails allowed per hour', 'mighty-shield' ),
+            __( 'Orders allowed per 15 min', 'mighty-shield' ),
+            __( 'Failures allowed per hour', 'mighty-shield' ),
+            __( 'Invalid codes allowed per hour', 'mighty-shield' ),
+            __( 'Failed logins allowed per hour', 'mighty-shield' ),
+            __( 'New accounts allowed per hour', 'mighty-shield' ),
+            __( 'Counts as new for (minutes)', 'mighty-shield' ),
+        ];
+
+    }
+
+    /**
+     * Translate the human-readable parts of one settings field.
+     *
+     * SETTINGS is a const like the catalogue, so the same problem applies: a
+     * const cannot hold a __() call, and these are the labels beside every
+     * input on the Scoring tab. Unlike the catalogue there is nothing to split
+     * out -- the option name and the field type sit in the same row as the
+     * label -- so the translation happens on the way out instead.
+     *
+     * The label is passed to __() as a variable, which the string extractor
+     * cannot see. settings_strings() above exists to make them visible to it;
+     * nothing calls it.
+     *
+     * @since   2.3.0
+     *
+     * @param   array   $field
+     * @return  array
+     */
+    private static function translate_field( $field ) {
+
+        if( isset( $field['label'] ) ) {
+            // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText
+            $field['label'] = __( $field['label'], 'mighty-shield' );
+        }
+
+        if( isset( $field['choices'] ) && is_array( $field['choices'] ) ) {
+            foreach( $field['choices'] as $value => $choice_label ) {
+                // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText
+                $field['choices'][ $value ] = __( $choice_label, 'mighty-shield' );
+            }
+        }
+
+        return $field;
 
     }
 
@@ -817,6 +812,331 @@ class signals {
     }
 
     /**
+     * What each signal is called, and what it means, in the merchant's
+     * language rather than the code's.
+     *
+     * Separate from CATALOG because a const array cannot hold a __() call,
+     * and these all used to live in one. That made every label and every
+     * description permanently English -- on the Scoring tab, which is the
+     * screen a merchant spends the most time on and the one that has to be
+     * readable for any of the tuning advice to mean anything.
+     *
+     * Built once per request. CATALOG keeps the part that is not language:
+     * the group, the weight and the floor.
+     *
+     * @since   2.3.0
+     *
+     * @return  array   key => [ 'label' => string, 'desc' => string ]
+     */
+    private static function strings() {
+
+        // Keyed by locale, not a plain memo.
+        //
+        // A plain static would freeze whichever language happened to be
+        // active at the first call and serve it for the rest of the request.
+        // That is wrong twice: a multilingual plugin can switch locale
+        // mid-request, and anything that reached one of these accessors
+        // before the textdomain loaded would pin the whole catalogue to
+        // English. Keying on the locale costs one function call and makes
+        // both cases correct.
+        static $strings = [];
+
+        $locale = function_exists( 'determine_locale' ) ? determine_locale() : '';
+
+        if( isset( $strings[ $locale ] ) ) return $strings[ $locale ];
+
+        $strings[ $locale ] = [
+
+            'email_disposable' => [
+                'label' => __( 'Disposable email address', 'mighty-shield' ),
+                'desc'  => __( 'A throwaway inbox from a service that hands them out freely and deletes them minutes later.', 'mighty-shield' ),
+            ],
+
+            'email_no_mx' => [
+                'label' => __( 'Email address cannot receive mail', 'mighty-shield' ),
+                'desc'  => __( 'Nothing is listening at that domain, so the customer could never read an order confirmation.', 'mighty-shield' ),
+            ],
+
+            'email_role' => [
+                'label' => __( 'Ordered from a shared mailbox', 'mighty-shield' ),
+                'desc'  => __( 'An address like sales@ or info@ that belongs to a job rather than a person. Small businesses do order this way, so it means little on its own.', 'mighty-shield' ),
+            ],
+
+            'email_name_mismatch' => [
+                'label' => __( 'Name does not appear in the email address', 'mighty-shield' ),
+                'desc'  => __( 'The delivery name and the email share nothing. Ordinary for older or work addresses, but common on orders placed with someone else\'s details.', 'mighty-shield' ),
+            ],
+
+            'address_fake' => [
+                'label' => __( 'Address looks made up', 'mighty-shield' ),
+                'desc'  => __( 'Placeholder text, repeated characters, or a street line too short to be real.', 'mighty-shield' ),
+            ],
+
+            'zip_state_mismatch' => [
+                'label' => __( 'US postcode does not match the state', 'mighty-shield' ),
+                'desc'  => __( 'The ZIP code belongs to a different state from the one entered — usually a typo, sometimes an address that was never checked.', 'mighty-shield' ),
+            ],
+
+            'address_unverified' => [
+                'label' => __( 'Address is not deliverable', 'mighty-shield' ),
+                'desc'  => __( 'The postal service does not recognise it. Checked against USPS records, US addresses only.', 'mighty-shield' ),
+            ],
+
+            'address_velocity' => [
+                'label' => __( 'Address used by several other buyers', 'mighty-shield' ),
+                'desc'  => __( 'The same delivery address has recently taken orders under other names. The pattern of a drop address, though also of flats, offices and families.', 'mighty-shield' ),
+            ],
+
+            'address_bill_ship_mismatch' => [
+                'label' => __( 'Billing and delivery addresses disagree', 'mighty-shield' ),
+                'desc'  => __( 'The card is registered at one address and the goods go to another. Ordinary for a gift or a work delivery, so it counts for little on its own — but it is on almost every stolen-card order.', 'mighty-shield' ),
+            ],
+
+            'phone_area_mismatch' => [
+                'label' => __( 'US phone area code is from a different state', 'mighty-shield' ),
+                'desc'  => __( 'The number belongs to a state the order has nothing to do with. Weak on its own: mobile numbers follow people when they move.', 'mighty-shield' ),
+            ],
+
+            'phone_voip' => [
+                'label' => __( 'Phone number is a virtual line', 'mighty-shield' ),
+                'desc'  => __( 'The number belongs to a service that hands out disposable numbers rather than to a carrier, so it cannot be used to reach anyone later.', 'mighty-shield' ),
+            ],
+
+            'identity_blocklisted' => [
+                'label' => __( 'Details are on your blocklist', 'mighty-shield' ),
+                'desc'  => __( 'The email, phone, name, postcode, city or country on this order matches something you barred.', 'mighty-shield' ),
+            ],
+
+            'country_blocked' => [
+                'label' => __( 'Country you do not sell to', 'mighty-shield' ),
+                'desc'  => __( 'The order is going somewhere on your blocked list. A statement you made, not a judgement MightyShield formed.', 'mighty-shield' ),
+            ],
+
+            'country_high_risk' => [
+                'label' => __( 'Country you treat as higher risk', 'mighty-shield' ),
+                'desc'  => __( 'Somewhere you still sell to, but want looked at. Contributes to the rating; never decides on its own.', 'mighty-shield' ),
+            ],
+
+            'ip_blocklisted' => [
+                'label' => __( 'Address is on your blocklist', 'mighty-shield' ),
+                'desc'  => __( 'You or MightyShield barred this network earlier.', 'mighty-shield' ),
+            ],
+
+            'ip_temp_blocked' => [
+                'label' => __( 'Address is under a temporary block', 'mighty-shield' ),
+                'desc'  => __( 'Recently blocked for repeated failures or rapid-fire attempts. Lifts by itself.', 'mighty-shield' ),
+            ],
+
+            'ip_geo_mismatch' => [
+                'label' => __( 'Order placed from a different region', 'mighty-shield' ),
+                'desc'  => __( 'The connection resolves somewhere other than the delivery address. Normal for gifts, travel and mobile networks, so it counts most alongside something else.', 'mighty-shield' ),
+            ],
+
+            'ip_datacenter' => [
+                'label' => __( 'Order came from a server, not a home connection', 'mighty-shield' ),
+                'desc'  => __( 'The connection belongs to a hosting company. Real shoppers rarely buy from inside a data centre.', 'mighty-shield' ),
+            ],
+
+            'honeypot' => [
+                'label' => __( 'Hidden trap field was filled in', 'mighty-shield' ),
+                'desc'  => __( 'The checkout carries a field no person can see or reach. Only software fills it.', 'mighty-shield' ),
+            ],
+
+            'device_automated' => [
+                'label' => __( 'Browser is being driven by software', 'mighty-shield' ),
+                'desc'  => __( 'The browser openly reports that something is controlling it, which is how automated testing tools behave.', 'mighty-shield' ),
+            ],
+
+            'captcha_failed' => [
+                'label' => __( 'Failed the bot challenge', 'mighty-shield' ),
+                'desc'  => __( 'Cloudflare or Google judged the visitor not to be a person.', 'mighty-shield' ),
+            ],
+
+            'captcha_unverified' => [
+                'label' => __( 'Bot challenge could not be confirmed', 'mighty-shield' ),
+                'desc'  => __( 'The challenge was neither passed nor failed. Usually a resubmitted form or a blocked provider script, not a bot.', 'mighty-shield' ),
+            ],
+
+            'timing_fast' => [
+                'label' => __( 'Checkout completed impossibly fast', 'mighty-shield' ),
+                'desc'  => __( 'The form was submitted quicker than anyone could read and fill it.', 'mighty-shield' ),
+            ],
+
+            'timing_missing' => [
+                'label' => __( 'Checkout could not be timed', 'mighty-shield' ),
+                'desc'  => __( 'The timing marker never came back. Usually page caching stripping it, occasionally a script that skipped the form.', 'mighty-shield' ),
+            ],
+
+            'device_tz_mismatch' => [
+                'label' => __( 'Device clock is set to another country', 'mighty-shield' ),
+                'desc'  => __( 'The browser\'s time zone does not match where the order is billed.', 'mighty-shield' ),
+            ],
+
+            'device_missing' => [
+                'label' => __( 'No device information was sent', 'mighty-shield' ),
+                'desc'  => __( 'The page\'s scripts never ran. A few people block scripts; most automated checkouts do too.', 'mighty-shield' ),
+            ],
+
+            'device_headless' => [
+                'label' => __( 'Browser is not what it claims to be', 'mighty-shield' ),
+                'desc'  => __( 'It says it is one thing but behaves like another — the fingerprint of a browser running on a server with no screen.', 'mighty-shield' ),
+            ],
+
+            'input_scripted' => [
+                'label' => __( 'Checkout was filled in by a script', 'mighty-shield' ),
+                'desc'  => __( 'Fields gained values with no typing, pasting or autofill behind them. A person cannot fill a form without the browser noticing.', 'mighty-shield' ),
+            ],
+
+            'interaction_none' => [
+                'label' => __( 'Nobody moved, typed or scrolled', 'mighty-shield' ),
+                'desc'  => __( 'Not a single sign of a person on the page. Skipped on phones and tablets, where a quick tap-and-pay genuinely leaves almost nothing.', 'mighty-shield' ),
+            ],
+
+            'cookies_none' => [
+                'label' => __( 'Browser arrived with no cookies', 'mighty-shield' ),
+                'desc'  => __( 'Nothing in the cookie jar at all, which a shopper who filled a cart cannot manage. Scripted checkouts skip the jar entirely.', 'mighty-shield' ),
+            ],
+
+            'device_velocity' => [
+                'label' => __( 'Too many orders from one device', 'mighty-shield' ),
+                'desc'  => __( 'The same device has run through checkout repeatedly, whatever address it came from.', 'mighty-shield' ),
+            ],
+
+            'amount_low' => [
+                'label' => __( 'Order total is unusually small', 'mighty-shield' ),
+                'desc'  => __( 'Tiny charges are how stolen cards get tested before anything expensive is bought.', 'mighty-shield' ),
+            ],
+
+            'high_value' => [
+                'label' => __( 'Order total is large', 'mighty-shield' ),
+                'desc'  => __( 'Not suspicious by itself — it simply raises what is at stake if the order turns out to be fraud. Judged against your own order history unless you set a figure.', 'mighty-shield' ),
+            ],
+
+            'amount_over_ceiling' => [
+                'label' => __( 'Order total is above your ceiling', 'mighty-shield' ),
+                'desc'  => __( 'A hard limit you set. Different from the check above, which scales with your own takings — this one is a number you chose and does not move.', 'mighty-shield' ),
+            ],
+
+            'card_avs_fail' => [
+                'label' => __( 'Billing address did not match the card', 'mighty-shield' ),
+                'desc'  => __( 'The bank checked the address against its records and said no. One of the strongest stolen-card tells there is.', 'mighty-shield' ),
+            ],
+
+            'card_cvc_fail' => [
+                'label' => __( 'Security code did not match', 'mighty-shield' ),
+                'desc'  => __( 'The three digits on the back were wrong, which someone holding the real card rarely gets wrong.', 'mighty-shield' ),
+            ],
+
+            'card_processor_risk' => [
+                'label' => __( 'The payment processor rated this risky', 'mighty-shield' ),
+                'desc'  => __( 'Stripe Radar, or your processor\'s own fraud scoring, called this payment elevated or highest risk.', 'mighty-shield' ),
+            ],
+
+            'card_prepaid_high_value' => [
+                'label' => __( 'Prepaid card on a large order', 'mighty-shield' ),
+                'desc'  => __( 'A gift or prepaid card used for an expensive physical order. Untraceable and non-recoverable, which is the appeal.', 'mighty-shield' ),
+            ],
+
+            'card_country_mismatch' => [
+                'label' => __( 'Card issued in another country', 'mighty-shield' ),
+                'desc'  => __( 'The card was issued somewhere other than where the order ships. Ordinary for expats, travellers and gifts, so it counts most alongside something else.', 'mighty-shield' ),
+            ],
+
+            'coupon_bruteforce' => [
+                'label' => __( 'Guessing at discount codes', 'mighty-shield' ),
+                'desc'  => __( 'A run of invalid codes tried in a short time, which is someone fishing for a working one.', 'mighty-shield' ),
+            ],
+
+            'login_failures' => [
+                'label' => __( 'Repeated failed sign-ins', 'mighty-shield' ),
+                'desc'  => __( 'Many wrong passwords from one connection, which usually precedes an attempt to take over an account.', 'mighty-shield' ),
+            ],
+
+            'registration_velocity' => [
+                'label' => __( 'Many new accounts from one connection', 'mighty-shield' ),
+                'desc'  => __( 'Accounts being created in bulk rather than by people signing up.', 'mighty-shield' ),
+            ],
+
+            'account_new' => [
+                'label' => __( 'Account created just before ordering', 'mighty-shield' ),
+                'desc'  => __( 'Everyone is new once, so this only matters next to something else.', 'mighty-shield' ),
+            ],
+
+            'first_order' => [
+                'label' => __( 'Nobody on this order has bought here before', 'mighty-shield' ),
+                'desc'  => __( 'Not the email, the phone, the address, the device or the card. Every store wants first-time customers, so this is close to weightless — it is here so the rating can tell "new" apart from "known good".', 'mighty-shield' ),
+            ],
+
+            'rate_limited' => [
+                'label' => __( 'Too many checkout attempts', 'mighty-shield' ),
+                'desc'  => __( 'This connection has tried to check out more times than you allow in the window.', 'mighty-shield' ),
+            ],
+
+            'velocity_emails' => [
+                'label' => __( 'Many different email addresses from one connection', 'mighty-shield' ),
+                'desc'  => __( 'One visitor cycling through addresses, which is how card testing looks from the outside.', 'mighty-shield' ),
+            ],
+
+            'velocity_orders' => [
+                'label' => __( 'Orders placed in rapid succession', 'mighty-shield' ),
+                'desc'  => __( 'More orders from one connection in minutes than a shopper would place.', 'mighty-shield' ),
+            ],
+
+            'failed_payments' => [
+                'label' => __( 'Repeated payment failures', 'mighty-shield' ),
+                'desc'  => __( 'A run of declines from one connection — the clearest sign of cards being tried until one works.', 'mighty-shield' ),
+            ],
+
+            'entity_chargeback' => [
+                'label' => __( 'Linked to a previous chargeback', 'mighty-shield' ),
+                'desc'  => __( 'The email, phone, address or card on this order was on an order the bank later reversed.', 'mighty-shield' ),
+            ],
+
+            'entity_denied' => [
+                'label' => __( 'Linked to an order you rejected', 'mighty-shield' ),
+                'desc'  => __( 'Something on this order matches one you previously turned down in review.', 'mighty-shield' ),
+            ],
+
+            'entity_linked_bad' => [
+                'label' => __( 'Linked to a poor history', 'mighty-shield' ),
+                'desc'  => __( 'Connected to earlier orders that did not end well, without a chargeback or rejection specifically.', 'mighty-shield' ),
+            ],
+
+            'entity_trusted' => [
+                'label' => __( 'Known good customer', 'mighty-shield' ),
+                'desc'  => __( 'A clean run of past orders, so this one starts with the benefit of the doubt. The only signal that adds trust rather than spending it.', 'mighty-shield' ),
+            ],
+
+        ];
+
+        return $strings[ $locale ];
+
+    }
+
+    /**
+     * Signal groups, in display order.
+     *
+     * Replaces the GROUPS const for anything that renders. GROUP_KEYS below
+     * is still the const, for code that only needs the order.
+     *
+     * @since   2.3.0
+     *
+     * @return  array   group key => label
+     */
+    public static function groups() {
+
+        return [
+            'identity'   => __( 'Identity', 'mighty-shield' ),
+            'network'    => __( 'Network', 'mighty-shield' ),
+            'behavior'   => __( 'Behavior', 'mighty-shield' ),
+            'order'      => __( 'Order', 'mighty-shield' ),
+            'payment'    => __( 'Payment', 'mighty-shield' ),
+            'history'    => __( 'History', 'mighty-shield' ),
+        ];
+
+    }
+
+    /**
      * The human-readable label of a signal.
      *
      * @since   1.9.0
@@ -826,7 +1146,9 @@ class signals {
      */
     public static function label( $key ) {
 
-        return isset( self::CATALOG[ $key ] ) ? self::CATALOG[ $key ]['label'] : $key;
+        $strings = self::strings();
+
+        return isset( $strings[ $key ]['label'] ) ? $strings[ $key ]['label'] : $key;
 
     }
 
@@ -844,7 +1166,9 @@ class signals {
      */
     public static function description( $key ) {
 
-        return isset( self::CATALOG[ $key ]['desc'] ) ? self::CATALOG[ $key ]['desc'] : '';
+        $strings = self::strings();
+
+        return isset( $strings[ $key ]['desc'] ) ? $strings[ $key ]['desc'] : '';
 
     }
 
