@@ -13,7 +13,7 @@ WooCommerce firewall for protecting against card spammer orders. Blocks Store AP
 
 == Description ==
 
-MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 44 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
+MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 52 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
 
 Nothing is enforced until you say so. MightyShield installs in Observe mode: it rates every order and records what it would have done, so you can tune it against your own traffic before it touches a single sale.
 
@@ -30,6 +30,13 @@ Nothing is enforced until you say so. MightyShield installs in Observe mode: it 
 * Disposable email domain blocking (160+ built-in domains plus custom list)
 * Suspicious order amount detection
 * Score-based fake address detection
+* Billing and delivery address comparison — the classic stolen-card shape, weighted so gifts and work deliveries are not punished for it
+* Country lists — bar where you do not sell, and mark where you want a closer look
+* Phone checks — a US area code from the wrong state, and virtual-line numbers nobody can be reached on
+* "Large order" judged against your own takings rather than a figure picked out of the air, plus an optional hard ceiling
+* Allow and block lists that match on phone, name, postcode, city, country and email as well as IP address
+* An alert when an order rates badly, sent even in Observe mode, at most one an hour
+* A background pass that rates your existing orders, so a fresh install starts out recognising your regulars
 * Smarty USPS address verification for US billing addresses with automatic ZIP/State fallback
 * ZIP/State mismatch detection — catches US orders where the ZIP prefix doesn't match the state
 * Honeypot hidden field — invisible bot trap
@@ -152,11 +159,20 @@ MightyShield answers WordPress's personal data export and erase requests, so a c
 == Upgrade Notice ==
 
 = 2.3.0 =
-Fixes three network checks that had never worked, and removes a blocking request from every checkout. If you want those checks back, set a free MaxMind licence key under WooCommerce > Settings > Integrations.
+Fixes three network checks that had never worked and removes a blocking request from every checkout. Adds billing-vs-delivery, country and phone checks, richer allow and block lists, low-rating alerts, and a pass that rates your existing orders so a new install starts out knowing your customers. If you want the network checks back, set a free MaxMind licence key under WooCommerce > Settings > Integrations.
 
 == Changelog ==
 
 = 2.3.0 =
+* New: billing and delivery addresses are compared. The most common fraud check there is, and it was missing. Weighted low on purpose — gifts, work addresses and parcel lockers all look like this, and the Scoring tab will tell you how often it fires on your own orders.
+* New: country lists. Bar the countries you do not sell to, and mark others as worth a closer look. Both start empty; MightyShield ships no opinion about anywhere.
+* New: phone checks. A US area code from a different state, and numbers from virtual-line services that cannot be used to reach anyone.
+* New: a first-order check, deliberately almost weightless. Every store wants new customers; this exists so the rating can tell "new" apart from "known good", not to charge people for arriving.
+* New: a hard order-total ceiling, off by default.
+* Changed: "large order" now means large **for your store**. It was a fixed 500.00, which never fired on a store selling candles and fired on every order at a store selling sofas. MightyShield now works it out from your own completed orders and keeps it current. Set your own figure and yours is used instead.
+* New: allow and block lists match on phone, name, postcode, city and country, not just IP addresses — and the block list on email too. Letting one trade customer through, or barring one repeat offender, no longer needs their IP address.
+* New: email me when an order rates badly. Sent whatever MightyShield did about it, including nothing in Observe mode, which is when it is most useful. At most one an hour, and it says how many others there were.
+* New: rate your past orders. A new install knows none of your customers, so nobody earns trust and no previous chargeback counts for anything until months of orders have gone by. This fills that in from the orders you already have, in the background, without touching a single one of them. It runs automatically when you finish setup, and is on the Logs tab afterwards.
 * Fixed: the three network checks — data centre, VPN/proxy, and location mismatch — had never fired on any install. They were fed by ip-api.com over an encrypted connection, which that service refuses unless you pay, so every lookup failed. This also means every checkout was making a request that could take up to five seconds and was always going to fail. Both are gone.
 * Changed: network intelligence now comes from a MaxMind database on your own server, using the free licence key WooCommerce already asks for under Settings > Integrations. Nothing about your customers is sent anywhere, and there is no longer any network request on the checkout path. Without a key, the two remaining network checks stay quiet rather than guessing.
 * Removed: the VPN/proxy check. There is no free source for it — the data is a paid MaxMind product — and a check that cannot fire should not sit on the Scoring tab with a weight you can tune. It is better to be one check shorter and honest about it.

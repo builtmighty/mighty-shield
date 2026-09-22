@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MightyShield 2.3.0\n"
 "Report-Msgid-Bugs-To: https://builtmighty.com\n"
-"POT-Creation-Date: 2026-09-21 01:10+0000\n"
+"POT-Creation-Date: 2026-09-22 17:06+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -39,11 +39,11 @@ msgstr ""
 msgid "%1$s: trust %2$d to %3$d"
 msgstr ""
 
-#: admin/class-admin-page.php:911
+#: admin/class-admin-page.php:958
 msgid "%d IP addresses added to the allowlist."
 msgstr ""
 
-#: admin/class-admin-page.php:910
+#: admin/class-admin-page.php:957
 msgid "%d IP addresses added to the blocklist."
 msgstr ""
 
@@ -51,7 +51,7 @@ msgstr ""
 msgid "%s ago"
 msgstr ""
 
-#: admin/class-admin-page.php:1384
+#: admin/class-admin-page.php:1464
 msgid "%s answered and returned a verdict in the expected shape."
 msgstr ""
 
@@ -75,12 +75,16 @@ msgstr ""
 msgid "%s: reachable only from a signal"
 msgstr ""
 
-#: admin/class-setup-wizard.php:552
+#: admin/class-setup-wizard.php:575
 msgid "&larr; Back"
 msgstr ""
 
 #: admin/views/documentation.php:421
 msgid "1 hour"
+msgstr ""
+
+#: admin/views/logs.php:276
+msgid "1 year"
 msgstr ""
 
 #: admin/views/documentation.php:420
@@ -95,6 +99,10 @@ msgstr ""
 msgid "3 orders / 30 days"
 msgstr ""
 
+#: admin/views/logs.php:277
+msgid "3 years"
+msgstr ""
+
 #: admin/views/payment.php:81
 msgid "3-D Secure"
 msgstr ""
@@ -107,11 +115,15 @@ msgstr ""
 msgid "7 days"
 msgstr ""
 
+#: admin/views/logs.php:275
+msgid "90 days"
+msgstr ""
+
 #: admin/views/blocking.php:407
 msgid "A challenge from Cloudflare or Google, shown to visitors so software can be told apart from people. It guards checkout and, below, the other places spam arrives."
 msgstr ""
 
-#: admin/views/logs.php:258
+#: admin/views/logs.php:324
 msgid "A chargeback, a refund, a fraud verdict or a refused checkout is never forgotten while the record is still in use — only quiet, clean records that nothing links to any more are cleared out. Set to 0 to keep everything."
 msgstr ""
 
@@ -191,11 +203,11 @@ msgstr ""
 msgid "AI Detection"
 msgstr ""
 
-#: admin/class-admin-page.php:1760 admin/views/documentation.php:214 admin/views/documentation.php:441
+#: admin/class-admin-page.php:1840 admin/views/documentation.php:214 admin/views/documentation.php:441
 msgid "AI Review"
 msgstr ""
 
-#: admin/class-admin-page.php:1249 includes/class-ai-client.php:657
+#: admin/class-admin-page.php:1329 includes/class-ai-client.php:657
 msgid "AI order review is unavailable and orders are NOT being reviewed. Last error: %s"
 msgstr ""
 
@@ -223,12 +235,16 @@ msgstr ""
 msgid "Above the Low threshold"
 msgstr ""
 
-#: admin/class-admin-page.php:1768 admin/views/documentation.php:217 admin/views/documentation.php:496
+#: admin/class-admin-page.php:1848 admin/views/documentation.php:217 admin/views/documentation.php:496
 msgid "Access"
 msgstr ""
 
-#: firewall/class-api-firewall.php:126 firewall/class-ip-blocklist.php:124
+#: firewall/class-api-firewall.php:126 firewall/class-ip-blocklist.php:136
 msgid "Access denied."
+msgstr ""
+
+#: includes/class-response.php:686
+msgid "Acted on it"
 msgstr ""
 
 #: admin/views/blocking.php:73 admin/views/documentation.php:329 admin/views/logs.php:145
@@ -239,19 +255,19 @@ msgstr ""
 msgid "Action for %s"
 msgstr ""
 
-#: admin/views/blocklist.php:56 admin/views/whitelist.php:91
+#: admin/views/blocklist.php:85 admin/views/whitelist.php:102
 msgid "Actions"
 msgstr ""
 
-#: admin/class-admin-page.php:1692 admin/views/payment.php:73
+#: admin/class-admin-page.php:1772 admin/views/payment.php:73
 msgid "Active"
 msgstr ""
 
-#: admin/class-admin-page.php:1693
+#: admin/class-admin-page.php:1773
 msgid "Active. Orders are blocked and held by their rating"
 msgstr ""
 
-#: admin/views/whitelist.php:28
+#: admin/views/whitelist.php:33
 msgid "Add Allowlist Entry"
 msgstr ""
 
@@ -263,11 +279,11 @@ msgstr ""
 msgid "Add a key"
 msgstr ""
 
-#: admin/views/whitelist.php:73
+#: admin/views/whitelist.php:84
 msgid "Add to Allowlist"
 msgstr ""
 
-#: admin/views/blocklist.php:39
+#: admin/views/blocklist.php:53
 msgid "Add to Blocklist"
 msgstr ""
 
@@ -279,8 +295,12 @@ msgstr ""
 msgid "Add your own line to the end of every refusal."
 msgstr ""
 
-#: admin/views/blocklist.php:55 admin/views/whitelist.php:90
+#: admin/views/blocklist.php:84 admin/views/whitelist.php:101
 msgid "Added"
+msgstr ""
+
+#: admin/class-admin-page.php:763
+msgid "Added to the blocklist."
 msgstr ""
 
 #: includes/class-response.php:318
@@ -303,7 +323,7 @@ msgstr ""
 msgid "Address verification"
 msgstr ""
 
-#: admin/class-admin-page.php:1250
+#: admin/class-admin-page.php:1330
 msgid "Address verification (Smarty) is degraded and has fallen back to a basic ZIP/State check. Last error: %s"
 msgstr ""
 
@@ -331,7 +351,7 @@ msgstr ""
 msgid "Afterwards."
 msgstr ""
 
-#: admin/class-setup-wizard.php:522
+#: admin/class-setup-wizard.php:545
 msgid "Alerts"
 msgstr ""
 
@@ -343,7 +363,7 @@ msgstr ""
 msgid "All actions"
 msgstr ""
 
-#: admin/class-admin-page.php:926
+#: admin/class-admin-page.php:973
 msgid "All logs have been cleared."
 msgstr ""
 
@@ -359,11 +379,11 @@ msgstr ""
 msgid "Allowlist"
 msgstr ""
 
-#: admin/class-admin-page.php:1115
+#: admin/class-admin-page.php:1195
 msgid "Allowlist IP"
 msgstr ""
 
-#: admin/class-admin-page.php:724
+#: admin/class-admin-page.php:733
 msgid "Allowlist entry removed."
 msgstr ""
 
@@ -375,11 +395,11 @@ msgstr ""
 msgid "Allowlist yourself first. On the <a href=\"%s\">Access</a> tab, add your own IP address or your WordPress user account, so you can never be blocked while testing."
 msgstr ""
 
-#: admin/views/whitelist.php:79
+#: admin/views/whitelist.php:90
 msgid "Allowlisted Entries"
 msgstr ""
 
-#: admin/views/whitelist.php:29
+#: admin/views/whitelist.php:34
 msgid "Allowlisted IPs, users, roles, and email addresses bypass ALL MightyShield checks, with no blocks and no flags. Use for trusted staff, offices, and known-good customers."
 msgstr ""
 
@@ -483,12 +503,16 @@ msgstr ""
 msgid "Approved in review."
 msgstr ""
 
-#: admin/views/logs.php:227
+#: admin/views/logs.php:293
 msgid "Are you sure? This will delete all log entries."
 msgstr ""
 
 #: admin/views/setup/step-welcome.php:34
 msgid "Around forty of them. Does the billing address exist. Has this card been declined here before. Did the checkout form get filled in faster than a person can type. Each one that trips is called a signal."
+msgstr ""
+
+#: admin/views/blocking.php:600
+msgid "At most one message an hour. A card-testing run is a hundred bad orders in ten minutes, and the message says how many others there were."
 msgstr ""
 
 #: admin/views/payment.php:82
@@ -551,16 +575,12 @@ msgstr ""
 msgid "Billing address and security code results are read after payment. This needs webhooks set up in your provider's dashboard. Without them the results never arrive and the checks are simply skipped."
 msgstr ""
 
-#: admin/class-fraud-review.php:572 admin/class-order-panel.php:488
+#: admin/class-fraud-review.php:572 admin/class-order-panel.php:488 admin/views/blocklist.php:19
 msgid "Block"
 msgstr ""
 
 #: admin/views/blocking.php:330
 msgid "Block Checkout Protection"
-msgstr ""
-
-#: admin/views/blocklist.php:19
-msgid "Block IP Address"
 msgstr ""
 
 #: admin/views/logs.php:130
@@ -575,6 +595,10 @@ msgstr ""
 msgid "Block attempted. The release was sent to the payment processor, which did not report back whether it completed, so the order has been left on hold. Check the authorization in your processor dashboard, then block it again or cancel it by hand."
 msgstr ""
 
+#: admin/views/blocklist.php:25
+msgid "Block by"
+msgstr ""
+
 #: admin/views/documentation.php:482
 msgid "Block checkout protection"
 msgstr ""
@@ -583,7 +607,7 @@ msgstr ""
 msgid "Block failed. The authorization could not be released: %s. The order remains on hold."
 msgstr ""
 
-#: admin/class-admin-page.php:1116
+#: admin/class-admin-page.php:1196
 msgid "Block permanently"
 msgstr ""
 
@@ -591,13 +615,9 @@ msgstr ""
 msgid "Block/One-page checkout: allow shoppers, block only blocklisted IPs"
 msgstr ""
 
-#: admin/class-dashboard-widget.php:206 admin/views/blocking.php:249 admin/views/dashboard.php:86 admin/views/dashboard.php:105
-#: admin/views/logs.php:51 admin/views/logs.php:94
+#: admin/class-dashboard-widget.php:206 admin/views/blocking.php:249 admin/views/blocklist.php:59 admin/views/dashboard.php:86
+#: admin/views/dashboard.php:105 admin/views/logs.php:51 admin/views/logs.php:94
 msgid "Blocked"
-msgstr ""
-
-#: admin/views/blocklist.php:45
-msgid "Blocked IPs"
 msgstr ""
 
 #: admin/views/documentation.php:407
@@ -640,7 +660,7 @@ msgstr ""
 msgid "Bot challenge (%1$s): %2$s"
 msgstr ""
 
-#: admin/class-setup-wizard.php:424
+#: admin/class-setup-wizard.php:447
 msgid "Bot challenge left off."
 msgstr ""
 
@@ -648,7 +668,7 @@ msgstr ""
 msgid "Bot challenge refused (%1$s): %2$s%3$s"
 msgstr ""
 
-#: admin/class-setup-wizard.php:425
+#: admin/class-setup-wizard.php:448
 msgid "Bot challenge saved."
 msgstr ""
 
@@ -664,7 +684,7 @@ msgstr ""
 msgid "Both are optional, both cost money with a third party, and neither is worth stalling a first run over. They are there when you want them."
 msgstr ""
 
-#: admin/class-setup-wizard.php:521
+#: admin/class-setup-wizard.php:544
 msgid "Bots"
 msgstr ""
 
@@ -728,7 +748,7 @@ msgstr ""
 msgid "Change"
 msgstr ""
 
-#: admin/class-admin-page.php:1890
+#: admin/class-admin-page.php:1970
 msgid "Change it on Shielding"
 msgstr ""
 
@@ -808,6 +828,10 @@ msgstr ""
 msgid "Choose a provider and enter its connection details. Small, fast models are the right tier here. Reviews run inline with checkout, so latency and per-order cost matter more than raw capability."
 msgstr ""
 
+#: admin/views/blocklist.php:33 admin/views/blocklist.php:73 admin/views/whitelist.php:25 admin/views/whitelist.php:49
+msgid "City"
+msgstr ""
+
 #: admin/views/blocking.php:318
 msgid "Classic checkout: block all non-allowlisted IPs"
 msgstr ""
@@ -824,11 +848,11 @@ msgstr ""
 msgid "Clear"
 msgstr ""
 
-#: admin/views/logs.php:227
+#: admin/views/logs.php:293
 msgid "Clear All Logs"
 msgstr ""
 
-#: admin/views/logs.php:224
+#: admin/views/logs.php:290
 msgid "Clear all log entries. This action cannot be undone."
 msgstr ""
 
@@ -856,7 +880,7 @@ msgstr ""
 msgid "Completed"
 msgstr ""
 
-#: admin/class-setup-wizard.php:574
+#: admin/class-setup-wizard.php:597
 msgid "Continue &rarr;"
 msgstr ""
 
@@ -876,8 +900,12 @@ msgstr ""
 msgid "Could not write the MaxMind ASN database to the uploads directory."
 msgstr ""
 
-#: admin/class-admin-page.php:1124
+#: admin/class-admin-page.php:1204 admin/views/blocklist.php:74 admin/views/whitelist.php:26
 msgid "Country"
+msgstr ""
+
+#: admin/views/blocklist.php:34 admin/views/whitelist.php:50
+msgid "Country (two-letter code)"
 msgstr ""
 
 #: admin/views/setup/step-challenge.php:27
@@ -908,7 +936,7 @@ msgstr ""
 msgid "Customer Details"
 msgstr ""
 
-#: admin/views/logs.php:250
+#: admin/views/logs.php:316
 msgid "Customer History"
 msgstr ""
 
@@ -920,11 +948,11 @@ msgstr ""
 msgid "Daily limit"
 msgstr ""
 
-#: admin/class-admin-page.php:1525
+#: admin/class-admin-page.php:1605
 msgid "Dark"
 msgstr ""
 
-#: admin/class-admin-page.php:1755 admin/views/documentation.php:211 admin/views/documentation.php:345
+#: admin/class-admin-page.php:1835 admin/views/documentation.php:211 admin/views/documentation.php:345
 msgid "Dashboard"
 msgstr ""
 
@@ -956,7 +984,7 @@ msgstr ""
 msgid "Delete entries"
 msgstr ""
 
-#: admin/class-admin-page.php:890
+#: admin/class-admin-page.php:937
 msgid "Deleted %d log entries."
 msgstr ""
 
@@ -976,7 +1004,7 @@ msgstr ""
 msgid "Different emails per hour"
 msgstr ""
 
-#: admin/class-admin-page.php:1677
+#: admin/class-admin-page.php:1757
 msgid "Disabled"
 msgstr ""
 
@@ -984,11 +1012,11 @@ msgstr ""
 msgid "Disabled, Observing or Active. There is no switch on it, because changing that belongs on the screen that explains what the three mean."
 msgstr ""
 
-#: admin/class-admin-page.php:1678
+#: admin/class-admin-page.php:1758
 msgid "Disabled. No orders are checked"
 msgstr ""
 
-#: admin/class-admin-page.php:1268 includes/class-ai-client.php:661 protection/class-smarty-address-verifier.php:113
+#: admin/class-admin-page.php:1348 includes/class-ai-client.php:661 protection/class-smarty-address-verifier.php:113
 msgid "Dismiss"
 msgstr ""
 
@@ -996,7 +1024,7 @@ msgstr ""
 msgid "Do not send customers' personal details to the AI provider"
 msgstr ""
 
-#: admin/class-admin-page.php:1538
+#: admin/class-admin-page.php:1618
 msgid "Documentation"
 msgstr ""
 
@@ -1016,20 +1044,24 @@ msgstr ""
 msgid "Effect on the next order"
 msgstr ""
 
-#: admin/views/whitelist.php:20
+#: admin/views/blocklist.php:69 admin/views/whitelist.php:20
 msgid "Email"
 msgstr ""
 
-#: admin/class-admin-page.php:999
+#: admin/class-admin-page.php:1079
 msgid "Email %s added to allowlist."
 msgstr ""
 
-#: admin/views/whitelist.php:39
+#: admin/views/blocklist.php:29 admin/views/whitelist.php:44
 msgid "Email address"
 msgstr ""
 
 #: admin/views/documentation.php:504
 msgid "Email address."
+msgstr ""
+
+#: admin/views/blocking.php:577
+msgid "Email me about bad orders"
 msgstr ""
 
 #: admin/views/documentation.php:453
@@ -1060,19 +1092,15 @@ msgstr ""
 msgid "Enable Store API checks"
 msgstr ""
 
-#: admin/class-admin-page.php:1111 admin/views/logs.php:143
+#: admin/class-admin-page.php:1191 admin/views/logs.php:143
 msgid "Endpoint"
 msgstr ""
 
-#: admin/views/blocklist.php:28
-msgid "Enter an IP address or CIDR range. Your current IP: "
-msgstr ""
-
-#: admin/views/logs.php:246
+#: admin/views/logs.php:312
 msgid "Entries older than this are cleaned up daily."
 msgstr ""
 
-#: admin/class-admin-page.php:1109
+#: admin/class-admin-page.php:1189
 msgid "Event detail"
 msgstr ""
 
@@ -1120,12 +1148,16 @@ msgstr ""
 msgid "Every order starts at 100. Each signal takes points off, and how many is yours to set. An order nobody can fault keeps its 100."
 msgstr ""
 
-#: admin/views/whitelist.php:62
+#: admin/views/whitelist.php:73
 msgid "Every user in this role bypasses all checks. Be careful with broad roles like Customer, which would exempt all such users."
 msgstr ""
 
 #: admin/views/documentation.php:505
 msgid "Everyone with that role. Be careful with broad roles: allowlisting Customer exempts every registered shopper on your site."
+msgstr ""
+
+#: admin/views/logs.php:278
+msgid "Everything"
 msgstr ""
 
 #: admin/views/setup/step-done.php:124
@@ -1196,7 +1228,7 @@ msgstr ""
 msgid "Find them in the <a href=\"%1$s\">Logs</a> and read the reason. Allowlist their address from the detail panel if it was a one off. If the same check is catching several real customers, open <a href=\"%2$s\">Scoring</a>, find that check, and either lower its cost or switch it off. If a threshold is the problem, raise it on <a href=\"%3$s\">Shielding</a>."
 msgstr ""
 
-#: admin/class-setup-wizard.php:524 admin/class-setup-wizard.php:574
+#: admin/class-setup-wizard.php:547 admin/class-setup-wizard.php:597
 msgid "Finish"
 msgstr ""
 
@@ -1241,7 +1273,7 @@ msgstr ""
 msgid "Flagged by its rating"
 msgstr ""
 
-#: includes/class-response.php:788
+#: includes/class-response.php:875
 msgid "Flagged by the risk rating."
 msgstr ""
 
@@ -1322,7 +1354,7 @@ msgstr ""
 msgid "Gemini API Key"
 msgstr ""
 
-#: admin/class-admin-page.php:1118
+#: admin/class-admin-page.php:1198
 msgid "Get IP"
 msgstr ""
 
@@ -1330,7 +1362,7 @@ msgstr ""
 msgid "Getting started"
 msgstr ""
 
-#: admin/class-setup-wizard.php:523
+#: admin/class-setup-wizard.php:546
 msgid "Go live"
 msgstr ""
 
@@ -1374,15 +1406,15 @@ msgstr ""
 msgid "Held by its rating"
 msgstr ""
 
-#: includes/class-response.php:700
+#: includes/class-response.php:787
 msgid "Held for review after payment. The money has been taken but the order will not be fulfilled until you release it."
 msgstr ""
 
-#: includes/class-response.php:660
+#: includes/class-response.php:747
 msgid "Held for review. The card was authorized but not charged. Approving captures the payment; refusing voids it with nothing to refund."
 msgstr ""
 
-#: includes/class-response.php:661
+#: includes/class-response.php:748
 msgid "Held for review. This payment method cannot authorize without charging, so it was handled as a hold before payment instead."
 msgstr ""
 
@@ -1430,15 +1462,19 @@ msgstr ""
 msgid "How an order is judged"
 msgstr ""
 
+#: admin/views/logs.php:273
+msgid "How far back"
+msgstr ""
+
 #: admin/views/documentation.php:223 admin/views/documentation.php:553
 msgid "How it learns"
 msgstr ""
 
-#: admin/class-setup-wizard.php:519
+#: admin/class-setup-wizard.php:542
 msgid "How it works"
 msgstr ""
 
-#: admin/views/logs.php:255
+#: admin/views/logs.php:321
 msgid "How long MightyShield remembers the customers, addresses, cards and networks behind past orders. This is the memory the scoring reads, so it is kept far longer than the log."
 msgstr ""
 
@@ -1526,51 +1562,40 @@ msgstr ""
 msgid "I want to turn everything off"
 msgstr ""
 
-#: admin/class-admin-page.php:989
+#: admin/class-admin-page.php:1069
 msgid "IP %s added to allowlist."
 msgstr ""
 
-#: admin/class-admin-page.php:771
+#: admin/class-admin-page.php:818
 msgid "IP %s added to blocklist."
 msgstr ""
 
-#: admin/views/blocklist.php:52
-msgid "IP Address"
-msgstr ""
-
-#: admin/views/blocklist.php:25
-msgid "IP Address / CIDR"
-msgstr ""
-
-#: admin/class-admin-page.php:1110 admin/views/logs.php:142 admin/views/whitelist.php:18 includes/class-privacy.php:255
+#: admin/class-admin-page.php:1190 admin/views/blocklist.php:68 admin/views/logs.php:142 admin/views/whitelist.php:18
+#: includes/class-privacy.php:255
 msgid "IP address"
 msgstr ""
 
-#: admin/views/whitelist.php:37
+#: admin/views/whitelist.php:42
 msgid "IP address / CIDR"
 msgstr ""
 
-#: admin/class-admin-page.php:740
-msgid "IP address added to blocklist."
+#: admin/views/blocklist.php:28
+msgid "IP address or CIDR range"
 msgstr ""
 
 #: admin/views/documentation.php:502
 msgid "IP address or range."
 msgstr ""
 
-#: admin/class-admin-page.php:756
-msgid "IP address removed from blocklist."
-msgstr ""
-
-#: admin/class-admin-page.php:1117
+#: admin/class-admin-page.php:1197
 msgid "IP location"
 msgstr ""
 
-#: admin/views/whitelist.php:47
+#: admin/views/whitelist.php:58
 msgid "IP/CIDR, username or email, or email address"
 msgstr ""
 
-#: admin/views/whitelist.php:49
+#: admin/views/whitelist.php:60
 msgid "IP: e.g. 192.168.1.1 or 10.0.0.0/8. User: a username, email, or user ID. Email: a full email address."
 msgstr ""
 
@@ -1618,11 +1643,11 @@ msgstr ""
 msgid "Installed, but not set up yet. The setup takes a couple of minutes and explains what each part does."
 msgstr ""
 
-#: admin/class-admin-page.php:742 admin/class-admin-page.php:986
+#: admin/class-admin-page.php:1066
 msgid "Invalid IP address or CIDR format."
 msgstr ""
 
-#: admin/class-admin-page.php:1320
+#: admin/class-admin-page.php:1400
 msgid "Invalid IP."
 msgstr ""
 
@@ -1630,11 +1655,11 @@ msgstr ""
 msgid "Invalid MightyShield order request."
 msgstr ""
 
-#: admin/class-admin-page.php:1050
+#: admin/class-admin-page.php:1130
 msgid "Invalid allowlist entry type."
 msgstr ""
 
-#: admin/class-admin-page.php:996
+#: admin/class-admin-page.php:1076
 msgid "Invalid email address."
 msgstr ""
 
@@ -1658,7 +1683,7 @@ msgstr ""
 msgid "Known good customer has a negative cost. It is the only check that adds trust rather than spending it, and it is the only way an order can reach Trusted. A customer earns it with three or more orders and a clean history, and loses it the moment anything connected to them goes bad."
 msgstr ""
 
-#: admin/views/blocklist.php:32 admin/views/blocklist.php:53 admin/views/whitelist.php:66 admin/views/whitelist.php:88
+#: admin/views/blocklist.php:46 admin/views/blocklist.php:82 admin/views/whitelist.php:77 admin/views/whitelist.php:99
 msgid "Label"
 msgstr ""
 
@@ -1672,6 +1697,10 @@ msgstr ""
 
 #: admin/class-dashboard-widget.php:199 admin/views/logs.php:88
 msgid "Last 7 days"
+msgstr ""
+
+#: admin/views/logs.php:261
+msgid "Last run: %1$s rated, %2$s skipped."
 msgstr ""
 
 #: includes/class-privacy.php:188
@@ -1702,7 +1731,7 @@ msgstr ""
 msgid "Let it watch your real orders, then look at the Dashboard and the Fraud Review queue. If the orders it would have held are the ones you would have held, switch it on. If it is flagging your regulars, lower the strictness first. That switch is on every MightyShield page."
 msgstr ""
 
-#: admin/class-admin-page.php:1525
+#: admin/class-admin-page.php:1605
 msgid "Light"
 msgstr ""
 
@@ -1710,15 +1739,15 @@ msgstr ""
 msgid "Links work, so a phone number or an email address can be tapped. Bold and italic work too. In full: %s."
 msgstr ""
 
-#: admin/class-admin-page.php:1122
+#: admin/class-admin-page.php:1202
 msgid "Location"
 msgstr ""
 
-#: admin/views/logs.php:242
+#: admin/views/logs.php:308
 msgid "Log Retention"
 msgstr ""
 
-#: admin/views/logs.php:237
+#: admin/views/logs.php:303
 msgid "Log Settings"
 msgstr ""
 
@@ -1734,11 +1763,11 @@ msgstr ""
 msgid "Login is off by default."
 msgstr ""
 
-#: admin/class-admin-page.php:1769 admin/views/dashboard.php:159 admin/views/documentation.php:218 admin/views/documentation.php:514
+#: admin/class-admin-page.php:1849 admin/views/dashboard.php:159 admin/views/documentation.php:218 admin/views/documentation.php:514
 msgid "Logs"
 msgstr ""
 
-#: admin/class-admin-page.php:1121
+#: admin/class-admin-page.php:1201
 msgid "Looking up…"
 msgstr ""
 
@@ -1750,7 +1779,7 @@ msgstr ""
 msgid "Looks up whether anything is actually listening for email at that domain. A domain that cannot receive mail is not a real customer."
 msgstr ""
 
-#: admin/class-admin-page.php:1125 admin/class-admin-page.php:1324
+#: admin/class-admin-page.php:1205 admin/class-admin-page.php:1404
 msgid "Lookup failed. Please try again."
 msgstr ""
 
@@ -1770,7 +1799,7 @@ msgstr ""
 msgid "Lower or raise the rating"
 msgstr ""
 
-#: admin/views/logs.php:223
+#: admin/views/logs.php:289
 msgid "Maintenance"
 msgstr ""
 
@@ -1782,7 +1811,7 @@ msgstr ""
 msgid "Makes one real call to Smarty with the credentials you have saved, and tells you exactly what came back. It also works out which of the two ways of sending credentials your server can actually deliver, and keeps that. Save the page before testing: the token field is write-only, so the test uses what is stored, not what is typed. Costs one lookup from your Smarty account."
 msgstr ""
 
-#: admin/views/whitelist.php:116
+#: admin/views/whitelist.php:127
 msgid "Manual"
 msgstr ""
 
@@ -1810,7 +1839,7 @@ msgstr ""
 msgid "Medium"
 msgstr ""
 
-#: admin/class-admin-page.php:190 admin/class-admin-page.php:191 admin/class-admin-page.php:1533 admin/class-dashboard-widget.php:63
+#: admin/class-admin-page.php:190 admin/class-admin-page.php:191 admin/class-admin-page.php:1613 admin/class-dashboard-widget.php:63
 #: admin/class-order-panel.php:85 admin/views/documentation.php:231 includes/class-privacy.php:94 includes/class-privacy.php:111
 msgid "MightyShield"
 msgstr ""
@@ -1835,12 +1864,16 @@ msgstr ""
 msgid "MightyShield installs in Observe mode. It rates every order and records what it would have done, without doing it. Your existing checks carry on working exactly as before. When you are ready, turn enforcement on with the three way switch on the <a href=\"%s\">Dashboard</a>."
 msgstr ""
 
-#: admin/class-admin-page.php:1720
+#: admin/class-admin-page.php:1800
 msgid "MightyShield is actively protecting your store."
 msgstr ""
 
-#: admin/class-admin-page.php:1722
+#: admin/class-admin-page.php:1802
 msgid "MightyShield is not checking any orders."
+msgstr ""
+
+#: admin/views/logs.php:249
+msgid "MightyShield only knows the customers it has seen since you installed it, so on a new install nobody has a history and nobody earns trust. Rating your past orders fills that in, and the next real order is judged against what your store already knows instead of against nothing."
 msgstr ""
 
 #: admin/views/blocking.php:531
@@ -1887,7 +1920,7 @@ msgstr ""
 msgid "MightyShield works 24/7 to keep bots, card testers, scammers, fraudsters, and the people running stolen cards from making more work for you, so that you can get on with selling instead of cleaning up after them. It is built to be fine-tuned to your customers rather than somebody else's, and everything below explains how to do that by specifying what each setting does and when to reach for it."
 msgstr ""
 
-#: admin/class-admin-page.php:214 admin/class-admin-page.php:1265 admin/class-order-panel.php:1121 admin/class-setup-wizard.php:185
+#: admin/class-admin-page.php:214 admin/class-admin-page.php:1345 admin/class-order-panel.php:1121 admin/class-setup-wizard.php:185
 #: includes/class-ai-client.php:654 protection/class-captcha.php:1251 protection/class-captcha.php:1309 protection/class-smarty-address-verifier.php:106
 msgid "MightyShield:"
 msgstr ""
@@ -1908,7 +1941,7 @@ msgstr ""
 msgid "MightyShield: held for review before payment. No charge has been attempted and the payment processor was never contacted."
 msgstr ""
 
-#: includes/class-response.php:733
+#: includes/class-response.php:820
 msgid "MightyShield: held for review."
 msgstr ""
 
@@ -1942,6 +1975,10 @@ msgstr ""
 
 #: admin/views/documentation.php:577
 msgid "My checkout stopped working"
+msgstr ""
+
+#: admin/views/blocklist.php:31 admin/views/blocklist.php:71 admin/views/whitelist.php:23 admin/views/whitelist.php:47
+msgid "Name"
 msgstr ""
 
 #: admin/views/blocking.php:547
@@ -1980,15 +2017,11 @@ msgstr ""
 msgid "No %s API key is saved. Enter one and save the page first: the key fields are write-only, so this tests what is stored, not what is typed."
 msgstr ""
 
-#: admin/views/blocklist.php:47
-msgid "No IP addresses have been blocked yet."
-msgstr ""
-
 #: protection/class-smarty-address-verifier.php:269
 msgid "No Smarty Auth ID and Auth Token are saved. Enter them and save the page first: this tests what is stored, not what is typed."
 msgstr ""
 
-#: admin/class-admin-page.php:1014
+#: admin/class-admin-page.php:1094
 msgid "No WordPress user found for that username/email/ID."
 msgstr ""
 
@@ -1996,7 +2029,7 @@ msgstr ""
 msgid "No active payment method can do this."
 msgstr ""
 
-#: admin/views/whitelist.php:81
+#: admin/views/whitelist.php:92
 msgid "No entries have been allowlisted yet."
 msgstr ""
 
@@ -2004,7 +2037,7 @@ msgstr ""
 msgid "No log entries found."
 msgstr ""
 
-#: admin/class-admin-page.php:885
+#: admin/class-admin-page.php:932
 msgid "No log entries were selected."
 msgstr ""
 
@@ -2056,6 +2089,10 @@ msgstr ""
 msgid "Nothing happens. MightyShield does no work at all on your product and category pages."
 msgstr ""
 
+#: admin/views/blocklist.php:61
+msgid "Nothing has been blocked yet."
+msgstr ""
+
 #: admin/views/blocking.php:392
 msgid "Nothing has been turned away, which usually means the widget is not reaching your forms rather than that nobody has tried. Check the Logs tab, filtered to Needs attention."
 msgstr ""
@@ -2070,6 +2107,10 @@ msgstr ""
 
 #: admin/views/setup/step-protection.php:53
 msgid "Nothing is checked at all."
+msgstr ""
+
+#: admin/views/logs.php:252
+msgid "Nothing is done to any order — no holds, no cancellations, no emails. Ratings from past orders are partial, because the bot, timing and device checks measure the checkout as it happens and that moment has gone."
 msgstr ""
 
 #: admin/views/documentation.php:239
@@ -2096,6 +2137,10 @@ msgstr ""
 msgid "Nothing was charged. The order never reached the payment processor."
 msgstr ""
 
+#: includes/class-response.php:686
+msgid "Nothing — MightyShield is in Observe mode"
+msgstr ""
+
 #: admin/views/ai.php:226
 msgid "Notification"
 msgstr ""
@@ -2104,7 +2149,7 @@ msgstr ""
 msgid "Notification Email(s)"
 msgstr ""
 
-#: admin/class-setup-wizard.php:432
+#: admin/class-setup-wizard.php:455
 msgid "Notification settings saved."
 msgstr ""
 
@@ -2112,15 +2157,15 @@ msgstr ""
 msgid "Notifications"
 msgstr ""
 
-#: admin/class-admin-page.php:1220
+#: admin/class-admin-page.php:1300
 msgid "Now observing. Orders are rated and recorded, but the rating is not acted on."
 msgstr ""
 
-#: admin/class-admin-page.php:1683
+#: admin/class-admin-page.php:1763
 msgid "Observing"
 msgstr ""
 
-#: admin/class-admin-page.php:1684
+#: admin/class-admin-page.php:1764
 msgid "Observing. Orders are rated and recorded, but not acted on"
 msgstr ""
 
@@ -2152,6 +2197,10 @@ msgstr ""
 
 #: admin/views/documentation.php:591
 msgid "On the <a href=\"%s\">Dashboard</a>, set the protection switch to Disabled. Nothing is checked and nothing is recorded until you switch it back. Deactivating the plugin does the same and keeps all your settings and history."
+msgstr ""
+
+#: admin/views/blocking.php:593
+msgid "On your current thresholds, %1$s or below is refused outright and %2$s or below is held. Somewhere around those figures is usually what you want."
 msgstr ""
 
 #: admin/views/setup/step-done.php:42
@@ -2282,7 +2331,7 @@ msgstr ""
 msgid "Orders reported as fraud"
 msgstr ""
 
-#: admin/class-admin-page.php:1123
+#: admin/class-admin-page.php:1203
 msgid "Organization"
 msgstr ""
 
@@ -2310,7 +2359,7 @@ msgstr ""
 msgid "PayPal did not capture the authorization. Check the order notes."
 msgstr ""
 
-#: admin/class-admin-page.php:1767 admin/views/documentation.php:216 admin/views/documentation.php:484
+#: admin/class-admin-page.php:1847 admin/views/documentation.php:216 admin/views/documentation.php:484
 msgid "Payment"
 msgstr ""
 
@@ -2331,11 +2380,23 @@ msgid "Payment."
 msgstr ""
 
 #: admin/views/blocklist.php:20
-msgid "Permanently bar an IP address or CIDR range from checkout and the Store API. Blocklist entries never expire until removed. Allowlisted IPs are never blocked."
+msgid "Permanently bar something from checkout. An IP address or range is refused before the order is scored; everything else is matched against the order and carries the same weight. Entries never expire until you remove them, and anything on the allowlist is never blocked."
+msgstr ""
+
+#: admin/views/blocklist.php:70 admin/views/whitelist.php:22
+msgid "Phone"
+msgstr ""
+
+#: admin/views/blocklist.php:30 admin/views/whitelist.php:46
+msgid "Phone number"
 msgstr ""
 
 #: admin/views/blocking.php:375
 msgid "Pick a provider and save both keys below. Until then nothing is challenged and no order is affected."
+msgstr ""
+
+#: admin/views/blocklist.php:32 admin/views/blocklist.php:72 admin/views/whitelist.php:24 admin/views/whitelist.php:48
+msgid "Postcode"
 msgstr ""
 
 #: admin/views/documentation.php:413
@@ -2362,11 +2423,11 @@ msgstr ""
 msgid "Protection"
 msgstr ""
 
-#: admin/class-admin-page.php:1221
+#: admin/class-admin-page.php:1301
 msgid "Protection active. Orders are now blocked and held by their rating."
 msgstr ""
 
-#: admin/class-admin-page.php:1219
+#: admin/class-admin-page.php:1299
 msgid "Protection disabled. No orders are being checked."
 msgstr ""
 
@@ -2392,6 +2453,10 @@ msgstr ""
 
 #: admin/class-order-panel.php:385
 msgid "Rate Order"
+msgstr ""
+
+#: admin/views/logs.php:227 admin/views/logs.php:281
+msgid "Rate past orders"
 msgstr ""
 
 #: admin/class-dashboard-widget.php:207 admin/views/dashboard.php:87 admin/views/dashboard.php:106 admin/views/logs.php:52
@@ -2423,6 +2488,10 @@ msgstr ""
 msgid "Rating"
 msgstr ""
 
+#: admin/class-admin-page.php:993
+msgid "Rating %s past orders. This runs in the background — you can leave this page."
+msgstr ""
+
 #: admin/views/ai.php:178
 msgid "Rating Effect"
 msgstr ""
@@ -2433,6 +2502,10 @@ msgstr ""
 
 #: admin/views/documentation.php:450
 msgid "Rating effect"
+msgstr ""
+
+#: admin/views/logs.php:235
+msgid "Rating your past orders: %1$s of %2$s done. This continues in the background, so you can leave this page."
 msgstr ""
 
 #: admin/views/blocking.php:108 admin/views/blocking.php:109
@@ -2451,7 +2524,7 @@ msgstr ""
 msgid "Reading the table"
 msgstr ""
 
-#: admin/class-admin-page.php:1112 admin/views/blocklist.php:54 admin/views/logs.php:144
+#: admin/class-admin-page.php:1192 admin/views/blocklist.php:83 admin/views/logs.php:144
 msgid "Reason"
 msgstr ""
 
@@ -2503,16 +2576,20 @@ msgstr ""
 msgid "Rejected is worth considering if you would rather not turn anyone away on arithmetic alone: the review happens before the refusal, so with the rating effect below set to raise as well as lower, a model that recognises an ordinary customer can rescue the order. Orders stopped by a single decisive signal — a hidden trap field, a failed bot challenge, a card with a chargeback — are never sent, because the model cannot overturn those and the call would be wasted."
 msgstr ""
 
-#: admin/views/blocklist.php:73 admin/views/whitelist.php:131
+#: admin/views/blocklist.php:106 admin/views/whitelist.php:142
 msgid "Remove"
 msgstr ""
 
-#: admin/views/blocklist.php:73
-msgid "Remove this IP from the blocklist?"
+#: admin/views/whitelist.php:142
+msgid "Remove this entry from the allowlist?"
 msgstr ""
 
-#: admin/views/whitelist.php:131
-msgid "Remove this entry from the allowlist?"
+#: admin/views/blocklist.php:106
+msgid "Remove this from the blocklist?"
+msgstr ""
+
+#: admin/class-admin-page.php:802
+msgid "Removed from the blocklist."
 msgstr ""
 
 #: admin/views/documentation.php:424
@@ -2527,7 +2604,7 @@ msgstr ""
 msgid "Reputation"
 msgstr ""
 
-#: admin/class-admin-page.php:1114
+#: admin/class-admin-page.php:1194
 msgid "Request data"
 msgstr ""
 
@@ -2571,11 +2648,11 @@ msgstr ""
 msgid "Risk levels."
 msgstr ""
 
-#: admin/views/whitelist.php:55
+#: admin/views/whitelist.php:66
 msgid "Role"
 msgstr ""
 
-#: admin/class-admin-page.php:1046
+#: admin/class-admin-page.php:1126
 msgid "Role %s added to allowlist."
 msgstr ""
 
@@ -2603,7 +2680,7 @@ msgstr ""
 msgid "Same device order limit"
 msgstr ""
 
-#: admin/class-admin-page.php:1756 admin/views/documentation.php:213 admin/views/documentation.php:366 admin/views/setup/step-done.php:32
+#: admin/class-admin-page.php:1836 admin/views/documentation.php:213 admin/views/documentation.php:366 admin/views/setup/step-done.php:32
 msgid "Scoring"
 msgstr ""
 
@@ -2623,11 +2700,11 @@ msgstr ""
 msgid "Scoring profiles"
 msgstr ""
 
-#: admin/class-setup-wizard.php:393
+#: admin/class-setup-wizard.php:416
 msgid "Scoring set to %s."
 msgstr ""
 
-#: admin/class-admin-page.php:862
+#: admin/class-admin-page.php:909
 msgid "Scoring set to %s. Every trust cost below now follows that profile, and you can still change any of them."
 msgstr ""
 
@@ -2679,6 +2756,10 @@ msgstr ""
 msgid "Sends the shape of the customer's details rather than the details themselves, so the name, address and email never leave your site. It costs some accuracy, which is why the choice is yours."
 msgstr ""
 
+#: admin/views/blocking.php:587
+msgid "Sent whatever MightyShield did about the order — including nothing, in Observe mode, which is when this is most useful. Set it to 0 to switch it off."
+msgstr ""
+
 #: admin/views/setup/step-alerts.php:53
 msgid "Separate several with commas. Left empty, they go to %s, the site administrator address."
 msgstr ""
@@ -2699,11 +2780,15 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: admin/class-admin-page.php:1649
+#: admin/class-admin-page.php:1729
 msgid "Settings saved."
 msgstr ""
 
-#: admin/class-setup-wizard.php:333
+#: admin/class-setup-wizard.php:351
+msgid "Setup complete. MightyShield is rating your %s existing orders in the background so it starts out knowing your customers — you can carry on as normal. You can change any of this from these tabs at any time."
+msgstr ""
+
+#: admin/class-setup-wizard.php:354
 msgid "Setup complete. You can change any of it from these tabs at any time."
 msgstr ""
 
@@ -2711,19 +2796,19 @@ msgstr ""
 msgid "Setup is not finished."
 msgstr ""
 
-#: admin/class-setup-wizard.php:487
+#: admin/class-setup-wizard.php:510
 msgid "Setup progress"
 msgstr ""
 
-#: admin/class-admin-page.php:1766 admin/views/documentation.php:215 admin/views/documentation.php:463
+#: admin/class-admin-page.php:1846 admin/views/documentation.php:215 admin/views/documentation.php:463
 msgid "Shielding"
 msgstr ""
 
-#: admin/class-admin-page.php:1735
+#: admin/class-admin-page.php:1815
 msgid "Shields are down"
 msgstr ""
 
-#: admin/class-admin-page.php:1734
+#: admin/class-admin-page.php:1814
 msgid "Shields are up"
 msgstr ""
 
@@ -2755,11 +2840,11 @@ msgstr ""
 msgid "Site key"
 msgstr ""
 
-#: admin/class-setup-wizard.php:562
+#: admin/class-setup-wizard.php:585
 msgid "Skip setup"
 msgstr ""
 
-#: admin/class-setup-wizard.php:568
+#: admin/class-setup-wizard.php:591
 msgid "Skip this step"
 msgstr ""
 
@@ -2803,12 +2888,16 @@ msgstr ""
 msgid "Some actions depend on your processor; which of yours can do what is on the <a href=\"%s\">Payment</a> tab."
 msgstr ""
 
-#: admin/views/whitelist.php:89
+#: admin/views/whitelist.php:100
 msgid "Source"
 msgstr ""
 
-#: admin/class-admin-page.php:1535
+#: admin/class-admin-page.php:1615
 msgid "Spam and fraud protection for WooCommerce"
+msgstr ""
+
+#: admin/views/logs.php:243
+msgid "Stop"
 msgstr ""
 
 #: admin/class-order-panel.php:563 admin/class-order-panel.php:606
@@ -2817,6 +2906,10 @@ msgstr ""
 
 #: admin/views/documentation.php:546
 msgid "Stopped before payment, held after it, held on an authorization, failed card checks, or the name of whichever check flagged it."
+msgstr ""
+
+#: admin/class-admin-page.php:1006
+msgid "Stopped. Everything rated so far is kept."
 msgstr ""
 
 #: admin/views/blocking.php:299 admin/views/documentation.php:472
@@ -2831,7 +2924,7 @@ msgstr ""
 msgid "Strict."
 msgstr ""
 
-#: admin/class-setup-wizard.php:520
+#: admin/class-setup-wizard.php:543
 msgid "Strictness"
 msgstr ""
 
@@ -2855,7 +2948,7 @@ msgstr ""
 msgid "Switching a check off stops it contributing anything at all. Prefer lowering its cost first, so it still counts for something."
 msgstr ""
 
-#: admin/class-admin-page.php:1525 admin/views/whitelist.php:114
+#: admin/class-admin-page.php:1605 admin/views/whitelist.php:125
 msgid "System"
 msgstr ""
 
@@ -2865,6 +2958,10 @@ msgstr ""
 
 #: admin/views/documentation.php:547
 msgid "Taken in full, reserved but not taken, or never charged. Read from your payment processor rather than from what MightyShield asked it to do."
+msgstr ""
+
+#: admin/views/blocking.php:580
+msgid "Tell me when an order rates at or below"
 msgstr ""
 
 #: admin/class-order-panel.php:447
@@ -2879,11 +2976,11 @@ msgstr ""
 msgid "Temporary blocks are separate and do not appear here. They are applied automatically for 24 hours when something trips a hard check, and they clear themselves."
 msgstr ""
 
-#: admin/class-admin-page.php:1411 admin/views/ai.php:124 admin/views/documentation.php:415 admin/views/documentation.php:449
+#: admin/class-admin-page.php:1491 admin/views/ai.php:124 admin/views/documentation.php:415 admin/views/documentation.php:449
 msgid "Test Connection"
 msgstr ""
 
-#: admin/class-admin-page.php:1119
+#: admin/class-admin-page.php:1199
 msgid "Testing…"
 msgstr ""
 
@@ -2895,15 +2992,23 @@ msgstr ""
 msgid "That costs you more than wasted time. Payment processors judge you on how many of your payments are declined or disputed, so a flood of bad orders can put your account under review, into reserves, or shut it down. Stopping those orders before they ever reach your processor matters as much as catching the fraud itself."
 msgstr ""
 
+#: admin/class-admin-page.php:774
+msgid "That does not look like a value MightyShield can match on."
+msgstr ""
+
 #: includes/class-privacy.php:435
 msgid "That history is stored as a one-way salted hash rather than as your details themselves, so it cannot be read back or used to contact you. Security log entries are deleted automatically after the retention period set in the plugin, 30 days by default."
+msgstr ""
+
+#: admin/class-admin-page.php:770
+msgid "That is already on the blocklist."
 msgstr ""
 
 #: admin/views/setup/step-done.php:62
 msgid "That is everything"
 msgstr ""
 
-#: includes/class-rescore.php:90
+#: includes/class-rescore.php:100
 msgid "That order could not be loaded."
 msgstr ""
 
@@ -2947,7 +3052,7 @@ msgstr ""
 msgid "The bot challenge is misconfigured (%s) and is failing open so it does not block checkout. Verify your Site Key and Secret Key on the Shielding tab."
 msgstr ""
 
-#: admin/class-admin-page.php:1251
+#: admin/class-admin-page.php:1331
 msgid "The bot challenge is misconfigured and is failing open so it does not block checkout. Last error: %s"
 msgstr ""
 
@@ -3005,6 +3110,10 @@ msgstr ""
 
 #: admin/views/documentation.php:361
 msgid "The last 7 days."
+msgstr ""
+
+#: admin/views/whitelist.php:52
+msgid "The last five are matched against the order rather than the visitor, so they apply to guests as well as to signed-in customers."
 msgstr ""
 
 #: admin/class-fraud-review.php:445 admin/views/documentation.php:329
@@ -3119,7 +3228,7 @@ msgstr ""
 msgid "The table is divided into six groups, by what a check is actually looking at. The grouping is there so you can reason about a whole category at once — if your customers keep tripping the Network checks, that is a different problem from tripping the Identity ones."
 msgstr ""
 
-#: admin/class-admin-page.php:1120
+#: admin/class-admin-page.php:1200
 msgid "The test could not be run. Reload the page and try again."
 msgstr ""
 
@@ -3129,6 +3238,10 @@ msgstr ""
 
 #: admin/views/documentation.php:364
 msgid "The widget appears only for people who can manage WooCommerce. To hide it, use Screen Options at the top of the dashboard. That is a per person setting, so hiding it does not take it away from anyone else."
+msgstr ""
+
+#: admin/class-admin-page.php:989
+msgid "There are no past orders in that window to rate."
 msgstr ""
 
 #: admin/views/setup/step-welcome.php:87
@@ -3171,7 +3284,7 @@ msgstr ""
 msgid "This order was rated suspicious, but the payment method does not support additional card verification, so it proceeded without it."
 msgstr ""
 
-#: includes/class-response.php:828
+#: includes/class-response.php:915
 msgid "This order was set to be refused before it was created, but it already existed by the time the decision ran. It has been held for review instead, and nothing has been charged."
 msgstr ""
 
@@ -3183,7 +3296,7 @@ msgstr ""
 msgid "This provider has no way to ask for it on a single order. Orders that would have been asked for 3-D Secure go through as normal."
 msgstr ""
 
-#: admin/class-admin-page.php:1888
+#: admin/class-admin-page.php:1968
 msgid "This store uses the block checkout, which is built on the Store API, and the Store API Firewall is set to Allowlist. That combination refuses the cart and the checkout for everyone who is not on your allowlist, so no customer can buy. Set the firewall to Blocklist, or turn it off."
 msgstr ""
 
@@ -3247,7 +3360,7 @@ msgstr ""
 msgid "Trust rating %1$d of 100: %2$s"
 msgstr ""
 
-#: admin/class-admin-page.php:1721
+#: admin/class-admin-page.php:1801
 msgid "Trust ratings are being recorded, not enforced."
 msgstr ""
 
@@ -3275,7 +3388,7 @@ msgstr ""
 msgid "Two things this setup left alone"
 msgstr ""
 
-#: admin/views/whitelist.php:34 admin/views/whitelist.php:86
+#: admin/views/blocklist.php:80 admin/views/whitelist.php:39 admin/views/whitelist.php:97
 msgid "Type"
 msgstr ""
 
@@ -3283,11 +3396,11 @@ msgstr ""
 msgid "Under WooCommerce, next to Orders, with a count beside it when something is waiting. <a href=\"%s\">The queue</a> is every order MightyShield stopped or flagged that nobody has ruled on yet, gathered in one place so you can work through them instead of hunting for them."
 msgstr ""
 
-#: admin/class-admin-page.php:1359
+#: admin/class-admin-page.php:1439
 msgid "Unknown service."
 msgstr ""
 
-#: admin/class-admin-page.php:1040
+#: admin/class-admin-page.php:1120
 msgid "Unknown user role."
 msgstr ""
 
@@ -3327,15 +3440,15 @@ msgstr ""
 msgid "Use the last column to tune. Plenty of High orders that you went on to approve means the threshold is too cautious and you are holding real customers. Orders that stayed in Low and later turned out bad means it is too generous."
 msgstr ""
 
-#: admin/class-admin-page.php:1113 admin/views/whitelist.php:19
+#: admin/class-admin-page.php:1193 admin/views/whitelist.php:19
 msgid "User"
 msgstr ""
 
-#: admin/class-admin-page.php:1019
+#: admin/class-admin-page.php:1099
 msgid "User %s added to allowlist."
 msgstr ""
 
-#: admin/views/whitelist.php:21 admin/views/whitelist.php:40
+#: admin/views/whitelist.php:21 admin/views/whitelist.php:45
 msgid "User role"
 msgstr ""
 
@@ -3343,7 +3456,7 @@ msgstr ""
 msgid "Uses an AI model to review orders that look legitimate to the rule-based layers. It targets stolen-card orders shipped to real, deliverable addresses, where every attribute passes on its own and only the pattern across them is suspicious."
 msgstr ""
 
-#: admin/views/whitelist.php:45 admin/views/whitelist.php:87
+#: admin/views/blocklist.php:39 admin/views/blocklist.php:81 admin/views/whitelist.php:56 admin/views/whitelist.php:98
 msgid "Value"
 msgstr ""
 
@@ -3531,7 +3644,11 @@ msgstr ""
 msgid "Why it is held."
 msgstr ""
 
-#: admin/views/whitelist.php:38
+#: includes/class-backfill.php:98
+msgid "WooCommerce is not available."
+msgstr ""
+
+#: admin/views/whitelist.php:43
 msgid "WordPress user"
 msgstr ""
 
@@ -3551,7 +3668,7 @@ msgstr ""
 msgid "You do not have permission to review orders."
 msgstr ""
 
-#: admin/class-setup-wizard.php:448
+#: admin/class-setup-wizard.php:471
 msgid "You do not have permission to set up MightyShield."
 msgstr ""
 
@@ -3587,11 +3704,11 @@ msgstr ""
 msgid "Your OpenAI API key."
 msgstr ""
 
-#: firewall/class-ip-blocklist.php:81
+#: firewall/class-ip-blocklist.php:93
 msgid "Your access has been restricted. Please contact support."
 msgstr ""
 
-#: admin/class-admin-page.php:1887 admin/class-dashboard-widget.php:136
+#: admin/class-admin-page.php:1967 admin/class-dashboard-widget.php:136
 msgid "Your checkout is closed to customers."
 msgstr ""
 
@@ -3603,7 +3720,11 @@ msgstr ""
 msgid "Your choice here is remembered and takes effect as soon as one is."
 msgstr ""
 
-#: admin/views/whitelist.php:50
+#: admin/views/blocklist.php:42
+msgid "Your current IP address: "
+msgstr ""
+
+#: admin/views/whitelist.php:61
 msgid "Your current IP: "
 msgstr ""
 
@@ -3647,6 +3768,10 @@ msgstr ""
 msgid "Your verdict, and the single most valuable thing on this panel. Change it whenever you like: if a chargeback arrives six months later, mark it Fraud then, and if one turns out to be a family member using the card, mark it Clean and the penalty is taken back off."
 msgstr ""
 
+#: includes/class-response.php:708
+msgid "[MightyShield] Order #%2$d rated %1$s/100"
+msgstr ""
+
 #: protection/class-captcha.php:1090
 msgid "a challenge was shown but came back with no answer, which usually means the provider script was blocked"
 msgstr ""
@@ -3671,7 +3796,7 @@ msgstr ""
 msgid "checks a US billing address against real postal data, so a made-up address is caught before the order is taken."
 msgstr ""
 
-#: admin/views/logs.php:245 admin/views/logs.php:253
+#: admin/views/logs.php:311 admin/views/logs.php:319
 msgid "days"
 msgstr ""
 
@@ -3679,7 +3804,7 @@ msgstr ""
 msgid "documentation"
 msgstr ""
 
-#: admin/views/whitelist.php:68
+#: admin/views/whitelist.php:79
 msgid "e.g., Office IP, VIP customer"
 msgstr ""
 
@@ -3719,6 +3844,10 @@ msgstr ""
 msgid "or"
 msgstr ""
 
+#: admin/views/blocking.php:584
+msgid "out of 100"
+msgstr ""
+
 #: protection/class-smarty-address-verifier.php:379
 msgid "query parameters"
 msgstr ""
@@ -3739,7 +3868,7 @@ msgstr ""
 msgid "saved. Leave blank to keep"
 msgstr ""
 
-#: admin/class-admin-page.php:1108 admin/views/logs.php:127
+#: admin/class-admin-page.php:1188 admin/views/logs.php:127
 msgid "selected"
 msgstr ""
 
