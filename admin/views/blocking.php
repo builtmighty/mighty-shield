@@ -292,6 +292,88 @@ foreach( $level_rows as $row ) {
             <?php esc_html_e( 'Use the last column to tune. Plenty of High orders that you went on to approve means the threshold is too cautious and you are holding real customers. Orders that stayed in Low and later turned out bad means it is too generous.', 'mighty-shield' ); ?>
         </p>
 
+        <?php
+        /* What enforcing would have done to orders you have already taken.
+           Sits directly under the thresholds because it is the answer to the
+           question those thresholds raise, and a merchant should not have to
+           go to another screen to find out what a number they just typed
+           would cost them. */
+        $mshield_fc  = \MightyShield\Includes\forecast::run( 30 );
+        $mshield_say = \MightyShield\Includes\forecast::summary( $mshield_fc );
+        $mshield_ref = $mshield_fc['actions'][ actions::REJECT ] ?? null;
+        ?>
+
+        <div class="mshield-card" style="margin-top:18px;">
+
+            <div class="mshield-card-title" style="margin-bottom:6px">
+                <?php esc_html_e( 'If you enforced these thresholds', 'mighty-shield' ); ?>
+            </div>
+
+            <?php if( '' === $mshield_say ) : ?>
+
+                <p style="margin:0;color:var(--fg-2);font-size:13px">
+                    <?php
+                    printf(
+                        /* translators: %s: number of orders rated so far. */
+                        esc_html__( 'Not enough rated orders yet to say anything useful — there are %s, and this needs at least 20. Leave MightyShield observing and come back; a forecast built on a handful of orders is a number pretending to be an answer.', 'mighty-shield' ),
+                        esc_html( number_format_i18n( (int) $mshield_fc['rated'] ) )
+                    );
+                    ?>
+                </p>
+
+            <?php else : ?>
+
+                <p style="margin:0 0 12px;font-size:13px"><strong><?php echo esc_html( $mshield_say ); ?></strong></p>
+
+                <?php if( $mshield_ref && $mshield_ref['total'] > 0 ) : ?>
+                    <table class="mshield-table">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e( 'Orders that would be refused', 'mighty-shield' ); ?></th>
+                                <th style="width:150px;"><?php esc_html_e( 'How they turned out', 'mighty-shield' ); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><?php esc_html_e( 'Charged back, or you marked them fraud', 'mighty-shield' ); ?></td>
+                                <td><strong><?php echo esc_html( number_format_i18n( $mshield_ref['bad'] ) ); ?></strong></td>
+                            </tr>
+                            <tr>
+                                <td><?php esc_html_e( 'Completed normally — real customers you would have lost', 'mighty-shield' ); ?></td>
+                                <td><strong><?php echo esc_html( number_format_i18n( $mshield_ref['good'] ) ); ?></strong></td>
+                            </tr>
+                            <tr>
+                                <td><?php esc_html_e( 'Refunded, which is usually ordinary retail rather than fraud', 'mighty-shield' ); ?></td>
+                                <td><?php echo esc_html( number_format_i18n( $mshield_ref['refunded'] ) ); ?></td>
+                            </tr>
+                            <tr>
+                                <td><?php esc_html_e( 'No outcome recorded yet', 'mighty-shield' ); ?></td>
+                                <td><?php echo esc_html( number_format_i18n( $mshield_ref['unknown'] ) ); ?></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+
+                <p class="mshield-hint" style="margin-top:10px">
+                    <?php esc_html_e( 'Worked out by re-rating the orders you have already taken against the thresholds above. Orders stopped by a check that decides on its own — a filled trap field, a browser announcing itself as software — are counted as refused whatever you set, because no threshold can overrule those.', 'mighty-shield' ); ?>
+                </p>
+
+                <?php if( ! empty( $mshield_fc['capped'] ) ) : ?>
+                    <p class="mshield-hint">
+                        <?php
+                        printf(
+                            /* translators: %s: number of orders. */
+                            esc_html__( 'Based on the most recent %s rated orders.', 'mighty-shield' ),
+                            esc_html( number_format_i18n( \MightyShield\Includes\forecast::MAX_ROWS ) )
+                        );
+                        ?>
+                    </p>
+                <?php endif; ?>
+
+            <?php endif; ?>
+
+        </div>
+
     </div>
 
     <div class="mshield-section">

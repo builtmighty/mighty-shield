@@ -37,6 +37,7 @@ Nothing is enforced until you say so. MightyShield installs in Observe mode: it 
 * Allow and block lists that match on phone, name, postcode, city, country and email as well as IP address
 * An alert when an order rates badly, sent even in Observe mode, at most one an hour
 * A background pass that rates your existing orders, so a fresh install starts out recognising your regulars
+* A forecast of what enforcing would do to orders you have already taken, including how many real customers it would have turned away
 * Smarty USPS address verification for US billing addresses with automatic ZIP/State fallback
 * ZIP/State mismatch detection — catches US orders where the ZIP prefix doesn't match the state
 * Honeypot hidden field — invisible bot trap
@@ -164,6 +165,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 == Changelog ==
 
 = 2.3.0 =
+* New: MightyShield now tells you what enforcing would actually do. Observe mode always recorded what it would have done; now the Shielding tab turns that into the answer you are really after — how many of your recent orders these thresholds would have refused, how many of those turned out to be fraud, and how many were real customers you would have lost. No other fraud plugin shows you the second number, and it is the one that makes a threshold a decision rather than a guess.
 * New: billing and delivery addresses are compared. The most common fraud check there is, and it was missing. Weighted low on purpose — gifts, work addresses and parcel lockers all look like this, and the Scoring tab will tell you how often it fires on your own orders.
 * New: country lists. Bar the countries you do not sell to, and mark others as worth a closer look. Both start empty; MightyShield ships no opinion about anywhere.
 * New: phone checks. A US area code from a different state, and numbers from virtual-line services that cannot be used to reach anyone.

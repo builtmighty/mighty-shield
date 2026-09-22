@@ -466,6 +466,7 @@ function load() {
     require_once MSHIELD_PATH . 'includes/class-rescore.php';
     require_once MSHIELD_PATH . 'includes/class-privacy.php';
     require_once MSHIELD_PATH . 'includes/class-backfill.php';
+    require_once MSHIELD_PATH . 'includes/class-forecast.php';
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
     require_once MSHIELD_PATH . 'admin/class-order-panel.php';
