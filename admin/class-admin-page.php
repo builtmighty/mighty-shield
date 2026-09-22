@@ -977,6 +977,39 @@ class admin_page {
 
         }
 
+        // Rate the back catalogue.
+        if( isset( $_POST['mshield_backfill_start'] ) && check_admin_referer( 'mshield_backfill_action' ) ) {
+
+            $days   = isset( $_POST['mshield_backfill_days'] ) ? absint( wp_unslash( $_POST['mshield_backfill_days'] ) ) : 365;
+            $result = \MightyShield\Includes\backfill::start( min( 3650, $days ) );
+
+            if( is_wp_error( $result ) ) {
+                set_transient( 'mshield_admin_notice', [ 'backfill_failed', $result->get_error_message(), 'error' ], 30 );
+            } elseif( (int) $result['total'] === 0 ) {
+                set_transient( 'mshield_admin_notice', [ 'backfill_empty', __( 'There are no past orders in that window to rate.', 'mighty-shield' ), 'warning' ], 30 );
+            } else {
+                set_transient( 'mshield_admin_notice', [ 'backfill_started', sprintf(
+                    /* translators: %s: number of orders. */
+                    __( 'Rating %s past orders. This runs in the background — you can leave this page.', 'mighty-shield' ),
+                    number_format_i18n( (int) $result['total'] )
+                ), 'success' ], 30 );
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
+        if( isset( $_POST['mshield_backfill_cancel'] ) && check_admin_referer( 'mshield_backfill_action' ) ) {
+
+            \MightyShield\Includes\backfill::cancel();
+            set_transient( 'mshield_admin_notice', [ 'backfill_cancelled', __( 'Stopped. Everything rated so far is kept.', 'mighty-shield' ), 'success' ], 30 );
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
     }
 
     /**

@@ -330,7 +330,30 @@ class setup_wizard {
             update_option( self::OPTION, 'done', false );
             update_option( self::PROGRESS, 'done', false );
 
-            set_transient( 'mshield_admin_notice', [ 'setup', __( 'Setup complete. You can change any of it from these tabs at any time.', 'mighty-shield' ), 'success' ], 30 );
+            // Rate the store's existing orders, so day one has hindsight.
+            //
+            // This is the answer to the cold start. Without it the identity
+            // graph is empty on a brand-new install: no returning customer
+            // earns trust, no previous chargeback counts against anybody, and
+            // it stays that way for however long it takes the store to
+            // accumulate a history through the plugin -- which is months on a
+            // quiet shop, and is exactly the period during which the merchant
+            // decides whether any of this works.
+            //
+            // Safe to fire and forget. It rates in the background, takes no
+            // action on any order, and start() returns a WP_Error rather than
+            // throwing if WooCommerce is somehow not there.
+            $mshield_backfill = \MightyShield\Includes\backfill::start();
+
+            $message = ( ! is_wp_error( $mshield_backfill ) && (int) $mshield_backfill['total'] > 0 )
+                ? sprintf(
+                    /* translators: %s: number of past orders. */
+                    __( 'Setup complete. MightyShield is rating your %s existing orders in the background so it starts out knowing your customers — you can carry on as normal. You can change any of this from these tabs at any time.', 'mighty-shield' ),
+                    number_format_i18n( (int) $mshield_backfill['total'] )
+                )
+                : __( 'Setup complete. You can change any of it from these tabs at any time.', 'mighty-shield' );
+
+            set_transient( 'mshield_admin_notice', [ 'setup', $message, 'success' ], 30 );
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=dashboard' ) );
             exit;

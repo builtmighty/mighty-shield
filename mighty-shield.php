@@ -462,6 +462,7 @@ function load() {
     require_once MSHIELD_PATH . 'includes/class-trust-badge.php';
     require_once MSHIELD_PATH . 'includes/class-rescore.php';
     require_once MSHIELD_PATH . 'includes/class-privacy.php';
+    require_once MSHIELD_PATH . 'includes/class-backfill.php';
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
     require_once MSHIELD_PATH . 'admin/class-order-panel.php';
@@ -506,6 +507,12 @@ function load() {
     // what a store already holds, and a store still has to be able to answer a
     // request about it. A privacy obligation is not a feature to toggle.
     \MightyShield\Includes\privacy::register();
+
+    // The back-catalogue rating pass. Above the mshield_enabled guard for the
+    // same reason as privacy: a run already in progress must finish, or
+    // resume, whether or not protection is switched on. It takes no action on
+    // any order — see includes/class-backfill.php.
+    \MightyShield\Includes\backfill::register();
 
     // Always load admin page so settings are accessible.
     if( is_admin() ) {

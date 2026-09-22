@@ -218,6 +218,72 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
 
     <?php endif; ?>
 
+    <!-- Rate past orders -->
+    <?php
+    $mshield_bf     = \MightyShield\Includes\backfill::state();
+    $mshield_bf_run = 'running' === $mshield_bf['status'];
+    ?>
+    <div class="mshield-card">
+        <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Rate past orders', 'mighty-shield' ); ?></div>
+
+        <?php if( $mshield_bf_run ) : ?>
+
+            <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+                <?php
+                printf(
+                    /* translators: 1: orders rated so far, 2: total orders. */
+                    esc_html__( 'Rating your past orders: %1$s of %2$s done. This continues in the background, so you can leave this page.', 'mighty-shield' ),
+                    esc_html( number_format_i18n( (int) $mshield_bf['done'] ) ),
+                    esc_html( number_format_i18n( (int) $mshield_bf['total'] ) )
+                );
+                ?>
+            </p>
+            <form method="post">
+                <?php wp_nonce_field( 'mshield_backfill_action' ); ?>
+                <button type="submit" name="mshield_backfill_cancel" value="1" class="mshield-btn"><?php esc_html_e( 'Stop', 'mighty-shield' ); ?></button>
+            </form>
+
+        <?php else : ?>
+
+            <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+                <?php esc_html_e( 'MightyShield only knows the customers it has seen since you installed it, so on a new install nobody has a history and nobody earns trust. Rating your past orders fills that in, and the next real order is judged against what your store already knows instead of against nothing.', 'mighty-shield' ); ?>
+            </p>
+            <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+                <?php esc_html_e( 'Nothing is done to any order — no holds, no cancellations, no emails. Ratings from past orders are partial, because the bot, timing and device checks measure the checkout as it happens and that moment has gone.', 'mighty-shield' ); ?>
+            </p>
+
+            <?php if( 'complete' === $mshield_bf['status'] || 'cancelled' === $mshield_bf['status'] ) : ?>
+                <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+                    <strong>
+                        <?php
+                        printf(
+                            /* translators: 1: orders rated, 2: orders skipped. */
+                            esc_html__( 'Last run: %1$s rated, %2$s skipped.', 'mighty-shield' ),
+                            esc_html( number_format_i18n( (int) $mshield_bf['done'] ) ),
+                            esc_html( number_format_i18n( (int) $mshield_bf['failed'] ) )
+                        );
+                        ?>
+                    </strong>
+                </p>
+            <?php endif; ?>
+
+            <form method="post">
+                <?php wp_nonce_field( 'mshield_backfill_action' ); ?>
+                <label style="font-size:13px">
+                    <?php esc_html_e( 'How far back', 'mighty-shield' ); ?>
+                    <select name="mshield_backfill_days">
+                        <option value="90"><?php esc_html_e( '90 days', 'mighty-shield' ); ?></option>
+                        <option value="365" selected><?php esc_html_e( '1 year', 'mighty-shield' ); ?></option>
+                        <option value="1095"><?php esc_html_e( '3 years', 'mighty-shield' ); ?></option>
+                        <option value="0"><?php esc_html_e( 'Everything', 'mighty-shield' ); ?></option>
+                    </select>
+                </label>
+                <button type="submit" name="mshield_backfill_start" value="1" class="mshield-btn"><?php esc_html_e( 'Rate past orders', 'mighty-shield' ); ?></button>
+            </form>
+
+        <?php endif; ?>
+    </div>
+
     <!-- Maintenance -->
     <div class="mshield-card">
         <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Maintenance', 'mighty-shield' ); ?></div>
