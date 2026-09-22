@@ -194,6 +194,12 @@ class exempt {
             if( ip_whitelist::is_role_whitelisted( $user_id ) ) return true;
         }
 
+        // Phone, name, postcode, city and country, added in 2.3.0. These are
+        // properties of the order rather than of whoever is asking, so unlike
+        // the billing email below they are safe here: nobody chose them at
+        // this moment to get past a check, they are what was ordered.
+        if( ip_whitelist::matches_order( $order ) ) return true;
+
         return false;
 
     }
@@ -239,6 +245,8 @@ class exempt {
         $email = (string) $order->get_billing_email();
 
         if( $email !== '' && ip_whitelist::is_email_whitelisted( $email ) ) return true;
+
+        if( ip_whitelist::matches_order( $order ) ) return true;
 
         return false;
 

@@ -15,10 +15,15 @@ $whitelist  = ip_whitelist::get_whitelist();
 $current_ip = ip_utils::get_client_ip();
 
 $type_labels = [
-    'ip'    => __( 'IP address', 'mighty-shield' ),
-    'user'  => __( 'User', 'mighty-shield' ),
-    'email' => __( 'Email', 'mighty-shield' ),
-    'role'  => __( 'User role', 'mighty-shield' ),
+    'ip'       => __( 'IP address', 'mighty-shield' ),
+    'user'     => __( 'User', 'mighty-shield' ),
+    'email'    => __( 'Email', 'mighty-shield' ),
+    'role'     => __( 'User role', 'mighty-shield' ),
+    'phone'    => __( 'Phone', 'mighty-shield' ),
+    'name'     => __( 'Name', 'mighty-shield' ),
+    'postcode' => __( 'Postcode', 'mighty-shield' ),
+    'city'     => __( 'City', 'mighty-shield' ),
+    'country'  => __( 'Country', 'mighty-shield' ),
 ];
 
 $wp_role_names = wp_roles()->get_names();
@@ -38,7 +43,13 @@ $wp_role_names = wp_roles()->get_names();
                         <option value="user"><?php esc_html_e( 'WordPress user', 'mighty-shield' ); ?></option>
                         <option value="email"><?php esc_html_e( 'Email address', 'mighty-shield' ); ?></option>
                         <option value="role"><?php esc_html_e( 'User role', 'mighty-shield' ); ?></option>
+                        <option value="phone"><?php esc_html_e( 'Phone number', 'mighty-shield' ); ?></option>
+                        <option value="name"><?php esc_html_e( 'Name', 'mighty-shield' ); ?></option>
+                        <option value="postcode"><?php esc_html_e( 'Postcode', 'mighty-shield' ); ?></option>
+                        <option value="city"><?php esc_html_e( 'City', 'mighty-shield' ); ?></option>
+                        <option value="country"><?php esc_html_e( 'Country (two-letter code)', 'mighty-shield' ); ?></option>
                     </select>
+                    <p class="description"><?php esc_html_e( 'The last five are matched against the order rather than the visitor, so they apply to guests as well as to signed-in customers.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
             <tr class="mshield-wl-value-row">

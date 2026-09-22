@@ -29,6 +29,18 @@ class ip_blocklist {
     private const OPTION_KEY = 'mshield_ip_blocklist';
 
     /**
+     * What can be blocked.
+     *
+     * 'user' and 'role' are deliberately absent, though the allowlist has
+     * them. Blocking a WordPress user is what WordPress's own user management
+     * is for, and a role blocklist is a way for a store to lock its own staff
+     * out by accident.
+     *
+     * @since   2.3.0
+     */
+    const TYPES = [ 'ip', 'email', 'phone', 'name', 'postcode', 'city', 'country' ];
+
+    /**
      * Protected Store API route patterns.
      *
      * @since   1.2.0
@@ -146,15 +158,24 @@ class ip_blocklist {
 
         foreach( $blocklist as $entry ) {
 
+            $entry = self::normalize_entry( $entry );
+
+            // Since 2.3.0 the list also holds emails, phones and addresses.
+            // Those are matched against an ORDER by matches_fields(); here
+            // there is only an address, and reading $entry['ip'] on one of
+            // them would have been an undefined key on every checkout.
+            if( $entry['type'] !== 'ip' || $entry['value'] === '' ) continue;
+
             // CIDR check.
-            if( strpos( $entry['ip'], '/' ) !== false ) {
-                if( ip_utils::ip_in_cidr( $ip, $entry['ip'] ) ) {
+            if( strpos( $entry['value'], '/' ) !== false ) {
+                if( ip_utils::ip_in_cidr( $ip, $entry['value'] ) ) {
                     return true;
                 }
+                continue;
             }
 
             // Exact match.
-            if( $entry['ip'] === $ip ) {
+            if( $entry['value'] === $ip ) {
                 return true;
             }
 
@@ -176,21 +197,147 @@ class ip_blocklist {
      */
     public static function add_ip( $ip, $label = '', $reason = '' ) {
 
+        return self::add_entry( 'ip', $ip, $label, $reason );
+
+    }
+
+    /**
+     * Block anything the allowlist can allow.
+     *
+     * Same vocabulary as ip_whitelist::TYPES minus 'user' and 'role', which
+     * are absent on purpose: blocking a logged-in user is what WordPress's own
+     * user management is for, and blocking a role is a way to lock a store's
+     * own staff out of it by accident.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $type   ip, email, phone, name, postcode, city, country.
+     * @param   string  $value
+     * @param   string  $label
+     * @param   string  $reason
+     * @return  bool    False when the type is unknown, the value is unusable,
+     *                  or the entry is already there.
+     */
+    public static function add_entry( $type, $value, $label = '', $reason = '' ) {
+
+        if( ! in_array( $type, self::TYPES, true ) ) return false;
+
+        // ip keeps sanitize_text_field rather than going through the
+        // allowlist's normalizer, because a CIDR has to survive intact.
+        $value = $type === 'ip'
+            ? sanitize_text_field( $value )
+            : ip_whitelist::normalize_value( $type, $value );
+
+        if( $value === '' ) return false;
+
         $blocklist = self::get_blocklist();
 
-        // Check for duplicate.
         foreach( $blocklist as $entry ) {
-            if( $entry['ip'] === $ip ) return false;
+            $entry = self::normalize_entry( $entry );
+            if( $entry['type'] === $type && $entry['value'] === $value ) return false;
         }
 
-        $blocklist[] = [
-            'ip'     => sanitize_text_field( $ip ),
+        $new = [
+            'type'   => $type,
+            'value'  => $value,
             'label'  => sanitize_text_field( $label ),
             'reason' => sanitize_text_field( $reason ),
             'added'  => time(),
         ];
 
+        // Mirror into the legacy key so anything still reading $entry['ip']
+        // — the admin table, and any row written before 2.3.0 — keeps working.
+        if( $type === 'ip' ) $new['ip'] = $value;
+
+        $blocklist[] = $new;
+
         return update_option( self::OPTION_KEY, $blocklist );
+
+    }
+
+    /**
+     * Put a stored row into the typed shape.
+     *
+     * Every row written before 2.3.0 has an 'ip' key and no 'type'. Read
+     * rather than migrated, the same way ip_whitelist handles its own legacy
+     * rows: a migration that runs once can be interrupted, and this cannot.
+     *
+     * @since   2.3.0
+     *
+     * @param   mixed   $entry
+     * @return  array
+     */
+    public static function normalize_entry( $entry ) {
+
+        if( ! is_array( $entry ) ) {
+            return [ 'type' => 'ip', 'value' => '', 'label' => '', 'reason' => '', 'added' => 0 ];
+        }
+
+        if( empty( $entry['type'] ) ) {
+            $entry['type']  = 'ip';
+            $entry['value'] = isset( $entry['ip'] ) ? $entry['ip'] : '';
+        }
+
+        $entry['value']  = isset( $entry['value'] ) ? (string) $entry['value'] : '';
+        $entry['label']  = isset( $entry['label'] ) ? (string) $entry['label'] : '';
+        $entry['reason'] = isset( $entry['reason'] ) ? (string) $entry['reason'] : '';
+        $entry['added']  = isset( $entry['added'] ) ? (int) $entry['added'] : 0;
+
+        return $entry;
+
+    }
+
+    /**
+     * Whether any non-IP blocklist entry matches this order's details.
+     *
+     * Returns the reason rather than a boolean so the signal can say which
+     * entry matched. The allowlist is NOT consulted here, unlike is_blocked():
+     * this only emits a signal, and whether to act on it is settled once, at
+     * the dispatch boundary, by exempt.
+     *
+     * @since   2.3.0
+     *
+     * @param   array   $fields     Normalised order fields from order_signals.
+     * @return  string|null
+     */
+    public static function matches_fields( $fields ) {
+
+        $want = [];
+
+        foreach( ip_whitelist::FIELD_TYPES as $type => $key ) {
+
+            if( ! isset( $fields[ $key ] ) ) continue;
+
+            $value = ip_whitelist::normalize_value( $type, $fields[ $key ] );
+            if( $value !== '' ) $want[ $type ] = $value;
+
+        }
+
+        // The email is not in FIELD_TYPES -- the allowlist reaches it through
+        // its own method -- but a blocklist very much wants it.
+        if( ! empty( $fields['email'] ) ) {
+            $email = ip_whitelist::normalize_value( 'email', $fields['email'] );
+            if( $email !== '' ) $want['email'] = $email;
+        }
+
+        if( empty( $want ) ) return null;
+
+        foreach( self::get_blocklist() as $entry ) {
+
+            $entry = self::normalize_entry( $entry );
+            $type  = $entry['type'];
+
+            if( $type === 'ip' || ! isset( $want[ $type ] ) ) continue;
+
+            if( $entry['value'] !== $want[ $type ] ) continue;
+
+            return $entry['reason'] !== ''
+                ? sprintf( 'The %s on this order is on your blocklist: %s', $type, $entry['reason'] )
+                : sprintf( 'The %s on this order is on your blocklist', $type );
+
+        }
+
+        return null;
 
     }
 
@@ -204,13 +351,35 @@ class ip_blocklist {
      */
     public static function remove_ip( $ip ) {
 
-        $blocklist = self::get_blocklist();
-        $filtered  = [];
+        return self::remove_entry( 'ip', $ip );
 
-        foreach( $blocklist as $entry ) {
-            if( $entry['ip'] !== $ip ) {
-                $filtered[] = $entry;
-            }
+    }
+
+    /**
+     * Remove a typed entry.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $type
+     * @param   string  $value
+     * @return  bool
+     */
+    public static function remove_entry( $type, $value ) {
+
+        $value = $type === 'ip'
+            ? (string) $value
+            : ip_whitelist::normalize_value( $type, $value );
+
+        $filtered = [];
+
+        foreach( self::get_blocklist() as $entry ) {
+
+            $normal = self::normalize_entry( $entry );
+
+            if( $normal['type'] === $type && $normal['value'] === $value ) continue;
+
+            $filtered[] = $entry;
+
         }
 
         return update_option( self::OPTION_KEY, $filtered );

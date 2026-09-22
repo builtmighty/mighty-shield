@@ -173,6 +173,16 @@ class signals {
             'weight' => 20.0,
             'floor'  => 'none',
         ],
+        'identity_blocklisted' => [
+            'label'  => 'Details are on your blocklist',
+            'desc'   => 'The email, phone, name, postcode, city or country on this order matches something you barred.',
+            'group'  => 'identity',
+            // Same floor as ip_blocklisted, for the same reason: this is the
+            // merchant's own instruction, not a verdict MightyShield formed,
+            // and an instruction should not have to out-argue a trust score.
+            'weight' => 100.0,
+            'floor'  => 'banned',
+        ],
         'country_blocked' => [
             'label'  => 'Country you do not sell to',
             'desc'   => 'The order is going somewhere on your blocked list. A statement you made, not a judgement MightyShield formed.',

@@ -732,14 +732,38 @@ class admin_page {
         // Add IP to blocklist.
         if( isset( $_POST['mshield_block_add_ip'] ) && check_admin_referer( 'mshield_blocklist_action' ) ) {
 
-            $ip    = sanitize_text_field( isset( $_POST['mshield_block_new_ip'] ) ? wp_unslash( $_POST['mshield_block_new_ip'] ) : '' );
+            $value = sanitize_text_field( isset( $_POST['mshield_block_new_ip'] ) ? wp_unslash( $_POST['mshield_block_new_ip'] ) : '' );
             $label = sanitize_text_field( isset( $_POST['mshield_block_new_ip_label'] ) ? wp_unslash( $_POST['mshield_block_new_ip_label'] ) : '' );
 
-            if( ! empty( $ip ) && $this->validate_ip_input( $ip ) ) {
-                ip_blocklist::add_ip( $ip, $label, 'Added manually' );
-                set_transient( 'mshield_admin_notice', [ 'ip_blocked', __( 'IP address added to blocklist.', 'mighty-shield' ), 'success' ], 30 );
+            // The form gained a type selector in 2.3.0. Absent means the
+            // request came from somewhere that predates it, and 'ip' is what
+            // that somewhere could have meant.
+            $type = isset( $_POST['mshield_block_new_type'] )
+                ? sanitize_key( wp_unslash( $_POST['mshield_block_new_type'] ) )
+                : 'ip';
+
+            if( ! in_array( $type, ip_blocklist::TYPES, true ) ) $type = 'ip';
+
+            // Only the IP type gets format validation, because only it has a
+            // format. A name or a city is whatever the merchant says it is,
+            // and add_entry() rejects anything that normalises to nothing.
+            $valid = $value !== '' && ( $type !== 'ip' || $this->validate_ip_input( $value ) );
+
+            if( $valid && ip_blocklist::add_entry( $type, $value, $label, 'Added manually' ) ) {
+
+                set_transient( 'mshield_admin_notice', [ 'ip_blocked', __( 'Added to the blocklist.', 'mighty-shield' ), 'success' ], 30 );
+
+            } elseif( $valid ) {
+
+                // add_entry() refused a well-formed value, which it only does
+                // for a duplicate. Saying "invalid" there would send somebody
+                // looking for a typo in something already on the list.
+                set_transient( 'mshield_admin_notice', [ 'ip_duplicate', __( 'That is already on the blocklist.', 'mighty-shield' ), 'warning' ], 30 );
+
             } else {
-                set_transient( 'mshield_admin_notice', [ 'ip_invalid', __( 'Invalid IP address or CIDR format.', 'mighty-shield' ), 'error' ], 30 );
+
+                set_transient( 'mshield_admin_notice', [ 'ip_invalid', __( 'That does not look like a value MightyShield can match on.', 'mighty-shield' ), 'error' ], 30 );
+
             }
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=blocklist' ) );
@@ -751,9 +775,23 @@ class admin_page {
         if( isset( $_GET['mshield_block_remove_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
             if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_block_remove_ip' ) ) {
-                $ip = sanitize_text_field( wp_unslash( $_GET['mshield_block_remove_ip'] ) );
-                ip_blocklist::remove_ip( $ip );
-                set_transient( 'mshield_admin_notice', [ 'ip_unblocked', __( 'IP address removed from blocklist.', 'mighty-shield' ), 'success' ], 30 );
+
+                $value = sanitize_text_field( wp_unslash( $_GET['mshield_block_remove_ip'] ) );
+
+                // The type arrived alongside from 2.3.0. A link rendered by an
+                // older page, or a bookmark, carries only the value -- and for
+                // those 'ip' is the right answer, because that is all the list
+                // could hold when the link was made.
+                $type = isset( $_GET['mshield_block_remove_type'] )
+                    ? sanitize_key( wp_unslash( $_GET['mshield_block_remove_type'] ) )
+                    : 'ip';
+
+                if( ! in_array( $type, ip_blocklist::TYPES, true ) ) $type = 'ip';
+
+                ip_blocklist::remove_entry( $type, $value );
+
+                set_transient( 'mshield_admin_notice', [ 'ip_unblocked', __( 'Removed from the blocklist.', 'mighty-shield' ), 'success' ], 30 );
+
             }
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=blocklist' ) );

@@ -60,6 +60,7 @@ class order_signals {
         // them regardless -- but because the expensive one is obvious this
         // way: signal_address_velocity does up to fifty order lookups and
         // everything else here reads fields already in hand.
+        'identity_blocklisted'       => 'signal_identity_blocklisted',
         'country_blocked'            => 'signal_country_blocked',
         'country_high_risk'          => 'signal_country_high_risk',
         'address_bill_ship_mismatch' => 'signal_bill_ship_mismatch',
@@ -461,6 +462,24 @@ class order_signals {
      * @param   array   $f
      * @return  string|null
      */
+    /**
+     * The order's details are on the merchant's blocklist.
+     *
+     * The IP half of the blocklist is checked by ip_blocklist itself, on
+     * woocommerce_checkout_process, because an address is knowable before any
+     * of this. Everything else needs the order, so it is checked here.
+     *
+     * @since   2.3.0
+     *
+     * @param   array   $f
+     * @return  string|null
+     */
+    private static function signal_identity_blocklisted( $f ) {
+
+        return \MightyShield\Firewall\ip_blocklist::matches_fields( $f );
+
+    }
+
     private static function signal_country_blocked( $f ) {
 
         $country = strtoupper( trim( (string) $f['country'] ) );
