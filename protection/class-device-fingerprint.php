@@ -118,7 +118,9 @@ class device_fingerprint {
     private static function is_review_refresh() {
 
         return defined( 'DOING_AJAX' ) && DOING_AJAX
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
             && isset( $_GET['wc-ajax'] )
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
             && sanitize_text_field( wp_unslash( $_GET['wc-ajax'] ) ) === 'update_order_review';
 
     }
@@ -172,6 +174,7 @@ class device_fingerprint {
      */
     private function evaluate( $country ) {
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         $raw = isset( $_POST['mshield_device_data'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_device_data'] ) ) : '';
 
         // Missing/malformed fingerprint means the browser never ran our JS — the
@@ -395,6 +398,7 @@ class device_fingerprint {
 
         if( self::is_review_refresh() ) return;
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         $raw = isset( $_POST['mshield_device_data'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_device_data'] ) ) : '';
         if( empty( $raw ) ) return;
 

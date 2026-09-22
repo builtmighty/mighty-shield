@@ -464,6 +464,7 @@ class entities {
         $hash = self::hash( $type, $value );
         if( $hash === '' ) return null;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $row = $wpdb->get_row( $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}mshield_entities WHERE entity_type = %s AND entity_hash = %s",
             $type,
@@ -506,7 +507,9 @@ class entities {
 
         $placeholders = implode( ',', array_fill( 0, count( $hashes ), '%s' ) );
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $rows = $wpdb->get_results( $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
             "SELECT * FROM {$wpdb->prefix}mshield_entities WHERE entity_hash IN ({$placeholders})",
             $hashes
         ), ARRAY_A );
@@ -562,6 +565,7 @@ class entities {
 
             // Atomic upsert so two concurrent checkouts sharing an identity
             // cannot race to create duplicate rows.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             $wpdb->query( $wpdb->prepare(
                 "INSERT INTO {$wpdb->prefix}mshield_entities
                     (entity_type, entity_hash, first_seen, last_seen, order_count)
@@ -599,6 +603,7 @@ class entities {
 
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         return (bool) $wpdb->get_var( $wpdb->prepare(
             "SELECT 1 FROM {$wpdb->prefix}mshield_entity_links l
              INNER JOIN {$wpdb->prefix}mshield_entities e ON e.id = l.entity_id
@@ -625,6 +630,7 @@ class entities {
 
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $entity_id = (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT id FROM {$wpdb->prefix}mshield_entities WHERE entity_type = %s AND entity_hash = %s",
             $type,
@@ -633,6 +639,7 @@ class entities {
 
         if( $entity_id <= 0 ) return;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->query( $wpdb->prepare(
             "INSERT IGNORE INTO {$wpdb->prefix}mshield_entity_links (entity_id, order_id, created_at)
              VALUES (%d, %d, %s)",
@@ -674,10 +681,13 @@ class entities {
 
         $delta = (float) self::OUTCOME_WEIGHTS[ $outcome ];
 
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
+
         // Update every identity linked to this order in one statement.
         // Clamped in SQL rather than in PHP, because this is a set update
         // across an unknown number of rows and reading them back to clamp
         // them would turn one statement into a loop with a race in it.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         return (int) $wpdb->query( $wpdb->prepare(
             "UPDATE {$wpdb->prefix}mshield_entities e
              INNER JOIN {$wpdb->prefix}mshield_entity_links l ON l.entity_id = e.id
@@ -689,6 +699,8 @@ class entities {
             $delta,
             $order_id
         ) );
+
+// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 
     }
 
@@ -739,6 +751,7 @@ class entities {
             // the same path -- and order_count is NOT incremented, because a
             // refused checkout is not an order and counting it as one would
             // feed TRUST_MIN_ORDERS with attempts the store turned away.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             $wpdb->query( $wpdb->prepare(
                 "INSERT INTO {$wpdb->prefix}mshield_entities
                     (entity_type, entity_hash, first_seen, last_seen, refused_count, reputation)
@@ -802,8 +815,11 @@ class entities {
 
         $delta = (float) self::OUTCOME_WEIGHTS[ $outcome ];
 
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
+
         // Clamped on the way back too, so a reversal cannot push an identity
         // past the ceiling and mint trust out of an undone penalty.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         return (int) $wpdb->query( $wpdb->prepare(
             "UPDATE {$wpdb->prefix}mshield_entities e
              INNER JOIN {$wpdb->prefix}mshield_entity_links l ON l.entity_id = e.id
@@ -815,6 +831,8 @@ class entities {
             $delta,
             $order_id
         ) );
+
+// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 
     }
 

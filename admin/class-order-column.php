@@ -245,6 +245,7 @@ class order_column {
     public static function is_list_screen( $hook ) {
 
         if( $hook === 'woocommerce_page_wc-orders' ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
             return ! isset( $_GET['action'] ) || $_GET['action'] !== 'edit';
         }
 

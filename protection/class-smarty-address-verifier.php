@@ -109,6 +109,7 @@ class smarty_address_verifier {
                 __( 'Address verification (Smarty) is degraded and is falling back to a basic ZIP and state check. Full USPS verification is NOT running. Last error: %s', 'mighty-shield' ),
                 $degraded['message']
             ) ),
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
             \MightyShield\Admin\admin_page::dismiss_url( 'mshield_smarty_degraded' ),
             esc_html__( 'Dismiss', 'mighty-shield' )
         );

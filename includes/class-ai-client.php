@@ -657,6 +657,7 @@ class ai_client {
                 __( 'AI order review is unavailable and orders are NOT being reviewed. Last error: %s', 'mighty-shield' ),
                 $degraded['message']
             ) ),
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
             \MightyShield\Admin\admin_page::dismiss_url( 'mshield_ai_degraded' ),
             esc_html__( 'Dismiss', 'mighty-shield' )
         );

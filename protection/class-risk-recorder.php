@@ -211,6 +211,7 @@ class risk_recorder {
 
         throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException(
             'mighty_shield_risk',
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- message is ours and contains no user input
             response::refusal_message(),
             400
         );

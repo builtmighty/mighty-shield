@@ -99,6 +99,7 @@ class checkout_timing {
      */
     private function evaluate() {
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         return self::assess( isset( $_POST['mshield_ct_token'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_ct_token'] ) ) : '' );
 
     }

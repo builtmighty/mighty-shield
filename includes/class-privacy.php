@@ -321,6 +321,7 @@ class privacy {
             // Integers only, produced by intval immediately above.
             // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $removed = (bool) $wpdb->query(
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- no user input in this statement
                 "DELETE FROM {$wpdb->prefix}mshield_log WHERE id IN (" . implode( ',', $ids ) . ')'
             );
 
@@ -407,6 +408,7 @@ class privacy {
         // to [a-z_]; every value is bound.
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $rows = $wpdb->get_results( $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
             "SELECT {$select} FROM {$wpdb->prefix}mshield_log
               WHERE request_data LIKE %s
               ORDER BY id ASC

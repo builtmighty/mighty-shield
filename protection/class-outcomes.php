@@ -252,6 +252,7 @@ class outcomes {
 
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $linked = (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT COUNT(*) FROM {$wpdb->prefix}mshield_entity_links WHERE order_id = %d",
             $order->get_id()
@@ -369,8 +370,10 @@ class outcomes {
      */
     public function bulk_action_notice() {
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
         if( ! isset( $_GET['mshield_reported'] ) ) return;
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
         $count = (int) $_GET['mshield_reported'];
 
         printf(

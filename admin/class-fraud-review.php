@@ -317,6 +317,7 @@ class fraud_review {
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
 
         $per   = 20;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
         $paged = isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1;
 
         $res = wc_get_orders( self::pending_args( [

@@ -82,6 +82,7 @@ class ip_blocklist {
         // exactly the thing a merchant reading the report wants to see.
         risk_context::add( 'ip_blocklisted', 'IP is on the blocklist' );
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         if( \MightyShield\Includes\exempt::suppresses_action( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
 
         db::log_event( $ip, 'classic_checkout', 'blocked', 'Blocklisted IP' );

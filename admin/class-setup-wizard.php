@@ -290,7 +290,7 @@ class setup_wizard {
         if( isset( $_GET['mshield_setup_bail'] ) && isset( $_GET['_wpnonce'] ) ) {
 
             if( current_user_can( 'manage_woocommerce' )
-                && wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_setup_bail' ) ) {
+                && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_setup_bail' ) ) {
 
                 // Skipped, not done. Nothing is configured and nothing is
                 // nagged about afterwards -- walking away was a decision, and a
@@ -389,6 +389,7 @@ class setup_wizard {
 
             case 'protection':
 
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified by the caller before this runs
                 $state   = isset( $_POST['mshield_state'] ) ? sanitize_key( wp_unslash( $_POST['mshield_state'] ) ) : '';
                 $message = admin_page::apply_state( $state );
 
@@ -397,6 +398,7 @@ class setup_wizard {
                 // store using the block checkout that means no customer can
                 // check out at all. checkout_conflict() is the existing warning
                 // for it; this is the one place that offers the fix.
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified by the caller before this runs
                 if( isset( $_POST['mshield_fix_checkout'] ) && $_POST['mshield_fix_checkout'] === 'yes' ) {
                     settings::update( 'mshield_firewall_mode', 'blocklist' );
                 }
@@ -405,6 +407,7 @@ class setup_wizard {
 
             case 'scoring':
 
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified by the caller before this runs
                 $profile = isset( $_POST['mshield_profile'] ) ? sanitize_key( wp_unslash( $_POST['mshield_profile'] ) ) : '';
 
                 if( ! scoring_profiles::exists( $profile ) ) return '';
@@ -419,6 +422,7 @@ class setup_wizard {
 
             case 'challenge':
 
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified by the caller before this runs
                 $provider = isset( $_POST['mshield_captcha_provider'] ) ? sanitize_key( wp_unslash( $_POST['mshield_captcha_provider'] ) ) : 'off';
 
                 // Fails to off, never to a provider. A wrong value here would
@@ -431,6 +435,7 @@ class setup_wizard {
                 // secret. Walking forward past a masked field must not erase it.
                 foreach( [ 'mshield_captcha_site_key', 'mshield_captcha_secret_key' ] as $key ) {
 
+                    // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified by the caller before this runs
                     $value = isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '';
 
                     if( $value !== '' ) settings::update( $key, $value );
@@ -440,7 +445,8 @@ class setup_wizard {
                 // Driven off the canonical map, so a surface added later appears
                 // here without anybody remembering to come back.
                 foreach( challenge::SURFACES as $option ) {
-                    settings::update( $option, admin_page::sanitize_checkbox( $_POST[ $option ] ?? null ) );
+                    // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce is verified by the caller before this runs
+                    settings::update( $option, admin_page::sanitize_checkbox( isset( $_POST[ $option ] ) ? wp_unslash( $_POST[ $option ] ) : null ) );
                 }
 
                 return $provider === 'off'
@@ -449,7 +455,9 @@ class setup_wizard {
 
             case 'alerts':
 
-                settings::update( 'mshield_ai_notify_admin', admin_page::sanitize_checkbox( $_POST['mshield_ai_notify_admin'] ?? null ) );
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce is verified by the caller before this runs
+                settings::update( 'mshield_ai_notify_admin', admin_page::sanitize_checkbox( isset( $_POST['mshield_ai_notify_admin'] ) ? wp_unslash( $_POST['mshield_ai_notify_admin'] ) : null ) );
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce is verified by the caller before this runs
                 settings::update( 'mshield_ai_notify_emails', admin_page::sanitize_email_list( wp_unslash( $_POST['mshield_ai_notify_emails'] ?? '' ) ) );
 
                 return __( 'Notification settings saved.', 'mighty-shield' );

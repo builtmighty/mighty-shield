@@ -170,6 +170,7 @@ class order_panel {
     public static function is_order_screen( $hook ) {
 
         if( $hook === 'woocommerce_page_wc-orders' ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
             return isset( $_GET['action'] ) && $_GET['action'] === 'edit';
         }
 
@@ -317,6 +318,7 @@ class order_panel {
                 esc_html( $reason !== '' ? $reason : signals::label( $key ) ),
                 // Not escaped: self::tune_link() returns markup it built and
                 // escaped itself, and returns '' when there is nothing to link to.
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
                 $can_tune ? self::tune_link( $key ) : '',
                 // A negative weight is the one signal that ADDS trust, so it
                 // gets a plus and reads as credit rather than as a smaller cost.
@@ -1101,6 +1103,7 @@ class order_panel {
 
         // HPOS serves the order at ?page=wc-orders&action=edit&id=N; legacy at
         // post.php?post=N&action=edit.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
         $order_id = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : ( isset( $_GET['post'] ) ? absint( wp_unslash( $_GET['post'] ) ) : 0 );
         if( ! $order_id ) return;
 

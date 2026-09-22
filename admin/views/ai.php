@@ -66,14 +66,14 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
             </tr>
 
             <?php $has_key = ! empty( settings::get( 'mshield_ai_anthropic_key' ) ); ?>
-            <tr class="mshield-ai-p-anthropic"<?php echo $hide_p( 'anthropic' ); ?>>
+            <tr class="mshield-ai-p-anthropic"<?php echo $hide_p( 'anthropic' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Anthropic API Key', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="password" name="mshield_ai_anthropic_key" value="" class="regular-text" <?php echo $has_key ? 'placeholder="••••••••"' : ''; ?> />
                     <p class="description"><?php echo $has_key ? esc_html__( 'Key is saved. Leave blank to keep existing key.', 'mighty-shield' ) : esc_html__( 'Your Anthropic API key.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
-            <tr class="mshield-ai-p-anthropic"<?php echo $hide_p( 'anthropic' ); ?>>
+            <tr class="mshield-ai-p-anthropic"<?php echo $hide_p( 'anthropic' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Model', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="text" name="mshield_ai_anthropic_model" value="<?php echo esc_attr( settings::get( 'mshield_ai_anthropic_model' ) ); ?>" class="regular-text" />
@@ -82,21 +82,21 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
             </tr>
 
             <?php $has_key = ! empty( settings::get( 'mshield_ai_openai_key' ) ); ?>
-            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); ?>>
+            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'OpenAI API Key', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="password" name="mshield_ai_openai_key" value="" class="regular-text" <?php echo $has_key ? 'placeholder="••••••••"' : ''; ?> />
                     <p class="description"><?php echo $has_key ? esc_html__( 'Key is saved. Leave blank to keep existing key.', 'mighty-shield' ) : esc_html__( 'Your OpenAI API key.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
-            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); ?>>
+            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Organization ID', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="text" name="mshield_ai_openai_org" value="<?php echo esc_attr( settings::get( 'mshield_ai_openai_org' ) ); ?>" class="regular-text" />
                     <p class="description"><?php esc_html_e( 'Optional. Only needed if your key belongs to more than one organization.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
-            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); ?>>
+            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Model', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="text" name="mshield_ai_openai_model" value="<?php echo esc_attr( settings::get( 'mshield_ai_openai_model' ) ); ?>" class="regular-text" />
@@ -105,14 +105,14 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
             </tr>
 
             <?php $has_key = ! empty( settings::get( 'mshield_ai_gemini_key' ) ); ?>
-            <tr class="mshield-ai-p-gemini"<?php echo $hide_p( 'gemini' ); ?>>
+            <tr class="mshield-ai-p-gemini"<?php echo $hide_p( 'gemini' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Gemini API Key', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="password" name="mshield_ai_gemini_key" value="" class="regular-text" <?php echo $has_key ? 'placeholder="••••••••"' : ''; ?> />
                     <p class="description"><?php echo $has_key ? esc_html__( 'Key is saved. Leave blank to keep existing key.', 'mighty-shield' ) : esc_html__( 'Your Google AI Studio API key.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
-            <tr class="mshield-ai-p-gemini"<?php echo $hide_p( 'gemini' ); ?>>
+            <tr class="mshield-ai-p-gemini"<?php echo $hide_p( 'gemini' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Model', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="text" name="mshield_ai_gemini_model" value="<?php echo esc_attr( settings::get( 'mshield_ai_gemini_model' ) ); ?>" class="regular-text" />
@@ -232,7 +232,7 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
                     </label>
                 </td>
             </tr>
-            <tr class="mshield-ai-notify-only"<?php echo $hide_notify; ?>>
+            <tr class="mshield-ai-notify-only"<?php echo $hide_notify; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Notification Email(s)', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="text" name="mshield_ai_notify_emails" value="<?php echo esc_attr( settings::get( 'mshield_ai_notify_emails' ) ); ?>" class="regular-text" />

@@ -234,7 +234,7 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
                                         if( $field['type'] === 'radios' ) $cls .= ' is-radios';
                                         if( ! empty( $field['stack'] ) ) $cls .= ' is-stacked';
                                         ?>
-                                        <<?php echo $tag; ?> class="<?php echo esc_attr( $cls ); ?>">
+                                        <<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $tag is 'div' or 'label', set three lines above ?> class="<?php echo esc_attr( $cls ); ?>">
                                             <span><?php echo esc_html( $field['label'] ); ?></span>
 
                                             <?php if( $field['type'] === 'radios' ) : ?>
@@ -269,7 +269,7 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
                                             <?php else : ?>
                                                 <input type="text" name="<?php echo esc_attr( $opt ); ?>" value="<?php echo esc_attr( $val ); ?>" />
                                             <?php endif; ?>
-                                        </<?php echo $tag; ?>>
+                                        </<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $tag is 'div' or 'label', set above ?>>
                                     <?php endforeach; ?>
 
                                     <?php /* An action, not a setting -- so it is called here rather

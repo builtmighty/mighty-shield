@@ -12,12 +12,18 @@ use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
 
 // Filters.
+//
+// Read to decide what to display, never to act on, and the screen is
+// already behind manage_woocommerce. A nonce on a filter link would mean
+// a bookmarked or shared log view stopped working.
+// phpcs:disable WordPress.Security.NonceVerification.Recommended
 $filter_action = isset( $_GET['filter_action'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_action'] ) ) : '';
 $filter_ip     = isset( $_GET['filter_ip'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_ip'] ) ) : '';
 $search        = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 $range         = isset( $_GET['range'] ) ? (int) $_GET['range'] : 0;
 $paged         = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1;
 $per_page      = 50;
+// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 $args = [
     'action'   => $filter_action,
@@ -64,7 +70,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
     <div class="mshield-banner">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" style="margin-top:1px;flex:none"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
         <div>
-            <?php printf( esc_html__( 'Log entries are retained for %d days.', 'mighty-shield' ), $retention ); ?>
+            <?php printf( esc_html__( 'Log entries are retained for %d days.', 'mighty-shield' ), (int) $retention ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- format is escaped and %d forces an integer ?>
             <a href="#mshield-log-settings" style="font-weight:600"><?php esc_html_e( 'Change retention', 'mighty-shield' ); ?></a>
             <?php esc_html_e( 'or', 'mighty-shield' ); ?>
             <a href="<?php echo esc_url( $export_url ); ?>" style="font-weight:600"><?php esc_html_e( 'export as CSV', 'mighty-shield' ); ?></a>.
@@ -208,7 +214,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
                 if( $paged > 1 ) : ?>
                     <a class="mshield-btn is-small" href="<?php echo esc_url( $base_url . '&paged=' . ( $paged - 1 ) ); ?>"><?php esc_html_e( 'Previous', 'mighty-shield' ); ?></a>
                 <?php endif; ?>
-                <span class="mshield-mono"><?php printf( esc_html__( '%1$d / %2$d', 'mighty-shield' ), $paged, $total_pages ); ?></span>
+                <span class="mshield-mono"><?php printf( esc_html__( '%1$d / %2$d', 'mighty-shield' ), (int) $paged, (int) $total_pages ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- format is escaped and %d forces an integer ?></span>
                 <?php if( $paged < $total_pages ) : ?>
                     <a class="mshield-btn is-small" href="<?php echo esc_url( $base_url . '&paged=' . ( $paged + 1 ) ); ?>"><?php esc_html_e( 'Next', 'mighty-shield' ); ?></a>
                 <?php endif; ?>

@@ -272,8 +272,8 @@ foreach( $level_rows as $row ) {
                                     printf(
                                         /* translators: 1: count that turned out fine, 2: count that turned out bad. */
                                         esc_html__( '%1$d turned out fine, %2$d turned out bad', 'mighty-shield' ),
-                                        $approved,
-                                        $bad
+                                        (int) $approved,
+                                        (int) $bad
                                     );
                                     ?>
                                 </span>
@@ -433,10 +433,10 @@ foreach( $level_rows as $row ) {
                 <td>
                     <input type="text" name="mshield_captcha_site_key" class="regular-text"
                            value="<?php echo esc_attr( settings::get( 'mshield_captcha_site_key' ) ); ?>" />
-                    <p class="description mshield-cap-p-turnstile"<?php echo $cap_hide( 'turnstile' ); ?>>
+                    <p class="description mshield-cap-p-turnstile"<?php echo $cap_hide( 'turnstile' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or a literal style attribute; see the closure above ?>>
                         <?php esc_html_e( 'From the Cloudflare dashboard, under Turnstile.', 'mighty-shield' ); ?>
                     </p>
-                    <p class="description mshield-cap-p-recaptcha_v3"<?php echo $cap_hide( 'recaptcha_v3' ); ?>>
+                    <p class="description mshield-cap-p-recaptcha_v3"<?php echo $cap_hide( 'recaptcha_v3' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or a literal style attribute; see the closure above ?>>
                         <?php esc_html_e( 'From the Google reCAPTCHA admin console. Must be a v3 key.', 'mighty-shield' ); ?>
                     </p>
                 </td>
@@ -564,6 +564,7 @@ foreach( $level_rows as $row ) {
                         printf(
                             /* translators: %s: the list of permitted HTML tags. */
                             esc_html__( 'Links work, so a phone number or an email address can be tapped. Bold and italic work too. In full: %s.', 'mighty-shield' ),
+                            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- each tag was escaped individually just above; only the separators are added here
                             implode( ', ', $mshield_tags )
                         );
                         ?>

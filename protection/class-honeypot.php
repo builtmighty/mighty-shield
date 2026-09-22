@@ -103,6 +103,7 @@ class honeypot {
      */
     private function get_value() {
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         return isset( $_POST['mshield_hp_field'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_hp_field'] ) ) : '';
 
     }

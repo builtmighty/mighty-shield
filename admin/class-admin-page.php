@@ -136,6 +136,7 @@ class admin_page {
         $needle = (string) $needle;
 
         if( $needle === '' ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
             $needle = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
         }
 
@@ -682,7 +683,7 @@ class admin_page {
 
             $option = sanitize_key( wp_unslash( $_GET['mshield_dismiss'] ) );
 
-            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_dismiss_' . $option ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_dismiss_' . $option ) ) {
                 self::dismiss_degraded( $option );
             }
 
@@ -715,7 +716,7 @@ class admin_page {
         // Remove an entry from the whitelist.
         if( isset( $_GET['mshield_remove_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_remove_ip' ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_remove_ip' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_remove_ip'] ) );
                 $type  = sanitize_text_field( isset( $_GET['wl_type'] ) ? wp_unslash( $_GET['wl_type'] ) : 'ip' );
                 // 'role' belongs here. The allowlist view offers role entries
@@ -783,7 +784,7 @@ class admin_page {
         // Remove IP from blocklist.
         if( isset( $_GET['mshield_block_remove_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_block_remove_ip' ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_block_remove_ip' ) ) {
 
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_block_remove_ip'] ) );
 
@@ -811,7 +812,7 @@ class admin_page {
         // Block an IP directly from the Logs table.
         if( isset( $_GET['mshield_block_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_block_ip' ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_block_ip' ) ) {
                 $ip = sanitize_text_field( wp_unslash( $_GET['mshield_block_ip'] ) );
                 if( ! empty( $ip ) && $this->validate_ip_input( $ip ) ) {
                     ip_blocklist::add_ip( $ip, '', 'Blocked from logs' );
@@ -827,7 +828,7 @@ class admin_page {
         // Whitelist an IP directly from the Logs table.
         if( isset( $_GET['mshield_whitelist_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_whitelist_ip' ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_whitelist_ip' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_ip'] ) );
                 set_transient( 'mshield_admin_notice', $this->whitelist_add( 'ip', $value, 'Whitelisted from logs' ), 30 );
             }
@@ -840,7 +841,7 @@ class admin_page {
         // Whitelist an email directly from the Logs table.
         if( isset( $_GET['mshield_whitelist_email'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_whitelist_email' ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_whitelist_email' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_email'] ) );
                 set_transient( 'mshield_admin_notice', $this->whitelist_add( 'email', $value, 'Whitelisted from logs' ), 30 );
             }
@@ -853,7 +854,7 @@ class admin_page {
         // Whitelist a WP user directly from the Logs table.
         if( isset( $_GET['mshield_whitelist_user'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_whitelist_user' ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_whitelist_user' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_user'] ) );
                 set_transient( 'mshield_admin_notice', $this->whitelist_add( 'user', $value, 'Whitelisted from logs' ), 30 );
             }
@@ -870,7 +871,7 @@ class admin_page {
 
             $state = sanitize_key( wp_unslash( $_GET['mshield_set_state'] ) );
 
-            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_set_state_' . $state ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_set_state_' . $state ) ) {
 
                 $message = self::apply_state( $state );
 
@@ -899,7 +900,7 @@ class admin_page {
 
             $profile = sanitize_key( wp_unslash( $_GET['mshield_set_profile'] ) );
 
-            if( wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'mshield_set_profile_' . $profile )
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_set_profile_' . $profile )
                 && \MightyShield\Includes\scoring_profiles::apply( $profile ) ) {
 
                 set_transient( 'mshield_admin_notice', [
@@ -940,6 +941,7 @@ class admin_page {
 
                 global $wpdb;
                 $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- plugin-owned table
                 $ips = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT ip FROM {$wpdb->prefix}mshield_log WHERE id IN ({$placeholders})", $ids ) );
 
                 $count = 0;
@@ -1344,6 +1346,7 @@ class admin_page {
                 . '</div>',
                 esc_html__( 'MightyShield:', 'mighty-shield' ),
                 esc_html( sprintf( $template, isset( $degraded['message'] ) ? $degraded['message'] : '' ) ),
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
                 self::dismiss_url( $option ),
                 esc_html__( 'Dismiss', 'mighty-shield' )
             );
@@ -1549,6 +1552,7 @@ class admin_page {
      */
     public function render_page() {
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
         $tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'dashboard';
 
         // Whitelist allowed tabs to prevent path traversal.
@@ -1609,13 +1613,16 @@ class admin_page {
 
         // Header.
         echo '<div class="mshield-header">';
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
         echo '<div class="ms-brandmark">' . $shield . '</div>';
         echo '<div><div class="mshield-title-row"><h1>' . esc_html__( 'MightyShield', 'mighty-shield' ) . '</h1>';
         echo '<span class="mshield-version">' . esc_html( 'v' . MSHIELD_VERSION ) . '</span></div>';
         echo '<div class="mshield-tagline">' . esc_html__( 'Spam and fraud protection for WooCommerce', 'mighty-shield' ) . '</div></div>';
         echo '<span class="mshield-spacer"></span>';
         $doc_active = $tab === 'documentation' ? ' is-primary' : '';
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
         echo '<a class="mshield-btn' . esc_attr( $doc_active ) . '" href="' . esc_url( $doc_url ) . '">' . $book . esc_html__( 'Documentation', 'mighty-shield' ) . '</a>';
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
         echo '<button type="button" id="mshield-theme-toggle" class="mshield-btn"><span class="ms-theme-icon">' . $theme_icons[ $theme ] . '</span><span class="ms-theme-label">' . $theme_labels[ $theme ] . '</span></button>';
         echo '</div>';
 
@@ -1631,6 +1638,7 @@ class admin_page {
                 $url    = admin_url( 'admin.php?page=mighty-shield&tab=' . $key );
                 $active = ( $tab === $key ) ? ' is-active' : '';
                 $icon   = isset( $icons[ $key ] ) ? $icons[ $key ] : '';
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
                 echo '<a class="mshield-navcard' . esc_attr( $active ) . '" href="' . esc_url( $url ) . '">' . $icon . '<span>' . esc_html( $label ) . '</span></a>';
             }
             echo '</div>';
@@ -1723,7 +1731,8 @@ class admin_page {
             );
         }
 
-        if( isset( $_GET['settings-updated'] ) && $_GET['settings-updated'] ) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
+        if( isset( $_GET['settings-updated'] ) && sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) ) ) {
             printf(
                 '<div class="mshield-banner" style="margin-bottom:18px;"><div>%s</div></div>',
                 esc_html__( 'Settings saved.', 'mighty-shield' )

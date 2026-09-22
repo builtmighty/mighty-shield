@@ -705,7 +705,9 @@ class captcha {
             // renders a widget implicitly, so accept either.
             $token = '';
             foreach( [ 'mshield_captcha_token', 'cf-turnstile-response', 'g-recaptcha-response' ] as $field ) {
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
                 if( ! empty( $_POST[ $field ] ) ) {
+                    // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
                     $token = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
                     break;
                 }
@@ -1131,7 +1133,9 @@ class captcha {
 
         $table = $wpdb->prefix . 'mshield_log';
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $rows = $wpdb->get_results( $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
             "SELECT reason, COUNT(*) AS n FROM {$table}
              WHERE created_at > DATE_SUB( NOW(), INTERVAL %d DAY )
                AND reason LIKE %s

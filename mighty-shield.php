@@ -246,6 +246,7 @@ function maybe_redirect_to_setup() {
     // redirect. Hijacking that would drag somebody out of a batch of updates.
     // The flag is spent regardless, so they are not ambushed a page later; the
     // wizard stays reachable from the notice and the plugin action link.
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
     if( isset( $_GET['activate-multi'] ) ) return;
 
     // The wizard screen is registered inside load(), which needs WooCommerce.
@@ -292,6 +293,7 @@ function maybe_upgrade() {
         delete_metadata( 'user', 0, 'mshield_test_simulate', '', true );
 
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->delete( $wpdb->prefix . 'mshield_log', [ 'endpoint' => 'test_mode' ], [ '%s' ] );
 
     }
@@ -393,6 +395,7 @@ function maybe_upgrade() {
         // be read again and expire on their own, but they are cheap to clear
         // and confusing to find.
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->query(
             "DELETE FROM {$wpdb->options}
               WHERE option_name LIKE '_transient_mshield_emails_%'
