@@ -21,7 +21,7 @@ Nothing is enforced until you say so. MightyShield installs in Observe mode: it 
 
 * Block non-whitelisted IPs from Store API cart and checkout endpoints
 * Auto-detect and whitelist server IP on activation
-* Whitelist by IP/CIDR, WordPress user, or email address — whitelisted entities bypass ALL checks (blocks and flags), with one-click whitelisting from the logs
+* Allowlist by IP/CIDR, WordPress user, role, email, phone, name, postcode, city or country, with one-click allowlisting from the logs. An allowlisted order is still rated and still recorded — the allowlist stops MightyShield acting on the rating, so your tuning report and review queue keep telling you the truth
 * Trust rating out of 100 — every check contributes a cost you control, so several small concerns add up instead of one check deciding alone
 * Six risk levels, each with a threshold and an action you choose: no action, flag, 3-D Secure, three kinds of hold, or refuse outright
 * Per-IP checkout rate limiting (configurable, default 20/hour)
@@ -116,22 +116,22 @@ Optional, and worth doing:
 
 MightyShield works without any of these. Each one is listed with what it sends, when, and who runs it. Everything below fails open: if a service is unavailable, MightyShield loses that evidence and the sale goes through.
 
-**MaxMind GeoLite2** — used to tell a hosting provider from a home connection, and to compare the country an order was placed from with the country it ships to. MightyShield downloads the GeoLite2 ASN database once a week using the licence key you set in WooCommerce's own MaxMind Geolocation integration, and reads it on your own server. Your licence key is sent to MaxMind to authorise the download. **No customer data, and no IP address, is ever sent to MaxMind.** Nothing happens at all unless you have set a licence key.
+**MaxMind GeoLite2** (download.maxmind.com) — used to tell a hosting provider from a home connection, and to compare the country an order was placed from with the country it ships to. MightyShield downloads the GeoLite2 ASN database once a week using the licence key you set in WooCommerce's own MaxMind Geolocation integration, and reads it on your own server. Your licence key is sent to MaxMind to authorise the download. **No customer data, and no IP address, is ever sent to MaxMind.** Nothing happens at all unless you have set a licence key.
 Terms: https://www.maxmind.com/en/site-terms-and-conditions | Privacy: https://www.maxmind.com/en/privacy-policy | EULA: https://www.maxmind.com/en/geolite2/eula
 
-**Smarty (US Street Address API)** — verifies that a US billing address exists and is deliverable. Off by default. When you enable it and add a key, the customer's street, city, state and postcode are sent to Smarty at checkout, along with your credentials.
+**Smarty (US Street Address API)** (us-street.api.smarty.com) — verifies that a US billing address exists and is deliverable. Off by default. When you enable it and add a key, the customer's street, city, state and postcode are sent to Smarty at checkout, along with your credentials.
 Terms: https://www.smarty.com/legal/terms-of-service | Privacy: https://www.smarty.com/legal/privacy-policy
 
-**Cloudflare Turnstile** — bot challenge. Off by default. When enabled, the challenge widget is loaded from Cloudflare in the customer's browser, and MightyShield sends Cloudflare the challenge token, your secret key and the customer's IP address to verify it.
+**Cloudflare Turnstile** (challenges.cloudflare.com) — bot challenge. Off by default. When enabled, the challenge widget is loaded from Cloudflare in the customer's browser, and MightyShield sends Cloudflare the challenge token, your secret key and the customer's IP address to verify it.
 Terms: https://www.cloudflare.com/website-terms/ | Privacy: https://www.cloudflare.com/privacypolicy/
 
-**Google reCAPTCHA v3** — the alternative bot challenge. Off by default. Same shape as Turnstile: the widget loads from Google, and the token, your secret key and the customer's IP address are sent to Google to verify.
+**Google reCAPTCHA v3** (www.google.com/recaptcha) — the alternative bot challenge. Off by default. Same shape as Turnstile: the widget loads from Google, and the token, your secret key and the customer's IP address are sent to Google to verify.
 Terms: https://policies.google.com/terms | Privacy: https://policies.google.com/privacy
 
-**disposable-email-domains (GitHub)** — a public, community-maintained list of throwaway email providers. **On by default.** Once a day MightyShield downloads the list from raw.githubusercontent.com. This is a download only — nothing about your store or your customers is sent. Turn it off on the Scoring tab and MightyShield falls back to its built-in list.
+**disposable-email-domains (GitHub)** (raw.githubusercontent.com) — a public, community-maintained list of throwaway email providers. **On by default.** Once a day MightyShield downloads the list from raw.githubusercontent.com. This is a download only — nothing about your store or your customers is sent. Turn it off on the Scoring tab and MightyShield falls back to its built-in list.
 Terms: https://docs.github.com/site-policy/github-terms/github-terms-of-service | Privacy: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
 
-**AI review — Anthropic, OpenAI or Google** — a second opinion on orders at the risk levels you choose. Off by default, and it does nothing until you add a key for one provider. When it runs, MightyShield sends that provider the order: billing and shipping address, email, phone, IP address, order value, line items, payment method, which checks fired, and a count of previous orders for that customer. "Redact personal details" on the AI Review tab masks names, streets, email addresses, phone numbers and IP addresses before they are sent, and it is **on by default**.
+**AI review — Anthropic (api.anthropic.com), OpenAI (api.openai.com) or Google (generativelanguage.googleapis.com)** — a second opinion on orders at the risk levels you choose. Off by default, and it does nothing until you add a key for one provider. When it runs, MightyShield sends that provider the order: billing and shipping address, email, phone, IP address, order value, line items, payment method, which checks fired, and a count of previous orders for that customer. "Redact personal details" on the AI Review tab masks names, streets, email addresses, phone numbers and IP addresses before they are sent, and it is **on by default**.
 Anthropic — Terms: https://www.anthropic.com/legal/commercial-terms | Privacy: https://www.anthropic.com/legal/privacy
 OpenAI — Terms: https://openai.com/policies/terms-of-use | Privacy: https://openai.com/policies/privacy-policy
 Google — Terms: https://ai.google.dev/gemini-api/terms | Privacy: https://policies.google.com/privacy

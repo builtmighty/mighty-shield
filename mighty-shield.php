@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       MightyShield
  * Plugin URI:        https://builtmighty.com
- * Description:       Scores every WooCommerce order against 44 fraud checks, optionally reviews it with an AI model, and then acts once — hold, challenge, refuse, or let through.
+ * Description:       Scores every WooCommerce order against 52 fraud checks, optionally reviews it with an AI model, and then acts once — hold, challenge, refuse, or let through.
  * Version:           2.3.0
  * Requires at least: 6.5
  * Requires PHP:      8.1
