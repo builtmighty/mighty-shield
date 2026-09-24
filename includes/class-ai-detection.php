@@ -21,6 +21,44 @@ defined( 'ABSPATH' ) || exit;
 class ai_detection {
 
     /**
+     * Tokens that mean the same thing on an envelope, folded to one spelling.
+     *
+     * USPS Publication 28's common street suffixes, directionals and unit
+     * designators. A drop address is one real place; what varies between the
+     * orders sent to it is the spelling -- "Terrace", "Terr.", "TER" -- and
+     * each spelling used to be a different identity in the graph, so an
+     * address with three chargebacks behind it matched a fourth order only
+     * when the fraudster typed it the same way. Whole tokens only, so "Stone
+     * Street" becomes "stone st" and not "sne st". Non-English addresses
+     * carry none of these tokens and pass through unchanged.
+     *
+     * Changing this changes every address hash, which is why schema 10
+     * re-hashes the graph in place: see entities::maybe_rehash_addresses().
+     *
+     * @since   2.3.0
+     */
+    private const ADDRESS_TOKENS = [
+        // Suffixes.
+        'street' => 'st', 'str' => 'st', 'avenue' => 'ave', 'av' => 'ave', 'aven' => 'ave',
+        'boulevard' => 'blvd', 'boul' => 'blvd', 'blv' => 'blvd', 'drive' => 'dr', 'drv' => 'dr',
+        'road' => 'rd', 'lane' => 'ln', 'court' => 'ct', 'crt' => 'ct', 'circle' => 'cir', 'circ' => 'cir',
+        'place' => 'pl', 'terrace' => 'ter', 'terr' => 'ter', 'parkway' => 'pkwy', 'pkway' => 'pkwy', 'pky' => 'pkwy',
+        'highway' => 'hwy', 'hiway' => 'hwy', 'square' => 'sq', 'sqr' => 'sq', 'trail' => 'trl', 'expressway' => 'expy',
+        'freeway' => 'fwy', 'alley' => 'aly', 'plaza' => 'plz', 'crossing' => 'xing', 'extension' => 'ext',
+        'heights' => 'hts', 'junction' => 'jct', 'mount' => 'mt', 'mountain' => 'mtn', 'point' => 'pt',
+        'ridge' => 'rdg', 'station' => 'sta', 'turnpike' => 'tpke', 'valley' => 'vly', 'village' => 'vlg',
+        'center' => 'ctr', 'centre' => 'ctr', 'estates' => 'ests', 'gardens' => 'gdns', 'grove' => 'grv',
+        'harbor' => 'hbr', 'harbour' => 'hbr', 'hills' => 'hls', 'landing' => 'lndg', 'meadows' => 'mdws',
+        'springs' => 'spgs', 'summit' => 'smt',
+        // Directionals.
+        'north' => 'n', 'south' => 's', 'east' => 'e', 'west' => 'w',
+        'northeast' => 'ne', 'northwest' => 'nw', 'southeast' => 'se', 'southwest' => 'sw',
+        // Unit designators.
+        'apartment' => 'apt', 'suite' => 'ste', 'floor' => 'fl', 'building' => 'bldg', 'room' => 'rm',
+        'department' => 'dept', 'basement' => 'bsmt', 'penthouse' => 'ph', 'space' => 'spc', 'trailer' => 'trlr',
+    ];
+
+    /**
      * Read a shipping field, falling back to billing.
      *
      * Virtual and downloadable orders leave shipping blank rather than
@@ -60,7 +98,17 @@ class ai_detection {
 
         $address = strtolower( trim( $address ) );
         $address = preg_replace( '/[^a-z0-9 ]/', '', $address );
-        return preg_replace( '/\s+/', ' ', $address );
+        $address = preg_replace( '/\s+/', ' ', $address );
+
+        // Fold the spellings that mean the same thing. See ADDRESS_TOKENS.
+        $tokens = explode( ' ', $address );
+
+        foreach( $tokens as &$token ) {
+            if( isset( self::ADDRESS_TOKENS[ $token ] ) ) $token = self::ADDRESS_TOKENS[ $token ];
+        }
+        unset( $token );
+
+        return implode( ' ', $tokens );
 
     }
 

@@ -35,6 +35,25 @@ class captcha {
     private const RECAPTCHA_VERIFY = 'https://www.google.com/recaptcha/api/siteverify';
 
     /**
+     * How many empty challenge answers one address may give on the spam
+     * surfaces before an empty answer is judged as a failure.
+     *
+     * A person whose ad blocker ate the widget retries once, maybe twice. A
+     * script that has learned to omit the token does it on every request.
+     * Three in the window separates the two with room to spare.
+     *
+     * @since   2.3.0
+     */
+    private const UNANSWERED_ALLOWANCE = 3;
+
+    /**
+     * The window those answers are counted over, in seconds.
+     *
+     * @since   2.3.0
+     */
+    private const UNANSWERED_WINDOW = 600;
+
+    /**
      * What judge() can conclude about a request.
      *
      * Only FAILED is the provider positively saying the token is not genuine.
@@ -681,6 +700,31 @@ class captcha {
     }
 
     /**
+     * Whether this address has given too many empty challenge answers lately.
+     *
+     * Counted in the rate-limit table rather than a transient, for the reason
+     * account_guard gives: an object cache can evict a transient at any
+     * moment, which would silently disable exactly the counting this relies
+     * on. Allowlisted addresses are never rationed.
+     *
+     * @since   2.3.0
+     *
+     * @return  bool
+     */
+    private static function unanswered_too_often() {
+
+        $ip = ip_utils::get_client_ip();
+        if( $ip === '' ) return false;
+
+        if( \MightyShield\Firewall\ip_whitelist::is_whitelisted( $ip ) ) return false;
+
+        $count = (int) db::increment_rate_limit( md5( $ip . '|captcha_unanswered' ), 'captcha_unanswered', self::UNANSWERED_WINDOW );
+
+        return $count > self::UNANSWERED_ALLOWANCE;
+
+    }
+
+    /**
      * The provider's verdict on this request, for one surface.
      *
      * Memoised for the life of the request: a token is single use, so asking
@@ -777,6 +821,23 @@ class captcha {
             // rarely somebody stripping the field. It used to be a flat refusal,
             // which is how a real person ends up locked out of their own login
             // with no widget visible and nothing to solve.
+            //
+            // Rarely -- but on the spam surfaces "rarely" is what a script does
+            // on every request. A bot that omits the token walked through here
+            // for free, and there was nothing between it and ten thousand
+            // registrations. So the free pass is rationed: a handful of empty
+            // answers from one address in a few minutes is a person retrying,
+            // a stream of them is not, and from then on an empty answer is
+            // judged as FAILED. The circuit breaker behind passes() still
+            // overrides that if nothing on the site is passing at all.
+            //
+            // Checkout keeps the unconditional pass. UNANSWERED is scored there
+            // rather than refused, and the cost of a wrong FAILED is a lost sale
+            // instead of a retried login.
+            if( $surface !== 'checkout' && self::unanswered_too_often() ) {
+                return $seen[ $surface ] = self::FAILED;
+            }
+
             return $seen[ $surface ] = self::UNANSWERED;
 
         }

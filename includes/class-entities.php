@@ -878,6 +878,206 @@ class entities {
     }
 
     /**
+     * Re-hash every address identity under the current normalisation.
+     *
+     * Armed by the schema-10 upgrade, which stores a cursor of 0 in
+     * mshield_rehash_addresses. Each call walks a few batches of address
+     * identities past the cursor, reads the address back from an order the
+     * identity is linked to, and where the hash has changed either renames the
+     * row in place -- counters, reputation and links all intact -- or, when
+     * another identity already carries the new hash (two spellings of one
+     * address, now one), merges into it. The cursor moves as it goes and the
+     * option is removed when a batch comes back short.
+     *
+     * Never on a shopper's request: wp-admin, cron and WP-CLI carry it, and
+     * the merchant's first visit to the dashboard after the update does most
+     * of the work. Identities with no order behind them -- a refusal's --
+     * cannot be re-derived and are left as they are.
+     *
+     * @since   2.3.0
+     *
+     * @param   bool    $force  Run regardless of request type (tests, tooling).
+     */
+    public static function maybe_rehash_addresses( $force = false ) {
+
+        if( false === get_option( 'mshield_rehash_addresses', false ) ) return;
+
+        if( ! $force && ! is_admin() && ! wp_doing_cron() && ! ( defined( 'WP_CLI' ) && WP_CLI ) ) return;
+
+        if( ! function_exists( 'wc_get_order' ) ) return;
+
+        for( $pass = 0; $pass < 4; $pass++ ) {
+            if( self::rehash_batch( 250 ) < 250 ) {
+                delete_option( 'mshield_rehash_addresses' );
+                return;
+            }
+        }
+
+    }
+
+    /**
+     * One batch of the re-hash. Returns how many identities it looked at.
+     *
+     * @since   2.3.0
+     *
+     * @param   int     $limit
+     * @return  int
+     */
+    private static function rehash_batch( $limit ) {
+
+        global $wpdb;
+
+        $ents   = $wpdb->prefix . 'mshield_entities';
+        $links  = $wpdb->prefix . 'mshield_entity_links';
+        $cursor = (int) get_option( 'mshield_rehash_addresses', 0 );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned tables; every value is bound
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT e.id, e.entity_hash, MIN( l.order_id ) AS order_id
+             FROM {$ents} e
+             LEFT JOIN {$links} l ON l.entity_id = e.id AND l.order_id > 0
+             WHERE e.entity_type = 'address' AND e.id > %d
+             GROUP BY e.id, e.entity_hash
+             ORDER BY e.id ASC
+             LIMIT %d",
+            $cursor,
+            (int) $limit
+        ), ARRAY_A );
+
+        foreach( (array) $rows as $row ) {
+
+            $cursor = (int) $row['id'];
+
+            if( empty( $row['order_id'] ) ) continue;
+
+            $order = wc_get_order( (int) $row['order_id'] );
+            if( ! $order ) continue;
+
+            $set = self::for_order( $order );
+            $new = self::hash( 'address', $set['address'] ?? '' );
+
+            if( $new === '' || $new === $row['entity_hash'] ) continue;
+
+            self::move_identity( (int) $row['id'], $new );
+
+        }
+
+        update_option( 'mshield_rehash_addresses', $cursor, false );
+
+        return count( (array) $rows );
+
+    }
+
+    /**
+     * Give an identity a new hash, merging into whichever row already has it.
+     *
+     * @since   2.3.0
+     *
+     * @param   int     $id     The identity to move.
+     * @param   string  $hash   Its new hash.
+     */
+    private static function move_identity( $id, $hash ) {
+
+        global $wpdb;
+
+        $ents  = $wpdb->prefix . 'mshield_entities';
+        $links = $wpdb->prefix . 'mshield_entity_links';
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table; the value is bound
+        $target = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM {$ents} WHERE entity_type = 'address' AND entity_hash = %s",
+            $hash
+        ) );
+
+        // Nobody else has the new hash: rename in place, nothing else moves.
+        if( ! $target ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+            $wpdb->update( $ents, [ 'entity_hash' => $hash ], [ 'id' => $id ], [ '%s' ], [ '%d' ] );
+            return;
+        }
+
+        if( $target === $id ) return;
+
+        // Two spellings of one address. The survivor takes on everything the
+        // other one knew, then its links, then the other row goes.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table; every value is bound
+        $wpdb->query( $wpdb->prepare(
+            "UPDATE {$ents} t INNER JOIN {$ents} s ON s.id = %d
+             SET t.order_count      = t.order_count      + s.order_count,
+                 t.approved_count   = t.approved_count   + s.approved_count,
+                 t.denied_count     = t.denied_count     + s.denied_count,
+                 t.refund_count     = t.refund_count     + s.refund_count,
+                 t.chargeback_count = t.chargeback_count + s.chargeback_count,
+                 t.refused_count    = t.refused_count    + s.refused_count,
+                 t.reputation       = t.reputation       + s.reputation,
+                 t.first_seen       = LEAST( t.first_seen, s.first_seen ),
+                 t.last_seen        = GREATEST( t.last_seen, s.last_seen )
+             WHERE t.id = %d",
+            $id,
+            $target
+        ) );
+
+        // IGNORE: an order linked to both spellings would collide on the
+        // unique (entity_id, order_id) index; the leftover is deleted below.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table; every value is bound
+        $wpdb->query( $wpdb->prepare( "UPDATE IGNORE {$links} SET entity_id = %d WHERE entity_id = %d", $target, $id ) );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+        $wpdb->delete( $links, [ 'entity_id' => $id ], [ '%d' ] );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+        $wpdb->delete( $ents, [ 'id' => $id ], [ '%d' ] );
+
+    }
+
+    /**
+     * How many other orders share one address identity within a window.
+     *
+     * One indexed count on the link graph: the address entity is found by its
+     * unique (type, hash) index and its links by the leading column of theirs.
+     * Orders that also carry the excluded email identity -- the same customer
+     * ordering to their own house again -- are left out, as is the order being
+     * rated and any refusal recorded without an order.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $address_hash   entities::hash( 'address', ... ).
+     * @param   int     $since          Unix timestamp; links older than this are ignored.
+     * @param   int     $exclude_order  The order being rated, or 0 at validation.
+     * @param   string  $email_hash     entities::hash( 'email', ... ) of this customer, or ''.
+     * @return  int
+     */
+    public static function orders_at( $address_hash, $since, $exclude_order = 0, $email_hash = '' ) {
+
+        global $wpdb;
+
+        if( $address_hash === '' ) return 0;
+
+        $links = $wpdb->prefix . 'mshield_entity_links';
+        $ents  = $wpdb->prefix . 'mshield_entities';
+
+        $sql = "SELECT COUNT( DISTINCT l.order_id )
+                FROM {$links} l
+                INNER JOIN {$ents} e ON e.id = l.entity_id AND e.entity_type = 'address' AND e.entity_hash = %s
+                WHERE l.created_at >= %s
+                  AND l.order_id > 0
+                  AND l.order_id <> %d";
+
+        $args = [ $address_hash, gmdate( 'Y-m-d H:i:s', (int) $since ), (int) $exclude_order ];
+
+        if( $email_hash !== '' ) {
+            $sql   .= " AND l.order_id NOT IN (
+                            SELECT l2.order_id FROM {$links} l2
+                            INNER JOIN {$ents} e2 ON e2.id = l2.entity_id AND e2.entity_type = 'email' AND e2.entity_hash = %s
+                        )";
+            $args[] = $email_hash;
+        }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- plugin-owned tables; the only interpolations are $wpdb table names, every value is bound
+        return (int) $wpdb->get_var( $wpdb->prepare( $sql, $args ) );
+
+    }
+
+    /**
      * Assess an identity set and emit the matching signals.
      *
      * @since   1.9.0

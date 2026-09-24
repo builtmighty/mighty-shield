@@ -299,43 +299,33 @@ class order_signals {
 
         if( $limit <= 0 || $days <= 0 ) return null;
 
-        // Query on the coarse, reliably-formatted fields only. Street matching
-        // is exact in WC order queries, so it is done in PHP below instead.
-        // Statuses are left at the WooCommerce default, which includes failed
-        // and cancelled orders — a drop address that generates failures is
-        // still a drop address.
-        $ids = wc_get_orders( [
-            'limit'             => 50,
-            'return'            => 'ids',
-            'shipping_postcode' => (string) $f['postcode'],
-            'shipping_country'  => (string) $f['country'],
-            'date_created'      => '>' . ( time() - ( $days * DAY_IN_SECONDS ) ),
-            // Zero at validation, where this order does not exist yet. An
-            // empty exclude list is what wc_get_orders() expects for "nothing".
-            'exclude'           => $f['exclude_order_id'] ? [ (int) $f['exclude_order_id'] ] : [],
+        // The identity graph, not the order table. The old query filtered
+        // orders by postcode and country -- neither indexed on HPOS -- and then
+        // loaded up to fifty full orders to compare street lines in PHP, on
+        // every checkout. The graph already holds every recorded order's
+        // normalised address as one hashed identity with an index on it, so
+        // this is one indexed count. It sees what MightyShield has recorded:
+        // every order since install, plus whatever the back-catalogue pass
+        // rated, which the setup wizard runs. Built through for_checkout() so
+        // the address is normalised and hashed exactly as the recorder did it.
+        $set = \MightyShield\Includes\entities::for_checkout( [
+            'shipping_address_1' => (string) $f['address_1'],
+            'shipping_postcode'  => (string) $f['postcode'],
+            'shipping_country'   => (string) $f['country'],
+            'billing_email'      => (string) ( $f['email'] ?? '' ),
         ] );
 
-        if( empty( $ids ) || ! is_array( $ids ) ) return null;
+        if( empty( $set['address'] ) ) return null;
 
-        $target = ai_detection::normalize_address( $street );
-        $email  = strtolower( trim( (string) ( $f['email'] ?? '' ) ) );
-        $count  = 0;
-
-        foreach( $ids as $id ) {
-
-            $past = wc_get_order( $id );
-            if( ! $past ) continue;
-
-            // "Other" buyers. A regular customer's own earlier orders to their
-            // own house are not a drop address being shared, and counting them
-            // put a household that orders monthly over the limit by itself.
-            if( $email !== '' && strtolower( trim( (string) $past->get_billing_email() ) ) === $email ) continue;
-
-            if( ai_detection::normalize_address( ai_detection::shipping_or_billing( $past, 'address_1' ) ) === $target ) {
-                $count++;
-            }
-
-        }
+        // "Other" buyers: the same customer's own earlier orders to their own
+        // house are not a drop address being shared, and counting them put a
+        // household that orders monthly over the limit by itself.
+        $count = \MightyShield\Includes\entities::orders_at(
+            \MightyShield\Includes\entities::hash( 'address', $set['address'] ),
+            time() - ( $days * DAY_IN_SECONDS ),
+            (int) $f['exclude_order_id'],
+            ! empty( $set['email'] ) ? \MightyShield\Includes\entities::hash( 'email', $set['email'] ) : ''
+        );
 
         if( $count < $limit ) return null;
 

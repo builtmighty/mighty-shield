@@ -486,6 +486,27 @@ function load() {
     require_once MSHIELD_PATH . 'admin/class-fraud-review.php';
     require_once MSHIELD_PATH . 'admin/class-setup-wizard.php';
 
+    // A site this plugin was never activated on. Network activation runs the
+    // activation hook for the main site only, so a subsite arrives here with
+    // no version, no allowlist and no onboarding state -- and maybe_upgrade()
+    // below would read the missing version as 1.0.0 and walk ten seconds of
+    // history through every migration. Give it the start a fresh install
+    // gets. The test is the same three options activation() uses to tell a
+    // fresh store from one with history.
+    if( false === get_option( 'mshield_version' )
+        && false === get_option( 'mshield_db_version' )
+        && false === get_option( 'mshield_ip_whitelist' ) ) {
+        add_option( 'mshield_version', MSHIELD_VERSION, '', 'no' );
+        add_option( 'mshield_onboarding', 'pending', '', 'yes' );
+    }
+
+    // The allowlist, seeded with the server's own addresses as activation
+    // would have. One autoloaded option read; a no-op everywhere else.
+    if( false === get_option( 'mshield_ip_whitelist' ) ) {
+        add_option( 'mshield_ip_whitelist', [], '', 'yes' );
+        \MightyShield\Firewall\ip_whitelist::auto_detect_server_ip();
+    }
+
     // Converge the schema before anything reads or writes a table.
     \MightyShield\Includes\db::maybe_upgrade_schema();
 
@@ -506,6 +527,11 @@ function load() {
     if( ! wp_next_scheduled( 'mshield_daily_cleanup' ) ) {
         wp_schedule_event( time(), 'daily', 'mshield_daily_cleanup' );
     }
+
+    // The address re-hash a schema-10 update arms. Runs on admin, cron and
+    // WP-CLI requests only, a few batches at a time, and disarms itself.
+    add_action( 'init', [ '\MightyShield\Includes\entities', 'maybe_rehash_addresses' ], 20 );
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\entities', 'maybe_rehash_addresses' ] );
 
     // Hold-after-payment, for every request. The gateway confirms payment
     // wherever it confirms it -- in the checkout request, in a webhook, on the

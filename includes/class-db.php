@@ -28,7 +28,7 @@ class db {
      *
      * @since   1.9.0
      */
-    const SCHEMA_VERSION = 9;
+    const SCHEMA_VERSION = 10;
 
     /**
      * How long cached IP intelligence stays useful, in days.
@@ -204,6 +204,17 @@ class db {
 
             }
 
+        }
+
+        // Schema 10 taught normalize_address() the spellings that mean the
+        // same thing on an envelope, which changes the hash every address
+        // identity is stored under. Rather than let the history behind an
+        // address go dark, the graph is re-hashed in place from the orders
+        // each identity is linked to -- batched, never on a shopper's request,
+        // by entities::maybe_rehash_addresses(). This only arms it: the order
+        // factory is not up yet at the point this runs.
+        if( $installed > 0 && $installed < 10 ) {
+            update_option( 'mshield_rehash_addresses', 0, false );
         }
 
         update_option( 'mshield_db_version', self::SCHEMA_VERSION, true );
