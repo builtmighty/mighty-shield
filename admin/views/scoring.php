@@ -164,6 +164,91 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
 
 </div>
 
+<?php
+/* What the store's own history says about these weights. Above the table
+   rather than beside each row: both findings are about the relationship
+   between a check and the outcomes, which is a paragraph, not a column. */
+$mshield_rep = \MightyShield\Includes\signal_report::analyse( 90 );
+$mshield_fp  = \MightyShield\Includes\signal_report::false_positives( $mshield_rep );
+$mshield_ov  = \MightyShield\Includes\signal_report::overlaps( $mshield_rep );
+?>
+
+<?php if( $mshield_fp || $mshield_ov ) : ?>
+<div class="mshield-section">
+
+    <h2><?php esc_html_e( 'What your own orders say', 'mighty-shield' ); ?></h2>
+
+    <p class="description">
+        <?php
+        printf(
+            /* translators: %s: number of rated orders. */
+            esc_html__( 'From the %s orders MightyShield has rated in the last 90 days. These are not errors — they are places where a weight is probably costing you more than it is saving.', 'mighty-shield' ),
+            esc_html( number_format_i18n( (int) $mshield_rep['rated'] ) )
+        );
+        ?>
+    </p>
+
+    <?php if( $mshield_fp ) : ?>
+        <table class="mshield-table">
+            <thead>
+                <tr>
+                    <th><?php esc_html_e( 'This check keeps firing on orders that turned out fine', 'mighty-shield' ); ?></th>
+                    <th style="width:120px;"><?php esc_html_e( 'Fine', 'mighty-shield' ); ?></th>
+                    <th style="width:120px;"><?php esc_html_e( 'Bad', 'mighty-shield' ); ?></th>
+                    <th style="width:90px;"><?php esc_html_e( 'Costs', 'mighty-shield' ); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach( $mshield_fp as $mshield_key => $mshield_row ) : ?>
+                    <tr>
+                        <td>
+                            <a href="#mshield-sig-<?php echo esc_attr( $mshield_key ); ?>">
+                                <?php echo esc_html( signals::label( $mshield_key ) ); ?>
+                            </a>
+                        </td>
+                        <td><strong><?php echo esc_html( number_format_i18n( $mshield_row['good'] ) ); ?></strong></td>
+                        <td><?php echo esc_html( number_format_i18n( $mshield_row['bad'] ) ); ?></td>
+                        <td><?php echo esc_html( number_format_i18n( signals::weight( $mshield_key ), 0 ) ); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p class="mshield-hint">
+            <?php esc_html_e( 'Counted only where the order reached a known outcome, so refunds and orders still in flight are left out of both columns.', 'mighty-shield' ); ?>
+        </p>
+    <?php endif; ?>
+
+    <?php if( $mshield_ov ) : ?>
+        <table class="mshield-table" style="margin-top:14px;">
+            <thead>
+                <tr>
+                    <th><?php esc_html_e( 'These two keep firing on the same orders', 'mighty-shield' ); ?></th>
+                    <th style="width:110px;"><?php esc_html_e( 'Together', 'mighty-shield' ); ?></th>
+                    <th style="width:130px;"><?php esc_html_e( 'Combined cost', 'mighty-shield' ); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach( $mshield_ov as $mshield_pair ) : ?>
+                    <tr>
+                        <td>
+                            <a href="#mshield-sig-<?php echo esc_attr( $mshield_pair['a'] ); ?>"><?php echo esc_html( signals::label( $mshield_pair['a'] ) ); ?></a>
+                            <?php echo esc_html( _x( 'and', 'between two signal names', 'mighty-shield' ) ); ?>
+                            <a href="#mshield-sig-<?php echo esc_attr( $mshield_pair['b'] ); ?>"><?php echo esc_html( signals::label( $mshield_pair['b'] ) ); ?></a>
+                        </td>
+                        <td><?php echo esc_html( number_format_i18n( $mshield_pair['together'] ) ); ?></td>
+                        <td><strong><?php echo esc_html( number_format_i18n( $mshield_pair['cost'], 0 ) ); ?></strong></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p class="mshield-hint">
+            <?php esc_html_e( 'When two checks fire on almost the same orders they are usually one fact arriving twice, and an order pays for it twice. Turning one of them down leaves the evidence intact and stops it counting double.', 'mighty-shield' ); ?>
+        </p>
+    <?php endif; ?>
+
+</div>
+<?php endif; ?>
+
 <form method="post" action="options.php">
     <?php settings_fields( 'mshield_scoring' ); ?>
 

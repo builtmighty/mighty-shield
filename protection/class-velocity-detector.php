@@ -52,7 +52,10 @@ class velocity_detector {
      */
     public function assess_checkout( $data, $errors ) {
 
-        $this->check_thresholds( ip_utils::get_client_ip() );
+        $this->check_thresholds(
+            ip_utils::get_client_ip(),
+            (string) ( $data['billing_email'] ?? '' )
+        );
 
     }
 
@@ -66,7 +69,11 @@ class velocity_detector {
      */
     public function assess_draft( $order, $request ) {
 
-        $this->check_thresholds( ip_utils::get_client_ip() );
+        $email = is_object( $order ) && method_exists( $order, 'get_billing_email' )
+            ? (string) $order->get_billing_email()
+            : '';
+
+        $this->check_thresholds( ip_utils::get_client_ip(), $email );
 
     }
 
@@ -114,6 +121,7 @@ class velocity_detector {
 
         if( ! empty( $email ) ) {
             $this->track_email( $ip, $email );
+            $this->track_email_root( $email );
         }
 
         $this->track_order_count( $ip );
@@ -174,6 +182,92 @@ class velocity_detector {
      *
      * @param   string  $ip     Client IP.
      */
+    /**
+     * Count this order against the identity behind the address, not the
+     * address itself.
+     *
+     * entities::normalize( 'email_root', ... ) collapses the things a card
+     * tester varies to get a "new" customer: Gmail dots, everything after a
+     * plus, and the handful of domains that are aliases of one another. So
+     * j.ohn+7@googlemail.com and john@gmail.com land in the same bucket, and
+     * changing address stops being a way to reset the counter.
+     *
+     * Hashed before storage, like every other identity in this plugin. The
+     * rate-limit table is not the entity graph and has no salt of its own, so
+     * this uses the graph's -- an address must not be recoverable from a
+     * counter row.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $email
+     */
+    private function track_email_root( $email ) {
+
+        $key = self::root_key( $email );
+
+        if( $key === '' ) return;
+
+        db::increment_rate_limit( $key, 'vel_email_root', HOUR_IN_SECONDS );
+
+    }
+
+    /**
+     * Emit when one identity has ordered too often, whatever it called itself.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $email
+     * @return  bool    True when the signal was emitted.
+     */
+    private function check_email_root( $email ) {
+
+        $threshold = (int) settings::get( 'mshield_velocity_root_threshold' );
+
+        if( $threshold <= 0 ) return false;
+
+        $key = self::root_key( $email );
+
+        if( $key === '' ) return false;
+
+        $count = db::check_rate_limit( $key, 'vel_email_root' );
+
+        if( $count <= $threshold ) return false;
+
+        risk_context::add(
+            'email_root_velocity',
+            sprintf(
+                '%d orders from this email in the last hour, counting variations of it as the same address (limit %d)',
+                $count,
+                $threshold
+            )
+        );
+
+        return true;
+
+    }
+
+    /**
+     * The counter key for an address's identity.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $email
+     * @return  string  '' when there is nothing usable.
+     */
+    private static function root_key( $email ) {
+
+        $email = trim( (string) $email );
+
+        if( $email === '' ) return '';
+
+        $root = \MightyShield\Includes\entities::normalize( 'email_root', $email );
+
+        if( $root === '' ) return '';
+
+        return \MightyShield\Includes\entities::hash( 'email_root', $root );
+
+    }
+
     private function track_order_count( $ip ) {
 
         // Counted in the rate-limit table, not a transient. Under a persistent
@@ -191,7 +285,20 @@ class velocity_detector {
      *
      * @param   string  $ip     Client IP.
      */
-    private function check_thresholds( $ip ) {
+    private function check_thresholds( $ip, $email = '' ) {
+
+        // Checked first, because it is the most specific of the three.
+        //
+        // The other two say "this address has been busy", which on a carrier
+        // NAT, an office or a university is hundreds of unrelated people. This
+        // one says "this PERSON has been busy", and it survives the address
+        // changing — which is the whole reason a card tester rotates IPs.
+        //
+        // Emitted through the same early-return chain as the others so at most
+        // one velocity signal lands on an order. All three fire together on a
+        // card-testing run, and charging 150 trust for one underlying fact is
+        // exactly the double-count the Scoring tab now warns about.
+        if( $this->check_email_root( $email ) ) return;
 
         $email_threshold = (int) settings::get( 'mshield_velocity_email_threshold' );
         $emails          = $this->unique_emails( $ip );

@@ -10,11 +10,15 @@
  * the administrator's own browser sitting on wp-admin.
  *
  * So a rating produced here is PARTIAL, and this class is built to say so
- * rather than to hide it. Ten of the thirty-three signals in the catalogue can
- * be derived from a stored order; the other twenty-three are named in
- * SKIPPED_GROUPS and reported alongside the number. An 88 from this is not the
- * same statement as an 88 from checkout, and a panel that presented them
- * identically would be lying by omission.
+ * rather than to hide it. The signals that can be derived from a stored order
+ * are listed in REPLAYABLE; everything else is named in SKIPPED_GROUPS and
+ * reported alongside the number. An 88 from this is not the same statement as
+ * an 88 from checkout, and a panel that presented them identically would be
+ * lying by omission.
+ *
+ * Counted from the two lists rather than written down here, because a count
+ * in a comment goes stale the first time somebody adds a signal -- this one
+ * said "ten of thirty-three" for three releases after neither was true.
  *
  * It is also deliberately READ-ONLY. It records a rating and dispatches
  * nothing: no hold, no cancellation, no 3-D Secure request. Rating a shipped
@@ -63,6 +67,7 @@ class rescore {
         // Added in 2.3.0. Every one reads a field stored on the order, so
         // unlike the bot, timing and device layers these genuinely do
         // reproduce -- a re-rate reaches the same answer the checkout did.
+        'address_reshipper',
         'address_bill_ship_mismatch',
         'phone_area_mismatch',
         'phone_voip',

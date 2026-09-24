@@ -122,6 +122,24 @@ class signals {
             'weight' => 30.0,
             'floor'  => 'none',
         ],
+        'address_reshipper' => [
+            'group'  => 'identity',
+            // Heavier than address_velocity, and the difference is the point.
+            //
+            // address_velocity infers a drop address from behaviour: the same
+            // street taking orders under several names. That needs the second
+            // or third order before it says anything, and the first one has
+            // already shipped.
+            //
+            // This is the merchant naming the address outright, so it is worth
+            // more and it works on the first order. Still no floor: plenty of
+            // people legitimately use a forwarding service to buy from
+            // abroad, and refusing all of them on one signal would be a
+            // policy decision, not a fraud finding. A store that wants it to
+            // be a policy can set the weight to 100.
+            'weight' => 45.0,
+            'floor'  => 'none',
+        ],
         'address_bill_ship_mismatch' => [
             'group'  => 'identity',
             // Deliberately low, and the reasoning matters because every
@@ -410,6 +428,17 @@ class signals {
             'weight' => 15.0,
             'floor'  => 'none',
         ],
+        'email_root_velocity' => [
+            'group'  => 'history',
+            // Between velocity_emails (55) and velocity_orders (50), because
+            // it is better evidence than either. Those two say an ADDRESS has
+            // been busy, which behind a carrier NAT or in an office is a lot
+            // of unrelated people. This says one identity has been busy, and
+            // it holds even when the address changes -- which is the whole
+            // reason a card tester rotates them.
+            'weight' => 52.0,
+            'floor'  => 'none',
+        ],
         'first_order' => [
             'group'  => 'history',
             // 5, and it should stay near there.
@@ -527,6 +556,10 @@ class signals {
             [ 'option' => 'mshield_smarty_auth_id',    'type' => 'text',     'label' => 'Auth ID',    'stack' => true ],
             [ 'option' => 'mshield_smarty_auth_token', 'type' => 'password', 'label' => 'Auth token', 'stack' => true ],
         ],
+        'address_reshipper' => [
+            [ 'option' => 'mshield_reshipper_addresses', 'type' => 'textarea',
+              'label'  => 'Forwarding addresses, one per line — a street line, or a postcode' ],
+        ],
         'address_velocity' => [
             [ 'option' => 'mshield_ai_velocity_orders', 'type' => 'number', 'label' => 'Other orders needed', 'min' => 2, 'max' => 100 ],
             [ 'option' => 'mshield_ai_velocity_days',   'type' => 'number', 'label' => 'Within days', 'min' => 1, 'max' => 365 ],
@@ -605,6 +638,10 @@ class signals {
         ],
         'registration_velocity' => [
             [ 'option' => 'mshield_registration_threshold', 'type' => 'number', 'label' => 'New accounts allowed per hour', 'min' => 0, 'max' => 100 ],
+        ],
+        'email_root_velocity' => [
+            [ 'option' => 'mshield_velocity_root_threshold', 'type' => 'number',
+              'label'  => 'Orders allowed per hour from one email', 'min' => 0, 'max' => 100 ],
         ],
         'account_new' => [
             [ 'option' => 'mshield_new_account_minutes', 'type' => 'number', 'label' => 'Counts as new for (minutes)', 'min' => 0, 'max' => 1440 ],
@@ -887,6 +924,11 @@ class signals {
                 'desc'  => __( 'The same delivery address has recently taken orders under other names. The pattern of a drop address, though also of flats, offices and families.', 'mighty-shield' ),
             ],
 
+            'address_reshipper' => [
+                'label' => __( 'Delivering to a parcel-forwarding address', 'mighty-shield' ),
+                'desc'  => __( 'The address is one you have listed as a freight forwarder or reshipper. Goods bought on a stolen card are often sent to one so they can leave the country before the chargeback lands.', 'mighty-shield' ),
+            ],
+
             'address_bill_ship_mismatch' => [
                 'label' => __( 'Billing and delivery addresses disagree', 'mighty-shield' ),
                 'desc'  => __( 'The card is registered at one address and the goods go to another. Ordinary for a gift or a work delivery, so it counts for little on its own — but it is on almost every stolen-card order.', 'mighty-shield' ),
@@ -1060,6 +1102,11 @@ class signals {
             'account_new' => [
                 'label' => __( 'Account created just before ordering', 'mighty-shield' ),
                 'desc'  => __( 'Everyone is new once, so this only matters next to something else.', 'mighty-shield' ),
+            ],
+
+            'email_root_velocity' => [
+                'label' => __( 'This email has ordered repeatedly, under variations', 'mighty-shield' ),
+                'desc'  => __( 'Dots, plus-tags and alias domains all point at one inbox, and that inbox has ordered several times in the last hour. Changing the spelling is how a card tester gets a fresh start.', 'mighty-shield' ),
             ],
 
             'first_order' => [

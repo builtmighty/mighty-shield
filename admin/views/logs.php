@@ -290,6 +290,92 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
         <?php endif; ?>
     </div>
 
+    <!-- Chargeback import -->
+    <?php $mshield_dis = get_transient( 'mshield_disputes_preview' ); ?>
+    <div class="mshield-card">
+        <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Import chargebacks', 'mighty-shield' ); ?></div>
+
+        <?php if( is_array( $mshield_dis ) ) : ?>
+
+            <?php if( (int) $mshield_dis['matched'] === 0 ) : ?>
+
+                <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+                    <?php esc_html_e( 'None of the columns in that file matched an order. Dispute reports identify a payment the way your processor knows it, so the file needs to contain either the transaction reference stored on the order or the order number itself.', 'mighty-shield' ); ?>
+                </p>
+
+            <?php else : ?>
+
+                <p style="margin:0 0 12px;font-size:13px">
+                    <strong>
+                        <?php
+                        printf(
+                            /* translators: 1: column name, 2: rows matched, 3: rows sampled. */
+                            esc_html__( 'The column "%1$s" matched %2$s of the first %3$s rows.', 'mighty-shield' ),
+                            esc_html( $mshield_dis['label'] ),
+                            esc_html( number_format_i18n( (int) $mshield_dis['matched'] ) ),
+                            esc_html( number_format_i18n( (int) $mshield_dis['sampled'] ) )
+                        );
+                        ?>
+                    </strong>
+                </p>
+
+                <?php if( ! empty( $mshield_dis['examples'] ) ) : ?>
+                    <table class="mshield-table">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e( 'Value in the file', 'mighty-shield' ); ?></th>
+                                <th style="width:120px;"><?php esc_html_e( 'Order', 'mighty-shield' ); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach( $mshield_dis['examples'] as $mshield_eg ) : ?>
+                                <tr>
+                                    <td><code><?php echo esc_html( $mshield_eg['value'] ); ?></code></td>
+                                    <td>#<?php echo esc_html( (int) $mshield_eg['order'] ); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+
+                <p class="mshield-hint" style="margin-top:10px">
+                    <?php
+                    printf(
+                        /* translators: %s: total rows in the file. */
+                        esc_html__( 'Applying will record a chargeback against every order the whole file matches, %s rows in all. Orders MightyShield already knows were charged back are left alone.', 'mighty-shield' ),
+                        esc_html( number_format_i18n( (int) $mshield_dis['total'] ) )
+                    );
+                    ?>
+                </p>
+
+            <?php endif; ?>
+
+            <form method="post">
+                <?php wp_nonce_field( 'mshield_disputes_action' ); ?>
+                <?php if( (int) $mshield_dis['matched'] > 0 ) : ?>
+                    <button type="submit" name="mshield_disputes_apply" value="1" class="mshield-btn"><?php esc_html_e( 'Record these chargebacks', 'mighty-shield' ); ?></button>
+                <?php endif; ?>
+                <button type="submit" name="mshield_disputes_cancel" value="1" class="mshield-btn"><?php esc_html_e( 'Discard the file', 'mighty-shield' ); ?></button>
+            </form>
+
+        <?php else : ?>
+
+            <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+                <?php esc_html_e( 'MightyShield learns from chargebacks automatically on Stripe, which tells it when one happens. Every other processor disputes into a dashboard it cannot see — so on those, the strongest signal there is never reaches the scoring.', 'mighty-shield' ); ?>
+            </p>
+            <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+                <?php esc_html_e( 'Export your dispute report as CSV and upload it here. Nothing is recorded until you have seen which column it matched on and said so. The file is read once and deleted.', 'mighty-shield' ); ?>
+            </p>
+
+            <form method="post" enctype="multipart/form-data">
+                <?php wp_nonce_field( 'mshield_disputes_action' ); ?>
+                <input type="file" name="mshield_disputes_file" accept=".csv,text/csv,text/plain" />
+                <button type="submit" name="mshield_disputes_preview" value="1" class="mshield-btn"><?php esc_html_e( 'Look at the file', 'mighty-shield' ); ?></button>
+            </form>
+
+        <?php endif; ?>
+    </div>
+
     <!-- Maintenance -->
     <div class="mshield-card">
         <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Maintenance', 'mighty-shield' ); ?></div>

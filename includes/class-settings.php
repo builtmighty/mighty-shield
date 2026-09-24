@@ -29,6 +29,11 @@ class settings {
         'mshield_rate_checkout_limit'       => 20,
         'mshield_rate_checkout_window'      => 3600,
         'mshield_velocity_email_threshold'  => 10,
+        // Orders per hour from one email identity, counting dots,
+        // plus-tags and alias domains as the same inbox. Tighter than the
+        // per-IP limits because it is a far more specific claim: one
+        // person, not one network.
+        'mshield_velocity_root_threshold'   => 5,
         'mshield_velocity_order_threshold'  => 15,
         'mshield_failed_payment_threshold'  => 10,
         'mshield_temp_block_duration'       => 3600,
@@ -46,6 +51,12 @@ class settings {
         'mshield_blocked_countries'         => '',
         'mshield_high_risk_countries'       => '',
         'mshield_phone_voip_prefixes'       => '',
+        // Empty, and it stays empty. A bundled list of "known" forwarder
+        // addresses is a list of real warehouses, and one wrong entry
+        // refuses every order a legitimate business ever places. The
+        // merchant knows which addresses are costing them; MightyShield
+        // does not, and guessing on their behalf is not a favour.
+        'mshield_reshipper_addresses'       => '',
         // Email the merchant when an order rates at or below this, whatever
         // was done about it. 0 is off, and is the default: a store that never
         // asked for these must not start receiving them because it installed

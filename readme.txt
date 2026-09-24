@@ -9,11 +9,11 @@ Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-WooCommerce firewall for protecting against card spammer orders. Blocks Store API abuse, rate limits checkout, and detects fraudulent patterns.
+Stops card testing and stolen-card orders. Scores every order, shows what enforcing would cost you, and can verify a card instead of refusing it.
 
 == Description ==
 
-MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 52 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
+MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 54 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
 
 Nothing is enforced until you say so. MightyShield installs in Observe mode: it rates every order and records what it would have done, so you can tune it against your own traffic before it touches a single sale.
 
@@ -24,6 +24,7 @@ Nothing is enforced until you say so. MightyShield installs in Observe mode: it 
 * Allowlist by IP/CIDR, WordPress user, role, email, phone, name, postcode, city or country, with one-click allowlisting from the logs. An allowlisted order is still rated and still recorded — the allowlist stops MightyShield acting on the rating, so your tuning report and review queue keep telling you the truth
 * Trust rating out of 100 — every check contributes a cost you control, so several small concerns add up instead of one check deciding alone
 * Six risk levels, each with a threshold and an action you choose: no action, flag, 3-D Secure, three kinds of hold, or refuse outright
+* 3-D Secure as a graded response — ask the bank to verify the cardholder instead of refusing. A real customer taps a prompt and the sale completes; somebody using a stolen card cannot, and liability for a dispute moves to the card issuer
 * Per-IP checkout rate limiting (configurable, default 20/hour)
 * Velocity detection — flags IPs using multiple emails or rapid-fire orders
 * Temporary IP blocking after repeated failed payments
@@ -65,6 +66,16 @@ It ships in Observe mode, so on day one it blocks nobody at all: it rates orders
 Once enforced, no single ordinary check turns anyone away by itself. Checks contribute a cost to a rating out of 100, and the rating picks the level. Only the things a real customer essentially cannot do — filling in a hidden field that is invisible on the page, a browser announcing that software is driving it, a card the bank has already charged back — decide an order on their own.
 
 The Scoring tab shows how often each check fires on your own orders. Anything firing on most of them is describing your customers rather than your fraudsters, and should be turned down.
+
+= Will this cost me sales? =
+
+It is built so that it does not have to. Refusing an order is the last thing on a ladder, not the first, and there are two steps before it that cost you nothing.
+
+The first is 3-D Secure. Instead of turning a suspicious order away, MightyShield can ask the customer's bank to verify them — the prompt people are used to seeing from their banking app. A real cardholder passes it and the sale goes through as normal. Somebody using a stolen card cannot, and for the ones that do complete, liability for a chargeback moves to the card issuer. That is the point: the orders you are least sure about become the ones you are least exposed on. It needs a processor that supports it, and the Payment tab tells you whether yours does.
+
+The second is holding. An order can be authorised without being captured, or taken and held before fulfilment, so you look at it before anything ships rather than deciding at checkout on a number.
+
+And before any of that, Observe mode and the forecast on the Shielding tab tell you, in your own orders, how many real customers a given threshold would have turned away. You do not have to guess.
 
 = What IPs should I whitelist? =
 
@@ -166,6 +177,10 @@ Fixes three network checks that had never worked and removes a blocking request 
 
 = 2.3.0 =
 * New: MightyShield now tells you what enforcing would actually do. Observe mode always recorded what it would have done; now the Shielding tab turns that into the answer you are really after — how many of your recent orders these thresholds would have refused, how many of those turned out to be fraud, and how many were real customers you would have lost. No other fraud plugin shows you the second number, and it is the one that makes a threshold a decision rather than a guess.
+* New: the Scoring tab reports what your own orders say about your weights — which checks keep firing on orders that turned out fine, and which pairs are firing on the same orders and so charging one fact twice.
+* New: import chargebacks from a CSV. MightyShield learns from disputes automatically on Stripe and could never see them on any other processor, so the strongest signal there is never reached the scoring. Export your dispute report, upload it, and check which column it matched before anything is recorded.
+* New: velocity now also counts one email identity across variations of it — dots, plus-tags and alias domains all point at one inbox, so rotating addresses no longer resets the counter.
+* New: a list of parcel-forwarding addresses you want flagged. It ships empty on purpose: a bundled list of "known" forwarders is a list of real warehouses, and one wrong entry refuses every order a legitimate business places from it.
 * New: billing and delivery addresses are compared. The most common fraud check there is, and it was missing. Weighted low on purpose — gifts, work addresses and parcel lockers all look like this, and the Scoring tab will tell you how often it fires on your own orders.
 * New: country lists. Bar the countries you do not sell to, and mark others as worth a closer look. Both start empty; MightyShield ships no opinion about anywhere.
 * New: phone checks. A US area code from a different state, and numbers from virtual-line services that cannot be used to reach anyone.

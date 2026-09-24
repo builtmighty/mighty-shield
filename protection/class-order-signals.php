@@ -63,6 +63,7 @@ class order_signals {
         'identity_blocklisted'       => 'signal_identity_blocklisted',
         'country_blocked'            => 'signal_country_blocked',
         'country_high_risk'          => 'signal_country_high_risk',
+        'address_reshipper'          => 'signal_reshipper',
         'address_bill_ship_mismatch' => 'signal_bill_ship_mismatch',
         'phone_area_mismatch'        => 'signal_phone_area',
         'phone_voip'                 => 'signal_phone_voip',
@@ -566,6 +567,63 @@ class order_signals {
      * @param   array   $f
      * @return  string|null
      */
+    /**
+     * Delivering to an address the merchant has named as a forwarder.
+     *
+     * Matched two ways, because a merchant will have one or the other to
+     * hand: a street line, compared through the same normalizer
+     * address_velocity uses, or a bare postcode. A postcode entry is the
+     * blunter of the two and catches a whole warehouse; a street line is
+     * exact.
+     *
+     * Ships empty, and should. A bundled list of "known" forwarders is a list
+     * of real warehouses, and one wrong entry refuses every order a
+     * legitimate business ever places from it. The merchant knows which
+     * addresses are costing them.
+     *
+     * @since   2.3.0
+     *
+     * @param   array   $f
+     * @return  string|null
+     */
+    private static function signal_reshipper( $f ) {
+
+        $raw = trim( (string) settings::get( 'mshield_reshipper_addresses' ) );
+
+        if( $raw === '' ) return null;
+
+        $street   = ai_detection::normalize_address( (string) $f['address_1'] );
+        $postcode = strtoupper( preg_replace( '/[^A-Z0-9]/i', '', (string) $f['postcode'] ) );
+
+        if( $street === '' && $postcode === '' ) return null;
+
+        foreach( preg_split( '/[\r\n]+/', $raw ) as $line ) {
+
+            $line = trim( $line );
+            if( $line === '' ) continue;
+
+            // A postcode is short and has no spaces once normalised; anything
+            // longer is treated as a street line. Deliberately not a setting:
+            // asking a merchant to declare which kind each line is, per line,
+            // is a worse experience than getting it right from the shape.
+            $as_postcode = strtoupper( preg_replace( '/[^A-Z0-9]/i', '', $line ) );
+
+            if( $postcode !== '' && strlen( $as_postcode ) <= 8 && $as_postcode === $postcode ) {
+                return sprintf( 'Delivery postcode %s is on your forwarding-address list', strtoupper( trim( $line ) ) );
+            }
+
+            $as_street = ai_detection::normalize_address( $line );
+
+            if( $street !== '' && $as_street !== '' && $as_street === $street ) {
+                return 'The delivery address is on your forwarding-address list';
+            }
+
+        }
+
+        return null;
+
+    }
+
     private static function signal_bill_ship_mismatch( $f ) {
 
         // Nothing was delivered anywhere else, so there is nothing to compare.

@@ -1002,6 +1002,88 @@ class admin_page {
 
         }
 
+        // Chargeback import: look at the file, then apply it. Two steps
+        // because writing chargebacks into the identity graph is not
+        // something to do on a guess about which column holds the reference.
+        if( isset( $_POST['mshield_disputes_preview'] ) && check_admin_referer( 'mshield_disputes_action' ) ) {
+
+            $upload = self::uploaded_csv( 'mshield_disputes_file' );
+
+            if( is_wp_error( $upload ) ) {
+                set_transient( 'mshield_admin_notice', [ 'disputes', $upload->get_error_message(), 'error' ], 30 );
+            } else {
+
+                $preview = \MightyShield\Includes\dispute_import::preview( $upload );
+
+                if( is_wp_error( $preview ) ) {
+                    set_transient( 'mshield_admin_notice', [ 'disputes', $preview->get_error_message(), 'error' ], 30 );
+                } else {
+                    // The parsed result, plus where the file is, for the
+                    // confirm step. Short-lived: a merchant who wanders off
+                    // should have to upload again rather than apply a file
+                    // they have forgotten the contents of.
+                    $preview['path'] = $upload;
+                    set_transient( 'mshield_disputes_preview', $preview, 15 * MINUTE_IN_SECONDS );
+                }
+
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
+        if( isset( $_POST['mshield_disputes_apply'] ) && check_admin_referer( 'mshield_disputes_action' ) ) {
+
+            $preview = get_transient( 'mshield_disputes_preview' );
+
+            if( ! is_array( $preview ) || empty( $preview['path'] ) ) {
+
+                set_transient( 'mshield_admin_notice', [ 'disputes', __( 'That upload has expired. Please choose the file again.', 'mighty-shield' ), 'warning' ], 30 );
+
+            } else {
+
+                $result = \MightyShield\Includes\dispute_import::apply( $preview['path'], (int) $preview['column'] );
+
+                if( is_wp_error( $result ) ) {
+                    set_transient( 'mshield_admin_notice', [ 'disputes', $result->get_error_message(), 'error' ], 30 );
+                } else {
+                    set_transient( 'mshield_admin_notice', [ 'disputes', sprintf(
+                        /* translators: 1: recorded, 2: already known, 3: not matched. */
+                        __( 'Recorded %1$s chargebacks. %2$s were already known, and %3$s rows matched no order.', 'mighty-shield' ),
+                        number_format_i18n( $result['recorded'] ),
+                        number_format_i18n( $result['already'] ),
+                        number_format_i18n( $result['unmatched'] )
+                    ), 'success' ], 30 );
+                }
+
+                // The file has done its job and holds customer data.
+                wp_delete_file( $preview['path'] );
+
+            }
+
+            delete_transient( 'mshield_disputes_preview' );
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
+        if( isset( $_POST['mshield_disputes_cancel'] ) && check_admin_referer( 'mshield_disputes_action' ) ) {
+
+            $preview = get_transient( 'mshield_disputes_preview' );
+
+            if( is_array( $preview ) && ! empty( $preview['path'] ) ) {
+                wp_delete_file( $preview['path'] );
+            }
+
+            delete_transient( 'mshield_disputes_preview' );
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
         if( isset( $_POST['mshield_backfill_cancel'] ) && check_admin_referer( 'mshield_backfill_action' ) ) {
 
             \MightyShield\Includes\backfill::cancel();
@@ -1011,6 +1093,68 @@ class admin_page {
             exit;
 
         }
+
+    }
+
+    /**
+     * Take a CSV upload and return a path to it.
+     *
+     * Deliberately strict, and not via wp_handle_upload(): that moves the file
+     * into the uploads directory, where it would sit under a guessable URL
+     * containing other people's card disputes until somebody remembered to
+     * delete it. This keeps it in the system temp directory, which is not
+     * web-served, and the caller deletes it as soon as it has been read.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $field  The file input's name.
+     * @return  string|\WP_Error  Path to the moved file.
+     */
+    private static function uploaded_csv( $field ) {
+
+        // $_FILES is upload metadata, not a value to sanitize wholesale, and
+        // every field read out of it below is validated on its own: the error
+        // code is cast to int, tmp_name goes through is_uploaded_file(), the
+        // size is compared numerically, and the client-supplied name goes
+        // through sanitize_file_name() before wp_check_filetype_and_ext()
+        // checks the real contents against it.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- verified by the caller; each field validated individually below.
+        $file = isset( $_FILES[ $field ] ) ? $_FILES[ $field ] : null;
+
+        if ( ! is_array( $file ) || ! isset( $file['tmp_name'], $file['error'] ) ) {
+            return new \WP_Error( 'mshield_upload_missing', __( 'No file was uploaded.', 'mighty-shield' ) );
+        }
+
+        if ( (int) $file['error'] !== UPLOAD_ERR_OK ) {
+            return new \WP_Error( 'mshield_upload_failed', __( 'That file did not upload completely. It may be too large for this server.', 'mighty-shield' ) );
+        }
+
+        $tmp = (string) $file['tmp_name'];
+
+        // The one check that matters: PHP guarantees this is a file it
+        // received in this request, not a path somebody posted.
+        if ( ! is_uploaded_file( $tmp ) ) {
+            return new \WP_Error( 'mshield_upload_invalid', __( 'That upload could not be verified.', 'mighty-shield' ) );
+        }
+
+        if ( filesize( $tmp ) > 8 * MB_IN_BYTES ) {
+            return new \WP_Error( 'mshield_upload_large', __( 'That file is larger than 8MB. A dispute report should be far smaller.', 'mighty-shield' ) );
+        }
+
+        $name  = isset( $file['name'] ) ? sanitize_file_name( wp_unslash( $file['name'] ) ) : 'disputes.csv';
+        $check = wp_check_filetype_and_ext( $tmp, $name, [ 'csv' => 'text/csv', 'txt' => 'text/plain' ] );
+
+        if ( empty( $check['ext'] ) || ! in_array( $check['ext'], [ 'csv', 'txt' ], true ) ) {
+            return new \WP_Error( 'mshield_upload_type', __( 'That is not a CSV file.', 'mighty-shield' ) );
+        }
+
+        $dest = trailingslashit( get_temp_dir() ) . uniqid( 'mshield-disputes-', true ) . '.csv';
+
+        if ( ! @move_uploaded_file( $tmp, $dest ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+            return new \WP_Error( 'mshield_upload_move', __( 'That file could not be saved for reading.', 'mighty-shield' ) );
+        }
+
+        return $dest;
 
     }
 
