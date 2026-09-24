@@ -269,9 +269,16 @@ class store_api {
 
         // Rate limit checkout attempts per IP. The count is what matters here;
         // the signal is worth 80 and the engine does the rest.
-        $limit  = (int) settings::get( 'mshield_rate_checkout_limit' );
-        $window = (int) settings::get( 'mshield_rate_checkout_window' );
-        $count  = db::increment_rate_limit( md5( $ip . '|checkout' ), 'checkout', $window );
+        //
+        // Counted on POST only. Once a draft order exists -- after a declined
+        // card, say -- the block checkout runs this hook again on every PUT
+        // that updates the draft, which is every field the shopper edits. Each
+        // of those counted as a checkout attempt, so a customer correcting a
+        // typo after one decline was walking into the rate limit.
+        $limit   = (int) settings::get( 'mshield_rate_checkout_limit' );
+        $window  = (int) settings::get( 'mshield_rate_checkout_window' );
+        $placing = ! ( $request instanceof \WP_REST_Request ) || $request->get_method() === 'POST';
+        $count   = $placing ? db::increment_rate_limit( md5( $ip . '|checkout' ), 'checkout', $window ) : 0;
         if( $count > $limit ) {
             risk_context::add( 'rate_limited', "Checkout rate limit exceeded: {$count}/{$limit}" );
             db::log_event( $ip, 'store_api', 'rate_limited', "Checkout rate limit exceeded: {$count}/{$limit}" );

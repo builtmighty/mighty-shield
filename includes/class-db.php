@@ -318,28 +318,35 @@ class db {
             INDEX idx_action (action),
             INDEX idx_order (order_id),
             INDEX idx_created (created_at),
-            -- Every aggregate this table feeds -- get_stats, get_daily_stats,
-            -- get_hourly_stats, get_top_blocked_ips -- filters on action AND a
-            -- created_at range. MySQL can only pick one single-column index for
-            -- that, so it was reading far more rows than it returned on the one
-            -- table that grows without bound.
             INDEX idx_action_created (action, created_at)
         ) {$charset_collate};";
+        // idx_action_created: every aggregate this table feeds -- get_stats,
+        // get_daily_stats, get_hourly_stats, get_top_blocked_ips -- filters on
+        // action AND a created_at range. MySQL can only pick one single-column
+        // index for that, so it was reading far more rows than it returned on
+        // the one table that grows without bound.
+        //
+        // Comments live out here, not inside the SQL. dbDelta() splits the
+        // CREATE on newlines and reads the first word of each line as a column
+        // name, so a "--" comment line inside the statement became a column
+        // called "--" that did not exist, and every activation issued
+        // "ALTER TABLE ... ADD COLUMN -- ..." -- a syntax error, silent unless
+        // WP_DEBUG was on, and then a database error logged on every install.
 
         // Rate limits table.
         $rate_table = $wpdb->prefix . 'mshield_rate_limits';
+        // identifier is 191, not 255. It and action_type together form a UNIQUE
+        // index, and at 255 that index is 1,220 bytes under utf8mb4 -- past
+        // InnoDB's 767-byte limit for COMPACT and REDUNDANT row formats. Where
+        // that limit applies, dbDelta fails with error 1071 and this table is
+        // silently never created, taking rate limiting, device velocity,
+        // distinct-email velocity and the account guard with it. Real
+        // identifiers are md5-derived and at most 65 characters, so nothing is
+        // lost. WordPress core caps its own indexed varchars at 191 for exactly
+        // this reason. (Kept outside the SQL: see the note under $sql_log.)
         $sql_rate = "CREATE TABLE {$rate_table} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             PRIMARY KEY  (id),
-            -- 191, not 255. This column and action_type together form a UNIQUE
-            -- index, and at 255 that index is 1,220 bytes under utf8mb4 -- past
-            -- InnoDB's 767-byte limit for COMPACT and REDUNDANT row formats.
-            -- Where that limit applies, dbDelta fails with error 1071 and this
-            -- table is silently never created, taking rate limiting, device
-            -- velocity, distinct-email velocity and the account guard with it.
-            -- Real identifiers are md5-derived and at most 65 characters, so
-            -- nothing is lost. WordPress core caps its own indexed varchars at
-            -- 191 for exactly this reason.
             identifier VARCHAR(191) NOT NULL DEFAULT '',
             action_type VARCHAR(50) NOT NULL DEFAULT '',
             count int(10) unsigned NOT NULL DEFAULT 0,
@@ -1630,16 +1637,34 @@ class db {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $has_hpos = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $hpos ) ) === $hpos;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
-        $wpdb->query(
-            "DELETE l FROM {$wpdb->prefix}mshield_entity_links l
-             LEFT JOIN {$wpdb->posts} p ON p.ID = l.order_id"
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
-            . ( $has_hpos ? " LEFT JOIN {$hpos} o ON o.id = l.order_id" : '' )
-            . " WHERE p.ID IS NULL"
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- no user input in this statement
-            . ( $has_hpos ? ' AND o.id IS NULL' : '' )
-        );
+        // Batched: select a slice of orphaned link ids, delete by id, repeat.
+        // This was one multi-table DELETE with two LEFT JOINs over the whole
+        // links table -- seven rows per order, forever -- which on a store of
+        // any age held a lock on it for as long as that took, once a day.
+        $links = $wpdb->prefix . 'mshield_entity_links';
+
+        for( $i = 0; $i < 200; $i++ ) {
+
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- plugin-owned tables; the only interpolations are $wpdb table names
+            $ids = $wpdb->get_col(
+                "SELECT l.id FROM {$links} l
+                 LEFT JOIN {$wpdb->posts} p ON p.ID = l.order_id"
+                . ( $has_hpos ? " LEFT JOIN {$hpos} o ON o.id = l.order_id" : '' )
+                . " WHERE p.ID IS NULL"
+                . ( $has_hpos ? ' AND o.id IS NULL' : '' )
+                . ' LIMIT 2000'
+            );
+
+            if( empty( $ids ) ) break;
+
+            $ids = array_map( 'intval', $ids );
+
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- plugin-owned table; every id is an integer cast above
+            $wpdb->query( "DELETE FROM {$links} WHERE id IN ( " . implode( ',', $ids ) . ' )' );
+
+            if( count( $ids ) < 2000 ) break;
+
+        }
 
         $removed = 0;
 

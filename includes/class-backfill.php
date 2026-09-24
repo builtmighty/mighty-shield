@@ -224,6 +224,19 @@ class backfill {
                 continue;
             }
 
+            // Never over a rating the checkout produced. That row is what the
+            // order actually scored with every signal live, and what forecast
+            // and the tuning report are built on; a re-rate replays a fraction
+            // of the signals and stamps itself 'manual', which drops the row
+            // out of both. The back catalogue is the orders placed before
+            // MightyShield was there to see them, and only those.
+            $existing = db::get_risk( $order->get_id() );
+
+            if( $existing && in_array( (string) ( $existing['rated_by'] ?? '' ), [ 'checkout', '', 'card' ], true ) ) {
+                $state['skipped'] = ( $state['skipped'] ?? 0 ) + 1;
+                continue;
+            }
+
             // Never with AI. This is a bulk pass over a back catalogue and
             // the provider bills per call -- a merchant who clicks "rate my
             // past orders" has not agreed to buy an opinion on every one of
@@ -234,6 +247,24 @@ class backfill {
             if( is_wp_error( $result ) ) {
                 $state['failed']++;
                 continue;
+            }
+
+            // What the order became. rescore links the identities and counts
+            // the order against them, but a count is not a verdict: without
+            // this every pre-install customer had orders and no approvals, so
+            // none of them could earn trust and none of the refunds counted.
+            // Only outcomes the store reached on its own; a cancellation is
+            // ambiguous and stays out.
+            if( ! class_exists( '\MightyShield\Protection\outcomes' ) ) {
+                require_once MSHIELD_PATH . 'protection/class-outcomes.php';
+            }
+
+            $status = $order->get_status();
+
+            if( $status === 'completed' ) {
+                \MightyShield\Protection\outcomes::record( $order, 'approved' );
+            } elseif( $status === 'refunded' ) {
+                \MightyShield\Protection\outcomes::record( $order, 'refunded' );
             }
 
             $state['done']++;

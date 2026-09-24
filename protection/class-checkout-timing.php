@@ -163,7 +163,33 @@ class checkout_timing {
     public static function generate_token() {
 
         $ts = time();
-        return $ts . '|' . hash_hmac( 'sha256', (string) $ts, wp_salt( 'auth' ) );
+        return $ts . '|' . hash_hmac( 'sha256', $ts . '|' . self::session_key(), wp_salt( 'auth' ) );
+
+    }
+
+    /**
+     * Something about this visitor's session that a different visitor cannot
+     * present.
+     *
+     * A token that was only a signed timestamp was valid for anyone for two
+     * hours: one page load gave a script a token it could replay on every
+     * submission after waiting out the minimum once. Binding it to the
+     * WooCommerce session means a replay needs the session cookie it was
+     * issued to, and a fresh session needs a fresh page load -- which puts the
+     * wait back on every attempt.
+     *
+     * Empty when there is no session to bind to, so a token issued in that
+     * state still verifies rather than costing a real shopper trust.
+     *
+     * @since   2.3.0
+     *
+     * @return  string
+     */
+    private static function session_key() {
+
+        if( ! function_exists( 'WC' ) || ! WC()->session || ! method_exists( WC()->session, 'get_customer_id' ) ) return '';
+
+        return (string) WC()->session->get_customer_id();
 
     }
 
@@ -183,7 +209,9 @@ class checkout_timing {
 
         if( ! ctype_digit( $ts ) ) return null;
 
-        $expected = hash_hmac( 'sha256', $ts, wp_salt( 'auth' ) );
+        // Bound to this session: see session_key(). A token from another
+        // session -- or from no session -- does not verify.
+        $expected = hash_hmac( 'sha256', $ts . '|' . self::session_key(), wp_salt( 'auth' ) );
         if( ! hash_equals( $expected, $sig ) ) return null;
 
         $elapsed = time() - (int) $ts;

@@ -301,8 +301,24 @@ class device_fingerprint {
 
         $reasons = [];
 
-        // A collector that failed to load tells us nothing about the shopper.
-        if( ! empty( $device['degraded'] ) ) return $reasons;
+        // A collector that failed to load tells us nothing about the shopper --
+        // and that is worth exactly what an absent fingerprint is worth. It used
+        // to be worth more: a payload of {"degraded":true}, or one with no
+        // interaction counters at all, skipped every check below and cost
+        // nothing, so a script that sent that stub did strictly better than one
+        // that sent nothing. Now the two are the same.
+        if( ! empty( $device['degraded'] ) || ! isset( $device['moves'], $device['keys'], $device['scrolls'] ) ) {
+
+            $reason = ! empty( $device['degraded'] )
+                ? 'Device collector reported itself degraded'
+                : 'Device data carried no interaction record';
+
+            risk_context::add( 'device_missing', $reason );
+            $reasons[] = $reason;
+
+            return $reasons;
+
+        }
 
         // --- Environment consistency -------------------------------------
         //
@@ -368,11 +384,10 @@ class device_fingerprint {
 
         // No interaction of any kind. Skipped on touch devices, where a short
         // tap-and-submit genuinely produces very little.
-        if( isset( $device['moves'], $device['keys'], $device['scrolls'] )
-            && (int) $device['moves'] === 0
+        if( (int) $device['moves'] === 0
             && (int) $device['keys'] === 0
             && (int) $device['scrolls'] === 0
-            && (int) $device['pastes'] === 0
+            && (int) ( $device['pastes'] ?? 0 ) === 0
             && empty( $device['has_touch'] ) ) {
 
             $reason = 'No mouse, keyboard, scroll or touch activity during checkout';

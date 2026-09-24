@@ -77,6 +77,10 @@ The second is holding. An order can be authorised without being captured, or tak
 
 And before any of that, Observe mode and the forecast on the Shielding tab tell you, in your own orders, how many real customers a given threshold would have turned away. You do not have to guess.
 
+= I allowlisted a customer's email address, but their order was still held. Why? =
+
+Because at checkout, an email address is something the shopper typed, not something they proved. If typing an allowlisted address were enough, anyone who learned one could opt out of every check. So an email entry exempts a customer only when they are signed in to the account that owns it. The same goes for the phone, name, postcode, city and country entries: they apply when you review a stored order, never at checkout. To exempt a guest, allowlist their IP address; to exempt a regular, allowlist their account or their role.
+
 = What IPs should I whitelist? =
 
 The server IP is auto-whitelisted on activation. You may also want to whitelist your CDN IPs, payment gateway callback IPs, or office IPs if they access the Store API directly.
@@ -191,7 +195,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 * New: email me when an order rates badly. Sent whatever MightyShield did about it, including nothing in Observe mode, which is when it is most useful. At most one an hour, and it says how many others there were.
 * New: rate your past orders. A new install knows none of your customers, so nobody earns trust and no previous chargeback counts for anything until months of orders have gone by. This fills that in from the orders you already have, in the background, without touching a single one of them. It runs automatically when you finish setup, and is on the Logs tab afterwards.
 * Fixed: the three network checks — data centre, VPN/proxy, and location mismatch — had never fired on any install. They were fed by ip-api.com over an encrypted connection, which that service refuses unless you pay, so every lookup failed. This also means every checkout was making a request that could take up to five seconds and was always going to fail. Both are gone.
-* Changed: network intelligence now comes from a MaxMind database on your own server, using the free licence key WooCommerce already asks for under Settings > Integrations. Nothing about your customers is sent anywhere, and there is no longer any network request on the checkout path. Without a key, the two remaining network checks stay quiet rather than guessing.
+* Changed: network intelligence now comes from a MaxMind database on your own server, using the free licence key WooCommerce already asks for under Settings > Integrations. Nothing about your customers is sent anywhere, and there is no longer any network request on the checkout path — unless you switch on the optional email-domain DNS check on the Scoring tab, which asks your own server's resolver whether the domain can receive mail. Without a key, the two remaining network checks stay quiet rather than guessing.
 * Removed: the VPN/proxy check. There is no free source for it — the data is a paid MaxMind product — and a check that cannot fire should not sit on the Scoring tab with a weight you can tune. It is better to be one check shorter and honest about it.
 * Changed: the location-mismatch check now compares countries only. It used to compare region as well, which was the noisier half: a shopper on a phone routes through whichever city their carrier terminates in, regularly a different state from the one they live in.
 * Changed: fonts are now served from the plugin instead of Google Fonts, so opening a MightyShield screen no longer tells Google anything about you.

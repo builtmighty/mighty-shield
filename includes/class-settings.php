@@ -96,7 +96,11 @@ class settings {
         'mshield_entity_retention_days'     => 365,
 
         // Email intelligence.
-        'mshield_email_dns_check'           => 'yes',
+        // Off by default. It is the one check that leaves the server during a
+        // checkout -- up to three DNS lookups through the host's resolver, with
+        // no timeout PHP can set -- and the readme promises none. A merchant
+        // who wants it can switch it on knowing that.
+        'mshield_email_dns_check'           => 'no',
         'mshield_email_list_enabled'        => 'yes',
 
         // Account, login and coupon behaviour, counted per hour per IP.
@@ -141,7 +145,9 @@ class settings {
         'mshield_ai_openai_org'             => '',
         'mshield_ai_openai_model'           => 'gpt-4o-mini',
         'mshield_ai_gemini_key'             => '',
-        'mshield_ai_gemini_model'           => 'gemini-1.5-flash',
+        // Not 1.5: Google retired the whole 1.5 series in September 2025, so a
+        // merchant who took the default got a 404 on every review.
+        'mshield_ai_gemini_model'           => 'gemini-2.5-flash',
         // inline: review during checkout (needed for authorize-only holds).
         // async: review immediately after, off the shopper's request.
         // Hard ceiling on provider calls per day. 0 = no cap.

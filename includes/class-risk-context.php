@@ -63,7 +63,19 @@ class risk_context {
 
         self::$ai_reasons = array_values( array_filter( array_map( 'strval', (array) $reasons ) ) );
 
+        // What the model was shown. Anything that trips after this -- the
+        // identity history, the network signals -- is evidence it never saw,
+        // and trust() charges it on top of whatever the model said.
+        self::$ai_saw = array_keys( self::$signals );
+
     }
+
+    /**
+     * Signal keys present when the AI answered.
+     *
+     * @since   2.3.0
+     */
+    private static $ai_saw = [];
 
     /**
      * Reasons the AI gave, for the order note.
@@ -202,9 +214,33 @@ class risk_context {
         // verdict cannot talk an unvouched order into Trusted.
         if( self::$ai_trust !== null ) {
 
-            $trust = settings::get( 'mshield_ai_direction' ) === 'both'
-                ? self::$ai_trust
-                : min( $trust, self::$ai_trust );
+            if( settings::get( 'mshield_ai_direction' ) === 'both' ) {
+
+                // The model's reading stands in for the arithmetic it was
+                // shown -- not for evidence it was not. Signals that tripped
+                // after it answered are charged on top, so a device linked to a
+                // chargeback is not rescued by a model that never saw the
+                // chargeback.
+                $late = 0.0;
+                foreach( self::$signals as $key => $signal ) {
+                    if( in_array( $key, self::$ai_saw, true ) ) continue;
+                    $late += (float) $signal['weight'] * (float) $signal['confidence'];
+                }
+
+                $ai = self::$ai_trust - $late;
+
+                // And it may raise the order by one level, no further. A rescue
+                // from Rejected lands in High -- a hold and a human -- not in
+                // Low. The prompt is built from what the shopper typed, and a
+                // model that can be talked all the way up by a sentence in the
+                // City field is a model that decides nothing.
+                $trust = min( $ai, risk_levels::one_level_up_ceiling( $trust ) );
+
+            } else {
+
+                $trust = min( $trust, self::$ai_trust );
+
+            }
 
         }
 
@@ -368,9 +404,10 @@ class risk_context {
      */
     public static function reset() {
 
-        self::$signals   = [];
-        self::$ai_trust  = null;
+        self::$signals    = [];
+        self::$ai_trust   = null;
         self::$ai_reasons = [];
+        self::$ai_saw     = [];
 
     }
 

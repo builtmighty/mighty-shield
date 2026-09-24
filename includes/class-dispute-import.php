@@ -216,8 +216,13 @@ class dispute_import {
             'limit'      => 1,
             'return'     => 'ids',
             'type'       => 'shop_order',
-            'meta_key'   => '_transaction_id',   // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-            'meta_value' => $txn,                // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+            // The order's own transaction_id field, not a meta lookup. Under
+            // HPOS the value is a column on wc_orders and is not in the meta
+            // table at all, so a meta_key query matched nothing on every HPOS
+            // store -- which is every store WooCommerce has created since 8.2.
+            // wc_get_orders() maps this argument to the right place on both
+            // storage backends.
+            'transaction_id' => $txn,
         ] );
 
         if( empty( $found ) ) return null;

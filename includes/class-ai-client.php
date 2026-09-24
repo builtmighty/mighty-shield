@@ -430,7 +430,9 @@ class ai_client {
 
         $response = self::post( 'https://api.openai.com/v1/chat/completions', $headers, [
             'model'           => settings::get( 'mshield_ai_openai_model' ),
-            'max_tokens'      => self::MAX_TOKENS,
+            // max_completion_tokens, not max_tokens: the newer models reject
+            // the old name outright, and every current one accepts the new.
+            'max_completion_tokens' => self::MAX_TOKENS,
             'response_format' => [
                 'type'        => 'json_schema',
                 'json_schema' => [

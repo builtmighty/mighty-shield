@@ -60,6 +60,18 @@ class email_intel {
     const DNS_CACHE = WEEK_IN_SECONDS;
 
     /**
+     * How long a negative DNS answer is remembered.
+     *
+     * Short on purpose. checkdnsrr() cannot tell a domain that does not exist
+     * from a resolver that did not answer, and a week-long "no" from one
+     * resolver hiccup marked gmail.com undeliverable for every customer until
+     * it expired.
+     *
+     * @since   2.3.0
+     */
+    const DNS_NEGATIVE_CACHE = HOUR_IN_SECONDS;
+
+    /**
      * Construct.
      *
      * @since   1.9.0
@@ -193,7 +205,8 @@ class email_intel {
                     || checkdnsrr( $domain, 'A' )
                     || checkdnsrr( $domain, 'AAAA' );
 
-        set_transient( $key, $deliverable ? 'yes' : 'no', self::DNS_CACHE );
+        // A "yes" is durable; a "no" is not. See DNS_NEGATIVE_CACHE.
+        set_transient( $key, $deliverable ? 'yes' : 'no', $deliverable ? self::DNS_CACHE : self::DNS_NEGATIVE_CACHE );
 
         return ! $deliverable;
 

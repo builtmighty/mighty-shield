@@ -31,7 +31,7 @@ $wp_role_names = wp_roles()->get_names();
 
 <div class="mshield-section">
     <h2><?php esc_html_e( 'Add Allowlist Entry', 'mighty-shield' ); ?></h2>
-    <p class="description"><?php esc_html_e( 'Allowlisted IPs, users, roles, and email addresses bypass ALL MightyShield checks, with no blocks and no flags. Use for trusted staff, offices, and known-good customers.', 'mighty-shield' ); ?></p>
+    <p class="description"><?php esc_html_e( 'An allowlisted shopper is still rated and recorded, so your reports stay complete — but nothing is done about the rating: no hold, no challenge, no refusal. Use for trusted staff, offices, and known-good customers.', 'mighty-shield' ); ?></p>
     <form method="post">
         <?php wp_nonce_field( 'mshield_whitelist_action' ); ?>
         <table class="form-table">
@@ -49,7 +49,7 @@ $wp_role_names = wp_roles()->get_names();
                         <option value="city"><?php esc_html_e( 'City', 'mighty-shield' ); ?></option>
                         <option value="country"><?php esc_html_e( 'Country (two-letter code)', 'mighty-shield' ); ?></option>
                     </select>
-                    <p class="description"><?php esc_html_e( 'The last five are matched against the order rather than the visitor, so they apply to guests as well as to signed-in customers.', 'mighty-shield' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'The last five are matched against a stored order when you review or re-rate it. They do not exempt anyone at checkout, because a shopper types all five into the form — an allowlisted postcode would let anyone who typed it skip every hold. To exempt a customer at checkout, allowlist their account or their address.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
             <tr class="mshield-wl-value-row">

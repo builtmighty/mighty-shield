@@ -179,9 +179,9 @@ class actions {
             ],
 
             self::FLAG => [
-                'label'        => __( '3-D Secure verification', 'mighty-shield' ),
-                'desc'         => __( 'The customer confirms the payment with their bank. Genuine cardholders pass; someone using a stolen card cannot, and liability for a dispute moves to the card issuer.', 'mighty-shield' ),
-                'money'        => __( 'Charged as normal, once verified', 'mighty-shield' ),
+                'label'        => __( 'Flag for review', 'mighty-shield' ),
+                'desc'         => __( 'The order goes through and is marked for you to look at later. The customer notices nothing.', 'mighty-shield' ),
+                'money'        => __( 'Charged as normal', 'mighty-shield' ),
             ],
 
             self::VERIFY_3DS => [
@@ -384,7 +384,15 @@ class actions {
      * @param   string  $action
      * @return  string
      */
-    public static function resolve_post_payment( $action ) {
+    public static function resolve_post_payment( $action, $order = null ) {
+
+        // An order already held with the funds only reserved stays that way.
+        // Degrading it to "take payment, then hold" would relabel money that
+        // was never taken as taken, and a reviewer's Approve would then not
+        // capture it -- the authorization expires, and nobody is paid.
+        if( is_a( $order, 'WC_Order' ) && $order->get_meta( '_mshield_hold' ) === 'authorized' ) {
+            return self::HOLD_AUTHORIZED;
+        }
 
         switch( $action ) {
 

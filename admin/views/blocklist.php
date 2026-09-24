@@ -103,7 +103,7 @@ $current_ip = ip_utils::get_client_ip();
                             'mshield_block_remove_ip'
                         );
                         ?>
-                        <a href="<?php echo esc_url( $remove_url ); ?>" class="button button-small" onclick="return confirm('<?php esc_attr_e( 'Remove this from the blocklist?', 'mighty-shield' ); ?>');"><?php esc_html_e( 'Remove', 'mighty-shield' ); ?></a>
+                        <a href="<?php echo esc_url( $remove_url ); ?>" class="button button-small" onclick="return confirm('<?php echo esc_js( __( 'Remove this from the blocklist?', 'mighty-shield' ) ); ?>');"><?php esc_html_e( 'Remove', 'mighty-shield' ); ?></a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

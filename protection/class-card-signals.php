@@ -225,7 +225,7 @@ class card_signals {
         // What the level says to do, then what is still possible now the charge
         // has happened. Refusing, authorizing and 3-D Secure are all off the
         // table by definition at this point.
-        $action = actions::resolve_post_payment( risk_levels::action( $verdict['risk_level'] ) );
+        $action = actions::resolve_post_payment( risk_levels::action( $verdict['risk_level'] ), $order );
 
         // dispatch() will decline to act on an allowlisted shopper, so say so
         // in the row rather than recording an action that never happened. The

@@ -71,6 +71,16 @@ class risk_recorder {
         add_action( 'woocommerce_after_checkout_validation', [ $this, 'refuse_classic' ], 99, 2 );
         add_action( 'woocommerce_store_api_checkout_update_order_from_request', [ $this, 'refuse_store_api' ], 99, 2 );
 
+        // Identity history BEFORE the AI reviewer at 90. The reviewer decides
+        // whether an order is worth a paid opinion from the level so far, and
+        // shows the model the signals so far -- and until this ran at 99 the
+        // history was not among them. A device already linked to a chargeback
+        // was sent for review as if it were a stranger, and the model never
+        // saw the chargeback. risk_context::add() is first-write-wins, so the
+        // later assessments at 99 and at record time cost nothing.
+        add_action( 'woocommerce_after_checkout_validation', [ $this, 'assess_identities_classic' ], 85, 2 );
+        add_action( 'woocommerce_store_api_checkout_update_order_from_request', [ $this, 'assess_identities_store_api' ], 85, 2 );
+
         // Wipe the signal context before anything writes to it, on whichever
         // path this order arrived by.
         //
@@ -215,6 +225,39 @@ class risk_recorder {
             response::refusal_message(),
             400
         );
+
+    }
+
+    /**
+     * Put the identity history into the context before the AI reviewer reads
+     * it. Classic path: the identities come from the posted fields.
+     *
+     * @since   2.3.0
+     *
+     * @param   array       $data
+     * @param   \WP_Error   $errors
+     */
+    public function assess_identities_classic( $data, $errors ) {
+
+        $identities = entities::for_checkout( is_array( $data ) ? $data : [] );
+        if( ! empty( $identities ) ) entities::assess( $identities );
+
+    }
+
+    /**
+     * The same, from the draft order on the Store API path.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order           $order
+     * @param   \WP_REST_Request    $request
+     */
+    public function assess_identities_store_api( $order, $request ) {
+
+        if( ! is_a( $order, 'WC_Order' ) ) return;
+
+        $identities = entities::for_order( $order );
+        if( ! empty( $identities ) ) entities::assess( $identities );
 
     }
 
@@ -366,6 +409,10 @@ class risk_recorder {
             'risk_level_source' => $verdict['risk_level_source'],
             'action_taken'      => $exempt ? 'exempt' : ( $enforcing ? $resolved : 'observed' ),
             'signals'           => risk_context::to_array()['signals'],
+            // Say so. This is the one rating produced with every signal live,
+            // and forecast and the tuning report select on it; rows written
+            // before this was stamped carry '' and are read the same way.
+            'rated_by'          => 'checkout',
             // The AI verdict goes in the row as well as on the order. It used
             // to go only on the order, which left mshield_risk.ai_verdict with
             // no writer anywhere -- the other two save_risk() callers only ever
@@ -380,6 +427,13 @@ class risk_recorder {
         // a join, and so the review queue can sort on it.
         $order->update_meta_data( '_mshield_risk_trust', $verdict['trust'] );
         $order->update_meta_data( '_mshield_risk_level', $verdict['risk_level'] );
+
+        // The address this order was really placed from, as ip_utils resolved
+        // it. WooCommerce's own customer IP is whatever X-Real-IP or
+        // X-Forwarded-For said, which is whatever the shopper said; everything
+        // that later asks "where did this order come from" -- the allowlist at
+        // dispatch, the decline counter, a webhook -- reads this instead.
+        $order->update_meta_data( '_mshield_ip', ip_utils::get_client_ip() );
         $order->save();
 
         // Only note the order when there is something worth reading. A clean

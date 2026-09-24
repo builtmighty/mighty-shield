@@ -164,7 +164,7 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
                         <?php esc_html_e( 'Trusted and Low are most orders, so choosing them will cost real money. Elevated and High are the ambiguous ones, where a verdict is most likely to change the outcome.', 'mighty-shield' ); ?>
                     </p>
                     <p class="description">
-                        <?php esc_html_e( 'Rejected is worth considering if you would rather not turn anyone away on arithmetic alone: the review happens before the refusal, so with the rating effect below set to raise as well as lower, a model that recognises an ordinary customer can rescue the order. Orders stopped by a single decisive signal — a hidden trap field, a failed bot challenge, a card with a chargeback — are never sent, because the model cannot overturn those and the call would be wasted.', 'mighty-shield' ); ?>
+                        <?php esc_html_e( 'Rejected is worth considering if you would rather not turn anyone away on arithmetic alone: the review happens before the refusal, so with the rating effect below set to raise as well as lower, a model that recognises an ordinary customer can lift the order out of refusal and into a hold for you to look at. Orders stopped by a single decisive signal — a hidden trap field, a failed bot challenge, a card with a chargeback — are never sent, because the model cannot overturn those and the call would be wasted.', 'mighty-shield' ); ?>
                     </p>
                     <?php if( ! \MightyShield\Includes\ai_client::is_ready() ) : ?>
                         <p class="description">
@@ -182,7 +182,7 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
                         'both'  => __( 'Lower or raise the rating', 'mighty-shield' ),
                     ], settings::get( 'mshield_ai_direction' ) ); ?>
                     <p class="description">
-                        <?php esc_html_e( 'The review returns its own rating from 1 to 100, judging the whole order. Lowering only means it can veto trust the checks granted, but never hand any back. Allowing it to raise lets a model that recognises an ordinary customer rescue an order the checks were too harsh on, at the cost of letting one confident wrong answer do the same. Either way it cannot push an order into Trusted; that still takes a clean order history.', 'mighty-shield' ); ?>
+                        <?php esc_html_e( 'The review returns its own rating from 1 to 100, judging the whole order. Lowering only means it can veto trust the checks granted, but never hand any back. Allowing it to raise lets a model that recognises an ordinary customer lift an order the checks were too harsh on by one level — from Rejected to High, from High to Elevated — never further, and never past evidence that arrived after it answered. Either way it cannot push an order into Trusted; that still takes a clean order history.', 'mighty-shield' ); ?>
                     </p>
                 </td>
             </tr>

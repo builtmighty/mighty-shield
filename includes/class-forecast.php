@@ -203,12 +203,18 @@ class forecast {
 
         global $wpdb;
 
+        // Live checkout ratings ('checkout', or '' from builds that did not yet
+        // stamp it) and the post-payment card pass ('card', which is the same
+        // order re-rated in place). Not 'manual', which is a partial re-rate,
+        // and not 'unrated': that is an outcome recorded against an order that
+        // was never rated, and it is stored with trust 0 -- so it would be read
+        // here as an order enforcing refused.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $rows = $wpdb->get_results( $wpdb->prepare(
             "SELECT trust, risk_level, risk_level_source, outcome
              FROM {$wpdb->prefix}mshield_risk
              WHERE created_at >= DATE_SUB( %s, INTERVAL %d DAY )
-               AND rated_by <> 'manual'
+               AND rated_by IN ( 'checkout', '', 'card' )
              ORDER BY created_at DESC
              LIMIT %d",
             gmdate( 'Y-m-d H:i:s' ),

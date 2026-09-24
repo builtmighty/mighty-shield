@@ -318,12 +318,18 @@ class order_signals {
         if( empty( $ids ) || ! is_array( $ids ) ) return null;
 
         $target = ai_detection::normalize_address( $street );
+        $email  = strtolower( trim( (string) ( $f['email'] ?? '' ) ) );
         $count  = 0;
 
         foreach( $ids as $id ) {
 
             $past = wc_get_order( $id );
             if( ! $past ) continue;
+
+            // "Other" buyers. A regular customer's own earlier orders to their
+            // own house are not a drop address being shared, and counting them
+            // put a household that orders monthly over the limit by itself.
+            if( $email !== '' && strtolower( trim( (string) $past->get_billing_email() ) ) === $email ) continue;
 
             if( ai_detection::normalize_address( ai_detection::shipping_or_billing( $past, 'address_1' ) ) === $target ) {
                 $count++;

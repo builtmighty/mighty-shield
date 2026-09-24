@@ -183,7 +183,7 @@ class exempt {
 
         if( ! is_a( $order, 'WC_Order' ) ) return false;
 
-        $ip = (string) $order->get_customer_ip_address();
+        $ip = self::order_ip( $order );
 
         if( $ip !== '' && ip_whitelist::is_whitelisted( $ip ) ) return true;
 
@@ -194,13 +194,40 @@ class exempt {
             if( ip_whitelist::is_role_whitelisted( $user_id ) ) return true;
         }
 
-        // Phone, name, postcode, city and country, added in 2.3.0. These are
-        // properties of the order rather than of whoever is asking, so unlike
-        // the billing email below they are safe here: nobody chose them at
-        // this moment to get past a check, they are what was ordered.
-        if( ip_whitelist::matches_order( $order ) ) return true;
-
+        // NOT matches_order(). Phone, name, postcode, city and country are
+        // typed into the checkout form by whoever is placing the order, exactly
+        // as the billing email is -- so at the enforcement boundary they are a
+        // claim, not a fact, and an allowlisted postcode would let anyone who
+        // typed it opt out of every hold. A country entry would do that for an
+        // entire nation of shoppers. Those entries are honoured in
+        // is_exempt_order(), where an administrator is looking at a stored
+        // order and the values are what was actually ordered.
         return false;
+
+    }
+
+    /**
+     * The address a stored order was really placed from.
+     *
+     * WooCommerce fills get_customer_ip_address() from X-Real-IP or the first
+     * X-Forwarded-For hop, whichever the client chose to send -- so on its own
+     * it is a header the shopper controls. Activation allowlists 127.0.0.1,
+     * and one forged header made every order allowlisted at dispatch. The
+     * recorder stores the address ip_utils resolved (the TCP peer, or a
+     * trusted proxy's word for it) on the order at rating time; that is what
+     * the allowlist is asked about. Orders rated before 2.3.0 carry no such
+     * meta, and for those the enforcement boundary does not consult the
+     * allowlist by IP at all: a wrong "yes" here switches enforcement off,
+     * a wrong "no" costs one allowlisted shopper a review.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order   $order
+     * @return  string      An IP, or '' when nothing trustworthy is known.
+     */
+    private static function order_ip( $order ) {
+
+        return (string) $order->get_meta( '_mshield_ip' );
 
     }
 
@@ -231,7 +258,10 @@ class exempt {
 
         if( ! is_a( $order, 'WC_Order' ) ) return false;
 
-        $ip = (string) $order->get_customer_ip_address();
+        // The address the recorder resolved, when there is one; WooCommerce's
+        // header-derived value only for orders that predate it. See order_ip().
+        $ip = self::order_ip( $order );
+        if( $ip === '' ) $ip = (string) $order->get_customer_ip_address();
 
         if( $ip !== '' && ip_whitelist::is_whitelisted( $ip ) ) return true;
 

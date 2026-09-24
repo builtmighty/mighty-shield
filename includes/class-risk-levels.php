@@ -286,6 +286,36 @@ class risk_levels {
     }
 
     /**
+     * The highest trust one level less severe than this rating allows.
+     *
+     * What an AI verdict that is allowed to raise the rating may raise it to:
+     * from Rejected into High, from High into Elevated, one step and no more.
+     *
+     * @since   2.3.0
+     *
+     * @param   float   $trust
+     * @return  float
+     */
+    public static function one_level_up_ceiling( $trust ) {
+
+        $order = [ self::REJECTED, self::HIGH, self::ELEVATED, self::LOW, self::TRUSTED ];
+        $level = self::from_trust( $trust );
+        $at    = array_search( $level, $order, true );
+
+        // Already at the top, or unknown: no room to rise.
+        if( $at === false || ! isset( $order[ $at + 1 ] ) ) return (float) $trust;
+
+        $next = $order[ $at + 1 ];
+
+        // Trusted has no threshold of its own; its ceiling is the baseline, and
+        // risk_context still applies LOW_CEILING after this.
+        $ceiling = $next === self::TRUSTED ? self::BASELINE : self::threshold( $next );
+
+        return $ceiling === null ? (float) $trust : max( (float) $trust, (float) $ceiling );
+
+    }
+
+    /**
      * Resolve a trust rating to a risk level.
      *
      * Lower trust means a more severe risk level, so this compares with <=, not >=.
@@ -308,6 +338,14 @@ class risk_levels {
             if( $trust <= $threshold ) return $level;
 
         }
+
+        // Nothing matched, so the trust is above every configured threshold.
+        // That is Trusted only above LOW_CEILING: an unvouched order is capped
+        // at exactly that number by risk_context::trust(), and a merchant who
+        // lowers the Low threshold beneath it would otherwise turn every clean
+        // first-time order into Trusted -- the one outcome the ceiling exists
+        // to prevent. Below the ceiling the honest answer is Low.
+        if( $trust <= self::LOW_CEILING ) return self::LOW;
 
         return self::TRUSTED;
 

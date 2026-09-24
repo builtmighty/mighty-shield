@@ -167,6 +167,14 @@ class admin_page {
         add_action( 'admin_notices', [ __CLASS__, 'render_store_api_notice' ] );
         add_action( 'admin_init', [ $this, 'register_settings' ] );
         add_action( 'admin_init', [ $this, 'handle_actions' ] );
+
+        // The menu is manage_woocommerce, but every Settings API form posts to
+        // options.php, which demands manage_options unless told otherwise. So a
+        // Shop Manager could open every tab and save none of them. Same
+        // capability on both sides.
+        foreach( [ 'mshield_logs', 'mshield_scoring', 'mshield_blocking', 'mshield_ai' ] as $group ) {
+            add_filter( 'option_page_capability_' . $group, function() { return 'manage_woocommerce'; } );
+        }
         add_action( 'save_post_page', [ __CLASS__, 'refresh_block_checkout' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_styles' ] );
         add_action( 'wp_ajax_mshield_set_theme', [ $this, 'ajax_set_theme' ] );
@@ -262,7 +270,12 @@ class admin_page {
             ] );
 
             register_setting( 'mshield_scoring', 'mshield_sig_' . $key . '_weight', [
-                'sanitize_callback' => function( $value ) {
+                'sanitize_callback' => function( $value ) use ( $signal ) {
+                    // An emptied field means "back to the default", not zero.
+                    // Zero is a real setting -- it disarms the signal -- and a
+                    // merchant who cleared a box to start over should not get
+                    // it by accident.
+                    if( ! is_numeric( $value ) ) return (float) $signal['weight'];
                     // Negative weights are legal: they earn trust back.
                     return max( -100.0, min( 100.0, (float) $value ) );
                 },

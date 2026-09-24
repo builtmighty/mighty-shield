@@ -169,11 +169,20 @@ function activation() {
           || ( false !== get_option( 'mshield_db_version', false ) )
           || ( false !== get_option( 'mshield_ip_whitelist', false ) );
 
-    // Create database tables and stamp the schema version, so a fresh install
-    // does not re-run dbDelta on its first load.
     require_once MSHIELD_PATH . 'includes/class-db.php';
-    \MightyShield\Includes\db::create_tables();
-    update_option( 'mshield_db_version', \MightyShield\Includes\db::SCHEMA_VERSION, true );
+
+    if( $prior ) {
+        // A store with history: converge the schema the same way an update
+        // does, running whatever migrations its stored version still needs.
+        // Stamping the version here instead -- which is what this did -- let a
+        // deactivate, upload, reactivate update skip every one of them.
+        \MightyShield\Includes\db::maybe_upgrade_schema();
+    } else {
+        // A fresh install has nothing to migrate: create the tables and stamp
+        // the schema current, so the first load does not re-run dbDelta.
+        \MightyShield\Includes\db::create_tables();
+        update_option( 'mshield_db_version', \MightyShield\Includes\db::SCHEMA_VERSION, true );
+    }
 
     // Ensure whitelist option exists with autoload enabled.
     if( false === get_option( 'mshield_ip_whitelist' ) ) {
@@ -489,6 +498,27 @@ function load() {
     // blocking disabled was firing the event into no listener and letting the
     // log table grow without bound.
     add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\db', 'cleanup' ] );
+
+    // And make sure the event exists. Activation schedules it, but activation
+    // runs once, for one site: a subsite of a network-activated install never
+    // saw it, and a site whose cron table was rebuilt lost it. wp_next_scheduled()
+    // reads an option that is already loaded, so this costs nothing.
+    if( ! wp_next_scheduled( 'mshield_daily_cleanup' ) ) {
+        wp_schedule_event( time(), 'daily', 'mshield_daily_cleanup' );
+    }
+
+    // Hold-after-payment, for every request. The gateway confirms payment
+    // wherever it confirms it -- in the checkout request, in a webhook, on the
+    // return from a 3-D Secure redirect -- and the hold has to be waiting in
+    // all of them. It reads the order's own meta, so it is a no-op on any
+    // order that was not held.
+    add_action( 'woocommerce_payment_complete', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999 );
+    add_action( 'woocommerce_order_status_processing', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999 );
+    add_action( 'woocommerce_order_status_completed', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999 );
+
+    // An order a reviewer released for payment waits in Pending until the
+    // customer pays; WooCommerce would cancel it after the stock-hold window.
+    add_filter( 'woocommerce_cancel_unpaid_order', [ '\MightyShield\Includes\response', 'keep_released_order' ], 10, 2 );
 
     // Keep the MaxMind ASN database current. Registered beside the cleanup for
     // the same reason it is: the cron event is scheduled unconditionally at

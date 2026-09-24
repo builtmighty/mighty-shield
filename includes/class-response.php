@@ -787,7 +787,14 @@ class response {
         $order->add_order_note( 'MightyShield: ' . __( 'Held for review after payment. The money has been taken but the order will not be fulfilled until you release it.', 'mighty-shield' ) . ( $reason !== '' ? ' ' . $reason : '' ) );
         $order->save();
 
-        add_action( 'woocommerce_payment_complete', [ __CLASS__, 'hold_after_payment' ], 999 );
+        // No add_action here. It used to register hold_after_payment() for
+        // this request only, which worked when the gateway confirmed payment
+        // inside the checkout request and silently did nothing when it did
+        // not: a Stripe webhook, a 3-D Secure return, a PayPal IPN all arrive
+        // in a later request where nothing was listening, so the order went to
+        // Processing and shipped with "held for review" written on it. The
+        // hook is registered at load, for every request, and reads the meta
+        // set above.
 
         db::log_event(
             ip_utils::get_client_ip(),
@@ -820,6 +827,55 @@ class response {
         $order->update_status( 'on-hold', __( 'MightyShield: held for review.', 'mighty-shield' ) );
 
         delete_transient( 'mshield_ai_pending_count' );
+
+    }
+
+    /**
+     * Whether anything tripped that is worth a human's time.
+     *
+     * The informational signals -- first_order at 5 -- exist so the rating can
+     * tell "new" from "known good", not to summon a reviewer. A flag needs at
+     * least one signal that actually cost trust: more than 5 points, which is
+     * the ceiling the catalogue keeps its informational signals under.
+     *
+     * @since   2.3.0
+     *
+     * @return  bool
+     */
+    private static function signals_worth_a_look() {
+
+        foreach( risk_context::signals() as $signal ) {
+            if( (float) $signal['weight'] * (float) $signal['confidence'] > 5.0 ) return true;
+        }
+
+        return false;
+
+    }
+
+    /**
+     * Keep a released order out of WooCommerce's unpaid-order sweep.
+     *
+     * A reviewer who approves a detained order sends the customer a link to
+     * pay, and the order waits in Pending until they do. WooCommerce cancels
+     * unpaid Pending orders after the stock-hold window -- an hour by default
+     * -- which is shorter than it takes most people to read an email. A
+     * released order gets a week.
+     *
+     * @since   2.3.0
+     *
+     * @param   bool        $cancel
+     * @param   \WC_Order   $order
+     * @return  bool
+     */
+    public static function keep_released_order( $cancel, $order ) {
+
+        if( ! $cancel || ! is_a( $order, 'WC_Order' ) ) return $cancel;
+        if( $order->get_meta( '_mshield_detained' ) !== 'released' ) return $cancel;
+
+        $modified = $order->get_date_modified();
+        if( ! $modified ) return $cancel;
+
+        return ( time() - $modified->getTimestamp() ) > WEEK_IN_SECONDS;
 
     }
 
@@ -872,6 +928,13 @@ class response {
                 // Flagging still happens the moment anything at all trips.
                 if( empty( risk_context::signals() ) ) break;
 
+                // Nor is one that tripped only the near-weightless signals.
+                // first_order is worth 5 and fires on every new customer; a
+                // flag for it alone put every first order in the review queue,
+                // where the genuinely held ones then got lost. A signal has to
+                // have cost something for a human to be asked to look.
+                if( ! self::signals_worth_a_look() ) break;
+
                 self::flag( $order, 'risk_engine', $reason !== '' ? $reason : __( 'Flagged by the risk rating.', 'mighty-shield' ) );
                 break;
 
@@ -880,6 +943,8 @@ class response {
                 break;
 
             case actions::HOLD_AUTHORIZED:
+                // Already reserved and held: nothing further to arrange.
+                if( $order->get_meta( '_mshield_hold' ) === 'authorized' ) break;
                 self::hold_authorized( $order, $reason );
                 break;
 

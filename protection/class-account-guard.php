@@ -40,8 +40,10 @@ class account_guard {
      */
     public function __construct() {
 
-        // Registration.
-        add_action( 'woocommerce_created_customer', [ $this, 'on_registration' ], 10, 1 );
+        // Registration. user_register alone: WooCommerce's wc_create_new_customer()
+        // calls wp_insert_user(), which fires it, and THEN fires
+        // woocommerce_created_customer -- so listening to both counted every
+        // shop signup twice and tripped the velocity limit at half its setting.
         add_action( 'user_register', [ $this, 'on_registration' ], 10, 1 );
 
         // Login failures — the precursor to account takeover.
