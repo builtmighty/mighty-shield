@@ -39,7 +39,7 @@ Dashboard, Payment, Access and Logs report or list; they do not tune scoring or 
 ## Features
 
 **Scoring**
-- Trust rating from 1–100 across 45 checks, each with a cost you control and a "how often it fired on your traffic" column to tune against
+- Trust rating from 1–100 across 56 checks, each with a cost you control and a "how often it fired on your traffic" column to tune against
 - Scoring profiles (Balanced / Cautious / Strict) that set every cost at once, with Custom appearing on its own the moment you change a row
 - Identity — disposable and role email addresses, domains that cannot receive mail, fake-looking addresses, ZIP/state mismatches, USPS verification via Smarty, drop-address velocity
 - Network — IP blocklist, temporary blocks, datacenter and VPN detection, geolocation mismatch
@@ -79,7 +79,7 @@ Dashboard, Payment, Access and Logs report or list; they do not tune scoring or 
 
 ## Requirements
 
-- WordPress 6.0+
+- WordPress 6.5+
 - PHP 8.1+
 - WooCommerce 8.0+
 - HPOS compatible
@@ -91,6 +91,16 @@ Dashboard, Payment, Access and Logs report or list; they do not tune scoring or 
 3. Leave it in **Observe** mode. It rates and records; it enforces nothing
 4. After a week or two, check **Shielding** for how orders landed at each level and how they turned out, and **Scoring** for how often each check fired
 5. Turn down anything firing on ordinary customers, adjust the thresholds, then set the switch on the **Dashboard** to Active
+
+## Translating
+
+Every string, including the admin script's, goes through WordPress's translation functions under the `mighty-shield` text domain. The template is `languages/mighty-shield.pot`. Regenerate it after changing any string:
+
+```bash
+php bin/make-pot.php .
+```
+
+The generator tokenises the PHP and scans the JavaScript, reports any translation call it could not extract, and refuses to write a template that lost strings. A finished translation goes in `languages/` as `mighty-shield-LOCALE.mo` (plus `mighty-shield-LOCALE-mshield-admin.json` for the admin script), or in `wp-content/languages/plugins/`. Once the plugin is on WordPress.org, language packs from translate.wordpress.org take over and nothing needs shipping.
 
 ## License
 

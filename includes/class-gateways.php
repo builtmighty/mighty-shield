@@ -61,25 +61,21 @@ class gateways {
         'stripe' => [
             'label' => 'Stripe',
             'ids'   => [ 'stripe', 'stripe_cc' ],
-            'note'  => '',
         ],
 
         'woopayments' => [
             'label' => 'WooPayments',
             'ids'   => [ 'woocommerce_payments' ],
-            'note'  => '',
         ],
 
         'square' => [
             'label' => 'Square',
             'ids'   => [ 'square_credit_card' ],
-            'note'  => '',
         ],
 
         'authorize_net' => [
             'label' => 'Authorize.Net',
             'ids'   => [ 'authorize_net_cim_credit_card' ],
-            'note'  => '',
         ],
 
         // Braintree is PayPal's enterprise product and is branded as such. The
@@ -88,7 +84,6 @@ class gateways {
         'braintree' => [
             'label' => 'PayPal Enterprise',
             'ids'   => [ 'braintree_credit_card', 'braintree_paypal' ],
-            'note'  => '',
         ],
 
         // Partial on purpose. PayPal fixes the capture decision when it creates
@@ -96,12 +91,34 @@ class gateways {
         // WooCommerce order exists — so there is no moment at which MightyShield
         // could ask it to authorize instead. Approving and denying still work on
         // its orders when the merchant has set PayPal's own intent to Authorize.
+        // The caveat the Payment tab shows for it lives in note().
         'paypal' => [
             'label' => 'PayPal',
             'ids'   => [ 'ppcp-gateway' ],
-            'note'  => 'Held orders can be captured or voided, but only if PayPal\'s own intent is set to Authorize. MightyShield cannot switch it per order.',
         ],
     ];
+
+    /**
+     * The caveat shown beside a brand on the Payment tab, if it has one.
+     *
+     * Kept out of SUPPORTED because a const cannot hold a __() call, and this
+     * is a sentence a merchant reads.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $brand  Key in SUPPORTED.
+     * @return  string          Empty when there is nothing to say.
+     */
+    private static function note( $brand ) {
+
+        switch( $brand ) {
+            case 'paypal':
+                return __( 'Held orders can be captured or voided, but only if PayPal\'s own intent is set to Authorize. MightyShield cannot switch it per order.', 'mighty-shield' );
+        }
+
+        return '';
+
+    }
 
     /**
      * The supported list, with what each brand can do and whether you have it.
@@ -119,7 +136,7 @@ class gateways {
 
             $row = [
                 'label'        => $meta['label'],
-                'note'         => $meta['note'],
+                'note'         => self::note( $brand ),
                 '3ds'          => false,
                 'auth_only'    => false,
                 'card_signals' => false,

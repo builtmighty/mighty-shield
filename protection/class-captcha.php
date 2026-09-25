@@ -1284,12 +1284,16 @@ class captcha {
         set_transient( 'mshield_captcha_alerted', 1, DAY_IN_SECONDS );
 
         $admin_email = get_option( 'admin_email' );
-        $subject     = '[MightyShield] Bot challenge is misconfigured';
+        $subject     = __( '[MightyShield] Bot challenge is misconfigured', 'mighty-shield' );
         $message     = sprintf(
-            "MightyShield's bot challenge (%s) is rejecting all tokens because of a configuration error: %s.\n\n" .
-            "To avoid blocking legitimate checkouts, the challenge is temporarily failing open (allowing orders) until this is fixed.\n\n" .
-            "Check the Site Key and Secret Key under MightyShield > Blocking > Bot Challenge.\n\n" .
-            "This alert is sent at most once per day.",
+            /* translators: 1: the challenge provider (turnstile or recaptcha_v3), 2: the error code it returned. */
+            __(
+                "MightyShield's bot challenge (%1\$s) is rejecting all tokens because of a configuration error: %2\$s.\n\n" .
+                "To avoid blocking legitimate checkouts, the challenge is temporarily failing open (allowing orders) until this is fixed.\n\n" .
+                "Check the Site Key and Secret Key under MightyShield > Shielding > Bot Challenge.\n\n" .
+                "This alert is sent at most once per day.",
+                'mighty-shield'
+            ),
             settings::get( 'mshield_captcha_provider' ),
             $error
         );

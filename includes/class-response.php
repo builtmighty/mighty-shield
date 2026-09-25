@@ -616,9 +616,15 @@ class response {
 
         wp_mail(
             get_option( 'admin_email' ),
-            sprintf( '[MightyShield] %s on order #%d', $reason, $order->get_id() ),
             sprintf(
-                "MightyShield flagged an order.\n\nOrder: #%d\nReason: %s\nCustomer: %s (%s)\nIP: %s\n\nReview this order: %s",
+                /* translators: 1: why the order was flagged, 2: order number. */
+                __( '[MightyShield] %1$s on order #%2$d', 'mighty-shield' ),
+                $reason,
+                $order->get_id()
+            ),
+            sprintf(
+                /* translators: 1: order number, 2: why it was flagged, 3: customer name, 4: customer email, 5: IP address, 6: link to the order. */
+                __( "MightyShield flagged an order.\n\nOrder: #%1\$d\nReason: %2\$s\nCustomer: %3\$s (%4\$s)\nIP: %5\$s\n\nReview this order: %6\$s", 'mighty-shield' ),
                 $order->get_id(),
                 $reason,
                 $order->get_formatted_billing_full_name(),
@@ -676,12 +682,11 @@ class response {
         $others = $pending - 1;
 
         $body = sprintf(
-            "An order rated %s out of 100, at or below the %s you asked to hear about.\n\n"
-            . "Order: #%d\nRating: %s (%s)\nWhat MightyShield did: %s\nCustomer: %s (%s)\n\n%s\n\nReview this order: %s",
+            /* translators: 1: the order's trust rating, 2: the rating you asked to hear about, 3: order number, 4: risk level, 5: what MightyShield did, 6: customer name, 7: customer email, 8: a note about other low-rated orders, or nothing, 9: link to the order. */
+            __( "An order rated %1\$s out of 100, at or below the %2\$s you asked to hear about.\n\nOrder: #%3\$d\nRating: %1\$s (%4\$s)\nWhat MightyShield did: %5\$s\nCustomer: %6\$s (%7\$s)\n\n%8\$s\n\nReview this order: %9\$s", 'mighty-shield' ),
             number_format( $trust, 0 ),
             number_format( $threshold, 0 ),
             $order->get_id(),
-            number_format( $trust, 0 ),
             risk_levels::label( $verdict['risk_level'] ?? '' ),
             self::is_enforcing() ? __( 'Acted on it', 'mighty-shield' ) : __( 'Nothing — MightyShield is in Observe mode', 'mighty-shield' ),
             $order->get_formatted_billing_full_name(),

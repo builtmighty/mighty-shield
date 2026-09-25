@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       MightyShield
  * Plugin URI:        https://builtmighty.com
- * Description:       Scores every WooCommerce order against 54 fraud checks, optionally reviews it with an AI model, and then acts once — hold, challenge, refuse, or let through.
+ * Description:       Scores every WooCommerce order against 56 fraud checks, optionally reviews it with an AI model, and then acts once — hold, challenge, refuse, or let through.
  * Version:           2.3.0
  * Requires at least: 6.5
  * Requires PHP:      8.1
@@ -449,6 +449,24 @@ function deactivation() {
  *
  * @since   1.0.0
  */
+/**
+ * Load the plugin's own translations.
+ *
+ * Language packs from WordPress.org load themselves from
+ * wp-content/languages/plugins/ and need no help. This makes the plugin's own
+ * /languages folder count as well, so a store can carry a translation before
+ * one exists upstream -- and so the admin script's JSON translations have a
+ * path to be looked up on.
+ *
+ * Hooked to init, and not a moment sooner: since WordPress 6.7 a text domain
+ * loaded before init is a _doing_it_wrong.
+ *
+ * @since   2.3.0
+ */
+function load_textdomain() {
+    load_plugin_textdomain( 'mighty-shield', false, dirname( plugin_basename( MSHIELD_FILE ) ) . '/languages' );
+}
+
 add_action( 'plugins_loaded', '\MightyShield\load' );
 function load() {
 
@@ -543,6 +561,9 @@ function load() {
     // Orders that settled in Processing without anyone clicking Complete earn
     // their credit here, a batch a day.
     add_action( 'mshield_daily_cleanup', [ '\MightyShield\Protection\outcomes', 'credit_settled_orders' ] );
+
+    // Translations, from the plugin's own folder. See load_textdomain().
+    add_action( 'init', '\MightyShield\load_textdomain', 0 );
 
     // The address re-hash a schema-10 update arms. Runs on admin, cron and
     // WP-CLI requests only, a few batches at a time, and disarms itself.

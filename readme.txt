@@ -13,7 +13,7 @@ Stops card testing and stolen-card orders. Scores every order, shows what enforc
 
 == Description ==
 
-MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 54 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
+MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 56 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
 
 Nothing is enforced until you say so. MightyShield installs in Observe mode: it rates every order and records what it would have done, so you can tune it against your own traffic before it touches a single sale.
 
@@ -112,6 +112,10 @@ Smarty verifies US billing addresses against USPS data to catch fake, non-existe
 = What does the honeypot do? =
 
 The honeypot adds an invisible field to the checkout form. Real customers never see or fill it, but automated bots do. It is one of very few checks set to decide an order on its own, because a person using your site cannot trip it: the field is off-screen, hidden from screen readers and out of tab order. A filled trap field refuses the checkout and temporarily bars the address.
+
+= Can I use MightyShield in my own language? =
+
+Yes. Everything it shows a merchant or a shopper is translatable, the admin screens' scripts included. Once the plugin is on WordPress.org, translations come from translate.wordpress.org as language packs and install themselves; that is also where to contribute one. A translation of your own goes in wp-content/languages/plugins/ as mighty-shield-LOCALE.mo, or in the plugin's own languages folder, and is picked up on the next page load.
 
 == Installation ==
 

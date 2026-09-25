@@ -65,16 +65,20 @@ class smarty_address_verifier {
         set_transient( 'mshield_smarty_alerted', 1, DAY_IN_SECONDS );
 
         $admin_email = get_option( 'admin_email' );
-        $subject     = '[MightyShield] Address verification is degraded';
+        $subject     = __( '[MightyShield] Address verification is degraded', 'mighty-shield' );
         $message     = sprintf(
-            "MightyShield's Smarty address verification is currently unavailable and has fallen back to a basic ZIP/State check.\n\n" .
-            "Reason: %s\n\n" .
-            "Full USPS address verification is NOT running until this is resolved. Common causes:\n" .
-            "- Smarty subscription/quota exhausted (HTTP 402)\n" .
-            "- Invalid or expired auth-id / auth-token (HTTP 401/403)\n" .
-            "- Network/API outage\n\n" .
-            "Check your Smarty account at https://www.smarty.com/account and the MightyShield > Fraud Checks settings.\n\n" .
-            "This alert is sent at most once per day.",
+            /* translators: %s: the error Smarty returned. */
+            __(
+                "MightyShield's Smarty address verification is currently unavailable and has fallen back to a basic ZIP/State check.\n\n" .
+                "Reason: %s\n\n" .
+                "Full USPS address verification is NOT running until this is resolved. Common causes:\n" .
+                "- Smarty subscription/quota exhausted (HTTP 402)\n" .
+                "- Invalid or expired auth-id / auth-token (HTTP 401/403)\n" .
+                "- Network/API outage\n\n" .
+                "Check your Smarty account at https://www.smarty.com/account and the MightyShield > Scoring settings.\n\n" .
+                "This alert is sent at most once per day.",
+                'mighty-shield'
+            ),
             $error_message
         );
 

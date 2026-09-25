@@ -1336,33 +1336,19 @@ class admin_page {
 
         wp_enqueue_style( 'mshield-admin', MSHIELD_URI . 'assets/css/mshield-admin.css', [ 'mshield-fonts' ], $css_ver );
 
-        wp_enqueue_script( 'mshield-admin', MSHIELD_URI . 'assets/js/mshield-admin.js', [], $js_ver, [ 'in_footer' => true ] );
+        // The script translates its own strings through wp.i18n, so a language
+        // pack from WordPress.org reaches them the same way it reaches the PHP.
+        // Until 2.3.0 the strings were handed over in a wp_localize_script map,
+        // and a dozen of them -- the chart titles, the tooltip legend, the
+        // theme labels, the profile-switch confirmation -- were never in it.
+        wp_enqueue_script( 'mshield-admin', MSHIELD_URI . 'assets/js/mshield-admin.js', [ 'wp-i18n' ], $js_ver, [ 'in_footer' => true ] );
+        wp_set_script_translations( 'mshield-admin', 'mighty-shield', MSHIELD_PATH . 'languages' );
         wp_localize_script( 'mshield-admin', 'mshieldAdmin', [
             'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
             'themeNonce' => wp_create_nonce( 'mshield_set_theme' ),
             'ipNonce'    => wp_create_nonce( 'mshield_get_ip' ),
             'chartNonce' => wp_create_nonce( 'mshield_chart' ),
             'testNonce'  => wp_create_nonce( 'mshield_test_connection' ),
-            'i18n'       => [
-                'selected'    => __( 'selected', 'mighty-shield' ),
-                'eventDetail' => __( 'Event detail', 'mighty-shield' ),
-                'ip'          => __( 'IP address', 'mighty-shield' ),
-                'endpoint'    => __( 'Endpoint', 'mighty-shield' ),
-                'reason'      => __( 'Reason', 'mighty-shield' ),
-                'user'        => __( 'User', 'mighty-shield' ),
-                'raw'         => __( 'Request data', 'mighty-shield' ),
-                'whitelistIp' => __( 'Allowlist IP', 'mighty-shield' ),
-                'blockPerm'   => __( 'Block permanently', 'mighty-shield' ),
-                'ipIntel'     => __( 'IP location', 'mighty-shield' ),
-                'getIp'       => __( 'Get IP', 'mighty-shield' ),
-                'testing'     => __( 'Testing…', 'mighty-shield' ),
-                'testFailed'  => __( 'The test could not be run. Reload the page and try again.', 'mighty-shield' ),
-                'gettingIp'   => __( 'Looking up…', 'mighty-shield' ),
-                'location'    => __( 'Location', 'mighty-shield' ),
-                'org'         => __( 'Organization', 'mighty-shield' ),
-                'country'     => __( 'Country', 'mighty-shield' ),
-                'lookupFail'  => __( 'Lookup failed. Please try again.', 'mighty-shield' ),
-            ],
         ] );
 
     }

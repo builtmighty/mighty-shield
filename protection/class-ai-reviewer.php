@@ -782,18 +782,22 @@ class ai_reviewer {
     private static function notify_admin( $order, $rating, $reasons ) {
 
         $message = sprintf(
-            "MightyShield's AI review rated an order %d/100 (100 is a completely ordinary order).\n\n" .
-            "Order: #%d\n" .
-            "Why: %s\n" .
-            "Customer: %s (%s)\n" .
-            "IP: %s\n" .
-            "Payment: %s\n\n" .
-            "This rating caps the order's trust score. What happens next is the action set for\n" .
-            "the resulting risk level on the Blocking tab.\n\n" .
-            "Review this order: %s",
+            /* translators: 1: rating out of 100, 2: order number, 3: the reasons the AI gave, 4: customer name, 5: customer email, 6: IP address, 7: payment method, 8: link to the order. */
+            __(
+                "MightyShield's AI review rated an order %1\$d/100 (100 is a completely ordinary order).\n\n" .
+                "Order: #%2\$d\n" .
+                "Why: %3\$s\n" .
+                "Customer: %4\$s (%5\$s)\n" .
+                "IP: %6\$s\n" .
+                "Payment: %7\$s\n\n" .
+                "This rating caps the order's trust score. What happens next is the action set for\n" .
+                "the resulting risk level on the Shielding tab.\n\n" .
+                "Review this order: %8\$s",
+                'mighty-shield'
+            ),
             $rating,
             $order->get_id(),
-            empty( $reasons ) ? 'no specific reasons given' : implode( '; ', $reasons ),
+            empty( $reasons ) ? __( 'no specific reasons given', 'mighty-shield' ) : implode( '; ', $reasons ),
             $order->get_formatted_billing_full_name(),
             $order->get_billing_email(),
             $order->get_customer_ip_address(),
@@ -803,7 +807,12 @@ class ai_reviewer {
 
         wp_mail(
             settings::notification_recipients(),
-            sprintf( '[MightyShield] AI rated order #%d at %d/100', $order->get_id(), $rating ),
+            sprintf(
+                /* translators: 1: order number, 2: rating out of 100. */
+                __( '[MightyShield] AI rated order #%1$d at %2$d/100', 'mighty-shield' ),
+                $order->get_id(),
+                $rating
+            ),
             $message
         );
 

@@ -14,6 +14,19 @@
 
     var cfg = window.mshieldAdmin || {};
 
+    // wp.i18n is a declared dependency, so it is always here; the fallbacks
+    // only keep the page working if something dequeues it.
+    var i18n    = ( window.wp && window.wp.i18n ) || {};
+    var __      = i18n.__      || function( s ) { return s; };
+    var _n      = i18n._n      || function( s, p, n ) { return n === 1 ? s : p; };
+    var sprintf = i18n.sprintf || function( f ) {
+        var a = Array.prototype.slice.call( arguments, 1 ), i = 0;
+        return f.replace( /%(\d+)\$[sd]|%[sd]|%%/g, function( m, p ) {
+            if ( m === '%%' ) return '%';
+            return String( p ? a[ parseInt( p, 10 ) - 1 ] : a[ i++ ] );
+        } );
+    };
+
     function ready( fn ) {
         if ( document.readyState !== 'loading' ) { fn(); }
         else { document.addEventListener( 'DOMContentLoaded', fn ); }
@@ -27,7 +40,7 @@
         light:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>',
         dark:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>'
     };
-    var THEME_LABELS = { system: 'System', light: 'Light', dark: 'Dark' };
+    var THEME_LABELS = { system: __( 'System', 'mighty-shield' ), light: __( 'Light', 'mighty-shield' ), dark: __( 'Dark', 'mighty-shield' ) };
     var THEME_NEXT   = { system: 'light', light: 'dark', dark: 'system' };
 
     function syncBody( mode ) {
@@ -78,22 +91,22 @@
         var current = null, currentRow = null;
 
         function ipIntelHtml( d ) {
-            var head = '<div class="mshield-eyebrow">' + esc( cfg.i18n.ipIntel || 'IP location' ) + '</div>';
+            var head = '<div class="mshield-eyebrow">' + esc( __( 'IP location', 'mighty-shield' ) ) + '</div>';
             var ip = d.ipData;
             if ( ip && ip.status === 'success' ) {
                 var loc = [ ip.city, ip.region, ip.country ].filter( Boolean ).join( ', ' );
                 return '<div class="mshield-ipintel" id="mshield-ipintel">' + head +
                     '<div class="mshield-kv">' +
-                        '<span class="k">' + esc( cfg.i18n.location || 'Location' ) + '</span><span>' + esc( loc || '—' ) + '</span>' +
-                        '<span class="k">' + esc( cfg.i18n.org || 'Organization' ) + '</span><span>' + esc( ip.org || '—' ) + '</span>' +
+                        '<span class="k">' + esc( __( 'Location', 'mighty-shield' ) ) + '</span><span>' + esc( loc || '—' ) + '</span>' +
+                        '<span class="k">' + esc( __( 'Organization', 'mighty-shield' ) ) + '</span><span>' + esc( ip.org || '—' ) + '</span>' +
                     '</div></div>';
             }
             if ( ip && ip.status && ip.status !== 'success' ) {
                 return '<div class="mshield-ipintel" id="mshield-ipintel">' + head +
-                    '<p style="margin:0;color:var(--fg-3);font-size:13px">' + esc( 'No location data available for this IP.' ) + '</p></div>';
+                    '<p style="margin:0;color:var(--fg-3);font-size:13px">' + esc( __( 'No location data available for this IP.', 'mighty-shield' ) ) + '</p></div>';
             }
             return '<div class="mshield-ipintel" id="mshield-ipintel">' + head +
-                '<button type="button" class="mshield-btn is-small" data-getip>' + esc( cfg.i18n.getIp || 'Get IP' ) + '</button></div>';
+                '<button type="button" class="mshield-btn is-small" data-getip>' + esc( __( 'Get IP', 'mighty-shield' ) ) + '</button></div>';
         }
 
         function rowData( row ) {
@@ -110,31 +123,31 @@
             if ( det.email )   rawLines.push( 'billing-email: ' + det.email );
             if ( det.user_id ) rawLines.push( 'user-id: ' + det.user_id );
             if ( det.uri )     rawLines.push( 'request-uri: ' + det.uri );
-            var raw = rawLines.length ? rawLines.join( '\n' ) : 'No additional request data captured.';
+            var raw = rawLines.length ? rawLines.join( '\n' ) : __( 'No additional request data captured.', 'mighty-shield' );
 
             var actions = '';
-            if ( d.wlUrl )  actions += '<a class="mshield-btn" style="flex:1;justify-content:center" href="' + esc( d.wlUrl ) + '">' + esc( cfg.i18n.whitelistIp || 'Allowlist IP' ) + '</a>';
-            if ( d.blockUrl ) actions += '<a class="mshield-btn is-danger" style="flex:1;justify-content:center" href="' + esc( d.blockUrl ) + '">' + esc( cfg.i18n.blockPerm || 'Block permanently' ) + '</a>';
+            if ( d.wlUrl )  actions += '<a class="mshield-btn" style="flex:1;justify-content:center" href="' + esc( d.wlUrl ) + '">' + esc( __( 'Allowlist IP', 'mighty-shield' ) ) + '</a>';
+            if ( d.blockUrl ) actions += '<a class="mshield-btn is-danger" style="flex:1;justify-content:center" href="' + esc( d.blockUrl ) + '">' + esc( __( 'Block permanently', 'mighty-shield' ) ) + '</a>';
 
             mount.innerHTML =
                 '<div class="mshield-drawer-overlay" data-close>' +
-                  '<div class="mshield-drawer" role="dialog" aria-label="Event detail">' +
+                  '<div class="mshield-drawer" role="dialog" aria-label="' + esc( __( 'Event detail', 'mighty-shield' ) ) + '">' +
                     '<div class="mshield-drawer-head">' +
-                      '<div><div class="mshield-card-title">' + esc( cfg.i18n.eventDetail || 'Event detail' ) + '</div>' +
+                      '<div><div class="mshield-card-title">' + esc( __( 'Event detail', 'mighty-shield' ) ) + '</div>' +
                       '<div class="mshield-mono" style="font-size:12px;color:var(--fg-3);margin-top:2px">' + esc( d.time || '' ) + '</div></div>' +
                       '<span class="mshield-spacer"></span>' +
-                      '<button class="mshield-btn is-small" data-close aria-label="Close">&times;</button>' +
+                      '<button class="mshield-btn is-small" data-close aria-label="' + esc( __( 'Close', 'mighty-shield' ) ) + '">&times;</button>' +
                     '</div>' +
                     '<div class="mshield-drawer-body">' +
                       '<div><span class="mshield-pill ' + ( pillClass[ d.action ] || '' ) + '"><span class="dot"></span>' + esc( d.actionLabel || d.action || '' ) + '</span></div>' +
                       '<div class="mshield-kv">' +
-                        '<span class="k">' + esc( cfg.i18n.ip || 'IP address' ) + '</span><span class="mshield-mono">' + esc( d.ip || '' ) + '</span>' +
-                        '<span class="k">' + esc( cfg.i18n.endpoint || 'Endpoint' ) + '</span><span class="mshield-mono" style="font-size:12.5px">' + esc( d.endpoint || '' ) + '</span>' +
-                        '<span class="k">' + esc( cfg.i18n.reason || 'Reason' ) + '</span><span>' + esc( d.reason || '' ) + '</span>' +
-                        ( det.user_label ? '<span class="k">' + esc( cfg.i18n.user || 'User' ) + '</span><span>' + esc( det.user_label ) + '</span>' : '' ) +
+                        '<span class="k">' + esc( __( 'IP address', 'mighty-shield' ) ) + '</span><span class="mshield-mono">' + esc( d.ip || '' ) + '</span>' +
+                        '<span class="k">' + esc( __( 'Endpoint', 'mighty-shield' ) ) + '</span><span class="mshield-mono" style="font-size:12.5px">' + esc( d.endpoint || '' ) + '</span>' +
+                        '<span class="k">' + esc( __( 'Reason', 'mighty-shield' ) ) + '</span><span>' + esc( d.reason || '' ) + '</span>' +
+                        ( det.user_label ? '<span class="k">' + esc( __( 'User', 'mighty-shield' ) ) + '</span><span>' + esc( det.user_label ) + '</span>' : '' ) +
                       '</div>' +
                       ipIntelHtml( d ) +
-                      '<div><div class="mshield-eyebrow">' + esc( cfg.i18n.raw || 'Request data' ) + '</div>' +
+                      '<div><div class="mshield-eyebrow">' + esc( __( 'Request data', 'mighty-shield' ) ) + '</div>' +
                       '<pre class="mshield-raw">' + esc( raw ) + '</pre></div>' +
                     '</div>' +
                     ( actions ? '<div class="mshield-drawer-foot">' + actions + '</div>' : '' ) +
@@ -164,7 +177,7 @@
             if ( ! btn || ! current || ! cfg.ajaxUrl ) return;
             e.preventDefault();
             btn.disabled = true;
-            btn.textContent = cfg.i18n.gettingIp || 'Looking up…';
+            btn.textContent = __( 'Looking up…', 'mighty-shield' );
 
             var body = new URLSearchParams();
             body.set( 'action', 'mshield_get_ip' );
@@ -181,14 +194,14 @@
                         if ( el ) el.outerHTML = ipIntelHtml( current );
                     } else {
                         btn.disabled = false;
-                        btn.textContent = cfg.i18n.getIp || 'Get IP';
+                        btn.textContent = __( 'Get IP', 'mighty-shield' );
                         var msg = document.createElement( 'div' );
                         msg.style.cssText = 'color:var(--ink-danger);font-size:12.5px;margin-top:6px';
-                        msg.textContent = ( res && res.data && res.data.message ) || cfg.i18n.lookupFail || 'Lookup failed.';
+                        msg.textContent = ( res && res.data && res.data.message ) || __( 'Lookup failed. Please try again.', 'mighty-shield' );
                         btn.parentNode.appendChild( msg );
                     }
                 } )
-                .catch( function() { btn.disabled = false; btn.textContent = cfg.i18n.getIp || 'Get IP'; } );
+                .catch( function() { btn.disabled = false; btn.textContent = __( 'Get IP', 'mighty-shield' ); } );
         } );
 
         document.addEventListener( 'keydown', function( e ) { if ( e.key === 'Escape' ) close(); } );
@@ -204,7 +217,8 @@
         function refresh() {
             var n = 0;
             boxes.forEach( function( b ) { if ( b.checked ) n++; } );
-            if ( count ) count.textContent = n + ' ' + ( cfg.i18n.selected || 'selected' );
+            /* translators: %d: number of log rows ticked. */
+            if ( count ) count.textContent = sprintf( _n( '%d selected', '%d selected', n, 'mighty-shield' ), n );
         }
         all.addEventListener( 'change', function() {
             boxes.forEach( function( b ) { b.checked = all.checked; } );
@@ -235,9 +249,9 @@
         if ( ! box || ! dataEl ) return;
 
         var titles = {
-            '30d': 'Events over the past 30 days',
-            '7d':  'Events over the past 7 days',
-            '24h': 'Events over the past 24 hours',
+            '30d': __( 'Events over the past 30 days', 'mighty-shield' ),
+            '7d':  __( 'Events over the past 7 days', 'mighty-shield' ),
+            '24h': __( 'Events over the past 24 hours', 'mighty-shield' ),
         };
         var titleEl = document.getElementById( 'mshield-chart-title' );
         var subEl   = document.getElementById( 'mshield-chart-sub' );
@@ -295,7 +309,8 @@
                 R.forEach( function( v ) { tot += v; } );
                 F.forEach( function( v ) { tot += v; } );
                 var pct = tot > 0 ? Math.round( blk / tot * 100 ) : 0;
-                subEl.textContent = tot.toLocaleString() + ' events · ' + pct + '% blocked';
+                /* translators: 1: number of events, 2: percentage of them that were blocked. */
+                subEl.textContent = sprintf( __( '%1$s events · %2$d%% blocked', 'mighty-shield' ), tot.toLocaleString(), pct );
             }
 
             attachHover( s, X, Y, n );
@@ -327,9 +342,9 @@
 
                 tip.innerHTML =
                     '<div class="t-label">' + esc2( s.labels[ i ] ) + '</div>' +
-                    '<div class="t-row"><i style="background:#d63638"></i>Blocked <b>' + s.blocked[ i ] + '</b></div>' +
-                    '<div class="t-row"><i style="background:#dba617"></i>Rate-limited <b>' + s.rate_limited[ i ] + '</b></div>' +
-                    '<div class="t-row"><i style="background:#8c5ce6"></i>Flagged <b>' + s.flagged[ i ] + '</b></div>';
+                    '<div class="t-row"><i style="background:#d63638"></i>' + esc2( __( 'Blocked', 'mighty-shield' ) ) + ' <b>' + s.blocked[ i ] + '</b></div>' +
+                    '<div class="t-row"><i style="background:#dba617"></i>' + esc2( __( 'Rate-limited', 'mighty-shield' ) ) + ' <b>' + s.rate_limited[ i ] + '</b></div>' +
+                    '<div class="t-row"><i style="background:#8c5ce6"></i>' + esc2( __( 'Flagged', 'mighty-shield' ) ) + ' <b>' + s.flagged[ i ] + '</b></div>';
                 var leftPx = ( px / W ) * rect.width;
                 tip.style.left = Math.min( rect.width - 150, Math.max( 0, leftPx + 10 ) ) + 'px';
                 tip.style.opacity = '1';
@@ -487,9 +502,13 @@
                 if ( ! changes || changes < 1 ) return;
 
                 var name = link.getAttribute( 'data-mshield-profile' ) || '';
-                var msg  = changes === 1
-                    ? 'Switching to ' + name + ' will replace 1 trust cost you have changed, and switch every check back on. Continue?'
-                    : 'Switching to ' + name + ' will replace ' + changes + ' trust costs you have changed, and switch every check back on. Continue?';
+                /* translators: 1: the profile's name, 2: how many trust costs the merchant changed by hand. */
+                var msg  = sprintf( _n(
+                    'Switching to %1$s will replace %2$d trust cost you have changed, and switch every check back on. Continue?',
+                    'Switching to %1$s will replace %2$d trust costs you have changed, and switch every check back on. Continue?',
+                    changes,
+                    'mighty-shield'
+                ), name, changes );
 
                 if ( ! window.confirm( msg ) ) e.preventDefault();
 
@@ -516,7 +535,7 @@
                 if ( ! cfg.ajaxUrl ) return;
 
                 btn.disabled    = true;
-                btn.textContent = cfg.i18n.testing || 'Testing…';
+                btn.textContent = __( 'Testing…', 'mighty-shield' );
                 if ( out ) { out.className = 'mshield-test-result'; out.textContent = ''; }
 
                 var body = new URLSearchParams();
@@ -530,7 +549,7 @@
 
                         var ok  = !! ( res && res.success && res.data && res.data.ok );
                         var msg = ( res && res.data && res.data.message )
-                            || ( cfg.i18n.testFailed || 'The test could not be run.' );
+                            || __( 'The test could not be run. Reload the page and try again.', 'mighty-shield' );
 
                         if ( out ) {
                             out.className   = 'mshield-test-result ' + ( ok ? 'is-ok' : 'is-bad' );
@@ -543,7 +562,7 @@
                     .catch( function() {
                         if ( out ) {
                             out.className   = 'mshield-test-result is-bad';
-                            out.textContent = cfg.i18n.testFailed || 'The test could not be run.';
+                            out.textContent = __( 'The test could not be run. Reload the page and try again.', 'mighty-shield' );
                         }
                     } )
                     .then( function() { btn.disabled = false; btn.textContent = label; } );

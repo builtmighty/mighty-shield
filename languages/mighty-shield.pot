@@ -4,41 +4,57 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MightyShield 2.3.0\n"
 "Report-Msgid-Bugs-To: https://builtmighty.com\n"
-"POT-Creation-Date: 2026-09-25 15:23+0000\n"
+"POT-Creation-Date: 2026-09-25 17:14+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: MightyShield bin/make-pot.php\n"
 "X-Domain: mighty-shield\n"
 
 #: admin/class-fraud-review.php:652 admin/views/logs.php:217
 msgid "%1$d / %2$d"
 msgstr ""
 
+#. translators: 1: number of failures, 2: the form affected.
 #: protection/class-captcha.php:1031
 msgid "%1$d challenges in a row failed on the %2$s form, from several different networks and with none passing, so it is no longer refusing anybody there. This is usually a mismatched site key and secret key, or a domain that is not registered with the provider."
 msgstr ""
 
+#. translators: 1: number of declines, 2: minutes.
 #: protection/class-failed-payment-tracker.php:161
 msgid "%1$d payments failed in the last %2$d minutes, far above normal. For the next hour every unknown customer is scored as riskier. Nothing is refused on that alone; watch the review queue, and consider switching on the bot challenge for checkout if it is not on."
 msgstr ""
 
+#. translators: 1: count that turned out fine, 2: count that turned out bad.
 #: admin/views/blocking.php:274
 msgid "%1$d turned out fine, %2$d turned out bad"
 msgstr ""
 
+#. translators: 1: number of events, 2: percentage of them that were blocked.
+#: assets/js/mshield-admin.js:313
+msgid "%1$s events · %2$d%% blocked"
+msgstr ""
+
+#. translators: 1: service name, 2: HTTP status code.
 #: includes/class-api-error.php:153
 msgid "%1$s is having trouble at their end (HTTP %2$d). Nothing to change here; it should clear on its own."
 msgstr ""
 
+#. translators: 1: service name, 2: HTTP status code.
 #: includes/class-api-error.php:162
 msgid "%1$s refused the request (HTTP %2$d)."
 msgstr ""
 
+#. translators: 1: service name, 2: HTTP status code.
 #: includes/class-api-error.php:128
 msgid "%1$s rejected the credentials (HTTP %2$d). The key or token is wrong, or it is not being sent in a form %1$s accepts."
 msgstr ""
 
+#. translators: 1: level name, 2: lowest trust, 3: highest trust.
 #: includes/class-trust-badge.php:187
 msgid "%1$s: trust %2$d to %3$d"
 msgstr ""
@@ -51,30 +67,78 @@ msgstr ""
 msgid "%d IP addresses added to the blocklist."
 msgstr ""
 
+#. translators: %d: number of orders.
+#: protection/class-outcomes.php:456
+msgid "%d order reported as fraud. MightyShield will weigh this against future orders from the same customer, address, card or network."
+msgid_plural "%d orders reported as fraud. MightyShield will weigh these against future orders from the same customers, devices, addresses or networks."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of log rows ticked.
+#: assets/js/mshield-admin.js:221
+msgid "%d selected"
+msgid_plural "%d selected"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: human time difference, e.g. "3 days".
 #: admin/class-fraud-review.php:526
 msgid "%s ago"
 msgstr ""
 
-#: admin/class-admin-page.php:1624
+#. translators: %s: provider name.
+#: admin/class-admin-page.php:1610
 msgid "%s answered and returned a verdict in the expected shape."
 msgstr ""
+
+#. translators: %s: number of orders.
+#: includes/class-forecast.php:281
+msgid "%s completed normally, so you would have turned away a real customer."
+msgid_plural "%s completed normally, so you would have turned away that many real customers."
+msgstr[0] ""
+msgstr[1] ""
 
 #: admin/views/logs.php:142
 msgid "%s entries"
 msgstr ""
 
-#: protection/class-captcha.php:1377
+#. translators: %s: comma-separated plugin names.
+#: protection/class-captcha.php:1381
 msgid "%s is also running a bot challenge. Two challenges on one form compete for the same token and each will intermittently let requests through that the other would refuse. Run one or the other — either switch the bot challenge off on the Shielding tab, or disable the other plugin on the forms MightyShield covers."
 msgstr ""
 
+#. translators: %s: service name.
 #: includes/class-api-error.php:145
 msgid "%s is rate limiting this store (HTTP 429). Nothing is wrong with the configuration; the calls are arriving faster than the plan allows."
 msgstr ""
 
+#. translators: %s: number of orders.
+#: includes/class-forecast.php:273
+msgid "%s of those did turn out to be fraud."
+msgid_plural "%s of those did turn out to be fraud."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of orders.
+#: admin/class-fraud-review.php:381
+msgid "%s order is held or flagged and has not been decided yet. Approve or block it here, or open it for the full picture."
+msgid_plural "%s orders are held or flagged and have not been decided yet. Approve or block them here, or open one for the full picture."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of orders.
+#: admin/class-dashboard-widget.php:248
+msgid "%s order needs review"
+msgid_plural "%s orders need review"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of orders.
 #: admin/views/blocking.php:264
 msgid "%s orders"
 msgstr ""
 
+#. translators: %s: level name.
 #: includes/class-trust-badge.php:189
 msgid "%s: reachable only from a signal"
 msgstr ""
@@ -143,7 +207,7 @@ msgstr ""
 msgid "A checkout completed faster than this was almost certainly not typed by a person."
 msgstr ""
 
-#: includes/class-signals.php:1184
+#: includes/class-signals.php:1186
 msgid "A clean run of past orders, so this one starts with the benefit of the doubt. The only signal that adds trust rather than spending it."
 msgstr ""
 
@@ -151,7 +215,7 @@ msgstr ""
 msgid "A couple of minutes now, and MightyShield will be doing what you actually want rather than what it defaults to."
 msgstr ""
 
-#: includes/class-signals.php:1099
+#: includes/class-signals.php:1101
 msgid "A gift or prepaid card used for an expensive physical order. Untraceable and non-recoverable, which is the appeal."
 msgstr ""
 
@@ -159,7 +223,7 @@ msgstr ""
 msgid "A hard ceiling on how many orders can be sent for review in a day, so a flood of traffic cannot run up a bill. 0 means no limit."
 msgstr ""
 
-#: includes/class-signals.php:1079
+#: includes/class-signals.php:1081
 msgid "A hard limit you set. Different from the check above, which scales with your own takings — this one is a number you chose and does not move."
 msgstr ""
 
@@ -187,7 +251,7 @@ msgstr ""
 msgid "A review costs money and adds a couple of seconds to checkout, so it runs only on the risk levels you choose and only during checkout, where its verdict can still change what happens to the order."
 msgstr ""
 
-#: includes/class-signals.php:1159
+#: includes/class-signals.php:1161
 msgid "A run of declines from one connection or one mailbox — the clearest sign of cards being tried until one works."
 msgstr ""
 
@@ -195,7 +259,7 @@ msgstr ""
 msgid "A run of failures from different networks with none passing means the keys are the likelier fault, so it stopped refusing people there. One success puts it back."
 msgstr ""
 
-#: includes/class-signals.php:1109
+#: includes/class-signals.php:1111
 msgid "A run of invalid codes tried in a short time, which is someone fishing for a working one."
 msgstr ""
 
@@ -215,7 +279,7 @@ msgstr ""
 msgid "A summary on the main WordPress dashboard, so the state of your protection is the first thing you see when you log in. It reports and does not change anything."
 msgstr ""
 
-#: includes/class-signals.php:909
+#: includes/class-signals.php:911
 msgid "A throwaway inbox from a service that hands them out freely and deletes them minutes later."
 msgstr ""
 
@@ -239,12 +303,21 @@ msgstr ""
 msgid "AI Detection"
 msgstr ""
 
-#: admin/class-admin-page.php:2006 admin/views/documentation.php:214 admin/views/documentation.php:441
+#: admin/class-admin-page.php:1992 admin/views/documentation.php:214 admin/views/documentation.php:441
 msgid "AI Review"
 msgstr ""
 
-#: admin/class-admin-page.php:1488 includes/class-ai-client.php:659
+#. translators: %s: API error message.
+#: admin/class-admin-page.php:1474 includes/class-ai-client.php:667
 msgid "AI order review is unavailable and orders are NOT being reviewed. Last error: %s"
+msgstr ""
+
+#: includes/class-ai-client.php:338
+msgid "AI returned an unrecognised verdict"
+msgstr ""
+
+#: includes/class-ai-client.php:324
+msgid "AI returned no usable verdict"
 msgstr ""
 
 #: admin/views/setup/step-done.php:112
@@ -263,6 +336,11 @@ msgstr ""
 msgid "AI tab"
 msgstr ""
 
+#. translators: %s: the name of the missing field.
+#: includes/class-ai-client.php:331
+msgid "AI verdict is missing the \"%s\" field"
+msgstr ""
+
 #: admin/views/documentation.php:534
 msgid "About half the checks look at the visit rather than the order: whether a hidden trap field was filled in, how fast the form was completed, what the browser reported, how many orders that address placed in the previous quarter hour. None of that is kept, and re running it now would measure your own browser sitting in the admin."
 msgstr ""
@@ -271,7 +349,7 @@ msgstr ""
 msgid "Above the Low threshold"
 msgstr ""
 
-#: admin/class-admin-page.php:2014 admin/views/documentation.php:217 admin/views/documentation.php:496
+#: admin/class-admin-page.php:2000 admin/views/documentation.php:217 admin/views/documentation.php:496
 msgid "Access"
 msgstr ""
 
@@ -279,19 +357,26 @@ msgstr ""
 msgid "Access denied."
 msgstr ""
 
-#: includes/class-signals.php:1128
+#: includes/class-signals.php:1130
 msgid "Account created just before ordering"
 msgstr ""
 
-#: includes/class-signals.php:1118
+#: includes/class-signals.php:1120
 msgid "Account details changed just before ordering"
 msgstr ""
 
-#: includes/class-signals.php:1124
+#: includes/class-signals.php:1126
 msgid "Accounts being created in bulk rather than by people signing up."
 msgstr ""
 
-#: includes/class-response.php:686
+#. translators: %s: number of orders.
+#: includes/class-forecast.php:251
+msgid "Across your last %s rated order, enforcing would have refused nothing."
+msgid_plural "Across your last %s rated orders, enforcing would have refused nothing."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-response.php:691
 msgid "Acted on it"
 msgstr ""
 
@@ -299,6 +384,7 @@ msgstr ""
 msgid "Action"
 msgstr ""
 
+#. translators: %s: risk level name.
 #: admin/views/blocking.php:160
 msgid "Action for %s"
 msgstr ""
@@ -307,11 +393,11 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: admin/class-admin-page.php:1938 admin/views/payment.php:73
+#: admin/class-admin-page.php:1924 admin/views/payment.php:73
 msgid "Active"
 msgstr ""
 
-#: admin/class-admin-page.php:1939
+#: admin/class-admin-page.php:1925
 msgid "Active. Orders are blocked and held by their rating"
 msgstr ""
 
@@ -323,7 +409,7 @@ msgstr ""
 msgid "Add IP to allowlist"
 msgstr ""
 
-#: includes/class-signals.php:725
+#: includes/class-signals.php:726
 msgid "Add a hidden trap field to checkout"
 msgstr ""
 
@@ -363,19 +449,19 @@ msgstr ""
 msgid "Address could not be verified"
 msgstr ""
 
-#: includes/class-signals.php:938
+#: includes/class-signals.php:940
 msgid "Address is not deliverable"
 msgstr ""
 
-#: includes/class-signals.php:983
+#: includes/class-signals.php:985
 msgid "Address is on your blocklist"
 msgstr ""
 
-#: includes/class-signals.php:988
+#: includes/class-signals.php:990
 msgid "Address is under a temporary block"
 msgstr ""
 
-#: includes/class-signals.php:928
+#: includes/class-signals.php:930
 msgid "Address looks made up"
 msgstr ""
 
@@ -383,7 +469,7 @@ msgstr ""
 msgid "Address sensitivity"
 msgstr ""
 
-#: includes/class-signals.php:943
+#: includes/class-signals.php:945
 msgid "Address used by several other buyers"
 msgstr ""
 
@@ -395,11 +481,12 @@ msgstr ""
 msgid "Address verification"
 msgstr ""
 
-#: admin/class-admin-page.php:1489
+#: admin/class-admin-page.php:1475
 msgid "Address verification (Smarty) is degraded and has fallen back to a basic ZIP/State check. Last error: %s"
 msgstr ""
 
-#: protection/class-smarty-address-verifier.php:109
+#. translators: %s: API error message.
+#: protection/class-smarty-address-verifier.php:113
 msgid "Address verification (Smarty) is degraded and is falling back to a basic ZIP and state check. Full USPS verification is NOT running. Last error: %s"
 msgstr ""
 
@@ -451,7 +538,7 @@ msgstr ""
 msgid "Allowlist"
 msgstr ""
 
-#: admin/class-admin-page.php:1354
+#: assets/js/mshield-admin.js:129
 msgid "Allowlist IP"
 msgstr ""
 
@@ -483,7 +570,7 @@ msgstr ""
 msgid "An account younger than this when it orders is treated as brand new."
 msgstr ""
 
-#: includes/class-signals.php:919
+#: includes/class-signals.php:921
 msgid "An address like sales@ or info@ that belongs to a job rather than a person. Small businesses do order this way, so it means little on its own."
 msgstr ""
 
@@ -519,6 +606,11 @@ msgstr ""
 msgid "An order placed before MightyShield was installed, or while it was switched off, has no rating. Rate Order works one out from what the order still contains. It changes nothing about the order and will not hold or cancel anything, however badly it scores."
 msgstr ""
 
+#. translators: 1: the order's trust rating, 2: the rating you asked to hear about, 3: order number, 4: risk level, 5: what MightyShield did, 6: customer name, 7: customer email, 8: a note about other low-rated orders, or nothing, 9: link to the order.
+#: includes/class-response.php:686
+msgid "An order rated %1$s out of 100, at or below the %2$s you asked to hear about.\n\nOrder: #%3$d\nRating: %1$s (%4$s)\nWhat MightyShield did: %5$s\nCustomer: %6$s (%7$s)\n\n%8$s\n\nReview this order: %9$s"
+msgstr ""
+
 #: admin/views/documentation.php:299
 msgid "An order starts at 100 and spends trust as checks notice things. But an order with nothing known about the customer is capped at 94, which is Low. The top of the scale has to be earned by a clean run of past orders, because knowing nothing about someone is not the same as trusting them."
 msgstr ""
@@ -535,6 +627,10 @@ msgstr ""
 msgid "Anthropic API Key"
 msgstr ""
 
+#: includes/class-ai-client.php:408
+msgid "Anthropic returned no verdict"
+msgstr ""
+
 #: admin/views/documentation.php:448
 msgid "Anthropic, OpenAI or Google. Each has its own key field and its own model name, which you can change if you want a cheaper or a stronger one."
 msgstr ""
@@ -547,6 +643,7 @@ msgstr ""
 msgid "Apply the server-side fraud checks to block-based (Store API) checkout."
 msgstr ""
 
+#. translators: %s: total rows in the file.
 #: admin/views/logs.php:345
 msgid "Applying will record a chargeback against every order the whole file matches, %s rows in all. Orders MightyShield already knows were charged back are left alone."
 msgstr ""
@@ -563,6 +660,7 @@ msgstr ""
 msgid "Approve and Block."
 msgstr ""
 
+#. translators: %s: gateway error.
 #: admin/class-order-panel.php:902
 msgid "Approve failed. The authorization could not be captured: %s. The order remains on hold."
 msgstr ""
@@ -599,7 +697,7 @@ msgstr ""
 msgid "At most one message an hour. A card-testing run is a hundred bad orders in ten minutes, and the message says how many others there were."
 msgstr ""
 
-#: includes/class-signals.php:731
+#: includes/class-signals.php:732
 msgid "Attempts allowed"
 msgstr ""
 
@@ -659,6 +757,7 @@ msgstr ""
 msgid "Bans the next order outright, whatever it scores."
 msgstr ""
 
+#. translators: %s: number of orders.
 #: admin/views/blocking.php:366
 msgid "Based on the most recent %s rated orders."
 msgstr ""
@@ -667,7 +766,7 @@ msgstr ""
 msgid "Before you have any orders"
 msgstr ""
 
-#: includes/class-signals.php:1208
+#: includes/class-signals.php:1210
 msgid "Behavior"
 msgstr ""
 
@@ -687,11 +786,11 @@ msgstr ""
 msgid "Billing address and security code results are read after payment. This needs webhooks set up in your provider's dashboard. Without them the results never arrive and the checks are simply skipped."
 msgstr ""
 
-#: includes/class-signals.php:1083
+#: includes/class-signals.php:1085
 msgid "Billing address did not match the card"
 msgstr ""
 
-#: includes/class-signals.php:953
+#: includes/class-signals.php:955
 msgid "Billing and delivery addresses disagree"
 msgstr ""
 
@@ -727,15 +826,16 @@ msgstr ""
 msgid "Block checkout protection"
 msgstr ""
 
+#. translators: %s: gateway error.
 #: admin/class-order-panel.php:982
 msgid "Block failed. The authorization could not be released: %s. The order remains on hold."
 msgstr ""
 
-#: includes/class-signals.php:733
+#: includes/class-signals.php:734
 msgid "Block lasts (seconds)"
 msgstr ""
 
-#: admin/class-admin-page.php:1355
+#: assets/js/mshield-admin.js:130
 msgid "Block permanently"
 msgstr ""
 
@@ -744,7 +844,7 @@ msgid "Block/One-page checkout: allow shoppers, block only blocklisted IPs"
 msgstr ""
 
 #: admin/class-dashboard-widget.php:206 admin/views/blocking.php:249 admin/views/blocklist.php:59 admin/views/dashboard.php:86
-#: admin/views/dashboard.php:105 admin/views/logs.php:57 admin/views/logs.php:100
+#: admin/views/dashboard.php:105 admin/views/logs.php:57 admin/views/logs.php:100 assets/js/mshield-admin.js:345
 msgid "Blocked"
 msgstr ""
 
@@ -784,11 +884,12 @@ msgstr ""
 msgid "Bot challenge"
 msgstr ""
 
+#. translators: 1: provider, 2: plain explanation of the verdict.
 #: protection/class-captcha.php:182 protection/class-store-api.php:470
 msgid "Bot challenge (%1$s): %2$s"
 msgstr ""
 
-#: includes/class-signals.php:1018
+#: includes/class-signals.php:1020
 msgid "Bot challenge could not be confirmed"
 msgstr ""
 
@@ -796,6 +897,7 @@ msgstr ""
 msgid "Bot challenge left off."
 msgstr ""
 
+#. translators: 1: provider, 2: plain explanation, 3: who, if known.
 #: protection/class-challenge.php:339
 msgid "Bot challenge refused (%1$s): %2$s%3$s"
 msgstr ""
@@ -824,15 +926,15 @@ msgstr ""
 msgid "Browser"
 msgstr ""
 
-#: includes/class-signals.php:1058
+#: includes/class-signals.php:1060
 msgid "Browser arrived with no cookies"
 msgstr ""
 
-#: includes/class-signals.php:1008
+#: includes/class-signals.php:1010
 msgid "Browser is being driven by software"
 msgstr ""
 
-#: includes/class-signals.php:1043
+#: includes/class-signals.php:1045
 msgid "Browser is not what it claims to be"
 msgstr ""
 
@@ -864,6 +966,7 @@ msgstr ""
 msgid "Capture failed."
 msgstr ""
 
+#. translators: %s: gateway error.
 #: admin/class-order-panel.php:909
 msgid "Capture failed: %s. The order is still on hold."
 msgstr ""
@@ -876,7 +979,7 @@ msgstr ""
 msgid "Card checks"
 msgstr ""
 
-#: includes/class-signals.php:1103
+#: includes/class-signals.php:1105
 msgid "Card issued in another country"
 msgstr ""
 
@@ -896,7 +999,7 @@ msgstr ""
 msgid "Change"
 msgstr ""
 
-#: admin/class-admin-page.php:2136
+#: admin/class-admin-page.php:2122
 msgid "Change it on Shielding"
 msgstr ""
 
@@ -960,11 +1063,11 @@ msgstr ""
 msgid "Checkout completed implausibly fast"
 msgstr ""
 
-#: includes/class-signals.php:1023
+#: includes/class-signals.php:1025
 msgid "Checkout completed impossibly fast"
 msgstr ""
 
-#: includes/class-signals.php:1028
+#: includes/class-signals.php:1030
 msgid "Checkout could not be timed"
 msgstr ""
 
@@ -980,11 +1083,11 @@ msgstr ""
 msgid "Checkout submitted faster than a person can fill it in"
 msgstr ""
 
-#: includes/class-signals.php:1048
+#: includes/class-signals.php:1050
 msgid "Checkout was filled in by a script"
 msgstr ""
 
-#: includes/class-signals.php:728
+#: includes/class-signals.php:729
 msgid "Checkouts allowed per device"
 msgstr ""
 
@@ -1040,6 +1143,10 @@ msgstr ""
 msgid "Clear all log entries. This action cannot be undone."
 msgstr ""
 
+#: assets/js/mshield-admin.js:139
+msgid "Close"
+msgstr ""
+
 #: admin/views/blocking.php:498 admin/views/setup/step-challenge.php:53 admin/views/setup/step-done.php:44
 msgid "Cloudflare Turnstile"
 msgstr ""
@@ -1048,11 +1155,11 @@ msgstr ""
 msgid "Cloudflare Turnstile or Google reCAPTCHA v3, and which pages it guards."
 msgstr ""
 
-#: includes/class-signals.php:1014
+#: includes/class-signals.php:1016
 msgid "Cloudflare or Google judged the visitor not to be a person."
 msgstr ""
 
-#: includes/class-signals.php:729
+#: includes/class-signals.php:730
 msgid "Collect device information"
 msgstr ""
 
@@ -1080,7 +1187,7 @@ msgstr ""
 msgid "Completed normally — real customers you would have lost"
 msgstr ""
 
-#: includes/class-signals.php:1179
+#: includes/class-signals.php:1181
 msgid "Connected to earlier orders that did not end well, without a chargeback or rejection specifically."
 msgstr ""
 
@@ -1100,6 +1207,7 @@ msgstr ""
 msgid "Could not download the MaxMind ASN database."
 msgstr ""
 
+#. translators: %s: gateway error.
 #: admin/class-order-panel.php:989
 msgid "Could not release the authorization: %s. The order is still on hold."
 msgstr ""
@@ -1112,15 +1220,15 @@ msgstr ""
 msgid "Counted only where the order reached a known outcome, so refunds and orders still in flight are left out of both columns."
 msgstr ""
 
-#: includes/class-signals.php:723
+#: includes/class-signals.php:724
 msgid "Countries to treat as higher risk — two-letter codes, one per line"
 msgstr ""
 
-#: includes/class-signals.php:722
+#: includes/class-signals.php:723
 msgid "Countries you do not sell to — two-letter codes, one per line"
 msgstr ""
 
-#: admin/class-admin-page.php:1363 admin/views/blocklist.php:74 admin/views/whitelist.php:26
+#: admin/views/blocklist.php:74 admin/views/whitelist.php:26
 msgid "Country"
 msgstr ""
 
@@ -1128,15 +1236,15 @@ msgstr ""
 msgid "Country (two-letter code)"
 msgstr ""
 
-#: includes/class-signals.php:973
+#: includes/class-signals.php:975
 msgid "Country you do not sell to"
 msgstr ""
 
-#: includes/class-signals.php:978
+#: includes/class-signals.php:980
 msgid "Country you treat as higher risk"
 msgstr ""
 
-#: includes/class-signals.php:740
+#: includes/class-signals.php:742
 msgid "Counts as new for (minutes)"
 msgstr ""
 
@@ -1144,7 +1252,8 @@ msgstr ""
 msgid "Creating an account"
 msgstr ""
 
-#: protection/class-smarty-address-verifier.php:379
+#. translators: %s: the transport in use, e.g. "HTTP Basic".
+#: protection/class-smarty-address-verifier.php:383
 msgid "Credentials were sent as %s. Use Test Connection on the Scoring tab to find the form this server can actually deliver."
 msgstr ""
 
@@ -1172,6 +1281,10 @@ msgstr ""
 msgid "Customer History"
 msgstr ""
 
+#: includes/class-ai-client.php:154
+msgid "Daily AI review limit reached"
+msgstr ""
+
 #: admin/views/ai.php:203
 msgid "Daily Limit"
 msgstr ""
@@ -1180,11 +1293,11 @@ msgstr ""
 msgid "Daily limit"
 msgstr ""
 
-#: admin/class-admin-page.php:1766
+#: admin/class-admin-page.php:1752 assets/js/mshield-admin.js:43
 msgid "Dark"
 msgstr ""
 
-#: admin/class-admin-page.php:2001 admin/views/documentation.php:211 admin/views/documentation.php:345
+#: admin/class-admin-page.php:1987 admin/views/documentation.php:211 admin/views/documentation.php:345
 msgid "Dashboard"
 msgstr ""
 
@@ -1220,7 +1333,7 @@ msgstr ""
 msgid "Deleted %d log entries."
 msgstr ""
 
-#: includes/class-signals.php:948
+#: includes/class-signals.php:950
 msgid "Delivering to a parcel-forwarding address"
 msgstr ""
 
@@ -1232,7 +1345,7 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
-#: includes/class-signals.php:968
+#: includes/class-signals.php:970
 msgid "Details are on your blocklist"
 msgstr ""
 
@@ -1240,7 +1353,7 @@ msgstr ""
 msgid "Device check"
 msgstr ""
 
-#: includes/class-signals.php:1033
+#: includes/class-signals.php:1035
 msgid "Device clock is set to another country"
 msgstr ""
 
@@ -1248,7 +1361,7 @@ msgstr ""
 msgid "Different emails per hour"
 msgstr ""
 
-#: admin/class-admin-page.php:1923
+#: admin/class-admin-page.php:1909
 msgid "Disabled"
 msgstr ""
 
@@ -1256,7 +1369,7 @@ msgstr ""
 msgid "Disabled, Observing or Active. There is no switch on it, because changing that belongs on the screen that explains what the three mean."
 msgstr ""
 
-#: admin/class-admin-page.php:1924
+#: admin/class-admin-page.php:1910
 msgid "Disabled. No orders are checked"
 msgstr ""
 
@@ -1264,11 +1377,11 @@ msgstr ""
 msgid "Discard the file"
 msgstr ""
 
-#: admin/class-admin-page.php:1508 includes/class-ai-client.php:664 protection/class-smarty-address-verifier.php:114
+#: admin/class-admin-page.php:1494 includes/class-ai-client.php:672 protection/class-smarty-address-verifier.php:118
 msgid "Dismiss"
 msgstr ""
 
-#: includes/class-signals.php:908
+#: includes/class-signals.php:910
 msgid "Disposable email address"
 msgstr ""
 
@@ -1276,11 +1389,11 @@ msgstr ""
 msgid "Do not send customers' personal details to the AI provider"
 msgstr ""
 
-#: admin/class-admin-page.php:1781
+#: admin/class-admin-page.php:1767
 msgid "Documentation"
 msgstr ""
 
-#: includes/class-signals.php:1134
+#: includes/class-signals.php:1136
 msgid "Dots, plus-tags and alias domains all point at one inbox, and that inbox has ordered several times in the last hour. Changing the spelling is how a card tester gets a fresh start."
 msgstr ""
 
@@ -1316,7 +1429,7 @@ msgstr ""
 msgid "Email address"
 msgstr ""
 
-#: includes/class-signals.php:913
+#: includes/class-signals.php:915
 msgid "Email address cannot receive mail"
 msgstr ""
 
@@ -1340,7 +1453,7 @@ msgstr ""
 msgid "Email me when a review comes back badly rated."
 msgstr ""
 
-#: includes/class-signals.php:734
+#: includes/class-signals.php:735
 msgid "Emails allowed per hour"
 msgstr ""
 
@@ -1360,10 +1473,11 @@ msgstr ""
 msgid "Enable Store API checks"
 msgstr ""
 
-#: admin/class-admin-page.php:1350 admin/views/logs.php:149
+#: admin/views/logs.php:149 assets/js/mshield-admin.js:145
 msgid "Endpoint"
 msgstr ""
 
+#. translators: 1: orders that would be refused, 2: orders rated.
 #: includes/class-forecast.php:265
 msgid "Enforcing would have refused %1$s of your last %2$s orders."
 msgstr ""
@@ -1372,12 +1486,20 @@ msgstr ""
 msgid "Entries older than this are cleaned up daily."
 msgstr ""
 
-#: admin/class-admin-page.php:1348
+#: assets/js/mshield-admin.js:134 assets/js/mshield-admin.js:136
 msgid "Event detail"
 msgstr ""
 
-#: admin/views/dashboard.php:81
+#: assets/js/mshield-admin.js:254
+msgid "Events over the past 24 hours"
+msgstr ""
+
+#: admin/views/dashboard.php:81 assets/js/mshield-admin.js:252
 msgid "Events over the past 30 days"
+msgstr ""
+
+#: assets/js/mshield-admin.js:253
+msgid "Events over the past 7 days"
 msgstr ""
 
 #: admin/views/documentation.php:403
@@ -1424,7 +1546,7 @@ msgstr ""
 msgid "Every user in this role bypasses all checks. Be careful with broad roles like Customer, which would exempt all such users."
 msgstr ""
 
-#: includes/class-signals.php:1129
+#: includes/class-signals.php:1131
 msgid "Everyone is new once, so this only matters next to something else."
 msgstr ""
 
@@ -1436,6 +1558,7 @@ msgstr ""
 msgid "Everything"
 msgstr ""
 
+#. translators: %s: link to the documentation.
 #: admin/views/setup/step-done.php:124
 msgid "Everything MightyShield does, setting by setting, is written up in the %s."
 msgstr ""
@@ -1476,7 +1599,7 @@ msgstr ""
 msgid "Extra card verification"
 msgstr ""
 
-#: includes/class-signals.php:724
+#: includes/class-signals.php:725
 msgid "Extra virtual-line area codes, one per line"
 msgstr ""
 
@@ -1488,7 +1611,7 @@ msgstr ""
 msgid "Failed coupons per hour"
 msgstr ""
 
-#: includes/class-signals.php:738
+#: includes/class-signals.php:740
 msgid "Failed logins allowed per hour"
 msgstr ""
 
@@ -1496,7 +1619,7 @@ msgstr ""
 msgid "Failed logins per hour"
 msgstr ""
 
-#: includes/class-signals.php:1164
+#: includes/class-signals.php:1166
 msgid "Failed payments across the whole store are running far above normal, which is what card testing spread across many addresses looks like. For an hour, every unknown customer costs a little more."
 msgstr ""
 
@@ -1504,15 +1627,15 @@ msgstr ""
 msgid "Failed payments per hour"
 msgstr ""
 
-#: includes/class-signals.php:1013
+#: includes/class-signals.php:1015
 msgid "Failed the bot challenge"
 msgstr ""
 
-#: includes/class-signals.php:736
+#: includes/class-signals.php:738
 msgid "Failures allowed per hour"
 msgstr ""
 
-#: includes/class-signals.php:1049
+#: includes/class-signals.php:1051
 msgid "Fields gained values with no typing, pasting or autofill behind them. A person cannot fill a form without the browser noticing."
 msgstr ""
 
@@ -1577,10 +1700,11 @@ msgid "Flag for review"
 msgstr ""
 
 #: admin/class-dashboard-widget.php:208 admin/class-fraud-review.php:497 admin/views/dashboard.php:88 admin/views/dashboard.php:107
-#: admin/views/logs.php:59 admin/views/logs.php:102
+#: admin/views/logs.php:59 admin/views/logs.php:102 assets/js/mshield-admin.js:347
 msgid "Flagged"
 msgstr ""
 
+#. translators: %s: name of the check that flagged the order.
 #: admin/class-order-panel.php:625
 msgid "Flagged at checkout by %s"
 msgstr ""
@@ -1589,7 +1713,7 @@ msgstr ""
 msgid "Flagged by its rating"
 msgstr ""
 
-#: includes/class-response.php:938
+#: includes/class-response.php:943
 msgid "Flagged by the risk rating."
 msgstr ""
 
@@ -1625,12 +1749,17 @@ msgstr ""
 msgid "Force level"
 msgstr ""
 
+#. translators: %s: signal name.
 #: admin/views/scoring.php:400
 msgid "Force level for %s"
 msgstr ""
 
 #: admin/views/documentation.php:394
 msgid "Force level."
+msgstr ""
+
+#: includes/class-signals.php:717
+msgid "Forwarding addresses, one per line — a street line, or a postcode"
 msgstr ""
 
 #: admin/class-order-panel.php:430 admin/views/documentation.php:562
@@ -1646,6 +1775,7 @@ msgstr ""
 msgid "Fraud checks now run on the block-based checkout as well as the classic one. Previously they only ran on classic, so stores using the newer checkout were unprotected. Each check still does exactly what you have it set to do."
 msgstr ""
 
+#. translators: %s: number of rated orders.
 #: admin/views/scoring.php:185
 msgid "From the %s orders MightyShield has rated in the last 90 days. These are not errors — they are places where a weight is probably costing you more than it is saving."
 msgstr ""
@@ -1674,7 +1804,11 @@ msgstr ""
 msgid "Gemini API Key"
 msgstr ""
 
-#: admin/class-admin-page.php:1357
+#: includes/class-ai-client.php:514
+msgid "Gemini returned a verdict that was not valid JSON"
+msgstr ""
+
+#: assets/js/mshield-admin.js:109 assets/js/mshield-admin.js:197 assets/js/mshield-admin.js:204
 msgid "Get IP"
 msgstr ""
 
@@ -1706,7 +1840,7 @@ msgstr ""
 msgid "Google reCAPTCHA v3"
 msgstr ""
 
-#: includes/class-signals.php:1108
+#: includes/class-signals.php:1110
 msgid "Guessing at discount codes"
 msgstr ""
 
@@ -1714,7 +1848,8 @@ msgstr ""
 msgid "Guessing at discount codes in bulk is its own kind of attack."
 msgstr ""
 
-#: protection/class-smarty-address-verifier.php:380
+#. translators: %s: the transport in use, e.g. "HTTP Basic".
+#: protection/class-smarty-address-verifier.php:384
 msgid "HTTP Basic"
 msgstr ""
 
@@ -1730,15 +1865,15 @@ msgstr ""
 msgid "Held by its rating"
 msgstr ""
 
-#: includes/class-response.php:787
+#: includes/class-response.php:792
 msgid "Held for review after payment. The money has been taken but the order will not be fulfilled until you release it."
 msgstr ""
 
-#: includes/class-response.php:747
+#: includes/class-response.php:752
 msgid "Held for review. The card was authorized but not charged. Approving captures the payment; refusing voids it with nothing to refund."
 msgstr ""
 
-#: includes/class-response.php:748
+#: includes/class-response.php:753
 msgid "Held for review. This payment method cannot authorize without charging, so it was handled as a hold before payment instead."
 msgstr ""
 
@@ -1748,6 +1883,10 @@ msgstr ""
 
 #: admin/class-dashboard-widget.php:257
 msgid "Held or flagged, and waiting on a decision."
+msgstr ""
+
+#: includes/class-gateways.php:116
+msgid "Held orders can be captured or voided, but only if PayPal's own intent is set to Authorize. MightyShield cannot switch it per order."
 msgstr ""
 
 #: admin/views/documentation.php:539
@@ -1770,7 +1909,7 @@ msgstr ""
 msgid "Hidden trap field"
 msgstr ""
 
-#: includes/class-signals.php:1003
+#: includes/class-signals.php:1005
 msgid "Hidden trap field was filled in"
 msgstr ""
 
@@ -1786,11 +1925,11 @@ msgstr ""
 msgid "High value amount"
 msgstr ""
 
-#: includes/class-signals.php:720
+#: includes/class-signals.php:721
 msgid "High-value threshold (0 = work it out from my orders)"
 msgstr ""
 
-#: includes/class-signals.php:1211
+#: includes/class-signals.php:1213
 msgid "History"
 msgstr ""
 
@@ -1918,7 +2057,7 @@ msgstr ""
 msgid "IP %s added to blocklist."
 msgstr ""
 
-#: admin/class-admin-page.php:1349 admin/views/blocklist.php:68 admin/views/logs.php:148 admin/views/whitelist.php:18
+#: admin/views/blocklist.php:68 admin/views/logs.php:148 admin/views/whitelist.php:18 assets/js/mshield-admin.js:144
 #: includes/class-privacy.php:255
 msgid "IP address"
 msgstr ""
@@ -1935,7 +2074,7 @@ msgstr ""
 msgid "IP address or range."
 msgstr ""
 
-#: admin/class-admin-page.php:1356
+#: assets/js/mshield-admin.js:94
 msgid "IP location"
 msgstr ""
 
@@ -1947,7 +2086,7 @@ msgstr ""
 msgid "IP: e.g. 192.168.1.1 or 10.0.0.0/8. User: a username, email, or user ID. Email: a full email address."
 msgstr ""
 
-#: includes/class-signals.php:1206
+#: includes/class-signals.php:1208
 msgid "Identity"
 msgstr ""
 
@@ -1991,6 +2130,7 @@ msgstr ""
 msgid "In Observing nothing is refused or held because of what MightyShield worked out. An order that trips the hidden trap field is rated Rejected, recorded as such, and still goes through — that is the point, so you can see what enforcing would have done before it does it. What still acts are your own lists: an address on your blocklist is refused, and the Store API firewall keeps whichever mode you set, because those are instructions you gave, not ratings."
 msgstr ""
 
+#. translators: 1: number refused, 2: number unconfirmed, 3: number of days.
 #: admin/views/blocking.php:465
 msgid "In the last %3$d days it turned away %1$d visitors, and %2$d more could not be confirmed either way."
 msgstr ""
@@ -2007,7 +2147,7 @@ msgstr ""
 msgid "Invalid IP address or CIDR format."
 msgstr ""
 
-#: admin/class-admin-page.php:1560
+#: admin/class-admin-page.php:1546
 msgid "Invalid IP."
 msgstr ""
 
@@ -2019,7 +2159,7 @@ msgstr ""
 msgid "Invalid allowlist entry type."
 msgstr ""
 
-#: includes/class-signals.php:737
+#: includes/class-signals.php:739
 msgid "Invalid codes allowed per hour"
 msgstr ""
 
@@ -2031,11 +2171,12 @@ msgstr ""
 msgid "It is off until you add an API key, and it is only asked about the risk levels you choose, so it never costs you anything on ordinary orders. If the provider is unreachable or you have hit your daily cap, the order simply proceeds on its checks alone."
 msgstr ""
 
+#. translators: %s: the provider's own error message.
 #: includes/class-api-error.php:171
 msgid "It said: %s"
 msgstr ""
 
-#: includes/class-signals.php:1044
+#: includes/class-signals.php:1046
 msgid "It says it is one thing but behaves like another — the fingerprint of a browser running on a server with no screen."
 msgstr ""
 
@@ -2047,7 +2188,7 @@ msgstr ""
 msgid "Key is saved. Leave blank to keep existing key."
 msgstr ""
 
-#: includes/class-signals.php:1183
+#: includes/class-signals.php:1185
 msgid "Known good customer"
 msgstr ""
 
@@ -2079,6 +2220,7 @@ msgstr ""
 msgid "Last 7 days"
 msgstr ""
 
+#. translators: 1: orders rated, 2: orders skipped.
 #: admin/views/logs.php:267
 msgid "Last run: %1$s rated, %2$s skipped."
 msgstr ""
@@ -2111,7 +2253,7 @@ msgstr ""
 msgid "Let it watch your real orders, then look at the Dashboard and the Fraud Review queue. If the orders it would have held are the ones you would have held, switch it on. If it is flagging your regulars, lower the strictness first. That switch is on every MightyShield page."
 msgstr ""
 
-#: admin/class-admin-page.php:1766
+#: admin/class-admin-page.php:1752 assets/js/mshield-admin.js:43
 msgid "Light"
 msgstr ""
 
@@ -2119,23 +2261,24 @@ msgstr ""
 msgid "Likely fraud. Enough against it to be worth stopping before fulfilment."
 msgstr ""
 
-#: includes/class-signals.php:1178
+#: includes/class-signals.php:1180
 msgid "Linked to a poor history"
 msgstr ""
 
-#: includes/class-signals.php:1168
+#: includes/class-signals.php:1170
 msgid "Linked to a previous chargeback"
 msgstr ""
 
-#: includes/class-signals.php:1173
+#: includes/class-signals.php:1175
 msgid "Linked to an order you rejected"
 msgstr ""
 
+#. translators: %s: the list of permitted HTML tags.
 #: admin/views/blocking.php:648
 msgid "Links work, so a phone number or an email address can be tapped. Bold and italic work too. In full: %s."
 msgstr ""
 
-#: admin/class-admin-page.php:1361
+#: assets/js/mshield-admin.js:100
 msgid "Location"
 msgstr ""
 
@@ -2159,7 +2302,7 @@ msgstr ""
 msgid "Login is off by default."
 msgstr ""
 
-#: admin/class-admin-page.php:2015 admin/views/dashboard.php:159 admin/views/documentation.php:218 admin/views/documentation.php:515
+#: admin/class-admin-page.php:2001 admin/views/dashboard.php:159 admin/views/documentation.php:218 admin/views/documentation.php:515
 msgid "Logs"
 msgstr ""
 
@@ -2167,7 +2310,7 @@ msgstr ""
 msgid "Look at the file"
 msgstr ""
 
-#: admin/class-admin-page.php:1360
+#: assets/js/mshield-admin.js:180
 msgid "Looking up…"
 msgstr ""
 
@@ -2179,7 +2322,7 @@ msgstr ""
 msgid "Looks up whether anything is actually listening for email at that domain. A domain that cannot receive mail is not a real customer. This is the one check that asks something outside your server during a checkout — your own DNS resolver — which is why it is off until you switch it on."
 msgstr ""
 
-#: admin/class-admin-page.php:1364 admin/class-admin-page.php:1564
+#: admin/class-admin-page.php:1550 assets/js/mshield-admin.js:200
 msgid "Lookup failed. Please try again."
 msgstr ""
 
@@ -2219,15 +2362,15 @@ msgstr ""
 msgid "Manual"
 msgstr ""
 
-#: includes/class-signals.php:1148
+#: includes/class-signals.php:1150
 msgid "Many different email addresses from one connection"
 msgstr ""
 
-#: includes/class-signals.php:1123
+#: includes/class-signals.php:1125
 msgid "Many new accounts from one connection"
 msgstr ""
 
-#: includes/class-signals.php:1114
+#: includes/class-signals.php:1116
 msgid "Many wrong passwords from one connection, which usually precedes an attempt to take over an account."
 msgstr ""
 
@@ -2259,13 +2402,18 @@ msgstr ""
 msgid "Medium"
 msgstr ""
 
-#: admin/class-admin-page.php:199 admin/class-admin-page.php:200 admin/class-admin-page.php:1775 admin/class-dashboard-widget.php:63
+#: admin/class-admin-page.php:199 admin/class-admin-page.php:200 admin/class-admin-page.php:1761 admin/class-dashboard-widget.php:63
 #: admin/class-order-panel.php:85 admin/views/documentation.php:231 includes/class-privacy.php:94 includes/class-privacy.php:111
 msgid "MightyShield"
 msgstr ""
 
 #: admin/views/setup/step-alerts.php:27
 msgid "MightyShield emails you when something needs a person: an AI review that rated an order badly, a service it relies on that has stopped responding, or a bot challenge that has started refusing everybody. These are rare and they are not marketing. Emails about low-rated orders are a separate switch on the Shielding tab, off until you set the rating you want to hear about."
+msgstr ""
+
+#. translators: 1: order number, 2: why it was flagged, 3: customer name, 4: customer email, 5: IP address, 6: link to the order.
+#: includes/class-response.php:627
+msgid "MightyShield flagged an order.\n\nOrder: #%1$d\nReason: %2$s\nCustomer: %3$s (%4$s)\nIP: %5$s\n\nReview this order: %6$s"
 msgstr ""
 
 #: includes/class-privacy.php:175
@@ -2284,11 +2432,11 @@ msgstr ""
 msgid "MightyShield installs in Observe mode. It rates every order and records what it would have done, without doing it. Your existing checks carry on working exactly as before. When you are ready, turn enforcement on with the three way switch on the <a href=\"%s\">Dashboard</a>."
 msgstr ""
 
-#: admin/class-admin-page.php:1966
+#: admin/class-admin-page.php:1952
 msgid "MightyShield is actively protecting your store."
 msgstr ""
 
-#: admin/class-admin-page.php:1968
+#: admin/class-admin-page.php:1954
 msgid "MightyShield is not checking any orders."
 msgstr ""
 
@@ -2344,8 +2492,28 @@ msgstr ""
 msgid "MightyShield works 24/7 to keep bots, card testers, scammers, fraudsters, and the people running stolen cards from making more work for you, so that you can get on with selling instead of cleaning up after them. It is built to be fine-tuned to your customers rather than somebody else's, and everything below explains how to do that by specifying what each setting does and when to reach for it."
 msgstr ""
 
-#: admin/class-admin-page.php:223 admin/class-admin-page.php:1504 admin/class-order-panel.php:1124 admin/class-setup-wizard.php:185
-#: includes/class-ai-client.php:656 protection/class-captcha.php:1316 protection/class-captcha.php:1374 protection/class-smarty-address-verifier.php:106
+#. translators: %s: the error the AI provider returned.
+#: includes/class-ai-client.php:608
+msgid "MightyShield's AI order review is currently unavailable.\n\nReason: %s\n\nOrders are being allowed through WITHOUT AI review until this is resolved. Common causes:\n- Invalid or expired API key\n- Provider quota exhausted or rate limited\n- Network/API outage\n\nCheck your credentials under MightyShield > AI Review.\n\nThis alert is sent at most once per day."
+msgstr ""
+
+#. translators: 1: rating out of 100, 2: order number, 3: the reasons the AI gave, 4: customer name, 5: customer email, 6: IP address, 7: payment method, 8: link to the order.
+#: protection/class-ai-reviewer.php:786
+msgid "MightyShield's AI review rated an order %1$d/100 (100 is a completely ordinary order).\n\nOrder: #%2$d\nWhy: %3$s\nCustomer: %4$s (%5$s)\nIP: %6$s\nPayment: %7$s\n\nThis rating caps the order's trust score. What happens next is the action set for\nthe resulting risk level on the Shielding tab.\n\nReview this order: %8$s"
+msgstr ""
+
+#. translators: %s: the error Smarty returned.
+#: protection/class-smarty-address-verifier.php:71
+msgid "MightyShield's Smarty address verification is currently unavailable and has fallen back to a basic ZIP/State check.\n\nReason: %s\n\nFull USPS address verification is NOT running until this is resolved. Common causes:\n- Smarty subscription/quota exhausted (HTTP 402)\n- Invalid or expired auth-id / auth-token (HTTP 401/403)\n- Network/API outage\n\nCheck your Smarty account at https://www.smarty.com/account and the MightyShield > Scoring settings.\n\nThis alert is sent at most once per day."
+msgstr ""
+
+#. translators: 1: the challenge provider (turnstile or recaptcha_v3), 2: the error code it returned.
+#: protection/class-captcha.php:1290
+msgid "MightyShield's bot challenge (%1$s) is rejecting all tokens because of a configuration error: %2$s.\n\nTo avoid blocking legitimate checkouts, the challenge is temporarily failing open (allowing orders) until this is fixed.\n\nCheck the Site Key and Secret Key under MightyShield > Shielding > Bot Challenge.\n\nThis alert is sent at most once per day."
+msgstr ""
+
+#: admin/class-admin-page.php:223 admin/class-admin-page.php:1490 admin/class-order-panel.php:1124 admin/class-setup-wizard.php:185
+#: includes/class-ai-client.php:664 protection/class-captcha.php:1320 protection/class-captcha.php:1378 protection/class-smarty-address-verifier.php:110
 msgid "MightyShield:"
 msgstr ""
 
@@ -2365,7 +2533,7 @@ msgstr ""
 msgid "MightyShield: held for review before payment. No charge has been attempted and the payment processor was never contacted."
 msgstr ""
 
-#: includes/class-response.php:827
+#: includes/class-response.php:832
 msgid "MightyShield: held for review."
 msgstr ""
 
@@ -2389,11 +2557,11 @@ msgstr ""
 msgid "Minimum order amount"
 msgstr ""
 
-#: includes/class-signals.php:719
+#: includes/class-signals.php:720
 msgid "Minimum order total"
 msgstr ""
 
-#: includes/class-signals.php:727
+#: includes/class-signals.php:728
 msgid "Minimum seconds"
 msgstr ""
 
@@ -2401,7 +2569,7 @@ msgstr ""
 msgid "Model"
 msgstr ""
 
-#: includes/class-signals.php:1154
+#: includes/class-signals.php:1156
 msgid "More orders from one connection in minutes than a shopper would place."
 msgstr ""
 
@@ -2409,6 +2577,7 @@ msgstr ""
 msgid "More severe"
 msgstr ""
 
+#. translators: %d: reviews used today.
 #: admin/views/ai.php:212
 msgid "Most reviews to run in one day. 0 means no limit. Used today: %d. Once the limit is reached, orders carry on as normal without a review, and a note is added to your logs."
 msgstr ""
@@ -2421,7 +2590,7 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-#: includes/class-signals.php:923
+#: includes/class-signals.php:925
 msgid "Name does not appear in the email address"
 msgstr ""
 
@@ -2433,7 +2602,7 @@ msgstr ""
 msgid "Needs attention"
 msgstr ""
 
-#: includes/class-signals.php:1207
+#: includes/class-signals.php:1209
 msgid "Network"
 msgstr ""
 
@@ -2441,7 +2610,7 @@ msgstr ""
 msgid "Network."
 msgstr ""
 
-#: includes/class-signals.php:721
+#: includes/class-signals.php:722
 msgid "Never accept above (0 = no ceiling)"
 msgstr ""
 
@@ -2453,7 +2622,7 @@ msgstr ""
 msgid "New account minutes"
 msgstr ""
 
-#: includes/class-signals.php:739
+#: includes/class-signals.php:741
 msgid "New accounts allowed per hour"
 msgstr ""
 
@@ -2469,11 +2638,24 @@ msgstr ""
 msgid "No"
 msgstr ""
 
+#. translators: %s: provider name.
 #: includes/class-ai-client.php:214
 msgid "No %s API key is saved. Enter one and save the page first: the key fields are write-only, so this tests what is stored, not what is typed."
 msgstr ""
 
-#: protection/class-smarty-address-verifier.php:270
+#: includes/class-ai-client.php:373
+msgid "No Anthropic API key configured"
+msgstr ""
+
+#: includes/class-ai-client.php:478
+msgid "No Gemini API key configured"
+msgstr ""
+
+#: includes/class-ai-client.php:423
+msgid "No OpenAI API key configured"
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:274
 msgid "No Smarty Auth ID and Auth Token are saved. Enter them and save the page first: this tests what is stored, not what is typed."
 msgstr ""
 
@@ -2489,7 +2671,11 @@ msgstr ""
 msgid "No active payment method can do this."
 msgstr ""
 
-#: includes/class-signals.php:1038
+#: assets/js/mshield-admin.js:126
+msgid "No additional request data captured."
+msgstr ""
+
+#: includes/class-signals.php:1040
 msgid "No device information was sent"
 msgstr ""
 
@@ -2499,6 +2685,10 @@ msgstr ""
 
 #: admin/class-admin-page.php:1138
 msgid "No file was uploaded."
+msgstr ""
+
+#: assets/js/mshield-admin.js:106
+msgid "No location data available for this IP."
 msgstr ""
 
 #: admin/views/logs.php:124
@@ -2525,11 +2715,11 @@ msgstr ""
 msgid "No reviews will run until a provider is set up above."
 msgstr ""
 
-#: includes/class-signals.php:1053
+#: includes/class-signals.php:1055
 msgid "Nobody moved, typed or scrolled"
 msgstr ""
 
-#: includes/class-signals.php:1138
+#: includes/class-signals.php:1140
 msgid "Nobody on this order has bought here before"
 msgstr ""
 
@@ -2541,7 +2731,7 @@ msgstr ""
 msgid "None of these refuse an order on their own. They decide how far an order falls, and what happens at each depth is the next thing you will see."
 msgstr ""
 
-#: includes/class-signals.php:1054
+#: includes/class-signals.php:1056
 msgid "Not a single sign of a person on the page. Skipped on phones and tablets, where a quick tap-and-pay genuinely leaves almost nothing."
 msgstr ""
 
@@ -2549,6 +2739,7 @@ msgstr ""
 msgid "Not available"
 msgstr ""
 
+#. translators: %s: number of orders rated so far.
 #: admin/views/blocking.php:318
 msgid "Not enough rated orders yet to say anything useful — there are %s, and this needs at least 20. Leave MightyShield observing and come back; a forecast built on a handful of orders is a number pretending to be an answer."
 msgstr ""
@@ -2557,6 +2748,7 @@ msgstr ""
 msgid "Not now"
 msgstr ""
 
+#. translators: %s: comma-separated action names.
 #: admin/views/blocking.php:195
 msgid "Not offered here, because no active payment method can do it: %s."
 msgstr ""
@@ -2573,11 +2765,11 @@ msgstr ""
 msgid "Not something you pick. It appears on its own as soon as you change a row yourself, and goes away again if you set that row back. Switching to a profile while you are on Custom replaces the rows you changed, so MightyShield asks first."
 msgstr ""
 
-#: includes/class-signals.php:1074
+#: includes/class-signals.php:1076
 msgid "Not suspicious by itself — it simply raises what is at stake if the order turns out to be fraud. Judged against your own order history unless you set a figure."
 msgstr ""
 
-#: includes/class-signals.php:1139
+#: includes/class-signals.php:1141
 msgid "Not the email, the phone, the address, the device or the card. Every store wants first-time customers, so this is close to weightless — it is here so the rating can tell \"new\" apart from \"known good\"."
 msgstr ""
 
@@ -2597,7 +2789,7 @@ msgstr ""
 msgid "Nothing has been turned away, which usually means the widget is not reaching your forms rather than that nobody has tried. Check the Logs tab, filtered to Needs attention."
 msgstr ""
 
-#: includes/class-signals.php:1059
+#: includes/class-signals.php:1061
 msgid "Nothing in the cookie jar at all, which a shopper who filled a cart cannot manage. Scripted checkouts skip the jar entirely."
 msgstr ""
 
@@ -2621,7 +2813,7 @@ msgstr ""
 msgid "Nothing is enforced until you say so"
 msgstr ""
 
-#: includes/class-signals.php:914
+#: includes/class-signals.php:916
 msgid "Nothing is listening at that domain, so the customer could never read an order confirmation."
 msgstr ""
 
@@ -2649,7 +2841,7 @@ msgstr ""
 msgid "Nothing wrong, nothing vouching for it either. Where an unknown customer starts."
 msgstr ""
 
-#: includes/class-response.php:686
+#: includes/class-response.php:691
 msgid "Nothing — MightyShield is in Observe mode"
 msgstr ""
 
@@ -2669,15 +2861,15 @@ msgstr ""
 msgid "Notifications"
 msgstr ""
 
-#: admin/class-admin-page.php:1459
+#: admin/class-admin-page.php:1445
 msgid "Now observing. Orders are rated and recorded, but the rating is not acted on."
 msgstr ""
 
-#: admin/class-admin-page.php:1929
+#: admin/class-admin-page.php:1915
 msgid "Observing"
 msgstr ""
 
-#: admin/class-admin-page.php:1930
+#: admin/class-admin-page.php:1916
 msgid "Observing. Orders are rated and recorded, but not acted on"
 msgstr ""
 
@@ -2711,10 +2903,12 @@ msgstr ""
 msgid "On the <a href=\"%s\">Dashboard</a>, set the protection switch to Disabled. Nothing is checked and nothing is recorded until you switch it back. Deactivating the plugin does the same and keeps all your settings and history."
 msgstr ""
 
+#. translators: 1: rejected threshold, 2: high threshold.
 #: admin/views/blocking.php:676
 msgid "On your current thresholds, %1$s or below is refused outright and %2$s or below is held. Somewhere around those figures is usually what you want."
 msgstr ""
 
+#. translators: %s: provider name.
 #: admin/views/setup/step-done.php:42
 msgid "On, using %s"
 msgstr ""
@@ -2731,7 +2925,14 @@ msgstr ""
 msgid "One thing does outrank your verdict, and it should: a chargeback. If you release an order and the bank later takes the money back, that is recorded against everyone connected to it, exactly as it would be on any other order. Your judgement stands until reality contradicts it."
 msgstr ""
 
-#: includes/class-signals.php:1149
+#. translators: %d: number of hand-tuned rows.
+#: admin/views/setup/step-scoring.php:63
+msgid "One trust cost on the Scoring tab has been changed by hand. Choosing a profile here replaces it."
+msgid_plural "%d trust costs on the Scoring tab have been changed by hand. Choosing a profile here replaces them."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-signals.php:1151
 msgid "One visitor cycling through addresses, which is how card testing looks from the outside."
 msgstr ""
 
@@ -2767,11 +2968,15 @@ msgstr ""
 msgid "OpenAI API Key"
 msgstr ""
 
+#: includes/class-ai-client.php:463
+msgid "OpenAI returned a verdict that was not valid JSON"
+msgstr ""
+
 #: admin/views/ai.php:96
 msgid "Optional. Only needed if your key belongs to more than one organization."
 msgstr ""
 
-#: admin/class-fraud-review.php:443 admin/views/logs.php:327 includes/class-privacy.php:269 includes/class-signals.php:1209
+#: admin/class-fraud-review.php:443 admin/views/logs.php:327 includes/class-privacy.php:269 includes/class-signals.php:1211
 msgid "Order"
 msgstr ""
 
@@ -2803,27 +3008,28 @@ msgstr ""
 msgid "Order blocked. The authorization was released, the order cancelled, and the IP added to the blocklist. Nothing was taken, so there is nothing to refund."
 msgstr ""
 
-#: includes/class-signals.php:998
+#: includes/class-signals.php:1000
 msgid "Order came from a server, not a home connection"
 msgstr ""
 
-#: includes/class-signals.php:993
+#: includes/class-signals.php:995
 msgid "Order placed from a different region"
 msgstr ""
 
+#. translators: %s: checkout payment URL.
 #: admin/class-order-panel.php:886
 msgid "Order released. It was never charged, so send the customer this link to pay: %s"
 msgstr ""
 
-#: includes/class-signals.php:1078
+#: includes/class-signals.php:1080
 msgid "Order total is above your ceiling"
 msgstr ""
 
-#: includes/class-signals.php:1073
+#: includes/class-signals.php:1075
 msgid "Order total is large"
 msgstr ""
 
-#: includes/class-signals.php:1068
+#: includes/class-signals.php:1070
 msgid "Order total is unusually small"
 msgstr ""
 
@@ -2831,7 +3037,7 @@ msgstr ""
 msgid "Order."
 msgstr ""
 
-#: includes/class-signals.php:918
+#: includes/class-signals.php:920
 msgid "Ordered from a shared mailbox"
 msgstr ""
 
@@ -2839,8 +3045,12 @@ msgstr ""
 msgid "Orders MightyShield has stopped or flagged appear here until somebody decides what to do with them."
 msgstr ""
 
-#: includes/class-signals.php:735
+#: includes/class-signals.php:737
 msgid "Orders allowed per 15 min"
+msgstr ""
+
+#: includes/class-signals.php:736
+msgid "Orders allowed per hour from one email"
 msgstr ""
 
 #: admin/views/documentation.php:411
@@ -2867,7 +3077,7 @@ msgstr ""
 msgid "Orders placed"
 msgstr ""
 
-#: includes/class-signals.php:1153
+#: includes/class-signals.php:1155
 msgid "Orders placed in rapid succession"
 msgstr ""
 
@@ -2883,7 +3093,7 @@ msgstr ""
 msgid "Orders that would be refused"
 msgstr ""
 
-#: admin/class-admin-page.php:1362
+#: assets/js/mshield-admin.js:101
 msgid "Organization"
 msgstr ""
 
@@ -2891,7 +3101,7 @@ msgstr ""
 msgid "Organization ID"
 msgstr ""
 
-#: includes/class-signals.php:717
+#: includes/class-signals.php:718
 msgid "Other orders needed"
 msgstr ""
 
@@ -2915,7 +3125,7 @@ msgstr ""
 msgid "PayPal did not capture the authorization. Check the order notes."
 msgstr ""
 
-#: admin/class-admin-page.php:2013 admin/views/documentation.php:216 admin/views/documentation.php:484 includes/class-signals.php:1210
+#: admin/class-admin-page.php:1999 admin/views/documentation.php:216 admin/views/documentation.php:484 includes/class-signals.php:1212
 msgid "Payment"
 msgstr ""
 
@@ -2927,6 +3137,7 @@ msgstr ""
 msgid "Payment method"
 msgstr ""
 
+#. translators: %s: name of the fallback action.
 #: admin/views/blocking.php:233
 msgid "Payment methods that cannot do this fall back to \"%s\"."
 msgstr ""
@@ -2935,7 +3146,7 @@ msgstr ""
 msgid "Payment."
 msgstr ""
 
-#: includes/class-signals.php:732
+#: includes/class-signals.php:733
 msgid "Per how many seconds"
 msgstr ""
 
@@ -2951,7 +3162,7 @@ msgstr ""
 msgid "Phone number"
 msgstr ""
 
-#: includes/class-signals.php:963
+#: includes/class-signals.php:965
 msgid "Phone number is a virtual line"
 msgstr ""
 
@@ -2963,7 +3174,7 @@ msgstr ""
 msgid "Pick a provider and save both keys below. Until then nothing is challenged and no order is affected."
 msgstr ""
 
-#: includes/class-signals.php:929
+#: includes/class-signals.php:931
 msgid "Placeholder text, repeated characters, or a street line too short to be real."
 msgstr ""
 
@@ -2979,7 +3190,7 @@ msgstr ""
 msgid "Postcode does not match the state"
 msgstr ""
 
-#: includes/class-signals.php:1098
+#: includes/class-signals.php:1100
 msgid "Prepaid card on a large order"
 msgstr ""
 
@@ -2999,11 +3210,11 @@ msgstr ""
 msgid "Protection"
 msgstr ""
 
-#: admin/class-admin-page.php:1460
+#: admin/class-admin-page.php:1446
 msgid "Protection active. Orders are now blocked and held by their rating."
 msgstr ""
 
-#: admin/class-admin-page.php:1458
+#: admin/class-admin-page.php:1444
 msgid "Protection disabled. No orders are being checked."
 msgstr ""
 
@@ -3036,18 +3247,21 @@ msgid "Rate past orders"
 msgstr ""
 
 #: admin/class-dashboard-widget.php:207 admin/views/dashboard.php:87 admin/views/dashboard.php:106 admin/views/logs.php:58
-#: admin/views/logs.php:101
+#: admin/views/logs.php:101 assets/js/mshield-admin.js:346
 msgid "Rate-limited"
 msgstr ""
 
+#. translators: 1: trust rating, 2: level name.
 #: includes/class-trust-badge.php:224
 msgid "Rated %1$d out of 100: %2$s"
 msgstr ""
 
+#. translators: 1: trust rating, 2: risk level name.
 #: admin/class-order-panel.php:827
 msgid "Rated %1$s/100: %2$s. Nothing was done to the order. This is a rating, not an action."
 msgstr ""
 
+#. translators: %d: trust rating.
 #: includes/class-trust-badge.php:226
 msgid "Rated %d out of 100"
 msgstr ""
@@ -3064,6 +3278,7 @@ msgstr ""
 msgid "Rating"
 msgstr ""
 
+#. translators: %s: number of orders.
 #: admin/class-admin-page.php:1008
 msgid "Rating %s past orders. This runs in the background — you can leave this page."
 msgstr ""
@@ -3080,6 +3295,7 @@ msgstr ""
 msgid "Rating effect"
 msgstr ""
 
+#. translators: 1: orders rated so far, 2: total orders.
 #: admin/views/logs.php:241
 msgid "Rating your past orders: %1$s of %2$s done. This continues in the background, so you can leave this page."
 msgstr ""
@@ -3100,11 +3316,11 @@ msgstr ""
 msgid "Reading the table"
 msgstr ""
 
-#: admin/class-admin-page.php:1351 admin/views/blocklist.php:83 admin/views/logs.php:150
+#: admin/views/blocklist.php:83 admin/views/logs.php:150 assets/js/mshield-admin.js:146
 msgid "Reason"
 msgstr ""
 
-#: includes/class-signals.php:989
+#: includes/class-signals.php:991
 msgid "Recently blocked for repeated failures or rapid-fire attempts. Lifts by itself."
 msgstr ""
 
@@ -3112,6 +3328,7 @@ msgstr ""
 msgid "Record these chargebacks"
 msgstr ""
 
+#. translators: 1: recorded, 2: already known, 3: not matched.
 #: admin/class-admin-page.php:1066
 msgid "Recorded %1$s chargebacks. %2$s were already known, and %3$s rows matched no order."
 msgstr ""
@@ -3196,11 +3413,11 @@ msgstr ""
 msgid "Repeated declines from one address are the clearest sign of card testing there is."
 msgstr ""
 
-#: includes/class-signals.php:1113
+#: includes/class-signals.php:1115
 msgid "Repeated failed sign-ins"
 msgstr ""
 
-#: includes/class-signals.php:1158
+#: includes/class-signals.php:1160
 msgid "Repeated payment failures"
 msgstr ""
 
@@ -3212,7 +3429,7 @@ msgstr ""
 msgid "Reputation"
 msgstr ""
 
-#: admin/class-admin-page.php:1353
+#: assets/js/mshield-admin.js:150
 msgid "Request data"
 msgstr ""
 
@@ -3288,7 +3505,7 @@ msgstr ""
 msgid "Same device order limit"
 msgstr ""
 
-#: admin/class-admin-page.php:2002 admin/views/documentation.php:213 admin/views/documentation.php:366 admin/views/setup/step-done.php:32
+#: admin/class-admin-page.php:1988 admin/views/documentation.php:213 admin/views/documentation.php:366 admin/views/setup/step-done.php:32
 msgid "Scoring"
 msgstr ""
 
@@ -3308,10 +3525,12 @@ msgstr ""
 msgid "Scoring profiles"
 msgstr ""
 
+#. translators: %s: profile name.
 #: admin/class-setup-wizard.php:419
 msgid "Scoring set to %s."
 msgstr ""
 
+#. translators: %s: profile name, e.g. Strict.
 #: admin/class-admin-page.php:923
 msgid "Scoring set to %s. Every trust cost below now follows that profile, and you can still change any of them."
 msgstr ""
@@ -3332,7 +3551,7 @@ msgstr ""
 msgid "Secret key"
 msgstr ""
 
-#: includes/class-signals.php:1088
+#: includes/class-signals.php:1090
 msgid "Security code did not match"
 msgstr ""
 
@@ -3376,6 +3595,7 @@ msgstr ""
 msgid "Sent whatever MightyShield did about the order — including nothing, in Observe mode, which is when this is most useful. Set it to 0 to switch it off."
 msgstr ""
 
+#. translators: %s: the address alerts currently go to.
 #: admin/views/setup/step-alerts.php:53
 msgid "Separate several with commas. Left empty, they go to %s, the site administrator address."
 msgstr ""
@@ -3396,10 +3616,11 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: admin/class-admin-page.php:1895
+#: admin/class-admin-page.php:1881
 msgid "Settings saved."
 msgstr ""
 
+#. translators: %s: number of past orders.
 #: admin/class-setup-wizard.php:351
 msgid "Setup complete. MightyShield is rating your %s existing orders in the background so it starts out knowing your customers — you can carry on as normal. You can change any of this from these tabs at any time."
 msgstr ""
@@ -3416,18 +3637,19 @@ msgstr ""
 msgid "Setup progress"
 msgstr ""
 
-#: admin/class-admin-page.php:2012 admin/views/documentation.php:215 admin/views/documentation.php:463
+#: admin/class-admin-page.php:1998 admin/views/documentation.php:215 admin/views/documentation.php:463
 msgid "Shielding"
 msgstr ""
 
-#: admin/class-admin-page.php:1981
+#: admin/class-admin-page.php:1967
 msgid "Shields are down"
 msgstr ""
 
-#: admin/class-admin-page.php:1980
+#: admin/class-admin-page.php:1966
 msgid "Shields are up"
 msgstr ""
 
+#. translators: 1: orders on this page, 2: orders in total.
 #: admin/class-fraud-review.php:634 admin/views/logs.php:206
 msgid "Showing %1$d of %2$s"
 msgstr ""
@@ -3480,19 +3702,19 @@ msgstr ""
 msgid "Smarty address verification"
 msgstr ""
 
-#: protection/class-smarty-address-verifier.php:300
+#: protection/class-smarty-address-verifier.php:304
 msgid "Smarty answered, but only with the credentials in the query string. This server does not deliver the Authorization header, so that is what MightyShield will use."
 msgstr ""
 
-#: protection/class-smarty-address-verifier.php:299
+#: protection/class-smarty-address-verifier.php:303
 msgid "Smarty answered. Credentials are being sent as HTTP Basic, which keeps them out of the request URL."
 msgstr ""
 
-#: protection/class-smarty-address-verifier.php:312
+#: protection/class-smarty-address-verifier.php:316
 msgid "Smarty did not answer on either transport."
 msgstr ""
 
-#: protection/class-smarty-address-verifier.php:396
+#: protection/class-smarty-address-verifier.php:400
 msgid "Smarty replied, but the response could not be read as JSON."
 msgstr ""
 
@@ -3508,11 +3730,11 @@ msgstr ""
 msgid "Something is off, but nothing damning. Ambiguous enough to be worth a check."
 msgstr ""
 
-#: includes/class-signals.php:1174
+#: includes/class-signals.php:1176
 msgid "Something on this order matches one you previously turned down in review."
 msgstr ""
 
-#: includes/class-signals.php:979
+#: includes/class-signals.php:981
 msgid "Somewhere you still sell to, but want looked at. Contributes to the rating; never decides on its own."
 msgstr ""
 
@@ -3520,7 +3742,7 @@ msgstr ""
 msgid "Source"
 msgstr ""
 
-#: admin/class-admin-page.php:1777
+#: admin/class-admin-page.php:1763
 msgid "Spam and fraud protection for WooCommerce"
 msgstr ""
 
@@ -3556,7 +3778,7 @@ msgstr ""
 msgid "Strictness"
 msgstr ""
 
-#: includes/class-signals.php:1094
+#: includes/class-signals.php:1096
 msgid "Stripe Radar, or your processor's own fraud scoring, called this payment elevated or highest risk."
 msgstr ""
 
@@ -3580,7 +3802,14 @@ msgstr ""
 msgid "Switching a check off stops it contributing anything at all. Prefer lowering its cost first, so it still counts for something."
 msgstr ""
 
-#: admin/class-admin-page.php:1766 admin/views/whitelist.php:125
+#. translators: 1: the profile's name, 2: how many trust costs the merchant changed by hand.
+#: assets/js/mshield-admin.js:506
+msgid "Switching to %1$s will replace %2$d trust cost you have changed, and switch every check back on. Continue?"
+msgid_plural "Switching to %1$s will replace %2$d trust costs you have changed, and switch every check back on. Continue?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-admin-page.php:1752 admin/views/whitelist.php:125 assets/js/mshield-admin.js:43
 msgid "System"
 msgstr ""
 
@@ -3612,11 +3841,11 @@ msgstr ""
 msgid "Temporary blocks are separate and do not appear here. They are applied automatically when something trips a hard check, last an hour by default (Temporary block length, on the Scoring tab), and clear themselves."
 msgstr ""
 
-#: admin/class-admin-page.php:1651 admin/views/ai.php:124 admin/views/documentation.php:415 admin/views/documentation.php:449
+#: admin/class-admin-page.php:1637 admin/views/ai.php:124 admin/views/documentation.php:415 admin/views/documentation.php:449
 msgid "Test Connection"
 msgstr ""
 
-#: admin/class-admin-page.php:1358
+#: assets/js/mshield-admin.js:538
 msgid "Testing…"
 msgstr ""
 
@@ -3692,11 +3921,12 @@ msgstr ""
 msgid "That was already the recorded verdict."
 msgstr ""
 
+#. translators: %s: service name.
 #: includes/class-api-error.php:137
 msgid "The %s subscription is out of lookups (HTTP 402). The credentials are fine; the account needs topping up."
 msgstr ""
 
-#: includes/class-ai-client.php:555
+#: includes/class-ai-client.php:559
 msgid "The AI provider replied, but the response could not be read as JSON."
 msgstr ""
 
@@ -3716,11 +3946,11 @@ msgstr ""
 msgid "The Store API Firewall is set to Allowlist, and this store uses the block checkout, which needs those endpoints."
 msgstr ""
 
-#: includes/class-signals.php:934
+#: includes/class-signals.php:936
 msgid "The ZIP code belongs to a different state from the one entered — usually a typo, sometimes an address that was never checked."
 msgstr ""
 
-#: includes/class-signals.php:949
+#: includes/class-signals.php:951
 msgid "The address is one you have listed as a freight forwarder or reshipper. Goods bought on a stolen card are often sent to one so they can leave the country before the chargeback lands."
 msgstr ""
 
@@ -3728,7 +3958,7 @@ msgstr ""
 msgid "The allowlist always wins. An address on both lists is allowed."
 msgstr ""
 
-#: includes/class-signals.php:1084
+#: includes/class-signals.php:1086
 msgid "The bank checked the address against its records and said no. One of the strongest stolen-card tells there is."
 msgstr ""
 
@@ -3736,23 +3966,25 @@ msgstr ""
 msgid "The block based checkout in Allowlist mode means no customer can reach the cart or the checkout at all. MightyShield now detects that combination and says so at the top of this tab and on your WordPress dashboard, but if you ever see an empty cart or a checkout that will not load, this is the first setting to check."
 msgstr ""
 
-#: protection/class-captcha.php:1319
+#. translators: %s: provider error code.
+#: protection/class-captcha.php:1323
 msgid "The bot challenge is misconfigured (%s) and is failing open so it does not block checkout. Verify your Site Key and Secret Key on the Shielding tab."
 msgstr ""
 
-#: admin/class-admin-page.php:1490
+#: admin/class-admin-page.php:1476
 msgid "The bot challenge is misconfigured and is failing open so it does not block checkout. Last error: %s"
 msgstr ""
 
+#. translators: 1: number of failures, 2: the form affected.
 #: protection/class-captcha.php:1023
 msgid "The bot challenge on the %2$s form has refused %1$d visitors from several different networks without a single one passing. That pattern is a configuration fault rather than an attack, so it has stopped refusing anybody on that form until one passes. Check that the site key and secret key are from the same provider account and that this domain is registered with them."
 msgstr ""
 
-#: includes/class-signals.php:1009
+#: includes/class-signals.php:1011
 msgid "The browser openly reports that something is controlling it, which is how automated testing tools behave."
 msgstr ""
 
-#: includes/class-signals.php:1034
+#: includes/class-signals.php:1036
 msgid "The browser's time zone does not match where the order is billed."
 msgstr ""
 
@@ -3764,15 +3996,15 @@ msgstr ""
 msgid "The card is charged in full and the order is held before fulfilment. Releasing it ships; refusing it means refunding."
 msgstr ""
 
-#: includes/class-signals.php:954
+#: includes/class-signals.php:956
 msgid "The card is registered at one address and the goods go to another. Ordinary for a gift or a work delivery, so it counts for little on its own — but it is on almost every stolen-card order."
 msgstr ""
 
-#: includes/class-signals.php:1104
+#: includes/class-signals.php:1106
 msgid "The card was issued somewhere other than where the order ships. Ordinary for expats, travellers and gifts, so it counts most alongside something else."
 msgstr ""
 
-#: includes/class-signals.php:1019
+#: includes/class-signals.php:1021
 msgid "The challenge was neither passed nor failed. Usually a resubmitted form or a blocked provider script, not a bot."
 msgstr ""
 
@@ -3780,7 +4012,7 @@ msgstr ""
 msgid "The chart."
 msgstr ""
 
-#: includes/class-signals.php:1004
+#: includes/class-signals.php:1006
 msgid "The checkout carries a field no person can see or reach. Only software fills it."
 msgstr ""
 
@@ -3800,15 +4032,16 @@ msgstr ""
 msgid "The checks, and what they look at"
 msgstr ""
 
+#. translators: 1: column name, 2: rows matched, 3: rows sampled.
 #: admin/views/logs.php:313
 msgid "The column \"%1$s\" matched %2$s of the first %3$s rows."
 msgstr ""
 
-#: includes/class-signals.php:999
+#: includes/class-signals.php:1001
 msgid "The connection belongs to a hosting company. Real shoppers rarely buy from inside a data centre."
 msgstr ""
 
-#: includes/class-signals.php:994
+#: includes/class-signals.php:996
 msgid "The connection resolves somewhere other than the delivery address. Normal for gifts, travel and mobile networks, so it counts most alongside something else."
 msgstr ""
 
@@ -3824,7 +4057,7 @@ msgstr ""
 msgid "The decision."
 msgstr ""
 
-#: includes/class-signals.php:924
+#: includes/class-signals.php:926
 msgid "The delivery name and the email share nothing. Ordinary for older or work addresses, but common on orders placed with someone else's details."
 msgstr ""
 
@@ -3836,15 +4069,15 @@ msgstr ""
 msgid "The email address, phone number, delivery address, network and card behind every order are remembered and linked together. None of it is stored in readable form: it is all scrambled with a key unique to your site, so the records hold no personal detail and cannot be matched against another store."
 msgstr ""
 
-#: includes/class-signals.php:1119
+#: includes/class-signals.php:1121
 msgid "The email, password or saved address on this account changed within the last three days. People do change these — but it is also the first thing done with a stolen login."
 msgstr ""
 
-#: includes/class-signals.php:1169
+#: includes/class-signals.php:1171
 msgid "The email, phone, address or card on this order was on an order the bank later reversed."
 msgstr ""
 
-#: includes/class-signals.php:969
+#: includes/class-signals.php:971
 msgid "The email, phone, name, postcode, city or country on this order matches something you barred."
 msgstr ""
 
@@ -3852,7 +4085,7 @@ msgstr ""
 msgid "The final rating picks a risk level, the risk level picks an action, and MightyShield checks whether your payment processor can actually carry that action out. Everything is written down before anything is done."
 msgstr ""
 
-#: includes/class-signals.php:1024
+#: includes/class-signals.php:1026
 msgid "The form was submitted quicker than anyone could read and fill it."
 msgstr ""
 
@@ -3888,11 +4121,11 @@ msgstr ""
 msgid "The money:"
 msgstr ""
 
-#: includes/class-signals.php:964
+#: includes/class-signals.php:966
 msgid "The number belongs to a service that hands out disposable numbers rather than to a carrier, so it cannot be used to reach anyone later."
 msgstr ""
 
-#: includes/class-signals.php:959
+#: includes/class-signals.php:961
 msgid "The number belongs to a state the order has nothing to do with. Weak on its own: mobile numbers follow people when they move."
 msgstr ""
 
@@ -3916,7 +4149,7 @@ msgstr ""
 msgid "The order is created and held without contacting the payment processor at all. Nothing is charged, authorized, or counted against your merchant account."
 msgstr ""
 
-#: includes/class-signals.php:974
+#: includes/class-signals.php:976
 msgid "The order is going somewhere on your blocked list. A statement you made, not a judgement MightyShield formed."
 msgstr ""
 
@@ -3932,11 +4165,12 @@ msgstr ""
 msgid "The order was refunded"
 msgstr ""
 
+#. translators: %s: number of orders.
 #: includes/class-forecast.php:294
 msgid "The other %s have no outcome recorded yet."
 msgstr ""
 
-#: includes/class-signals.php:1039
+#: includes/class-signals.php:1041
 msgid "The page's scripts never ran. A few people block scripts; most automated checkouts do too."
 msgstr ""
 
@@ -3948,11 +4182,11 @@ msgstr ""
 msgid "The payment has already been captured in full."
 msgstr ""
 
-#: includes/class-signals.php:1093
+#: includes/class-signals.php:1095
 msgid "The payment processor rated this risky"
 msgstr ""
 
-#: includes/class-signals.php:939
+#: includes/class-signals.php:941
 msgid "The postal service does not recognise it. Checked against USPS records, US addresses only."
 msgstr ""
 
@@ -3968,6 +4202,7 @@ msgstr ""
 msgid "The protection switch."
 msgstr ""
 
+#. translators: %s: link to the setup wizard.
 #: admin/views/documentation.php:308
 msgid "The quickest version of all of this is the %s, which walks through the four decisions that matter and explains each one as it goes. It is safe to run again at any time: nothing is changed until you choose it."
 msgstr ""
@@ -4000,11 +4235,11 @@ msgstr ""
 msgid "The same chart as the Dashboard, over a shorter window because a sidebar column is narrow, with the totals beside it. The Dashboard tab still shows 30 days."
 msgstr ""
 
-#: includes/class-signals.php:944
+#: includes/class-signals.php:946
 msgid "The same delivery address has recently taken orders under other names. The pattern of a drop address, though also of flats, offices and families."
 msgstr ""
 
-#: includes/class-signals.php:1064
+#: includes/class-signals.php:1066
 msgid "The same device has run through checkout repeatedly, whatever address it came from."
 msgstr ""
 
@@ -4028,7 +4263,7 @@ msgstr ""
 msgid "The steps, in order"
 msgstr ""
 
-#: includes/class-signals.php:1163
+#: includes/class-signals.php:1165
 msgid "The store is seeing a wave of declines"
 msgstr ""
 
@@ -4040,11 +4275,11 @@ msgstr ""
 msgid "The table is divided into six groups, by what a check is actually looking at. The grouping is there so you can reason about a whole category at once — if your customers keep tripping the Network checks, that is a different problem from tripping the Identity ones."
 msgstr ""
 
-#: admin/class-admin-page.php:1359
+#: assets/js/mshield-admin.js:552 assets/js/mshield-admin.js:565
 msgid "The test could not be run. Reload the page and try again."
 msgstr ""
 
-#: includes/class-signals.php:1089
+#: includes/class-signals.php:1091
 msgid "The three digits on the back were wrong, which someone holding the real card rarely gets wrong."
 msgstr ""
 
@@ -4052,7 +4287,7 @@ msgstr ""
 msgid "The three refusal messages are shown above the box so you can see what a refused customer reads. They are deliberately vague, and that vagueness is what stops an attacker learning anything from them. The cost is paid by the occasional real customer who gets caught by mistake and has no idea who to talk to. Put your phone number or your support address here and it is added to the end of every refusal, whatever caused it. Links work, so the number can be tapped on a phone. Leave it empty and nothing changes."
 msgstr ""
 
-#: includes/class-signals.php:1029
+#: includes/class-signals.php:1031
 msgid "The timing marker never came back. Usually page caching stripping it, occasionally a script that skipped the form."
 msgstr ""
 
@@ -4064,14 +4299,24 @@ msgstr ""
 msgid "There are no past orders in that window to rate."
 msgstr ""
 
+#. translators: %s: link to the documentation.
 #: admin/views/setup/step-welcome.php:87
 msgid "There is a fuller explanation in the %s whenever you want it."
 msgstr ""
 
+#. translators: %d: number of additional low-rated orders.
+#: includes/class-response.php:697
+msgid "There was also %d other order rated this low in the last hour."
+msgid_plural "There were also %d other orders rated this low in the last hour."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: comma-separated list of check names.
 #: admin/class-order-panel.php:278
 msgid "These checks cannot be replayed: %s."
 msgstr ""
 
+#. translators: %s: name of the fallback action.
 #: admin/views/blocking.php:225
 msgid "These orders will be handled as \"%s\" instead."
 msgstr ""
@@ -4088,7 +4333,7 @@ msgstr ""
 msgid "This check keeps firing on orders that turned out fine"
 msgstr ""
 
-#: includes/class-signals.php:1144
+#: includes/class-signals.php:1146
 msgid "This connection has tried to check out more times than you allow in the window."
 msgstr ""
 
@@ -4096,7 +4341,7 @@ msgstr ""
 msgid "This controls access to the WooCommerce cart and checkout endpoints, and it is the one setting here that can close your shop if it is set wrongly."
 msgstr ""
 
-#: includes/class-signals.php:1133
+#: includes/class-signals.php:1135
 msgid "This email has ordered repeatedly, under variations"
 msgstr ""
 
@@ -4120,7 +4365,7 @@ msgstr ""
 msgid "This order was rated suspicious, but the payment method does not support additional card verification, so it proceeded without it."
 msgstr ""
 
-#: includes/class-response.php:980
+#: includes/class-response.php:985
 msgid "This order was set to be refused before it was created, but it already existed by the time the decision ran. It has been held for review instead, and nothing has been charged."
 msgstr ""
 
@@ -4132,7 +4377,7 @@ msgstr ""
 msgid "This provider has no way to ask for it on a single order. Orders that would have been asked for 3-D Secure go through as normal."
 msgstr ""
 
-#: admin/class-admin-page.php:2134
+#: admin/class-admin-page.php:2120
 msgid "This store uses the block checkout, which is built on the Store API, and the Store API Firewall is set to Allowlist. That combination refuses the cart and the checkout for everyone who is not on your allowlist, so no customer can buy. Set the firewall to Blocklist, or turn it off."
 msgstr ""
 
@@ -4156,11 +4401,11 @@ msgstr ""
 msgid "Time"
 msgstr ""
 
-#: includes/class-signals.php:726
+#: includes/class-signals.php:727
 msgid "Time how long checkout takes"
 msgstr ""
 
-#: includes/class-signals.php:1069
+#: includes/class-signals.php:1071
 msgid "Tiny charges are how stolen cards get tested before anything expensive is bought."
 msgstr ""
 
@@ -4168,11 +4413,11 @@ msgstr ""
 msgid "Together"
 msgstr ""
 
-#: includes/class-signals.php:1143
+#: includes/class-signals.php:1145
 msgid "Too many checkout attempts"
 msgstr ""
 
-#: includes/class-signals.php:1063
+#: includes/class-signals.php:1065
 msgid "Too many orders from one device"
 msgstr ""
 
@@ -4212,11 +4457,12 @@ msgstr ""
 msgid "Trust rating"
 msgstr ""
 
+#. translators: 1: trust rating, 2: risk level name.
 #: admin/class-order-column.php:197
 msgid "Trust rating %1$d of 100: %2$s"
 msgstr ""
 
-#: admin/class-admin-page.php:1967
+#: admin/class-admin-page.php:1953
 msgid "Trust ratings are being recorded, not enforced."
 msgstr ""
 
@@ -4252,11 +4498,11 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
-#: includes/class-signals.php:958
+#: includes/class-signals.php:960
 msgid "US phone area code is from a different state"
 msgstr ""
 
-#: includes/class-signals.php:933
+#: includes/class-signals.php:935
 msgid "US postcode does not match the state"
 msgstr ""
 
@@ -4264,7 +4510,15 @@ msgstr ""
 msgid "Under WooCommerce, next to Orders, with a count beside it when something is waiting. <a href=\"%s\">The queue</a> is every order MightyShield stopped or flagged that nobody has ruled on yet, gathered in one place so you can work through them instead of hunting for them."
 msgstr ""
 
-#: admin/class-admin-page.php:1599
+#: includes/class-ai-client.php:507
+msgid "Unexpected Gemini response shape"
+msgstr ""
+
+#: includes/class-ai-client.php:456
+msgid "Unexpected OpenAI response shape"
+msgstr ""
+
+#: admin/class-admin-page.php:1585
 msgid "Unknown service."
 msgstr ""
 
@@ -4312,7 +4566,7 @@ msgstr ""
 msgid "Use the last column to tune. Plenty of High orders that you went on to approve means the threshold is too cautious and you are holding real customers. Orders that stayed in Low and later turned out bad means it is too generous."
 msgstr ""
 
-#: admin/class-admin-page.php:1352 admin/views/whitelist.php:19
+#: admin/views/whitelist.php:19 assets/js/mshield-admin.js:147
 msgid "User"
 msgstr ""
 
@@ -4532,7 +4786,7 @@ msgstr ""
 msgid "Why it is held."
 msgstr ""
 
-#: includes/class-signals.php:718
+#: includes/class-signals.php:719
 msgid "Within days"
 msgstr ""
 
@@ -4584,7 +4838,7 @@ msgstr ""
 msgid "You need a free account with Cloudflare or Google. If you would rather do this later, skip the step: everything else in MightyShield works without it."
 msgstr ""
 
-#: includes/class-signals.php:984
+#: includes/class-signals.php:986
 msgid "You or MightyShield barred this network earlier."
 msgstr ""
 
@@ -4608,7 +4862,7 @@ msgstr ""
 msgid "Your access has been restricted. Please contact support."
 msgstr ""
 
-#: admin/class-admin-page.php:2133 admin/class-dashboard-widget.php:136
+#: admin/class-admin-page.php:2119 admin/class-dashboard-widget.php:136
 msgid "Your checkout is closed to customers."
 msgstr ""
 
@@ -4668,7 +4922,30 @@ msgstr ""
 msgid "Your verdict, and the single most valuable thing on this panel. Change it whenever you like: if a chargeback arrives six months later, mark it Fraud then, and if one turns out to be a family member using the card, mark it Clean and the penalty is taken back off."
 msgstr ""
 
-#: includes/class-response.php:708
+#. translators: 1: why the order was flagged, 2: order number.
+#: includes/class-response.php:621
+msgid "[MightyShield] %1$s on order #%2$d"
+msgstr ""
+
+#: includes/class-ai-client.php:629
+msgid "[MightyShield] AI order review is unavailable"
+msgstr ""
+
+#. translators: 1: order number, 2: rating out of 100.
+#: protection/class-ai-reviewer.php:812
+msgid "[MightyShield] AI rated order #%1$d at %2$d/100"
+msgstr ""
+
+#: protection/class-smarty-address-verifier.php:68
+msgid "[MightyShield] Address verification is degraded"
+msgstr ""
+
+#: protection/class-captcha.php:1287
+msgid "[MightyShield] Bot challenge is misconfigured"
+msgstr ""
+
+#. translators: 1: trust rating, 2: order number.
+#: includes/class-response.php:713
 msgid "[MightyShield] Order #%2$d rated %1$s/100"
 msgstr ""
 
@@ -4700,6 +4977,7 @@ msgstr ""
 msgid "days"
 msgstr ""
 
+#. translators: %s: link to the documentation.
 #: admin/views/setup/step-done.php:125 admin/views/setup/step-welcome.php:88
 msgid "documentation"
 msgstr ""
@@ -4740,6 +5018,10 @@ msgstr ""
 msgid "no challenge was rendered on this form"
 msgstr ""
 
+#: protection/class-ai-reviewer.php:800
+msgid "no specific reasons given"
+msgstr ""
+
 #: admin/views/logs.php:75
 msgid "or"
 msgstr ""
@@ -4748,14 +5030,16 @@ msgstr ""
 msgid "out of 100"
 msgstr ""
 
-#: protection/class-smarty-address-verifier.php:380
+#. translators: %s: the transport in use, e.g. "HTTP Basic".
+#: protection/class-smarty-address-verifier.php:384
 msgid "query parameters"
 msgstr ""
 
-#: includes/class-signals.php:730
+#: includes/class-signals.php:731
 msgid "reCAPTCHA minimum score"
 msgstr ""
 
+#. translators: %s: the configured minimum score.
 #: protection/class-captcha.php:1145
 msgid "reCAPTCHA scored this visitor below %s"
 msgstr ""
@@ -4772,10 +5056,11 @@ msgstr ""
 msgid "saved. Leave blank to keep"
 msgstr ""
 
-#: admin/class-admin-page.php:1347 admin/views/logs.php:133
+#: admin/views/logs.php:133
 msgid "selected"
 msgstr ""
 
+#. translators: %s: link to the setup wizard.
 #: admin/views/documentation.php:309
 msgid "setup walkthrough"
 msgstr ""
@@ -4796,6 +5081,7 @@ msgstr ""
 msgid "the billing street address did not match the card"
 msgstr ""
 
+#. translators: 1: card country, 2: destination country.
 #: protection/class-card-signals.php:338
 msgid "the card was issued in %1$s but the order ships to %2$s"
 msgstr ""
@@ -4804,6 +5090,7 @@ msgstr ""
 msgid "the challenge passed"
 msgstr ""
 
+#. translators: %s: the processor's own risk level.
 #: protection/class-card-signals.php:358
 msgid "the payment processor rated this payment %s risk"
 msgstr ""
@@ -4816,6 +5103,7 @@ msgstr ""
 msgid "the provider judged the token not genuine"
 msgstr ""
 
+#. translators: %s: the provider's own error codes.
 #: protection/class-captcha.php:1138
 msgid "the provider rejected the token and said: %s"
 msgstr ""
@@ -4832,6 +5120,7 @@ msgstr ""
 msgid "the token had already been used or had expired, which is what a resubmitted form looks like"
 msgstr ""
 
+#. translators: 1: action the token carried, 2: action expected.
 #: protection/class-captcha.php:334
 msgid "token was signed for \"%1$s\" but this form expects \"%2$s\""
 msgstr ""

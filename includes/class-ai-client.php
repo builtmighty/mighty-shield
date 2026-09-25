@@ -151,7 +151,7 @@ class ai_client {
     public static function review( $prompt ) {
 
         if( ! self::within_budget() ) {
-            return new \WP_Error( 'mshield_ai_capped', 'Daily AI review limit reached' );
+            return new \WP_Error( 'mshield_ai_capped', __( 'Daily AI review limit reached', 'mighty-shield' ) );
         }
 
         $provider = settings::get( 'mshield_ai_provider' );
@@ -321,17 +321,21 @@ class ai_client {
     public static function validate( $verdict ) {
 
         if( ! is_array( $verdict ) ) {
-            return new \WP_Error( 'mshield_ai_shape', 'AI returned no usable verdict' );
+            return new \WP_Error( 'mshield_ai_shape', __( 'AI returned no usable verdict', 'mighty-shield' ) );
         }
 
         foreach( [ 'trust', 'verdict' ] as $field ) {
             if( ! isset( $verdict[ $field ] ) ) {
-                return new \WP_Error( 'mshield_ai_shape', 'AI verdict is missing the "' . $field . '" field' );
+                return new \WP_Error( 'mshield_ai_shape', sprintf(
+                    /* translators: %s: the name of the missing field. */
+                    __( 'AI verdict is missing the "%s" field', 'mighty-shield' ),
+                    $field
+                ) );
             }
         }
 
         if( ! \in_array( $verdict['verdict'], [ 'allow', 'review', 'deny' ], true ) ) {
-            return new \WP_Error( 'mshield_ai_shape', 'AI returned an unrecognised verdict' );
+            return new \WP_Error( 'mshield_ai_shape', __( 'AI returned an unrecognised verdict', 'mighty-shield' ) );
         }
 
         // Clamped rather than rejected: a model that answers 0 or 105 has still
@@ -366,7 +370,7 @@ class ai_client {
     private static function call_anthropic( $prompt ) {
 
         $key = settings::get( 'mshield_ai_anthropic_key' );
-        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', 'No Anthropic API key configured' );
+        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', __( 'No Anthropic API key configured', 'mighty-shield' ) );
 
         $response = self::post( 'https://api.anthropic.com/v1/messages', [
             'x-api-key'         => $key,
@@ -401,7 +405,7 @@ class ai_client {
 
         }
 
-        return new \WP_Error( 'mshield_ai_shape', 'Anthropic returned no verdict' );
+        return new \WP_Error( 'mshield_ai_shape', __( 'Anthropic returned no verdict', 'mighty-shield' ) );
 
     }
 
@@ -416,7 +420,7 @@ class ai_client {
     private static function call_openai( $prompt ) {
 
         $key = settings::get( 'mshield_ai_openai_key' );
-        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', 'No OpenAI API key configured' );
+        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', __( 'No OpenAI API key configured', 'mighty-shield' ) );
 
         $headers = [
             'Authorization' => 'Bearer ' . $key,
@@ -449,14 +453,14 @@ class ai_client {
         $content = $response['choices'][0]['message']['content'] ?? null;
 
         if( ! is_string( $content ) ) {
-            return new \WP_Error( 'mshield_ai_shape', 'Unexpected OpenAI response shape' );
+            return new \WP_Error( 'mshield_ai_shape', __( 'Unexpected OpenAI response shape', 'mighty-shield' ) );
         }
 
         $decoded = json_decode( $content, true );
 
         return is_array( $decoded )
             ? $decoded
-            : new \WP_Error( 'mshield_ai_shape', 'OpenAI returned a verdict that was not valid JSON' );
+            : new \WP_Error( 'mshield_ai_shape', __( 'OpenAI returned a verdict that was not valid JSON', 'mighty-shield' ) );
 
     }
 
@@ -471,7 +475,7 @@ class ai_client {
     private static function call_gemini( $prompt ) {
 
         $key = settings::get( 'mshield_ai_gemini_key' );
-        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', 'No Gemini API key configured' );
+        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', __( 'No Gemini API key configured', 'mighty-shield' ) );
 
         $model = rawurlencode( settings::get( 'mshield_ai_gemini_model' ) );
         $url   = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent';
@@ -500,14 +504,14 @@ class ai_client {
         $content = $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
         if( ! is_string( $content ) ) {
-            return new \WP_Error( 'mshield_ai_shape', 'Unexpected Gemini response shape' );
+            return new \WP_Error( 'mshield_ai_shape', __( 'Unexpected Gemini response shape', 'mighty-shield' ) );
         }
 
         $decoded = json_decode( $content, true );
 
         return is_array( $decoded )
             ? $decoded
-            : new \WP_Error( 'mshield_ai_shape', 'Gemini returned a verdict that was not valid JSON' );
+            : new \WP_Error( 'mshield_ai_shape', __( 'Gemini returned a verdict that was not valid JSON', 'mighty-shield' ) );
 
     }
 
@@ -600,14 +604,18 @@ class ai_client {
         set_transient( 'mshield_ai_alerted', 1, DAY_IN_SECONDS );
 
         $message = sprintf(
-            "MightyShield's AI order review is currently unavailable.\n\n" .
-            "Reason: %s\n\n" .
-            "Orders are being allowed through WITHOUT AI review until this is resolved. Common causes:\n" .
-            "- Invalid or expired API key\n" .
-            "- Provider quota exhausted or rate limited\n" .
-            "- Network/API outage\n\n" .
-            "Check your credentials under MightyShield > AI Detection.\n\n" .
-            "This alert is sent at most once per day.",
+            /* translators: %s: the error the AI provider returned. */
+            __(
+                "MightyShield's AI order review is currently unavailable.\n\n" .
+                "Reason: %s\n\n" .
+                "Orders are being allowed through WITHOUT AI review until this is resolved. Common causes:\n" .
+                "- Invalid or expired API key\n" .
+                "- Provider quota exhausted or rate limited\n" .
+                "- Network/API outage\n\n" .
+                "Check your credentials under MightyShield > AI Review.\n\n" .
+                "This alert is sent at most once per day.",
+                'mighty-shield'
+            ),
             $error
         );
 
@@ -618,7 +626,7 @@ class ai_client {
         // called a method that does not exist and fatalled the checkout —
         // turning the deliberate fail-open into a hard failure at exactly the
         // moment it was supposed to get out of the shopper's way.
-        wp_mail( settings::notification_recipients(), '[MightyShield] AI order review is unavailable', $message );
+        wp_mail( settings::notification_recipients(), __( '[MightyShield] AI order review is unavailable', 'mighty-shield' ), $message );
 
     }
 

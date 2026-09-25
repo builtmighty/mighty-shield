@@ -13,6 +13,7 @@
 .distignore
 
 # Tooling and editor state
+bin
 .claude
 .editorconfig
 .vscode
