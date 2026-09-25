@@ -177,6 +177,10 @@ class order_signals {
             'bill_country'     => $bill( 'country' ),
             'bill_state'       => $bill( 'state' ),
             'bill_city'        => $bill( 'city' ),
+            // The buyer's own name. On a gift the parcel carries the
+            // recipient's, and the email belongs to the buyer.
+            'bill_first_name'  => $bill( 'first_name' ),
+            'bill_last_name'   => $bill( 'last_name' ),
             'total'            => $total,
             'ip'               => ip_utils::get_client_ip(),
             'exclude_order_id' => 0,
@@ -215,6 +219,8 @@ class order_signals {
             'bill_country'     => (string) $order->get_billing_country(),
             'bill_state'       => (string) $order->get_billing_state(),
             'bill_city'        => (string) $order->get_billing_city(),
+            'bill_first_name'  => (string) $order->get_billing_first_name(),
+            'bill_last_name'   => (string) $order->get_billing_last_name(),
             'total'            => (float) $order->get_total(),
             'ip'               => (string) $order->get_customer_ip_address(),
             'exclude_order_id' => (int) $order->get_id(),
@@ -358,7 +364,7 @@ class order_signals {
         // somewhere else". Quiet if either name overlaps the mailbox.
         $names = array_filter( [
             strtolower( trim( $f['first_name'] . ' ' . $f['last_name'] ) ),
-            strtolower( trim( ( $f['billing_first_name'] ?? '' ) . ' ' . ( $f['billing_last_name'] ?? '' ) ) ),
+            strtolower( trim( ( $f['bill_first_name'] ?? '' ) . ' ' . ( $f['bill_last_name'] ?? '' ) ) ),
         ] );
 
         if( empty( $names ) ) return null;
@@ -935,7 +941,7 @@ class order_signals {
         // charged for the two addresses disagreeing; charging again for the
         // connection agreeing with one of them is the same fact billed twice.
         // A connection that matches NEITHER address is the real signal.
-        $bill_country = strtoupper( (string) ( $f['billing_country'] ?? '' ) );
+        $bill_country = strtoupper( (string) ( $f['bill_country'] ?? '' ) );
         if( $bill_country !== '' && $ip_country === $bill_country ) return null;
 
         return sprintf( 'IP resolves to %s but the order ships to %s', $ip_country, $ship_country );
