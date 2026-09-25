@@ -21,10 +21,13 @@
  * costs a query on top. A store with 40,000 orders is not a request, it is an
  * afternoon, so this runs in batches on Action Scheduler and keeps its place.
  *
- * It is resumable by ORDER ID, descending, not by offset. An offset into a
- * date-sorted list moves whenever a new order arrives mid-run, which would
- * silently skip orders — and a backfill that skips is worse than none,
- * because nothing says which ones it missed. A descending id cursor cannot
+ * It pages by offset over a list frozen at the start. The candidate set is
+ * every order placed before the moment the run began, sorted by id, so an
+ * order arriving mid-run cannot shift it. What can is an order deleted or
+ * moved out of the set while the run is in progress, which shifts the
+ * offset by one and skips one order; that is rare enough to accept, and the
+ * run's counts say how many it rated. (An earlier draft of this comment
+ * promised an id cursor; the code never had one.) A cursor would not
  * be disturbed by anything arriving after it.
  *
  * It takes no action, ever. rescore::run() is read-only by design: it records
@@ -81,6 +84,32 @@ class backfill {
     public static function register() {
 
         add_action( self::HOOK, [ __CLASS__, 'run_batch' ] );
+
+        // Watchdog. The next batch is queued at the end of the current one,
+        // so a batch killed mid-run -- a PHP timeout, a host restart -- left
+        // the run saying "running" with nothing scheduled, for good. On admin
+        // and cron requests only: the state option is not autoloaded, and a
+        // shopper's request should not pay a query to check on it.
+        if( is_admin() || wp_doing_cron() ) {
+            add_action( 'init', [ __CLASS__, 'resume_if_stranded' ], 30 );
+        }
+
+    }
+
+    /**
+     * Re-queue a run that is marked running but has no batch scheduled.
+     *
+     * @since   2.3.0
+     */
+    public static function resume_if_stranded() {
+
+        $state = self::state();
+        if( $state['status'] !== 'running' ) return;
+
+        $queued = ( function_exists( 'as_next_scheduled_action' ) && as_next_scheduled_action( self::HOOK ) )
+               || wp_next_scheduled( self::HOOK );
+
+        if( ! $queued ) self::schedule();
 
     }
 

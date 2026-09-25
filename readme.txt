@@ -85,6 +85,10 @@ Because at checkout, an email address is something the shopper typed, not someth
 
 The server IP is auto-whitelisted on activation. You may also want to whitelist your CDN IPs, payment gateway callback IPs, or office IPs if they access the Store API directly.
 
+= Every event in my log shows 127.0.0.1 or my server's own address. Why? =
+
+Your site is behind a reverse proxy or a load balancer on the same machine, so every visitor reaches PHP from that address. Because the server's own address is allowlisted, nothing is being enforced. MightyShield does not trust X-Forwarded-For on its own, since a shopper can send that header themselves. Tell it which header your proxy sets by adding `define( 'MSHIELD_IP_HEADER', 'HTTP_X_REAL_IP' );` to wp-config.php; the header is read only from connections that arrive from a private or loopback address, or from a Cloudflare edge. Cloudflare's own CF-Connecting-IP header is recognised without any setting.
+
 = Does this work with block-based checkout? =
 
 Yes, and identically. Every check runs on both checkouts, including the ones that need something from the browser — the checkout timer, the device check, the hidden trap field and the bot challenge — so the same order is judged the same way whichever checkout your store uses.
@@ -205,6 +209,19 @@ Fixes three network checks that had never worked and removes a blocking request 
 * Changed: fonts are now served from the plugin instead of Google Fonts, so opening a MightyShield screen no longer tells Google anything about you.
 * Changed: MightyShield now updates through WordPress.org like any other plugin.
 * New: MightyShield answers WordPress's personal data export and erase requests.
+* Fixed: every checkout by a signed-in customer counted as an account change, so returning customers were charged as though their password had just been changed. Only a real change of email or password counts now.
+* Fixed: approving an order that had been held after payment was undone in the same click, leaving a paid order on hold that nothing could ship. A reviewer's Approve now sticks, and so does a status you change by hand; only the payment processor's own transitions are still caught.
+* Fixed: the device identity was declared and never recorded, so the one identity that survives a fraudster rotating everything else was empty on every store.
+* Changed: a customer's order count is now the orders they have paid for. A run of declined cards through one mailbox used to read as a string of orders "without incident".
+* Changed: a chargeback, a Fraud verdict or a run of refusals on a shared network, street address or device no longer refuses the next stranger who shares it. It counts as history, at half weight, and the reason says so.
+* Changed: an order rated Banned puts its address under a day-long temporary block rather than on the permanent blocklist, which on a mobile carrier or an office had been locking out everyone behind one address.
+* Fixed: on the block checkout, a shopper editing a field after a declined payment was scored again on every edit, and could be refused, with a refusal recorded against their own identities each time.
+* Fixed: the network checks, the reviewer's Block and the log attributed an order to whatever address a shopper put in a request header. They now use the address MightyShield resolved.
+* Fixed: the Logs tab and the dashboard chart showed times in UTC labelled as your store's time.
+* Fixed: amount settings on a store that uses a comma as its decimal separator were read wrongly.
+* Fixed: street names in non-Latin scripts were reduced to their house number, so unrelated neighbours shared one address identity.
+* Fixed: on a host with a persistent object cache, uninstalling and reinstalling could leave the plugin running without its tables.
+* Fixed: rating your past orders made every old order at an address look like last month's for thirty days.
 
 = 2.2.0 =
 * Changed: everything now happens in one order, and it is the order you would expect. An order is scored, then reviewed by AI if you use it, then acted on, then created. Before this, half the scoring ran after the order already existed, which is after the last moment anything can be refused — so the decision to turn a checkout away was made on half the evidence, and the other half could only change what happened to an order that had already gone through.

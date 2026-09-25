@@ -177,7 +177,10 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
                 }
 
                 $event = [
-                    'time'        => date_i18n( 'M j, H:i:s', strtotime( $log->created_at ) ),
+                    // wp_date(), not date_i18n(): the row is stored in UTC, and
+                    // date_i18n() given a timestamp prints it as-is, so every
+                    // store off UTC read its own attacks at the wrong hour.
+                    'time'        => wp_date( 'M j, H:i:s', strtotime( $log->created_at . ' UTC' ) ),
                     'ip'          => $log->ip,
                     'action'      => $log->action,
                     'actionLabel' => isset( $action_labels[ $log->action ] ) ? $action_labels[ $log->action ] : $log->action,
@@ -193,7 +196,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
             ?>
             <div class="mshield-logrow is-clickable" data-event="<?php echo esc_attr( wp_json_encode( $event ) ); ?>">
                 <input type="checkbox" class="mshield-logcheck" name="log_ids[]" value="<?php echo esc_attr( (int) $log->id ); ?>" />
-                <span class="mshield-mono" style="font-size:12.5px;color:var(--fg-2)"><?php echo esc_html( date_i18n( 'H:i:s', strtotime( $log->created_at ) ) ); ?></span>
+                <span class="mshield-mono" style="font-size:12.5px;color:var(--fg-2)"><?php echo esc_html( wp_date( 'H:i:s', strtotime( $log->created_at . ' UTC' ) ) ); ?></span>
                 <span class="mshield-mono" style="font-size:12.5px"><?php echo esc_html( $log->ip ); ?></span>
                 <span class="mshield-mono" style="font-size:12px;color:var(--fg-2)"><?php echo esc_html( $log->endpoint ); ?></span>
                 <span><?php echo esc_html( $log->reason ); ?></span>
@@ -291,7 +294,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
     </div>
 
     <!-- Chargeback import -->
-    <?php $mshield_dis = get_transient( 'mshield_disputes_preview' ); ?>
+    <?php $mshield_dis = get_transient( \MightyShield\Includes\dispute_import::preview_key() ); ?>
     <div class="mshield-card">
         <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Import chargebacks', 'mighty-shield' ); ?></div>
 

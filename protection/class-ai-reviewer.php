@@ -633,19 +633,28 @@ class ai_reviewer {
 
         foreach( $rows as $type => $row ) {
 
-            $orders = (int) $row['order_count'];
-            if( $orders <= 1 ) continue;
-
-            $line = sprintf( 'This %s has been seen on %d previous orders', entities::type_label( $type ), $orders - 1 );
+            // Paid orders, since 2.3.0 -- the count no longer moves when an
+            // order is merely created. Ten declined cards through one mailbox
+            // used to read here as "ten previous orders, all without
+            // incident", the strongest possible nudge towards "safe".
+            $paid    = (int) $row['order_count'];
+            $refused = (int) ( $row['refused_count'] ?? 0 );
 
             $bad = [];
             if( (int) $row['chargeback_count'] > 0 ) $bad[] = sprintf( '%d chargeback(s)', (int) $row['chargeback_count'] );
             if( (int) $row['denied_count'] > 0 )     $bad[] = sprintf( '%d denied in review', (int) $row['denied_count'] );
             if( (int) $row['refund_count'] > 0 )     $bad[] = sprintf( '%d refunded', (int) $row['refund_count'] );
+            if( $refused > 0 )                       $bad[] = sprintf( '%d checkout(s) refused before an order existed', $refused );
+
+            if( $paid <= 0 && empty( $bad ) ) continue;
+
+            $line = $paid > 0
+                ? sprintf( 'This %s has %d paid order(s) on record', entities::type_label( $type ), $paid )
+                : sprintf( 'This %s has no paid orders on record', entities::type_label( $type ) );
 
             $line .= empty( $bad )
-                ? ', all without incident.'
-                : ', including ' . implode( ', ', $bad ) . '.';
+                ? ', none of them with a problem recorded.'
+                : ', and ' . implode( ', ', $bad ) . '.';
 
             $lines[] = $line;
 

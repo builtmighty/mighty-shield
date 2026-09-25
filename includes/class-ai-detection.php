@@ -96,9 +96,13 @@ class ai_detection {
      */
     public static function normalize_address( $address ) {
 
-        $address = strtolower( trim( $address ) );
-        $address = preg_replace( '/[^a-z0-9 ]/', '', $address );
-        $address = preg_replace( '/\s+/', ' ', $address );
+        // Letters and digits in any script. The ASCII-only version stripped a
+        // Cyrillic, Greek, Arabic or CJK street down to its house number, so
+        // every "number 12" in a postcode became one address identity and one
+        // neighbour's chargeback landed on the rest of the street.
+        $address = function_exists( 'mb_strtolower' ) ? mb_strtolower( trim( $address ), 'UTF-8' ) : strtolower( trim( $address ) );
+        $address = (string) preg_replace( '/[^\p{L}\p{N} ]/u', '', $address );
+        $address = (string) preg_replace( '/\s+/u', ' ', $address );
 
         // Fold the spellings that mean the same thing. See ADDRESS_TOKENS.
         $tokens = explode( ' ', $address );

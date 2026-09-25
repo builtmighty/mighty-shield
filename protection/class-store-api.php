@@ -108,6 +108,17 @@ class store_api {
 
         if( ! function_exists( 'is_checkout' ) || ! is_checkout() ) return;
 
+        // The block checkout only. On a store using the classic shortcode
+        // checkout nothing consumes this script, yet it shipped -- with the
+        // wp-data dependency chain behind it -- onto the one page where every
+        // kilobyte is a conversion. The classic checkout has its own
+        // collectors.
+        if( class_exists( '\MightyShield\Admin\admin_page' )
+            && ! \MightyShield\Admin\admin_page::uses_block_checkout()
+            && ! ( function_exists( 'has_block' ) && has_block( 'woocommerce/checkout' ) ) ) {
+            return;
+        }
+
         $provider = settings::get( 'mshield_captcha_provider' );
         $site_key = settings::get( 'mshield_captcha_site_key' );
 
@@ -170,6 +181,39 @@ class store_api {
 
         $this->warm_ip_cache();
         $this->record_device( $request );
+
+        // Stamp the draft with the address ip_utils resolved, so every
+        // listener after this one -- the geo check in order_signals, the
+        // identity assessment at 85, the refusal at 99 -- reads it rather than
+        // the header WooCommerce copied onto the order. The recorder writes
+        // the same key again at order-processed, with the same value.
+        if( is_a( $order, 'WC_Order' ) ) {
+            $order->update_meta_data( '_mshield_ip', ip_utils::get_client_ip() );
+        }
+
+    }
+
+    /**
+     * Whether this Store API request is the one placing the order.
+     *
+     * The checkout route fires woocommerce_store_api_checkout_update_order_from_request
+     * on the POST that places the order and, once a draft exists after a
+     * failed payment, on every PUT that edits a field. Only the POST decides
+     * anything; a PUT is a shopper correcting a typo. Every listener with a
+     * side effect -- a refusal, a counter, a log row, a paid lookup --
+     * consults this. A request that is not a REST request at all (a harness
+     * calling the hook directly) counts as placing.
+     *
+     * @since   2.3.0
+     *
+     * @param   mixed   $request
+     * @return  bool
+     */
+    public static function is_placing( $request ) {
+
+        if( ! is_object( $request ) || ! method_exists( $request, 'get_method' ) ) return true;
+
+        return strtoupper( (string) $request->get_method() ) === 'POST';
 
     }
 
@@ -253,6 +297,16 @@ class store_api {
      */
     public function validate( $order, $request ) {
 
+        // Only the request that places the order. Everything below has a side
+        // effect -- a log row, a counter, a paid Smarty lookup, a token layer
+        // that scores an absent payload -- and the PUTs the block checkout
+        // sends while a shopper edits a failed order carry no extension data,
+        // so each one scored timing_missing, device_missing and
+        // captcha_unverified at once and could refuse a customer for fixing a
+        // typo. The rate counter was the only thing guarded; now it is all of
+        // it. See is_placing().
+        if( ! self::is_placing( $request ) ) return;
+
         $email = $order->get_billing_email();
 
         $ip = ip_utils::get_client_ip();
@@ -262,26 +316,29 @@ class store_api {
         // it is keyed on an IP, which behind a carrier NAT, an office or a
         // campus is hundreds of unrelated people -- so it costs 60 trust, which
         // holds a first-time order on its own, and decides nothing by itself.
+        //
+        // And, as on the classic checkout, a blocked address is not also
+        // counted against the rate limit: the two are the same evidence, and
+        // charging rate_limited (80) on top of ip_temp_blocked (60) here while
+        // classic charged only the 60 made the two checkouts disagree.
         if( rate_limiter::is_temp_blocked( $ip ) ) {
+
             risk_context::add( 'ip_temp_blocked', 'IP is under a temporary block' );
             db::log_event( $ip, 'store_api', 'flagged', 'Temporarily blocked IP' );
-        }
 
-        // Rate limit checkout attempts per IP. The count is what matters here;
-        // the signal is worth 80 and the engine does the rest.
-        //
-        // Counted on POST only. Once a draft order exists -- after a declined
-        // card, say -- the block checkout runs this hook again on every PUT
-        // that updates the draft, which is every field the shopper edits. Each
-        // of those counted as a checkout attempt, so a customer correcting a
-        // typo after one decline was walking into the rate limit.
-        $limit   = (int) settings::get( 'mshield_rate_checkout_limit' );
-        $window  = (int) settings::get( 'mshield_rate_checkout_window' );
-        $placing = ! ( $request instanceof \WP_REST_Request ) || $request->get_method() === 'POST';
-        $count   = $placing ? db::increment_rate_limit( md5( $ip . '|checkout' ), 'checkout', $window ) : 0;
-        if( $count > $limit ) {
-            risk_context::add( 'rate_limited', "Checkout rate limit exceeded: {$count}/{$limit}" );
-            db::log_event( $ip, 'store_api', 'rate_limited', "Checkout rate limit exceeded: {$count}/{$limit}" );
+        } else {
+
+            // Rate limit checkout attempts per IP. The count is what matters
+            // here; the signal is worth 80 and the engine does the rest.
+            $limit  = (int) settings::get( 'mshield_rate_checkout_limit' );
+            $window = (int) settings::get( 'mshield_rate_checkout_window' );
+            $count  = db::increment_rate_limit( md5( $ip . '|checkout' ), 'checkout', $window );
+
+            if( $count > $limit ) {
+                risk_context::add( 'rate_limited', "Checkout rate limit exceeded: {$count}/{$limit}" );
+                db::log_event( $ip, 'store_api', 'rate_limited', "Checkout rate limit exceeded: {$count}/{$limit}" );
+            }
+
         }
 
         // Disposable email domain.

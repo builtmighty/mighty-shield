@@ -319,6 +319,14 @@ class risk_context {
             if( $signal['floor'] === 'none' ) continue;
             if( ! risk_levels::exists( $signal['floor'] ) ) continue;
 
+            // A floor is the detector's word taken as final, so it takes only
+            // a detector that is sure. Every shipped floor is emitted at full
+            // confidence; this is for the merchant who puts a floor on a check
+            // that scales its own certainty, such as "address looks made up",
+            // which used to refuse an order the detector was one-seventh sure
+            // about. Below certainty the signal still costs its weight.
+            if( (float) $signal['confidence'] < 1.0 ) continue;
+
             if( $level === null || risk_levels::rank( $signal['floor'] ) > risk_levels::rank( $level ) ) {
                 $level = $signal['floor'];
                 $key  = $signal['key'];

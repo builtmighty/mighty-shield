@@ -235,6 +235,25 @@ class settings {
      *
      * @return  array   Email addresses.
      */
+    /**
+     * Whether the merchant wants to hear from MightyShield by email at all.
+     *
+     * One switch for every alert -- a badly rated AI review, a service that
+     * has stopped answering, a bot challenge refusing everybody, a wave of
+     * declines -- which is what the setup wizard says it is. Until 2.3.0 only
+     * the AI verdict email honoured it and the service alerts went to the
+     * site administrator address regardless of what was set.
+     *
+     * @since   2.3.0
+     *
+     * @return  bool
+     */
+    public static function alerts_enabled() {
+
+        return self::get( 'mshield_ai_notify_admin' ) === 'yes';
+
+    }
+
     public static function notification_recipients() {
 
         $emails = [];

@@ -324,7 +324,14 @@ class admin_page {
                     // which is safer than silently meaning zero.
                     if( $type === 'decimal' ) {
 
-                        $clean = preg_replace( '/[^0-9.\-]/', '', (string) $value );
+                        // Through WooCommerce's own parser, which knows the
+                        // store's decimal separator. The regex it replaces
+                        // kept '.' and dropped ',', so on a comma-decimal
+                        // store "1.500,00" became 1.5 and a ceiling of fifteen
+                        // hundred euros held every order over one and a half.
+                        $clean = function_exists( 'wc_format_decimal' )
+                            ? (string) wc_format_decimal( wp_strip_all_tags( (string) $value ) )
+                            : preg_replace( '/[^0-9.\-]/', '', (string) $value );
 
                         if( $clean === '' || ! is_numeric( $clean ) ) return get_option( $option, '' );
 
@@ -1036,7 +1043,7 @@ class admin_page {
                     // should have to upload again rather than apply a file
                     // they have forgotten the contents of.
                     $preview['path'] = $upload;
-                    set_transient( 'mshield_disputes_preview', $preview, 15 * MINUTE_IN_SECONDS );
+                    set_transient( \MightyShield\Includes\dispute_import::preview_key(), $preview, \MightyShield\Includes\dispute_import::PREVIEW_TTL );
                 }
 
             }
@@ -1048,7 +1055,7 @@ class admin_page {
 
         if( isset( $_POST['mshield_disputes_apply'] ) && check_admin_referer( 'mshield_disputes_action' ) ) {
 
-            $preview = get_transient( 'mshield_disputes_preview' );
+            $preview = get_transient( \MightyShield\Includes\dispute_import::preview_key() );
 
             if( ! is_array( $preview ) || empty( $preview['path'] ) ) {
 
@@ -1075,7 +1082,7 @@ class admin_page {
 
             }
 
-            delete_transient( 'mshield_disputes_preview' );
+            delete_transient( \MightyShield\Includes\dispute_import::preview_key() );
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
             exit;
@@ -1084,13 +1091,13 @@ class admin_page {
 
         if( isset( $_POST['mshield_disputes_cancel'] ) && check_admin_referer( 'mshield_disputes_action' ) ) {
 
-            $preview = get_transient( 'mshield_disputes_preview' );
+            $preview = get_transient( \MightyShield\Includes\dispute_import::preview_key() );
 
             if( is_array( $preview ) && ! empty( $preview['path'] ) ) {
                 wp_delete_file( $preview['path'] );
             }
 
-            delete_transient( 'mshield_disputes_preview' );
+            delete_transient( \MightyShield\Includes\dispute_import::preview_key() );
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
             exit;

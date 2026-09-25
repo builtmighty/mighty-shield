@@ -150,11 +150,10 @@ class failed_payment_tracker {
 
             db::log_event( $ip, 'system', 'blocked', sprintf( 'Store-wide decline rate: %d failed payments in %d minutes', $store, (int) ( self::ATTACK_WINDOW / 60 ) ) );
 
-            $to = array_filter( array_map( 'sanitize_email', array_map( 'trim', explode( ',', (string) settings::get( 'mshield_ai_notify_emails' ) ) ) ) );
-            if( empty( $to ) ) $to = [ get_option( 'admin_email' ) ];
+            if( ! settings::alerts_enabled() ) return;
 
             wp_mail(
-                $to,
+                settings::notification_recipients(),
                 __( 'MightyShield: your store may be under a card-testing attack', 'mighty-shield' ),
                 sprintf(
                     /* translators: 1: number of declines, 2: minutes. */

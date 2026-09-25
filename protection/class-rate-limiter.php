@@ -114,10 +114,11 @@ class rate_limiter {
      *
      * @param   string  $ip         IP address to block.
      * @param   string  $reason     Reason for the block.
+     * @param   int     $duration   Seconds; the configured block length when 0.
      */
-    public static function temp_block_ip( $ip, $reason = '' ) {
+    public static function temp_block_ip( $ip, $reason = '', $duration = 0 ) {
 
-        $duration = (int) settings::get( 'mshield_temp_block_duration' );
+        $duration = (int) $duration > 0 ? (int) $duration : (int) settings::get( 'mshield_temp_block_duration' );
         $key      = 'mshield_tempblock_' . md5( $ip );
 
         set_transient( $key, [

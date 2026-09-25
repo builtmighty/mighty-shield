@@ -53,6 +53,56 @@ class dispute_import {
     const SAMPLE = 60;
 
     /**
+     * How long an uploaded report waits for the merchant to confirm.
+     *
+     * @since   2.3.0
+     */
+    const PREVIEW_TTL = 15 * MINUTE_IN_SECONDS;
+
+    /**
+     * The transient a merchant's pending preview lives under.
+     *
+     * Per user. A site-wide key let one reviewer's upload be applied, or
+     * cancelled, by another who happened to open the tab in the same quarter
+     * of an hour.
+     *
+     * @since   2.3.0
+     *
+     * @return  string
+     */
+    public static function preview_key() {
+
+        return 'mshield_disputes_preview_' . (int) get_current_user_id();
+
+    }
+
+    /**
+     * Remove uploaded reports nobody came back for.
+     *
+     * The file is moved into the system temp directory for the confirm step
+     * and deleted on Apply or Cancel. A merchant who uploads and walks away
+     * used to leave a CSV of customer disputes on disk indefinitely. Hooked
+     * to the daily cleanup.
+     *
+     * @since   2.3.0
+     */
+    public static function sweep_temp() {
+
+        $dir = trailingslashit( get_temp_dir() );
+
+        foreach( (array) glob( $dir . 'mshield-disputes-*.csv' ) as $file ) {
+
+            if( ! is_file( $file ) ) continue;
+
+            if( ( time() - (int) @filemtime( $file ) ) > self::PREVIEW_TTL ) {
+                wp_delete_file( $file );
+            }
+
+        }
+
+    }
+
+    /**
      * Read a CSV and work out which column identifies an order.
      *
      * @since   2.3.0
@@ -254,7 +304,8 @@ class dispute_import {
             return new \WP_Error( 'mshield_csv_unreadable', __( 'That file could not be opened.', 'mighty-shield' ) );
         }
 
-        $header = fgetcsv( $handle );
+        // The escape character spelled out; PHP 8.4 deprecates the default.
+        $header = fgetcsv( $handle, null, ',', '"', '\\' );
 
         if( ! is_array( $header ) ) {
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
@@ -272,7 +323,7 @@ class dispute_import {
 
         $data = [];
 
-        while( count( $data ) < self::MAX_ROWS && ( $row = fgetcsv( $handle ) ) !== false ) {
+        while( count( $data ) < self::MAX_ROWS && ( $row = fgetcsv( $handle, null, ',', '"', '\\' ) ) !== false ) {
 
             if( ! is_array( $row ) ) continue;
 

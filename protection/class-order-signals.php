@@ -222,7 +222,10 @@ class order_signals {
             'bill_first_name'  => (string) $order->get_billing_first_name(),
             'bill_last_name'   => (string) $order->get_billing_last_name(),
             'total'            => (float) $order->get_total(),
-            'ip'               => (string) $order->get_customer_ip_address(),
+            // The address the recorder (or store_api::prepare()) resolved,
+            // never the header WooCommerce copied; a forged X-Real-IP used to
+            // silence the geo check on the block checkout.
+            'ip'               => ip_utils::order_ip( $order ),
             'exclude_order_id' => (int) $order->get_id(),
         ];
 

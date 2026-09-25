@@ -167,8 +167,22 @@ class rescore {
         $identities = entities::for_order( $order );
 
         if( ! empty( $identities ) ) {
+
             entities::assess( $identities );
-            entities::record( $identities, $order->get_id() );
+
+            // Linked as of when the order was PLACED. A back-catalogue pass
+            // used to stamp every link with the moment it ran, so a family
+            // home with three orders across two years looked like three
+            // orders last month and tripped address_velocity for the next
+            // thirty days.
+            $placed = $order->get_date_created();
+            $seen   = $placed ? gmdate( 'Y-m-d H:i:s', $placed->getTimestamp() ) : null;
+
+            entities::record( $identities, $order->get_id(), $seen );
+
+            // And counted, if the store was paid for it. Once.
+            if( entities::order_is_paid( $order ) ) entities::count_paid( $order );
+
         }
 
         self::assess_ip( $order );
@@ -204,8 +218,31 @@ class rescore {
      */
     public static function assess_ip( $order ) {
 
-        $ip = $order->get_customer_ip_address();
-        if( empty( $ip ) ) return;
+        // The address the recorder resolved, not WooCommerce's copy of
+        // X-Real-IP: a card tester on a hosting box who set that header to a
+        // residential address was looked up as that address, and the
+        // data-centre check never fired.
+        self::assess_ip_address( ip_utils::order_ip( $order ) );
+
+    }
+
+    /**
+     * The network signals for one address, from the cache only.
+     *
+     * Called at validation as well as at record time since 2.3.0: the record
+     * call at order-processed runs after the AI review (90) and the refusal
+     * (99), so the model never saw the network and a data-centre address
+     * could not contribute to a refusal. risk_context::add() is
+     * first-write-wins, so the second call costs nothing.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $ip
+     */
+    public static function assess_ip_address( $ip ) {
+
+        $ip = (string) $ip;
+        if( $ip === '' ) return;
 
         $geo = db::get_ip_data( $ip );
         if( empty( $geo ) ) return;

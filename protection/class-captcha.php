@@ -811,6 +811,18 @@ class captcha {
 
                 self::report_missing( $surface );
 
+                // On checkout a removed marker is not free either. The widget
+                // is known to render there, so a submission carrying neither
+                // field is a stripped form, and it is scored the way the
+                // block checkout already scores the same request: as a
+                // challenge that went unanswered (captcha_unverified, no
+                // floor). Without this, a bot that dropped both fields paid
+                // nothing while an honest shopper whose ad blocker stopped
+                // the script paid twenty.
+                if( $surface === 'checkout' && self::renders( $surface ) ) {
+                    return $seen[ $surface ] = self::UNANSWERED;
+                }
+
                 return $seen[ $surface ] = self::NOT_ASKED;
 
             }
@@ -1007,6 +1019,10 @@ class captcha {
         // single bad token every few hours hold the breaker open indefinitely.
         if( count( $seen ) === 1 ) {
             set_transient( $key, $seen, self::BREAKER_WINDOW );
+            // When the window closes, kept beside the list: the timeout row
+            // WordPress writes for a transient does not exist under a
+            // persistent object cache, so it cannot be read back from there.
+            set_transient( $key . '_until', time() + self::BREAKER_WINDOW, self::BREAKER_WINDOW );
         } else {
             self::extend_without_refresh( $key, $seen );
         }
@@ -1051,8 +1067,15 @@ class captcha {
      */
     private static function extend_without_refresh( $key, $value ) {
 
-        $timeout = (int) get_option( '_transient_timeout_' . $key, 0 );
-        $left    = $timeout > 0 ? $timeout - time() : self::BREAKER_WINDOW;
+        // The window's end, recorded when it opened. Reading the transient's
+        // own timeout option used to work only where transients live in the
+        // options table; on a persistent object cache that row is never
+        // written, the read returned 0, and every failure re-armed the full
+        // window -- exactly the drift this exists to prevent.
+        $until = (int) get_transient( $key . '_until' );
+        if( $until <= 0 ) $until = (int) get_option( '_transient_timeout_' . $key, 0 );
+
+        $left = $until > 0 ? $until - time() : self::BREAKER_WINDOW;
 
         set_transient( $key, $value, max( 60, $left ) );
 
@@ -1283,7 +1306,11 @@ class captcha {
         if( get_transient( 'mshield_captcha_alerted' ) ) return;
         set_transient( 'mshield_captcha_alerted', 1, DAY_IN_SECONDS );
 
-        $admin_email = get_option( 'admin_email' );
+        // To the merchant's chosen addresses, and only when they asked to be
+        // told; see settings::alerts_enabled().
+        if( ! settings::alerts_enabled() ) return;
+
+        $admin_email = settings::notification_recipients();
         $subject     = __( '[MightyShield] Bot challenge is misconfigured', 'mighty-shield' );
         $message     = sprintf(
             /* translators: 1: the challenge provider (turnstile or recaptcha_v3), 2: the error code it returned. */

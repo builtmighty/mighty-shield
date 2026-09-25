@@ -224,7 +224,15 @@ class account_guard {
         if( ! is_object( $old ) || ! is_array( $userdata ) ) return;
 
         $email_changed = isset( $userdata['user_email'] ) && (string) $userdata['user_email'] !== (string) $old->user_email;
-        $pass_changed  = ! empty( $userdata['user_pass'] );
+
+        // Compared, not merely present. wp_update_user() merges the stored
+        // user record into $userdata before this hook fires, so user_pass is
+        // ALWAYS set -- to the existing hash -- and "non-empty" meant every
+        // profile save, which WooCommerce performs on every checkout by a
+        // signed-in customer. That charged returning customers 25 points on
+        // their next order for changing nothing. A genuinely new password is
+        // hashed before the merge, so the two differ exactly when it changed.
+        $pass_changed  = ! empty( $userdata['user_pass'] ) && (string) $userdata['user_pass'] !== (string) $old->user_pass;
 
         if( $email_changed || $pass_changed ) $this->on_account_changed( $user_id );
 

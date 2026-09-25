@@ -177,6 +177,19 @@ function activation() {
         // Stamping the version here instead -- which is what this did -- let a
         // deactivate, upload, reactivate update skip every one of them.
         \MightyShield\Includes\db::maybe_upgrade_schema();
+
+        // ...unless the history is a ghost. An uninstall on a host with a
+        // persistent object cache used to leave the version options cached
+        // after the tables were dropped, so a reinstall looked like an
+        // upgrade with nothing to do and ran on no tables at all. The options
+        // say "prior"; the database gets the last word.
+        global $wpdb;
+        $risk_table = $wpdb->prefix . 'mshield_risk';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        if( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $risk_table ) ) !== $risk_table ) {
+            \MightyShield\Includes\db::create_tables();
+            update_option( 'mshield_db_version', \MightyShield\Includes\db::SCHEMA_VERSION, true );
+        }
     } else {
         // A fresh install has nothing to migrate: create the tables and stamp
         // the schema current, so the first load does not re-run dbDelta.
@@ -442,6 +455,13 @@ function deactivation() {
     // Clear scheduled cron events.
     wp_clear_scheduled_hook( 'mshield_daily_cleanup' );
 
+    // And a back-catalogue rating in progress, which would otherwise keep
+    // firing at a plugin that is no longer loaded.
+    wp_clear_scheduled_hook( 'mshield_backfill_batch' );
+    if( function_exists( 'as_unschedule_all_actions' ) ) {
+        as_unschedule_all_actions( 'mshield_backfill_batch' );
+    }
+
 }
 
 /**
@@ -575,9 +595,21 @@ function load() {
     // return from a 3-D Secure redirect -- and the hold has to be waiting in
     // all of them. It reads the order's own meta, so it is a no-op on any
     // order that was not held.
-    add_action( 'woocommerce_payment_complete', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999 );
-    add_action( 'woocommerce_order_status_processing', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999 );
-    add_action( 'woocommerce_order_status_completed', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999 );
+    // Three arguments: the status hooks pass the transition, whose 'manual'
+    // flag is how the hold tells a human's status change from the gateway's.
+    add_action( 'woocommerce_payment_complete', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999, 3 );
+    add_action( 'woocommerce_order_status_processing', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999, 3 );
+    add_action( 'woocommerce_order_status_completed', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999, 3 );
+
+    // A paid order is what earns an identity its history. The recorder links
+    // an order at checkout but no longer counts it; the count arrives with the
+    // money, on whichever of these confirms it first, and once only.
+    add_action( 'woocommerce_payment_complete', [ '\MightyShield\Protection\outcomes', 'on_paid' ], 20 );
+    add_action( 'woocommerce_order_status_processing', [ '\MightyShield\Protection\outcomes', 'on_paid' ], 20 );
+    add_action( 'woocommerce_order_status_completed', [ '\MightyShield\Protection\outcomes', 'on_paid' ], 20 );
+
+    // The dispute CSV a merchant uploaded and then walked away from.
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\dispute_import', 'sweep_temp' ] );
 
     // An order a reviewer released for payment waits in Pending until the
     // customer pays; WooCommerce would cancel it after the stock-hold window.

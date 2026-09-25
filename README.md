@@ -14,7 +14,7 @@ wp plugin install https://github.com/builtmighty/mighty-shield/releases/latest/d
 
 Five steps, in this order, on both the classic and the block checkout:
 
-1. **Scored.** Forty-five checks run. Each one that notices something costs the order trust on a 1–100 rating, weighted by how sure it is. Nothing decides anything yet.
+1. **Scored.** Fifty-six checks run. Each one that notices something costs the order trust on a 1–100 rating, weighted by how sure it is. Nothing decides anything yet.
 2. **Reviewed.** If AI review is on and the rating landed on a level you selected, a model is shown everything MightyShield already knows and returns its own rating.
 3. **Decided.** The final rating picks a risk level; that level's action is carried out. A refusal happens here — before an order exists and before your payment processor is contacted, which is the whole point.
 4. **Created.** The order is placed.

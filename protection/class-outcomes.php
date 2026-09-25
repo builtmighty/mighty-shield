@@ -298,7 +298,38 @@ class outcomes {
         $identities = entities::for_order( $order );
         if( empty( $identities ) ) return;
 
-        entities::record( $identities, $order->get_id() );
+        // As of when the order was placed, not when its outcome arrived.
+        $placed = $order->get_date_created();
+        $seen   = $placed ? gmdate( 'Y-m-d H:i:s', $placed->getTimestamp() ) : null;
+
+        entities::record( $identities, $order->get_id(), $seen );
+
+        if( entities::order_is_paid( $order ) ) entities::count_paid( $order );
+
+    }
+
+    /**
+     * Payment confirmed: count the order against its identities.
+     *
+     * Hooked to payment_complete and to the Processing and Completed
+     * transitions, because a store taking payment on delivery or by transfer
+     * never fires the first. count_paid() marks the order, so whichever
+     * arrives first counts and the rest add nothing.
+     *
+     * @since   2.3.0
+     *
+     * @param   int     $order_id
+     */
+    public static function on_paid( $order_id ) {
+
+        $order = wc_get_order( $order_id );
+        if( ! $order ) return;
+
+        if( (string) $order->get_meta( '_mshield_paid_counted' ) === 'yes' ) return;
+
+        self::ensure_linked( $order );
+
+        entities::count_paid( $order );
 
     }
 

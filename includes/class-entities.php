@@ -183,8 +183,16 @@ class entities {
         $salt = get_option( 'mshield_entity_salt', '' );
 
         if( empty( $salt ) ) {
+
+            // add_option(), which fails when the row already exists, so two
+            // first checkouts landing together cannot each mint a salt with
+            // the loser's hashes unfindable for good. The loser re-reads.
             $salt = wp_generate_password( 64, true, true );
-            update_option( 'mshield_entity_salt', $salt, false );
+
+            if( ! add_option( 'mshield_entity_salt', $salt, '', 'no' ) ) {
+                $salt = (string) get_option( 'mshield_entity_salt', $salt );
+            }
+
         }
 
         return $salt;
@@ -387,10 +395,16 @@ class entities {
             'address'    => $street !== '' ? $address : '',
             // The address the recorder resolved, not the header WooCommerce
             // copied; the latter is whatever the shopper said it was.
-            'ip_block'   => (string) ( $order->get_meta( '_mshield_ip' ) ?: $order->get_customer_ip_address() ),
+            'ip_block'   => ip_utils::order_ip( $order ),
             // The laptop. Recorded by the risk recorder from the collector's
-            // signature; empty on orders that carried no payload.
-            'device'     => (string) $order->get_meta( '_mshield_device' ),
+            // signature; empty on orders that carried no payload. Inside the
+            // checkout request the signature is already known before the
+            // recorder writes it, so the Store API's identity assessment at
+            // 85 and refusal at 99 see it too.
+            'device'     => (string) ( $order->get_meta( '_mshield_device' )
+                ?: ( class_exists( '\MightyShield\Protection\device_fingerprint' )
+                    ? \MightyShield\Protection\device_fingerprint::current_signature()
+                    : '' ) ),
 
             // The card, when the processor gave us one.
             //
@@ -423,9 +437,20 @@ class entities {
      */
     public static function for_checkout( $data ) {
 
-        $street = $data['shipping_address_1'] ?? ( $data['billing_address_1'] ?? '' );
-        $post   = $data['shipping_postcode'] ?? ( $data['billing_postcode'] ?? '' );
-        $ctry   = $data['shipping_country'] ?? ( $data['billing_country'] ?? '' );
+        // Fall back on EMPTY, not merely absent. The classic checkout posts
+        // every shipping_* key, blank, once "ship to a different address" is
+        // ticked, and `??` took the blank -- so the identity refused on before
+        // the order existed hashed a different address from the one the
+        // recorder linked afterwards. for_order() falls back on empty; so
+        // does order_signals::from_checkout(); this now matches both.
+        $pick = static function( $field ) use ( $data ) {
+            $ship = trim( (string) ( $data[ 'shipping_' . $field ] ?? '' ) );
+            return $ship !== '' ? $ship : trim( (string) ( $data[ 'billing_' . $field ] ?? '' ) );
+        };
+
+        $street = $pick( 'address_1' );
+        $post   = $pick( 'postcode' );
+        $ctry   = $pick( 'country' );
 
         $address = trim( ai_detection::normalize_address( $street ) . ' ' . $post . ' ' . $ctry );
 
@@ -556,19 +581,32 @@ class entities {
     /**
      * Record that an identity set was seen on an order.
      *
-     * Creates any identity that does not exist yet, bumps last_seen and
-     * order_count, and links each to the order.
+     * Creates any identity that does not exist yet, moves first_seen and
+     * last_seen to cover the sighting, and links each to the order.
+     *
+     * It does NOT count the order. order_count is the number of orders an
+     * identity has PAID for, and it moves in count_paid() when the money
+     * arrives. It used to move here, at order-processed, before payment -- so
+     * ten declined cards through one mailbox were narrated to the AI as "ten
+     * previous orders, all without incident" and switched first_order off for
+     * the eleventh, and TRUST_MIN_ORDERS counted attempts the store turned
+     * away.
      *
      * @since   1.9.0
+     * @since   2.3.0 $seen_at, so a back-catalogue pass records when the order
+     *                was placed rather than when it was rated; order_count no
+     *                longer moves here.
      *
-     * @param   array   $set        type => normalized value.
-     * @param   int     $order_id   Order the identities were seen on.
+     * @param   array           $set        type => normalized value.
+     * @param   int             $order_id   Order the identities were seen on.
+     * @param   string|null     $seen_at    UTC 'Y-m-d H:i:s' the order was placed;
+     *                                      now when null.
      */
-    public static function record( $set, $order_id = 0 ) {
+    public static function record( $set, $order_id = 0, $seen_at = null ) {
 
         global $wpdb;
 
-        $now = gmdate( 'Y-m-d H:i:s' );
+        $now = is_string( $seen_at ) && $seen_at !== '' ? $seen_at : gmdate( 'Y-m-d H:i:s' );
 
         $order_id = (int) $order_id;
 
@@ -577,33 +615,23 @@ class entities {
             $hash = self::hash( $type, $value );
             if( $hash === '' ) continue;
 
-            // Does this identity already know about this order?
-            //
-            // order_count used to be incremented unconditionally while link()
-            // was an INSERT IGNORE, so it counted times-seen rather than
-            // distinct orders -- and rescore::collect() calls this on every
-            // click of "Rate Order". An admin re-rating one order five times
-            // added five to the count behind it. That number gates
-            // TRUST_MIN_ORDERS and is narrated to the AI as "seen on N previous
-            // orders", so it was wrong in the two places it is read.
-            $counts = $order_id > 0 ? ! self::is_linked( $type, $hash, $order_id ) : true;
-
             // Atomic upsert so two concurrent checkouts sharing an identity
-            // cannot race to create duplicate rows.
+            // cannot race to create duplicate rows. first_seen only ever moves
+            // earlier and last_seen only later, so a 2024 order rated today
+            // makes the identity two years old rather than two seconds -- which
+            // is what TRUST_MIN_AGE needs to be true about a real regular.
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             $wpdb->query( $wpdb->prepare(
                 "INSERT INTO {$wpdb->prefix}mshield_entities
                     (entity_type, entity_hash, first_seen, last_seen, order_count)
-                 VALUES (%s, %s, %s, %s, %d)
+                 VALUES (%s, %s, %s, %s, 0)
                  ON DUPLICATE KEY UPDATE
-                    last_seen   = VALUES(last_seen),
-                    order_count = order_count + %d",
+                    first_seen = LEAST( first_seen, VALUES(first_seen) ),
+                    last_seen  = GREATEST( last_seen, VALUES(last_seen) )",
                 $type,
                 $hash,
                 $now,
-                $now,
-                $counts ? 1 : 0,
-                $counts ? 1 : 0
+                $now
             ) );
 
             if( $order_id > 0 ) {
@@ -611,6 +639,70 @@ class entities {
             }
 
         }
+
+    }
+
+    /**
+     * Count a paid order against every identity linked to it, once.
+     *
+     * The write behind order_count, and the only one. Called when payment is
+     * confirmed -- payment_complete, or the Processing / Completed transition
+     * on a store whose gateway never calls it -- and by the re-rate of an
+     * order that was already paid when it was rated. The order carries a
+     * marker so the second and third of those hooks, and any later re-rate,
+     * add nothing.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order|int   $order
+     * @return  bool    Whether this call counted anything.
+     */
+    public static function count_paid( $order ) {
+
+        global $wpdb;
+
+        $order = is_object( $order ) ? $order : ( function_exists( 'wc_get_order' ) ? wc_get_order( $order ) : null );
+        if( ! is_object( $order ) || ! method_exists( $order, 'get_meta' ) ) return false;
+
+        if( (string) $order->get_meta( '_mshield_paid_counted' ) === 'yes' ) return false;
+
+        $order_id = (int) $order->get_id();
+        if( $order_id <= 0 ) return false;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned tables; the only interpolations are $wpdb table names
+        $moved = (int) $wpdb->query( $wpdb->prepare(
+            "UPDATE {$wpdb->prefix}mshield_entities e
+             INNER JOIN {$wpdb->prefix}mshield_entity_links l ON l.entity_id = e.id
+             SET e.order_count = e.order_count + 1
+             WHERE l.order_id = %d",
+            $order_id
+        ) );
+
+        $order->update_meta_data( '_mshield_paid_counted', 'yes' );
+        $order->save();
+
+        return $moved > 0;
+
+    }
+
+    /**
+     * Whether an order counts as paid for the identity graph.
+     *
+     * is_paid() is WooCommerce's own answer; the statuses cover a store that
+     * takes payment on delivery or by transfer and confirms it by moving the
+     * order along rather than through a gateway.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order   $order
+     * @return  bool
+     */
+    public static function order_is_paid( $order ) {
+
+        if( ! is_object( $order ) || ! method_exists( $order, 'has_status' ) ) return false;
+
+        return ( method_exists( $order, 'is_paid' ) && $order->is_paid() )
+            || $order->has_status( [ 'processing', 'completed', 'refunded' ] );
 
     }
 
@@ -1147,8 +1239,10 @@ class entities {
 
         if( empty( $rows ) ) return [];
 
-        $worst_bad     = null;
-        $has_denial    = false;
+        $worst_bad      = null;   // a precise identity with a bad mark
+        $shared_bad     = null;   // a network, address, phone or device with one
+        $shared_why     = '';
+        $has_denial     = false;
         $has_chargeback = false;
         $trusted        = false;
 
@@ -1156,28 +1250,43 @@ class entities {
 
             $reputation = (float) $row['reputation'];
             $orders     = (int) $row['order_count'];
+            $precise    = self::is_precise( $type );
 
+            // Only an identity that names a PERSON -- a mailbox, a card -- can
+            // carry a mark that decides the next order on its own. A /24, a
+            // street address, a phone, a device are shared by strangers: a
+            // carrier NAT is thousands of people and an apartment building is
+            // dozens. Their history is worth knowing, so it is scored, at
+            // half confidence and never as "this customer was denied" -- it
+            // used to be exactly that, and one Fraud verdict held every
+            // first-time shopper on the same mobile network for a year.
             if( (int) $row['chargeback_count'] > 0 ) {
-
-                // A chargeback on a /24 or a shared address is history worth
-                // knowing, not grounds to ban the next stranger who uses it.
-                if( self::is_precise( $type ) ) {
+                if( $precise ) {
                     $has_chargeback = true;
-                } else {
-                    $has_denial = true;
+                    $worst_bad      = $worst_bad ?? $type;
+                } elseif( $shared_bad === null ) {
+                    $shared_bad = $type;
+                    $shared_why = 'a previous chargeback';
                 }
-
-                $worst_bad = $worst_bad ?? $type;
-
             }
 
             if( (int) $row['denied_count'] > 0 ) {
-                $has_denial = true;
-                $worst_bad  = $worst_bad ?? $type;
+                if( $precise ) {
+                    $has_denial = true;
+                    $worst_bad  = $worst_bad ?? $type;
+                } elseif( $shared_bad === null ) {
+                    $shared_bad = $type;
+                    $shared_why = 'an order denied in review';
+                }
             }
 
-            if( $reputation <= self::BAD_REPUTATION && $worst_bad === null ) {
-                $worst_bad = $type;
+            if( $reputation <= self::BAD_REPUTATION ) {
+                if( $precise ) {
+                    $worst_bad = $worst_bad ?? $type;
+                } elseif( $shared_bad === null ) {
+                    $shared_bad = $type;
+                    $shared_why = 'a run of refused or refunded orders';
+                }
             }
 
             // Trust has to be earned by something that names a buyer. A
@@ -1212,6 +1321,12 @@ class entities {
             risk_context::add(
                 'entity_linked_bad',
                 sprintf( 'The %s on this order has a poor history', self::type_label( $worst_bad ) )
+            );
+        } elseif( $shared_bad !== null ) {
+            risk_context::add(
+                'entity_linked_bad',
+                sprintf( 'The %s on this order is shared with %s', self::type_label( $shared_bad ), $shared_why ),
+                0.5
             );
         }
 

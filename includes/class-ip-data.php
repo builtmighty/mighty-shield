@@ -420,7 +420,17 @@ class ip_data {
 
         }
 
-        return self::download_asn_database( $key );
+        $result = self::download_asn_database( $key );
+
+        // The cron that calls this drops the return value, so a failure was
+        // silent and the data-centre check simply never said anything. Once a
+        // day in the log is enough to be found.
+        if( is_wp_error( $result ) && ! get_transient( 'mshield_asn_failed' ) ) {
+            set_transient( 'mshield_asn_failed', 1, DAY_IN_SECONDS );
+            db::log_event( '', 'system', 'degraded', 'MaxMind ASN database could not be updated: ' . $result->get_error_message() . ' — the data-centre check has nothing to read' );
+        }
+
+        return $result;
 
     }
 
@@ -516,6 +526,12 @@ class ip_data {
             @unlink( $extracted );
 
         }
+
+        // Stamp the install time. The extracted file keeps the archive's own
+        // modification time, which is MaxMind's build date -- often a week old
+        // on arrival -- so the age check above saw a stale file the day it was
+        // downloaded and fetched it again every night.
+        @touch( $target );
 
         // Drop cached rows that were resolved without ASN data, so addresses
         // already seen get a second look now that there is something to say.

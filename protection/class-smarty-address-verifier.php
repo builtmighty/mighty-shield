@@ -52,6 +52,14 @@ class smarty_address_verifier {
      *
      * @param   string  $error_message  The API error that triggered fallback.
      */
+    /**
+     * The store-wide back-off after a failed call, and how long it lasts.
+     *
+     * @since   2.3.0
+     */
+    const BACKOFF_KEY     = 'mshield_smarty_backoff';
+    const BACKOFF_SECONDS = 2 * MINUTE_IN_SECONDS;
+
     private static function alert_degraded( $error_message ) {
 
         // Persist the latest degraded state for the admin notice.
@@ -64,7 +72,12 @@ class smarty_address_verifier {
         if( get_transient( 'mshield_smarty_alerted' ) ) return;
         set_transient( 'mshield_smarty_alerted', 1, DAY_IN_SECONDS );
 
-        $admin_email = get_option( 'admin_email' );
+        // The addresses the merchant asked alerts to go to, and only if they
+        // asked for alerts at all. This went to the site administrator address
+        // unconditionally, which is not what the setup wizard promised.
+        if( ! settings::alerts_enabled() ) return;
+
+        $admin_email = settings::notification_recipients();
         $subject     = __( '[MightyShield] Address verification is degraded', 'mighty-shield' );
         $message     = sprintf(
             /* translators: %s: the error Smarty returned. */
@@ -218,6 +231,17 @@ class smarty_address_verifier {
 
         }
 
+        // A service that just failed is not asked again for a couple of
+        // minutes, whatever the address. The per-address back-off below is
+        // still kept, but it never protected the NEXT checkout: every
+        // checkout carries a different address, so during an outage every one
+        // of them waited out the full connection timeout before falling back,
+        // and a card-testing run made the store fire one dead call and one
+        // alert per attempt.
+        if( get_transient( self::BACKOFF_KEY ) ) {
+            return self::fallback_zip_state( $state, $zipcode );
+        }
+
         $response = self::call_smarty_api( $street, $city, $state, $zipcode );
 
         // API failure — fall back to ZIP/state check.
@@ -231,6 +255,7 @@ class smarty_address_verifier {
 
             // Cache API error briefly to avoid hammering a failing API.
             set_transient( $cache_key, 'api_error', MINUTE_IN_SECONDS );
+            set_transient( self::BACKOFF_KEY, time(), self::BACKOFF_SECONDS );
 
             return self::fallback_zip_state( $state, $zipcode );
 

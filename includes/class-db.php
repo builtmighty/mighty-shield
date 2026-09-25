@@ -28,7 +28,7 @@ class db {
      *
      * @since   1.9.0
      */
-    const SCHEMA_VERSION = 10;
+    const SCHEMA_VERSION = 11;
 
     /**
      * How long cached IP intelligence stays useful, in days.
@@ -213,7 +213,11 @@ class db {
         // each identity is linked to -- batched, never on a shopper's request,
         // by entities::maybe_rehash_addresses(). This only arms it: the order
         // factory is not up yet at the point this runs.
-        if( $installed > 0 && $installed < 10 ) {
+        //
+        // Schema 11 made the same normaliser keep letters outside a-z, so a
+        // Cyrillic, Greek or accented street stops collapsing to its house
+        // number; the same re-hash covers it.
+        if( $installed > 0 && $installed < 11 ) {
             update_option( 'mshield_rehash_addresses', 0, false );
         }
 
@@ -590,10 +594,13 @@ class db {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->query( $wpdb->prepare(
             'INSERT IGNORE INTO ' . $wpdb->prefix . 'mshield_risk
-                ( order_id, outcome, rated_by ) VALUES ( %d, %s, %s )',
+                ( order_id, outcome, rated_by, created_at ) VALUES ( %d, %s, %s, %s )',
             $order_id,
             $outcome,
-            'unrated'
+            'unrated',
+            // Bound, so it is UTC like every other row rather than the
+            // database server's local time via the column default.
+            gmdate( 'Y-m-d H:i:s' )
         ) );
 
     }
@@ -1060,16 +1067,25 @@ class db {
         $days  = max( 1, (int) $days );
         $table = $wpdb->prefix . 'mshield_log';
 
+        // The merchant's days, not UTC's. Rows are stored in UTC; the buckets
+        // are cut where the store's own midnight falls, and the window opens
+        // at the start of the oldest day rather than at this time of day
+        // days ago -- which used to leave the first bar holding only the part
+        // of its day that came after now o'clock.
+        $tz     = self::site_tz_offset();
+        $start  = get_gmt_from_date( wp_date( 'Y-m-d 00:00:00', time() - ( ( $days - 1 ) * DAY_IN_SECONDS ) ) );
+
 // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $rows = $wpdb->get_results( $wpdb->prepare(
-            "SELECT DATE(created_at) as d, action, COUNT(*) as total
+            "SELECT DATE( CONVERT_TZ( created_at, '+00:00', %s ) ) as d, action, COUNT(*) as total
              FROM {$table}
-             WHERE created_at >= DATE_SUB( %s, INTERVAL %d DAY )
-             GROUP BY DATE(created_at), action",
-            gmdate( 'Y-m-d H:i:s' ),
-            $days - 1
+             WHERE created_at >= %s
+             GROUP BY DATE( CONVERT_TZ( created_at, '+00:00', %s ) ), action",
+            $tz,
+            $start,
+            $tz
         ) );
 
 // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -1077,7 +1093,7 @@ class db {
         // Seed each day with zeros so the chart always has a full series.
         $series = [];
         for( $i = $days - 1; $i >= 0; $i-- ) {
-            $date = gmdate( 'Y-m-d', time() - ( $i * DAY_IN_SECONDS ) );
+            $date = wp_date( 'Y-m-d', time() - ( $i * DAY_IN_SECONDS ) );
             $series[ $date ] = [ 'date' => $date, 'blocked' => 0, 'rate_limited' => 0, 'flagged' => 0, 'total' => 0 ];
         }
 
@@ -1188,6 +1204,25 @@ class db {
      * @param   int     $hours  Number of hours (including the current one).
      * @return  array   Ordered oldest-first, each: [ 'label' => 'H:00', 'blocked' => int, 'rate_limited' => int, 'flagged' => int, 'total' => int ]
      */
+    /**
+     * The store's UTC offset right now, in the form CONVERT_TZ() takes.
+     *
+     * A fixed offset, so it needs no time-zone tables on the database server.
+     * Rows inside a daylight-saving change within the window land an hour
+     * off; that is the cost of a chart that works on every host.
+     *
+     * @since   2.3.0
+     *
+     * @return  string  e.g. '-04:00'
+     */
+    private static function site_tz_offset() {
+
+        $seconds = (int) wp_timezone()->getOffset( new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) ) );
+
+        return sprintf( '%s%02d:%02d', $seconds < 0 ? '-' : '+', intdiv( abs( $seconds ), 3600 ), intdiv( abs( $seconds ) % 3600, 60 ) );
+
+    }
+
     public static function get_hourly_stats( $hours = 24 ) {
 
         global $wpdb;
@@ -1195,16 +1230,21 @@ class db {
         $hours = max( 1, (int) $hours );
         $table = $wpdb->prefix . 'mshield_log';
 
+        // Site-local hours, from the top of the oldest one. See get_daily_stats().
+        $tz    = self::site_tz_offset();
+        $start = get_gmt_from_date( wp_date( 'Y-m-d H:00:00', time() - ( ( $hours - 1 ) * HOUR_IN_SECONDS ) ) );
+
 // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $rows = $wpdb->get_results( $wpdb->prepare(
-            "SELECT DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H') as h, action, COUNT(*) as total
+            "SELECT DATE_FORMAT( CONVERT_TZ( created_at, '+00:00', %s ), '%%Y-%%m-%%d %%H' ) as h, action, COUNT(*) as total
              FROM {$table}
-             WHERE created_at >= DATE_SUB( %s, INTERVAL %d HOUR )
-             GROUP BY DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H'), action",
-            gmdate( 'Y-m-d H:i:s' ),
-            $hours - 1
+             WHERE created_at >= %s
+             GROUP BY DATE_FORMAT( CONVERT_TZ( created_at, '+00:00', %s ), '%%Y-%%m-%%d %%H' ), action",
+            $tz,
+            $start,
+            $tz
         ) );
 
 // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -1212,8 +1252,8 @@ class db {
         $series = [];
         for( $i = $hours - 1; $i >= 0; $i-- ) {
             $ts  = time() - ( $i * HOUR_IN_SECONDS );
-            $key = gmdate( 'Y-m-d H', $ts );
-            $series[ $key ] = [ 'label' => gmdate( 'H:00', $ts ), 'blocked' => 0, 'rate_limited' => 0, 'flagged' => 0, 'total' => 0 ];
+            $key = wp_date( 'Y-m-d H', $ts );
+            $series[ $key ] = [ 'label' => wp_date( 'H:00', $ts ), 'blocked' => 0, 'rate_limited' => 0, 'flagged' => 0, 'total' => 0 ];
         }
 
         foreach( $rows as $row ) {
@@ -1387,8 +1427,12 @@ class db {
 
         $hpos = $wpdb->prefix . 'wc_orders';
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $use_hpos = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $hpos ) ) === $hpos;
+        // Whether the table is the LIVE store, not whether it exists. A store
+        // that tried HPOS and went back to posts keeps a wc_orders table that
+        // stops moving the day sync is switched off, and learning from it
+        // meant learning from the past.
+        $use_hpos = class_exists( '\Automattic\WooCommerce\Utilities\OrderUtil' )
+            && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
 
         if( $use_hpos ) {
 

@@ -195,6 +195,15 @@ class risk_recorder {
 
         if( ! response::is_enforcing() ) return;
         if( ! class_exists( '\Automattic\WooCommerce\StoreApi\Exceptions\RouteException' ) ) return;
+
+        // Only when the shopper is placing the order. Once a draft exists --
+        // after a declined card -- the block checkout fires this hook on every
+        // PUT that edits a field, and each of those was refused again, with a
+        // refusal written against the shopper's identities, a ban and a
+        // tarpit per edit. Correcting a postcode after one decline could push
+        // a real customer's home address past BAD_REPUTATION. The POST that
+        // places the order decides; an edit decides nothing.
+        if( ! store_api::is_placing( $request ) ) return;
         if( exempt::suppresses_action( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         $identities = entities::for_order( $order );
@@ -219,8 +228,15 @@ class risk_recorder {
 
         response::tarpit();
 
+        // WooCommerce serialises the exception code into the JSON body, and
+        // the code this used to carry named the plugin. The rotating message
+        // and the tarpit exist to deny a script the oracle that tells a
+        // MightyShield refusal from a genuine decline; a constant
+        // "mighty_shield_risk" in the response handed it straight back. The
+        // code a real payment failure produces is used instead, and the
+        // attribution stays in the server-side log above.
         throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException(
-            'mighty_shield_risk',
+            'woocommerce_rest_checkout_process_payment_error',
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- message is ours and contains no user input
             response::refusal_message(),
             400
@@ -242,6 +258,12 @@ class risk_recorder {
         $identities = entities::for_checkout( is_array( $data ) ? $data : [] );
         if( ! empty( $identities ) ) entities::assess( $identities );
 
+        // And the network, from the cache warm_ip_cache() filled at priority
+        // 0. This was only ever read at record time, after the AI review and
+        // the refusal, so a data-centre address could never contribute to
+        // either.
+        rescore::assess_ip_address( ip_utils::get_client_ip() );
+
     }
 
     /**
@@ -258,6 +280,9 @@ class risk_recorder {
 
         $identities = entities::for_order( $order );
         if( ! empty( $identities ) ) entities::assess( $identities );
+
+        // See assess_identities_classic().
+        rescore::assess_ip_address( ip_utils::get_client_ip() );
 
     }
 
@@ -282,18 +307,37 @@ class risk_recorder {
     }
 
     /**
-     * Persist a ban so the next attempt is refused by the firewall, cheaply.
+     * How long a Banned attempt keeps its address under a block.
+     *
+     * A day, not forever. This used to write the bare address to the
+     * permanent blocklist, where it stayed until the merchant found it: one
+     * fraudster on a carrier NAT locked every subscriber sharing that egress
+     * out of the checkout, and a rotating-proxy attacker could grow the list
+     * without bound. The identities that earned the ban -- the card, the
+     * mailbox with the chargeback -- are what refuse the next attempt; the
+     * address block only has to make the immediate retry expensive.
+     *
+     * @since   2.3.0
+     */
+    const BAN_BLOCK_SECONDS = DAY_IN_SECONDS;
+
+    /**
+     * Make the next attempt from this address cost something, cheaply.
+     *
+     * A temporary block: scored as ip_temp_blocked (60) at the next checkout,
+     * which with the identity history that produced the ban is a refusal
+     * again, and nothing at all to the stranger who inherits the address
+     * tomorrow.
      *
      * @since   1.9.0
+     * @since   2.3.0 A day-long temporary block rather than a permanent entry.
      */
     private function persist_ban() {
 
         $ip = ip_utils::get_client_ip();
         if( empty( $ip ) ) return;
 
-        if( class_exists( '\MightyShield\Firewall\ip_blocklist' ) ) {
-            \MightyShield\Firewall\ip_blocklist::add_ip( $ip, 'MightyShield', 'Banned by the risk engine' );
-        }
+        rate_limiter::temp_block_ip( $ip, 'Banned by the risk engine', self::BAN_BLOCK_SECONDS );
 
     }
 
@@ -365,7 +409,26 @@ class risk_recorder {
         // review ran, which is most orders.
         $ai = ai_reviewer::persist( $order );
 
-        // Identity history — the signals that only memory can provide.
+        // The address this order was really placed from, as ip_utils resolved
+        // it, and the device the collector reported. Written BEFORE the
+        // identity set is built, because for_order() reads both off the order.
+        // They used to be written after it, which meant the device was never
+        // in any set that got linked -- the "device" identity type stayed
+        // empty on every store -- and the network identity was whatever
+        // X-Forwarded-For said. WooCommerce's own customer IP is whatever the
+        // shopper said; everything that later asks "where did this order come
+        // from" -- the allowlist at dispatch, the decline counter, a webhook,
+        // the order panel's Block -- reads _mshield_ip instead.
+        $order->update_meta_data( '_mshield_ip', ip_utils::get_client_ip() );
+
+        if( class_exists( '\MightyShield\Protection\device_fingerprint' ) ) {
+            $device = device_fingerprint::current_signature();
+            if( $device !== '' ) $order->update_meta_data( '_mshield_device', $device );
+        }
+
+        // Identity history — the signals that only memory can provide. Linked,
+        // not counted: order_count is paid orders, and this one is not paid
+        // yet. See entities::count_paid().
         $identities = entities::for_order( $order );
 
         if( ! empty( $identities ) ) {
@@ -428,20 +491,8 @@ class risk_recorder {
         $order->update_meta_data( '_mshield_risk_trust', $verdict['trust'] );
         $order->update_meta_data( '_mshield_risk_level', $verdict['risk_level'] );
 
-        // The address this order was really placed from, as ip_utils resolved
-        // it. WooCommerce's own customer IP is whatever X-Real-IP or
-        // X-Forwarded-For said, which is whatever the shopper said; everything
-        // that later asks "where did this order come from" -- the allowlist at
-        // dispatch, the decline counter, a webhook -- reads this instead.
-        $order->update_meta_data( '_mshield_ip', ip_utils::get_client_ip() );
-
-        // And the device, when the collector reported one, so the identity
-        // graph can link this order to the laptop as well as the mailbox.
-        if( class_exists( '\MightyShield\Protection\device_fingerprint' ) ) {
-            $device = device_fingerprint::current_signature();
-            if( $device !== '' ) $order->update_meta_data( '_mshield_device', $device );
-        }
-
+        // _mshield_ip and _mshield_device were written above, before the
+        // identity set was built; this save persists them with the rating.
         $order->save();
 
         // Only note the order when there is something worth reading. A clean

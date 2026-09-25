@@ -121,10 +121,16 @@ class ip_blocklist {
 
         $ip = ip_utils::get_client_ip();
 
-        // Whitelisted WP user or role bypasses the blocklist (whitelisted IPs
-        // already pass via is_blocked()).
+        // The same exemption the classic checkout applies -- user, role, and a
+        // signed-in customer whose account owns an allowlisted email. Only the
+        // first two were tested here, so an email-allowlisted regular on a
+        // banned address could check out on classic and was locked out of
+        // every cart and checkout route on the block checkout.
         $uid = get_current_user_id();
-        if( $uid && ( ip_whitelist::is_user_whitelisted( $uid ) || ip_whitelist::is_role_whitelisted( $uid ) ) ) return $result;
+        if( $uid && class_exists( '\MightyShield\Includes\exempt' )
+            && \MightyShield\Includes\exempt::suppresses_action( (string) wp_get_current_user()->user_email, $uid ) ) {
+            return $result;
+        }
 
         if( ! self::is_blocked( $ip ) ) return $result;
 

@@ -58,7 +58,10 @@ class log_viewer {
         $output = fopen( 'php://output', 'w' );
 
         // Header row.
-        fputcsv( $output, [ 'ID', 'IP', 'Action', 'Endpoint', 'Reason', 'Date' ] );
+        // Every argument spelled out: PHP 8.4 deprecates leaning on the
+        // default escape character, and a deprecation printed into a CSV
+        // download is a corrupt download.
+        fputcsv( $output, [ 'ID', 'IP', 'Action', 'Endpoint', 'Reason', 'Date' ], ',', '"', '\\', "\n" );
 
         foreach( $logs as $log ) {
             fputcsv( $output, array_map( [ __CLASS__, 'defuse' ], [
@@ -68,7 +71,7 @@ class log_viewer {
                 $log->endpoint,
                 $log->reason,
                 $log->created_at,
-            ] ) );
+            ] ), ',', '"', '\\', "\n" );
         }
 
         fclose( $output );

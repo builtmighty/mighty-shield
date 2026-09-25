@@ -28,12 +28,14 @@ defined( 'ABSPATH' ) || exit;
 use MightyShield\Includes\ai_capture;
 use MightyShield\Includes\ai_client;
 use MightyShield\Includes\db;
+use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\rescore;
 use MightyShield\Includes\response;
 use MightyShield\Includes\risk_levels;
 use MightyShield\Includes\signals;
 use MightyShield\Includes\trust_badge;
 use MightyShield\Firewall\ip_blocklist;
+use MightyShield\Firewall\ip_whitelist;
 
 class order_panel {
 
@@ -751,7 +753,10 @@ class order_panel {
 
         $allowed = [ 'rate', 'verdict_clean', 'verdict_fraud', 'approve', 'block' ];
 
-        if( ! $order || ! \in_array( $do, $allowed, true ) ) {
+        // instanceof, not truthiness: wc_get_order() hands back a
+        // WC_Order_Refund for a refund id, which has no billing email, no
+        // payment method and no edit URL, and white-screened here.
+        if( ! $order instanceof \WC_Order || ! \in_array( $do, $allowed, true ) ) {
             wp_die( esc_html__( 'Invalid MightyShield order request.', 'mighty-shield' ), '', [ 'response' => 400 ] );
         }
 
@@ -879,7 +884,7 @@ class order_panel {
 
             \MightyShield\Protection\outcomes::set_manual( $order, 'clean' );
 
-            db::log_event( $order->get_customer_ip_address(), 'risk_engine', 'flagged', 'Held order #' . $order->get_id() . ' released for payment' );
+            db::log_event( ip_utils::order_ip( $order ), 'risk_engine', 'flagged', 'Held order #' . $order->get_id() . ' released for payment' );
 
             return [ sprintf(
                 /* translators: %s: checkout payment URL. */
@@ -918,6 +923,15 @@ class order_panel {
 
         }
 
+        // Release the post-payment hold BEFORE the status moves. The hold's
+        // hook fires inside update_status() at priority 999 and re-holds any
+        // order still marked 'paid'; with the mark still on, Approve was undone
+        // in the same request that reported it done.
+        if( $order->get_meta( '_mshield_hold' ) === 'paid' ) {
+            $order->update_meta_data( '_mshield_hold', 'released' );
+            $order->save();
+        }
+
         if( ! $order->has_status( [ 'processing', 'completed' ] ) ) {
             $order->update_status( 'processing', __( 'MightyShield: approved in review.', 'mighty-shield' ) );
         } else {
@@ -929,7 +943,7 @@ class order_panel {
         // scoring engine precisely nothing.
         \MightyShield\Protection\outcomes::set_manual( $order, 'clean' );
 
-        db::log_event( $order->get_customer_ip_address(), 'risk_engine', 'flagged', 'Order #' . $order->get_id() . ' approved in review' );
+        db::log_event( ip_utils::order_ip( $order ), 'risk_engine', 'flagged', 'Order #' . $order->get_id() . ' approved in review' );
 
         return [ __( 'Order approved.', 'mighty-shield' ), 'success' ];
 
@@ -962,7 +976,7 @@ class order_panel {
 
             \MightyShield\Protection\outcomes::set_manual( $order, 'fraud' );
 
-            db::log_event( $order->get_customer_ip_address(), 'risk_engine', 'blocked', 'Held order #' . $order->get_id() . ' blocked in review' );
+            db::log_event( ip_utils::order_ip( $order ), 'risk_engine', 'blocked', 'Held order #' . $order->get_id() . ' blocked in review' );
 
             return [ $blocked
                 ? __( 'Order blocked and cancelled, and the IP added to the blocklist. No payment was taken, so there is nothing to refund.', 'mighty-shield' )
@@ -1057,7 +1071,7 @@ class order_panel {
 
         \MightyShield\Protection\outcomes::set_manual( $order, 'fraud' );
 
-        db::log_event( $order->get_customer_ip_address(), 'risk_engine', 'blocked', 'Order #' . $order->get_id() . ' blocked in review' );
+        db::log_event( ip_utils::order_ip( $order ), 'risk_engine', 'blocked', 'Order #' . $order->get_id() . ' blocked in review' );
 
         return [ $blocked
             ? __( 'Order blocked, cancelled, and the IP added to the blocklist. The payment was already captured, so refund it from the order items panel below and the order is settled.', 'mighty-shield' )
@@ -1079,9 +1093,20 @@ class order_panel {
      */
     private function blocklist_ip( $order ) {
 
-        $ip = $order->get_customer_ip_address();
+        // The address the recorder resolved, never the one WooCommerce copied
+        // from X-Forwarded-For: that one is whatever the shopper said it was,
+        // and a fraudster who named a CDN edge or the merchant's own office
+        // would have had the reviewer's Block lock out everyone behind it
+        // while their own address stayed clear.
+        $ip = ip_utils::order_ip( $order );
 
         if( empty( $ip ) || ! filter_var( $ip, FILTER_VALIDATE_IP ) ) return false;
+
+        // Never the store's own perimeter, and never an address the merchant
+        // has allowlisted: the blocklist would win, and the row would read as
+        // a deliberate decision.
+        if( ip_utils::is_private( $ip ) ) return false;
+        if( class_exists( '\MightyShield\Firewall\ip_whitelist' ) && ip_whitelist::is_whitelisted( $ip ) ) return false;
 
         return (bool) ip_blocklist::add_ip(
             $ip,

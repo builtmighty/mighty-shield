@@ -263,10 +263,15 @@ class ai_client {
         $cap = (int) settings::get( 'mshield_ai_daily_cap' );
         if( $cap <= 0 ) return true;
 
-        $key   = 'mshield_ai_calls_' . gmdate( 'Ymd' );
-        $count = (int) get_transient( $key );
+        // One atomic increment in the rate-limit table, not a transient read
+        // followed by a write: two checkouts arriving together each read the
+        // same count and the cap overshot by however many were in flight,
+        // and a persistent object cache could drop the transient outright.
+        // The window is a rolling day, which is what "daily" has to mean
+        // when nothing resets it at midnight anyway.
+        $count = (int) db::increment_rate_limit( md5( 'ai|calls' ), 'ai_calls', DAY_IN_SECONDS );
 
-        if( $count >= $cap ) {
+        if( $count > $cap ) {
 
             // Log once per day rather than on every blocked call.
             if( ! get_transient( 'mshield_ai_cap_logged' ) ) {
@@ -286,9 +291,6 @@ class ai_client {
 
         }
 
-        // Two days, so a call late in the day cannot expire the counter early.
-        set_transient( $key, $count + 1, 2 * DAY_IN_SECONDS );
-
         return true;
 
     }
@@ -302,7 +304,8 @@ class ai_client {
      */
     public static function calls_today() {
 
-        return (int) get_transient( 'mshield_ai_calls_' . gmdate( 'Ymd' ) );
+        // The rolling-day counter within_budget() increments.
+        return (int) db::check_rate_limit( md5( 'ai|calls' ), 'ai_calls' );
 
     }
 
@@ -602,6 +605,8 @@ class ai_client {
 
         if( get_transient( 'mshield_ai_alerted' ) ) return;
         set_transient( 'mshield_ai_alerted', 1, DAY_IN_SECONDS );
+
+        if( ! settings::alerts_enabled() ) return;
 
         $message = sprintf(
             /* translators: %s: the error the AI provider returned. */

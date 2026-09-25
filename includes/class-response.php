@@ -821,12 +821,39 @@ class response {
      *
      * @param   int     $order_id
      */
-    public static function hold_after_payment( $order_id ) {
+    public static function hold_after_payment( $order_id, $unused = null, $transition = null ) {
 
         $order = wc_get_order( $order_id );
         if( ! $order ) return;
 
         if( $order->get_meta( '_mshield_hold' ) !== 'paid' ) return;
+
+        // A reviewer has already decided. The panel's Approve moves the order
+        // to Processing and this hook fires inside that very transition; until
+        // it checked, the approval was reverted to On hold on the spot, the
+        // panel said "approved", the queue dropped the order, and nothing
+        // could ever ship it.
+        if( (string) $order->get_meta( '_mshield_review' ) !== '' ) return;
+
+        // A status changed by hand is a decision too. The processing and
+        // completed hooks carry the transition, and WooCommerce marks it
+        // manual when somebody picked the status on the order screen. That
+        // person has looked at the order; the hold steps aside and says so.
+        // A transition with no such mark is the gateway confirming payment --
+        // in the checkout request, from a webhook, on the return from 3-D
+        // Secure -- and that is the moment this exists for.
+        if( is_array( $transition ) && ! empty( $transition['manual'] ) ) {
+
+            $order->update_meta_data( '_mshield_hold', 'released' );
+            $order->add_order_note( 'MightyShield: ' . __( 'Released from the post-payment hold by a status change made by hand.', 'mighty-shield' ) );
+            $order->save();
+
+            delete_transient( 'mshield_ai_pending_count' );
+
+            return;
+
+        }
+
         if( $order->get_status() === 'on-hold' ) return;
 
         $order->update_status( 'on-hold', __( 'MightyShield: held for review.', 'mighty-shield' ) );
@@ -950,7 +977,18 @@ class response {
             case actions::HOLD_AUTHORIZED:
                 // Already reserved and held: nothing further to arrange.
                 if( $order->get_meta( '_mshield_hold' ) === 'authorized' ) break;
-                self::hold_authorized( $order, $reason );
+                if( self::hold_authorized( $order, $reason ) ) break;
+
+                // The processor could not reserve without charging. The note
+                // hold_authorized() just wrote says the order was held before
+                // payment instead -- so hold it before payment instead. This
+                // used to return here with the order charged in full and on
+                // its way, and the note describing a hold that never happened.
+                if( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+                    self::detain_store_api( $order, $reason );
+                } else {
+                    self::detain_classic( $order, $reason );
+                }
                 break;
 
             case actions::HOLD_PAID:

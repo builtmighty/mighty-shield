@@ -73,6 +73,36 @@ class ip_utils {
     ];
 
     /**
+     * The address a stored order was really placed from.
+     *
+     * The recorder writes what get_client_ip() resolved onto the order as
+     * _mshield_ip. WooCommerce's own customer IP is whatever X-Real-IP or
+     * X-Forwarded-For said, which is whatever the shopper said, and every
+     * reader that used it -- the network signals, the order panel's Block,
+     * the log rows -- could be pointed at an address of the attacker's
+     * choosing with one header. The fallback is for orders rated before the
+     * meta existed, where the header is all there is.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order   $order
+     * @return  string
+     */
+    public static function order_ip( $order ) {
+
+        if( ! is_object( $order ) || ! method_exists( $order, 'get_meta' ) ) return '';
+
+        $ip = (string) $order->get_meta( '_mshield_ip' );
+
+        if( $ip === '' && method_exists( $order, 'get_customer_ip_address' ) ) {
+            $ip = (string) $order->get_customer_ip_address();
+        }
+
+        return $ip;
+
+    }
+
+    /**
      * Whether an address is loopback or private.
      *
      * @since   2.0.0
