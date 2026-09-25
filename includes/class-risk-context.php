@@ -47,6 +47,16 @@ class risk_context {
     private static $ai_trust = null;
 
     /**
+     * A signal that costs at least this much, outside the history group, is
+     * an anomaly rather than a nuisance -- and past one, a good history hands
+     * back at most CREDIT_CAP_UNDER_ANOMALY. See trust().
+     *
+     * @since   2.3.0
+     */
+    const ANOMALY_WEIGHT = 15.0;
+    const CREDIT_CAP_UNDER_ANOMALY = 15.0;
+
+    /**
      * Record the AI review's rating.
      *
      * @since   1.9.2
@@ -187,20 +197,42 @@ class risk_context {
     public static function trust() {
 
         $penalty = 0.0;
+        $credit  = 0.0;     // trust handed back by history
         $blamed  = false;   // anything counted against the order
         $vouched = false;   // positive evidence of good history
+        $anomaly = false;   // something real, not a nuisance signal
 
         foreach( self::$signals as $signal ) {
 
             $contribution = (float) $signal['weight'] * (float) $signal['confidence'];
-            $penalty     += $contribution;
 
-            if( $contribution > 0 ) $blamed  = true;
-            if( $contribution < 0 ) $vouched = true;
+            if( $contribution > 0 ) {
+
+                $penalty += $contribution;
+                $blamed   = true;
+
+                $group = signals::CATALOG[ $signal['key'] ]['group'] ?? '';
+                if( $contribution >= self::ANOMALY_WEIGHT && $group !== 'history' ) $anomaly = true;
+
+            } elseif( $contribution < 0 ) {
+
+                $credit -= $contribution;
+                $vouched = true;
+
+            }
 
         }
 
-        $trust = risk_levels::BASELINE - $penalty;
+        // A good history offsets the small frictions every order carries. It
+        // does not cancel evidence. A taken-over account is exactly a long
+        // clean history plus a sudden anomaly -- a new country, a data-centre
+        // connection, a parcel going somewhere the card has never been -- and
+        // an offset large enough to swallow that is an offset that rewards the
+        // takeover. So once anything of real weight has fired outside the
+        // history group, the credit is capped at what a nuisance costs.
+        if( $anomaly ) $credit = min( $credit, self::CREDIT_CAP_UNDER_ANOMALY );
+
+        $trust = risk_levels::BASELINE - $penalty + $credit;
 
         // Stage two. The model was given this number and every signal behind
         // it, so its answer supersedes rather than adds to them.
@@ -257,7 +289,8 @@ class risk_context {
         //
         // So the top risk level is reachable only with positive evidence AND nothing
         // held against the order. Otherwise a good history still helps — it
-        // offsets penalties — but it cannot buy the top risk level outright.
+        // offsets penalties — but it cannot buy the top risk level outright,
+        // and past a real anomaly it cannot buy much of anything (the cap above).
         if( ( ! $vouched || $blamed ) && $trust > risk_levels::LOW_CEILING ) {
             $trust = risk_levels::LOW_CEILING;
         }

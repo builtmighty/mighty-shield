@@ -117,11 +117,26 @@ class entities {
      * Orders an identity needs before a positive reputation counts as trusted.
      *
      * One clean order is not a track record, and treating it as one would let
-     * an attacker mint trust with a single small purchase.
+     * an attacker mint trust with a single small purchase. Three would too,
+     * on a store that auto-completes paid downloads -- which is why the count
+     * is paired with TRUST_MIN_AGE below.
      *
      * @since   1.9.0
      */
     const TRUST_MIN_ORDERS = 3;
+
+    /**
+     * How long an identity must have been known before it can be trusted.
+     *
+     * Fourteen days, in seconds. A count alone has no clock: three $2 e-books
+     * on a stolen card auto-complete in five minutes and satisfied it, and the
+     * $900 order that followed got forty points of trust the chargeback was
+     * weeks away from taking back. A regular has been around for a while by
+     * definition; a tester has not.
+     *
+     * @since   2.3.0
+     */
+    const TRUST_MIN_AGE = 1209600;
 
     /**
      * Hash a value for storage.
@@ -370,7 +385,12 @@ class entities {
             'email_root' => $email,
             'phone'      => (string) $order->get_billing_phone(),
             'address'    => $street !== '' ? $address : '',
-            'ip_block'   => (string) $order->get_customer_ip_address(),
+            // The address the recorder resolved, not the header WooCommerce
+            // copied; the latter is whatever the shopper said it was.
+            'ip_block'   => (string) ( $order->get_meta( '_mshield_ip' ) ?: $order->get_customer_ip_address() ),
+            // The laptop. Recorded by the risk recorder from the collector's
+            // signature; empty on orders that carried no payload.
+            'device'     => (string) $order->get_meta( '_mshield_device' ),
 
             // The card, when the processor gave us one.
             //
@@ -417,6 +437,11 @@ class entities {
             'phone'      => $data['billing_phone'] ?? '',
             'address'    => $street !== '' ? $address : '',
             'ip_block'   => ip_utils::get_client_ip(),
+            // The one identity that survives a fraudster rotating everything
+            // else. It was declared, labelled and never once recorded.
+            'device'     => class_exists( '\MightyShield\Protection\device_fingerprint' )
+                ? \MightyShield\Protection\device_fingerprint::current_signature()
+                : '',
         ];
 
         return self::normalize_set( $raw );
@@ -663,7 +688,7 @@ class entities {
      * @param   string  $outcome    approved | denied | refunded | chargeback.
      * @return  int     Identities updated.
      */
-    public static function record_outcome( $order_id, $outcome ) {
+    public static function record_outcome( $order_id, $outcome, $weight = null ) {
 
         global $wpdb;
 
@@ -679,7 +704,10 @@ class entities {
             'chargeback' => 'chargeback_count',
         ][ $outcome ];
 
-        $delta = (float) self::OUTCOME_WEIGHTS[ $outcome ];
+        // A caller may say how much this outcome is worth -- a reviewer's
+        // verdict weighs more than a status change -- and must then say the
+        // same again when reversing it.
+        $delta = $weight === null ? (float) self::OUTCOME_WEIGHTS[ $outcome ] : (float) $weight;
 
 // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
 
@@ -797,7 +825,7 @@ class entities {
      * @param   string  $outcome    The outcome being taken back.
      * @return  int     Rows affected.
      */
-    public static function reverse_outcome( $order_id, $outcome ) {
+    public static function reverse_outcome( $order_id, $outcome, $weight = null ) {
 
         global $wpdb;
 
@@ -813,7 +841,7 @@ class entities {
             'chargeback' => 'chargeback_count',
         ][ $outcome ];
 
-        $delta = (float) self::OUTCOME_WEIGHTS[ $outcome ];
+        $delta = $weight === null ? (float) self::OUTCOME_WEIGHTS[ $outcome ] : (float) $weight;
 
 // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
 
@@ -1154,9 +1182,17 @@ class entities {
 
             // Trust has to be earned by something that names a buyer. A
             // network cannot vouch for the next person on it.
+            // ...and by time. A count alone has no clock: three $2 downloads
+            // on a stolen card auto-complete in minutes and satisfied it. A
+            // regular has been around for a while by definition. An identity
+            // whose first_seen is unknown is treated as brand new.
+            $first     = (string) ( $row['first_seen'] ?? '' );
+            $known_for = $first !== '' ? time() - (int) strtotime( $first ) : 0;
+
             if( self::is_precise( $type )
                 && $reputation >= self::GOOD_REPUTATION
-                && $orders >= self::TRUST_MIN_ORDERS ) {
+                && $orders >= self::TRUST_MIN_ORDERS
+                && $known_for >= self::TRUST_MIN_AGE ) {
                 $trusted = true;
             }
 

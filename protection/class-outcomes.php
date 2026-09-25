@@ -39,6 +39,14 @@ class outcomes {
      *
      * @since   1.9.0
      */
+    /**
+     * How long an order sits in Processing before it counts as settled, in
+     * seconds. Fourteen days: the common card-refund window.
+     *
+     * @since   2.3.0
+     */
+    const SETTLED_AFTER = 1209600;
+
     const SEVERITY = [
         'approved'   => 0,
         'refunded'   => 1,
@@ -126,12 +134,13 @@ class outcomes {
         // approved_count was being read as evidence of good standing on an
         // identity that had just cost the merchant a dispute.
         if( $existing !== '' && isset( self::SEVERITY[ $existing ] ) ) {
-            entities::reverse_outcome( $order->get_id(), $existing );
+            entities::reverse_outcome( $order->get_id(), $existing, self::applied_weight( $order ) );
         }
 
         entities::record_outcome( $order->get_id(), $outcome );
 
         $order->update_meta_data( '_mshield_outcome', $outcome );
+        $order->update_meta_data( '_mshield_outcome_weight', '' );
         $order->save();
 
         db::set_risk_outcome( $order->get_id(), $outcome );
@@ -194,13 +203,22 @@ class outcomes {
         self::ensure_linked( $order );
 
         if( $existing !== '' && isset( self::SEVERITY[ $existing ] ) ) {
-            entities::reverse_outcome( $order->get_id(), $existing );
+            entities::reverse_outcome( $order->get_id(), $existing, self::applied_weight( $order ) );
         }
 
-        entities::record_outcome( $order->get_id(), $outcome );
+        // A reviewer's word is worth more than a status change. An automatic
+        // completion is +1 and it takes three of them to make a regular; a
+        // human who looked at the order and cleared it has done the work those
+        // three were standing in for, so their verdict carries GOOD_REPUTATION
+        // outright. The weight is kept on the order so a later reversal takes
+        // back exactly what was given.
+        $weight = $verdict === 'clean' ? entities::GOOD_REPUTATION : null;
+
+        entities::record_outcome( $order->get_id(), $outcome, $weight );
 
         $order->update_meta_data( '_mshield_review', $verdict );
         $order->update_meta_data( '_mshield_outcome', $outcome );
+        $order->update_meta_data( '_mshield_outcome_weight', $weight === null ? '' : (string) $weight );
         $order->add_order_note( 'MightyShield: ' . (
             $verdict === 'fraud'
                 ? __( 'Marked as fraud by a reviewer. Future orders from this customer, address, card or network will be scored accordingly.', 'mighty-shield' )
@@ -238,6 +256,23 @@ class outcomes {
         $verdict = (string) $order->get_meta( '_mshield_review' );
 
         return \in_array( $verdict, [ 'fraud', 'clean' ], true ) ? $verdict : '';
+
+    }
+
+    /**
+     * The weight the outcome currently on an order was recorded with, when a
+     * caller chose one; null means "whatever OUTCOME_WEIGHTS says".
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order   $order
+     * @return  float|null
+     */
+    private static function applied_weight( $order ) {
+
+        $stored = (string) $order->get_meta( '_mshield_outcome_weight' );
+
+        return $stored === '' || ! is_numeric( $stored ) ? null : (float) $stored;
 
     }
 
@@ -281,12 +316,15 @@ class outcomes {
     }
 
     /**
-     * A completed order is the only positive signal available, and it is what
-     * lets a genuine repeat customer earn their way into the trusted risk level.
+     * A completed order is a positive signal, and it is what lets a genuine
+     * repeat customer earn their way into the trusted risk level.
      *
-     * Deliberately recorded even though a chargeback can still arrive months
-     * later: the severity ordering means that later chargeback overwrites this,
-     * and its far heavier penalty swamps the small credit given here.
+     * Recorded even though a chargeback can still arrive months later: the
+     * severity ordering means that later chargeback overwrites this, and its
+     * far heavier penalty swamps the small credit given here. What the credit
+     * cannot do is mint trust quickly -- entity_trusted also needs the identity
+     * to have been known for entities::TRUST_MIN_AGE, so three auto-completed
+     * downloads on a stolen card in five minutes earn nothing by the fourth.
      *
      * @since   1.9.0
      *
@@ -295,6 +333,41 @@ class outcomes {
     public function on_completed( $order_id ) {
 
         self::record( $order_id, 'approved' );
+
+    }
+
+    /**
+     * Credit orders that settled without anyone clicking Complete.
+     *
+     * Plenty of stores ship from Processing and never move an order on, so
+     * the only automatic positive never fired for them and none of their
+     * regulars could earn trust. A paid order that has sat in Processing for
+     * the length of a refund window with no outcome recorded against it has
+     * settled as surely as a completed one. Daily, a batch at a time; an
+     * order stops matching the moment it has an outcome, so this converges.
+     *
+     * @since   2.3.0
+     */
+    public static function credit_settled_orders() {
+
+        if( ! function_exists( 'wc_get_orders' ) ) return;
+
+        $orders = wc_get_orders( [
+            'limit'         => 200,
+            'status'        => [ 'wc-processing' ],
+            'date_modified' => '<' . ( time() - self::SETTLED_AFTER ),
+            'orderby'       => 'date_modified',
+            'order'         => 'ASC',
+        ] );
+
+        foreach( (array) $orders as $order ) {
+
+            if( ! is_a( $order, 'WC_Order' ) ) continue;
+            if( (string) $order->get_meta( '_mshield_outcome' ) !== '' ) continue;
+
+            self::record( $order, 'approved' );
+
+        }
 
     }
 

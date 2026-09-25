@@ -417,6 +417,17 @@ class signals {
             'weight' => 35.0,
             'floor'  => 'none',
         ],
+        'account_changed' => [
+            'group'  => 'identity',
+            // The other half of a takeover: the email, the password or the
+            // saved address changed shortly before this order. People do
+            // change these, so it is a cost, not a verdict -- but it is the
+            // one thing that separates "an old customer somewhere new" from
+            // "someone in an old customer's account", and it caps what a good
+            // history can hand back (see risk_context::trust()).
+            'weight' => 25.0,
+            'floor'  => 'none',
+        ],
         'registration_velocity' => [
             'group'  => 'behavior',
             'weight' => 45.0,
@@ -476,6 +487,15 @@ class signals {
         'failed_payments' => [
             'group'  => 'history',
             'weight' => 55.0,
+            'floor'  => 'none',
+        ],
+        'store_under_attack' => [
+            'group'  => 'network',
+            // Not about this order: about the store. While the store-wide
+            // decline rate is running far above normal, every unknown
+            // customer costs a little more, because the one thing a spread-
+            // out card-testing script cannot hide is the aggregate.
+            'weight' => 30.0,
             'floor'  => 'none',
         ],
         'entity_chargeback' => [
@@ -1094,6 +1114,11 @@ class signals {
                 'desc'  => __( 'Many wrong passwords from one connection, which usually precedes an attempt to take over an account.', 'mighty-shield' ),
             ],
 
+            'account_changed' => [
+                'label' => __( 'Account details changed just before ordering', 'mighty-shield' ),
+                'desc'  => __( 'The email, password or saved address on this account changed within the last three days. People do change these — but it is also the first thing done with a stolen login.', 'mighty-shield' ),
+            ],
+
             'registration_velocity' => [
                 'label' => __( 'Many new accounts from one connection', 'mighty-shield' ),
                 'desc'  => __( 'Accounts being created in bulk rather than by people signing up.', 'mighty-shield' ),
@@ -1131,7 +1156,12 @@ class signals {
 
             'failed_payments' => [
                 'label' => __( 'Repeated payment failures', 'mighty-shield' ),
-                'desc'  => __( 'A run of declines from one connection — the clearest sign of cards being tried until one works.', 'mighty-shield' ),
+                'desc'  => __( 'A run of declines from one connection or one mailbox — the clearest sign of cards being tried until one works.', 'mighty-shield' ),
+            ],
+
+            'store_under_attack' => [
+                'label' => __( 'The store is seeing a wave of declines', 'mighty-shield' ),
+                'desc'  => __( 'Failed payments across the whole store are running far above normal, which is what card testing spread across many addresses looks like. For an hour, every unknown customer costs a little more.', 'mighty-shield' ),
             ],
 
             'entity_chargeback' => [

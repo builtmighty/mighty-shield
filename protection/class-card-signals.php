@@ -342,7 +342,9 @@ class card_signals {
         }
 
         // A prepaid card on a high-value physical order is rarely legitimate.
-        $high_value = (float) settings::get( 'mshield_ai_high_value_amount' );
+        // The same figure high_value uses -- typed, learned, or the fallback --
+        // so setting the field to 0 to learn does not silently switch this off.
+        $high_value = (float) order_signals::high_value_threshold();
 
         if( $data['funding'] === 'prepaid' && $high_value > 0 && (float) $order->get_total() >= $high_value ) {
             $add( 'card_prepaid_high_value', __( 'a prepaid card was used for a high-value order', 'mighty-shield' ) );

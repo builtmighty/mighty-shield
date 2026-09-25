@@ -123,10 +123,29 @@ class adapter_stripe implements gateway_adapter {
      */
     public static function on_webhook( $type, $notification, $order ) {
 
-        if( $type !== 'charge.succeeded' ) return;
         if( empty( $notification->data->object ) ) return;
 
         $charge = $notification->data->object;
+
+        // A declined card is the one thing a card tester leaves behind. The
+        // card's own identity takes the refusal, so the next order that pays
+        // with it -- from a fresh email, a fresh address, a fresh IP -- meets
+        // the history the earlier attempts wrote.
+        if( $type === 'charge.failed' ) {
+
+            $fp = (string) ( $charge->payment_method_details->card->fingerprint ?? '' );
+
+            if( $fp !== '' && class_exists( '\MightyShield\Includes\entities' ) ) {
+                \MightyShield\Includes\entities::record_refusal( [
+                    'card_fp' => \MightyShield\Includes\entities::normalize( 'card_fp', $fp ),
+                ] );
+            }
+
+            return;
+
+        }
+
+        if( $type !== 'charge.succeeded' ) return;
 
         if( ! $order instanceof \WC_Order ) $order = self::order_for( $charge );
         if( ! $order instanceof \WC_Order ) return;

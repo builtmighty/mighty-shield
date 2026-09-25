@@ -344,28 +344,41 @@ class order_signals {
     private static function signal_email_mismatch( $f ) {
 
         $email = strtolower( trim( (string) $f['email'] ) );
-        $name  = strtolower( trim( $f['first_name'] . ' ' . $f['last_name'] ) );
 
         // Nothing to compare is not evidence of anything.
-        if( $email === '' || $name === '' || strpos( $email, '@' ) === false ) return null;
+        if( $email === '' || strpos( $email, '@' ) === false ) return null;
 
         $local = preg_replace( '/[^a-z0-9]/', '', substr( $email, 0, strpos( $email, '@' ) ) );
         if( $local === '' ) return null;
 
-        $tokens = preg_split( '/\s+/', $name );
+        // Both names. The email belongs to the buyer, and on a gift the buyer's
+        // name is on the card, not the parcel -- so comparing only the shipping
+        // name fired this on every present ever sent, on top of the
+        // billing-vs-delivery signal that already says "this is going
+        // somewhere else". Quiet if either name overlaps the mailbox.
+        $names = array_filter( [
+            strtolower( trim( $f['first_name'] . ' ' . $f['last_name'] ) ),
+            strtolower( trim( ( $f['billing_first_name'] ?? '' ) . ' ' . ( $f['billing_last_name'] ?? '' ) ) ),
+        ] );
 
-        foreach( $tokens as $token ) {
+        if( empty( $names ) ) return null;
 
-            $token = preg_replace( '/[^a-z0-9]/', '', $token );
+        foreach( $names as $name ) {
 
-            // Short tokens (initials, "de", "jr") match too easily to be useful.
-            if( strlen( $token ) < 3 ) continue;
+            foreach( preg_split( '/\s+/', $name ) as $token ) {
 
-            if( strpos( $local, $token ) !== false ) return null;
+                $token = preg_replace( '/[^a-z0-9]/', '', $token );
+
+                // Short tokens (initials, "de", "jr") match too easily to be useful.
+                if( strlen( $token ) < 3 ) continue;
+
+                if( strpos( $local, $token ) !== false ) return null;
+
+            }
 
         }
 
-        return 'Shipping name does not appear in the email address';
+        return 'Neither the delivery name nor the billing name appears in the email address';
 
     }
 
@@ -390,6 +403,13 @@ class order_signals {
     }
 
     /**
+     * The high-value threshold until the store has taught us its own.
+     *
+     * @since   2.3.0
+     */
+    const HIGH_VALUE_FALLBACK = 500.0;
+
+    /**
      * What counts as a large order for THIS store.
      *
      * A figure the merchant typed wins. With the setting at 0 this falls back
@@ -410,7 +430,7 @@ class order_signals {
      *
      * @since   2.3.0
      *
-     * @return  float   0 when there is nothing to say.
+     * @return  float   Typed, learned, or the fallback -- never 0.
      */
     public static function high_value_threshold() {
 
@@ -418,8 +438,12 @@ class order_signals {
         if( $configured > 0 ) return $configured;
 
         $learned = (float) get_option( 'mshield_high_value_learned', 0 );
+        if( $learned > 0 ) return $learned;
 
-        return $learned > 0 ? $learned : 0.0;
+        // Nothing typed and nothing learned yet -- a young store. The old
+        // fixed figure stands in until enough completed orders exist to learn
+        // from, so the signal is never simply absent.
+        return self::HIGH_VALUE_FALLBACK;
 
     }
 
@@ -902,11 +926,19 @@ class order_signals {
         $ship_country = strtoupper( (string) $f['country'] );
         if( $ship_country === '' ) return null;
 
-        if( strtoupper( $geo['country'] ) !== $ship_country ) {
-            return sprintf( 'IP resolves to %s but the order ships to %s', strtoupper( $geo['country'] ), $ship_country );
-        }
+        $ip_country = strtoupper( (string) $geo['country'] );
 
-        return null;
+        if( $ip_country === $ship_country ) return null;
+
+        // The buyer is at home and the parcel is going abroad. That is what a
+        // present looks like, and the billing-vs-delivery signal has already
+        // charged for the two addresses disagreeing; charging again for the
+        // connection agreeing with one of them is the same fact billed twice.
+        // A connection that matches NEITHER address is the real signal.
+        $bill_country = strtoupper( (string) ( $f['billing_country'] ?? '' ) );
+        if( $bill_country !== '' && $ip_country === $bill_country ) return null;
+
+        return sprintf( 'IP resolves to %s but the order ships to %s', $ip_country, $ship_country );
 
     }
 

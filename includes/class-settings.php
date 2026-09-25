@@ -180,7 +180,12 @@ class settings {
         // is most orders, so turning it on multiplies the API bill.
         'mshield_ai_velocity_orders'        => 3,
         'mshield_ai_velocity_days'          => 30,
-        'mshield_ai_high_value_amount'      => '500.00',
+        // 0 means "learn it from this store's own completed orders", which
+        // is what the Scoring tab's label and the readme have promised since
+        // 2.3.0 -- but the field shipped as 500.00, so the learned figure was
+        // computed nightly and never once read. 500.00 still stands in until
+        // there are enough orders to learn from; see order_signals.
+        'mshield_ai_high_value_amount'      => '0',
         'mshield_ai_notify_admin'           => 'yes',
         'mshield_ai_notify_emails'          => '',
     ];

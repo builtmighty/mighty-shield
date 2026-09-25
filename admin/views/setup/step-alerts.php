@@ -24,7 +24,7 @@ setup_wizard::form_open( 'alerts' );
 <h1 class="mshield-setup-title"><?php esc_html_e( 'Who should hear about it?', 'mighty-shield' ); ?></h1>
 
 <p class="mshield-setup-lede">
-    <?php esc_html_e( 'MightyShield emails you when something needs a person: an order held for review, or one of the services it relies on failing. These are rare and they are not marketing.', 'mighty-shield' ); ?>
+    <?php esc_html_e( 'MightyShield emails you when something needs a person: an AI review that rated an order badly, a service it relies on that has stopped responding, or a bot challenge that has started refusing everybody. These are rare and they are not marketing. Emails about low-rated orders are a separate switch on the Shielding tab, off until you set the rating you want to hear about.', 'mighty-shield' ); ?>
 </p>
 
 <table class="form-table" role="presentation">
@@ -63,7 +63,7 @@ setup_wizard::form_open( 'alerts' );
 <div class="mshield-banner">
     <div>
         <strong><?php esc_html_e( 'What actually arrives:', 'mighty-shield' ); ?></strong>
-        <?php esc_html_e( 'an order held for you to look at, an address-verification or AI service that has stopped responding, or a bot challenge that has started refusing everybody. Each of the last two is sent at most once a day.', 'mighty-shield' ); ?>
+        <?php esc_html_e( 'an AI review that rated an order badly, an address-verification or AI service that has stopped responding, a bot challenge that has started refusing everybody, or a wave of failed payments that looks like card testing. Service and challenge notices are sent at most once a day.', 'mighty-shield' ); ?>
     </div>
 </div>
 

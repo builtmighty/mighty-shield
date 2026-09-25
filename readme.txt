@@ -23,7 +23,7 @@ Nothing is enforced until you say so. MightyShield installs in Observe mode: it 
 * Auto-detect and whitelist server IP on activation
 * Allowlist by IP/CIDR, WordPress user, role, email, phone, name, postcode, city or country, with one-click allowlisting from the logs. An allowlisted order is still rated and still recorded — the allowlist stops MightyShield acting on the rating, so your tuning report and review queue keep telling you the truth
 * Trust rating out of 100 — every check contributes a cost you control, so several small concerns add up instead of one check deciding alone
-* Six risk levels, each with a threshold and an action you choose: no action, flag, 3-D Secure, three kinds of hold, or refuse outright
+* Six risk levels. Four have a threshold and an action you choose — no action, flag, 3-D Secure, or one of three kinds of hold — and the two at the bottom always refuse
 * 3-D Secure as a graded response — ask the bank to verify the cardholder instead of refusing. A real customer taps a prompt and the sale completes; somebody using a stolen card cannot, and liability for a dispute moves to the card issuer
 * Per-IP checkout rate limiting (configurable, default 20/hour)
 * Velocity detection — flags IPs using multiple emails or rapid-fire orders
@@ -161,7 +161,7 @@ MightyShield stores the following on your own server, and sends none of it anywh
 * **Order ratings** hold the score, the level, and which checks fired. Kept as long as the order exists.
 * **Uninstalling removes all of it** — every table, every setting, and the hashing salt. Order notes and the fraud metadata attached to an order are deliberately left alone, because they are part of your own record of what happened.
 
-MightyShield answers WordPress's personal data export and erase requests, so a customer's stored identities can be found and removed from **Tools > Export Personal Data** and **Tools > Erase Personal Data**.
+MightyShield answers WordPress's personal data export and erase requests from **Tools > Export Personal Data** and **Tools > Erase Personal Data**. The export includes what MightyShield holds about the person: their log entries and a summary of their hashed identities. The erase request removes their log entries and reports the hashed identities as retained, with the reason: they contain no readable data, and they are what stops somebody refused for fraud from coming straight back under a new name.
 
 == Screenshots ==
 

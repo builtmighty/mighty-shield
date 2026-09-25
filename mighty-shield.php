@@ -328,6 +328,18 @@ function maybe_upgrade() {
 
     }
 
+    // 2.3.0: the high-value threshold is learned from the store's own orders
+    // when the field is 0, and 0 is what the field now ships as. A store still
+    // holding exactly the old shipped default never chose 500.00 -- it was the
+    // only value the field ever had -- so it moves; any other figure is the
+    // merchant's and stays.
+    if( version_compare( $installed, '2.3.0', '<' ) ) {
+        $high = get_option( 'mshield_ai_high_value_amount', false );
+        if( $high === false || (string) $high === '500.00' || (string) $high === '500' ) {
+            update_option( 'mshield_ai_high_value_amount', '0' );
+        }
+    }
+
     // 2.1.1: relax the shared-IP thresholds, but only where the store is still
     // sitting on the old default.
     //
@@ -502,8 +514,8 @@ function load() {
 
     // The allowlist, seeded with the server's own addresses as activation
     // would have. One autoloaded option read; a no-op everywhere else.
-    if( false === get_option( 'mshield_ip_whitelist' ) ) {
-        add_option( 'mshield_ip_whitelist', [], '', 'yes' );
+    if( ! is_array( get_option( 'mshield_ip_whitelist', false ) ) ) {
+        update_option( 'mshield_ip_whitelist', [], 'yes' );
         \MightyShield\Firewall\ip_whitelist::auto_detect_server_ip();
     }
 
@@ -527,6 +539,10 @@ function load() {
     if( ! wp_next_scheduled( 'mshield_daily_cleanup' ) ) {
         wp_schedule_event( time(), 'daily', 'mshield_daily_cleanup' );
     }
+
+    // Orders that settled in Processing without anyone clicking Complete earn
+    // their credit here, a batch a day.
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Protection\outcomes', 'credit_settled_orders' ] );
 
     // The address re-hash a schema-10 update arms. Runs on admin, cron and
     // WP-CLI requests only, a few batches at a time, and disarms itself.

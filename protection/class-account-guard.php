@@ -34,6 +34,14 @@ class account_guard {
     const WINDOW = HOUR_IN_SECONDS;
 
     /**
+     * How long after an account change an order from that account is noted,
+     * in seconds. Seventy-two hours.
+     *
+     * @since   2.3.0
+     */
+    const ACCOUNT_CHANGE_WINDOW = 259200;
+
+    /**
      * Construct.
      *
      * @since   1.9.0
@@ -48,6 +56,15 @@ class account_guard {
 
         // Login failures — the precursor to account takeover.
         add_action( 'wp_login_failed', [ $this, 'on_login_failed' ], 10, 1 );
+
+        // Account changes -- the other half of a takeover. Kount, Signifyd and
+        // Forter all weight "credentials or address changed shortly before the
+        // order"; until now a stolen account could change its email, password
+        // and delivery address and check out minutes later at no cost.
+        add_action( 'profile_update', [ $this, 'on_profile_update' ], 10, 3 );
+        add_action( 'after_password_reset', [ $this, 'on_password_reset' ], 10, 1 );
+        add_action( 'woocommerce_customer_save_address', [ $this, 'on_account_changed' ], 10, 1 );
+        add_action( 'woocommerce_save_account_details', [ $this, 'on_account_changed' ], 10, 1 );
 
         // Coupons.
         add_filter( 'woocommerce_coupon_is_valid', [ $this, 'on_coupon_checked' ], 999, 2 );
@@ -176,6 +193,57 @@ class account_guard {
     }
 
     /**
+     * Something about an account changed: note when.
+     *
+     * @since   2.3.0
+     *
+     * @param   int     $user_id
+     */
+    public function on_account_changed( $user_id ) {
+
+        $user_id = (int) $user_id;
+        if( $user_id <= 0 ) return;
+
+        update_user_meta( $user_id, '_mshield_account_changed', time() );
+
+    }
+
+    /**
+     * profile_update fires on every wp_update_user(), including WooCommerce
+     * saving a first name at checkout -- so only the two changes that matter
+     * to a takeover count: the email address and the password.
+     *
+     * @since   2.3.0
+     *
+     * @param   int             $user_id
+     * @param   \WP_User|null   $old
+     * @param   array           $userdata
+     */
+    public function on_profile_update( $user_id, $old = null, $userdata = [] ) {
+
+        if( ! is_object( $old ) || ! is_array( $userdata ) ) return;
+
+        $email_changed = isset( $userdata['user_email'] ) && (string) $userdata['user_email'] !== (string) $old->user_email;
+        $pass_changed  = ! empty( $userdata['user_pass'] );
+
+        if( $email_changed || $pass_changed ) $this->on_account_changed( $user_id );
+
+    }
+
+    /**
+     * A password was reset through the lost-password flow.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WP_User    $user
+     */
+    public function on_password_reset( $user ) {
+
+        if( is_object( $user ) && ! empty( $user->ID ) ) $this->on_account_changed( $user->ID );
+
+    }
+
+    /**
      * A login attempt failed.
      *
      * @since   1.9.0
@@ -290,6 +358,24 @@ class account_guard {
      * @param   int     $user_id    Customer's user ID, 0 for a guest.
      */
     public static function assess( $user_id = 0 ) {
+
+        // A signed-in customer whose email, password or saved address changed
+        // in the last three days. Nothing on its own -- people do change
+        // these -- but alongside a new country or a new delivery address it is
+        // the shape every takeover has, and it is what caps how much a good
+        // history can hand back on this order.
+        if( $user_id > 0 ) {
+
+            $changed = (int) get_user_meta( (int) $user_id, '_mshield_account_changed', true );
+
+            if( $changed > 0 && ( time() - $changed ) < self::ACCOUNT_CHANGE_WINDOW ) {
+                risk_context::add(
+                    'account_changed',
+                    sprintf( 'Account email, password or saved address changed %s ago', human_time_diff( $changed ) )
+                );
+            }
+
+        }
 
         $coupon_limit = (int) settings::get( 'mshield_coupon_failure_threshold' );
         $coupons      = self::count( 'coupon_failures' );

@@ -434,6 +434,14 @@ class risk_recorder {
         // that later asks "where did this order come from" -- the allowlist at
         // dispatch, the decline counter, a webhook -- reads this instead.
         $order->update_meta_data( '_mshield_ip', ip_utils::get_client_ip() );
+
+        // And the device, when the collector reported one, so the identity
+        // graph can link this order to the laptop as well as the mailbox.
+        if( class_exists( '\MightyShield\Protection\device_fingerprint' ) ) {
+            $device = device_fingerprint::current_signature();
+            if( $device !== '' ) $order->update_meta_data( '_mshield_device', $device );
+        }
+
         $order->save();
 
         // Only note the order when there is something worth reading. A clean

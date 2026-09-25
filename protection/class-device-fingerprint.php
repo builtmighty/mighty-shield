@@ -224,6 +224,12 @@ class device_fingerprint {
         $reasons    = [];
         $temp_block = false;
 
+        // Remember the signature for the identity graph. It was computed here
+        // for the velocity counter and thrown away, so the one identity that
+        // survives a fraudster rotating email, phone, address and IP -- the
+        // laptop -- never accumulated any history at all.
+        self::$signature = self::get_signature( $device );
+
         // Bot detection: navigator.webdriver is true for Selenium/Puppeteer.
         if( isset( $device['webdriver'] ) && $device['webdriver'] === true ) {
             $reasons[]  = 'Automated browser detected (webdriver=true)';
@@ -449,6 +455,26 @@ class device_fingerprint {
 
         $window = (int) settings::get( 'mshield_rate_checkout_window' );
         db::increment_rate_limit( $signature, 'fp_velocity', $window );
+
+    }
+
+    /**
+     * The signature of the device on this request, once evaluate_device() has
+     * seen the payload. Empty until then, and empty for a request that sent
+     * nothing usable.
+     *
+     * @since   2.3.0
+     */
+    private static $signature = '';
+
+    /**
+     * @since   2.3.0
+     *
+     * @return  string
+     */
+    public static function current_signature() {
+
+        return self::$signature;
 
     }
 
