@@ -395,24 +395,13 @@ foreach( $level_rows as $row ) {
                     <p class="description"><?php esc_html_e( 'On a block checkout the firewall steps aside for the cart and checkout in either mode.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
-        </table>
-
-    </div>
-
-    <div class="mshield-section">
-
-        <h2><?php esc_html_e( 'Block Checkout Protection', 'mighty-shield' ); ?></h2>
-
-        <p class="description"><?php esc_html_e( 'Run the fraud checks on the block-based Checkout, which submits through the Store API.', 'mighty-shield' ); ?></p>
-
-        <table class="form-table" role="presentation">
             <tr>
-                <th scope="row"><?php esc_html_e( 'Enable Store API checks', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Block checkout', 'mighty-shield' ); ?></th>
                 <td>
                     <label>
                         <input type="hidden" name="mshield_store_api_checks" value="no" />
                         <input type="checkbox" name="mshield_store_api_checks" value="yes" <?php checked( settings::get( 'mshield_store_api_checks' ), 'yes' ); ?> />
-                        <?php esc_html_e( 'Apply the server-side fraud checks to block-based (Store API) checkout.', 'mighty-shield' ); ?>
+                        <?php esc_html_e( 'Run the fraud checks on the block-based checkout too.', 'mighty-shield' ); ?>
                     </label>
                 </td>
             </tr>

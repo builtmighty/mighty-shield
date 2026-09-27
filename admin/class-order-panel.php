@@ -390,7 +390,7 @@ class order_panel {
     }
 
     /**
-     * The Rate Order control, for an order nobody has scored.
+     * The Rate order control, for an order nobody has scored.
      *
      * @since   1.9.5
      *

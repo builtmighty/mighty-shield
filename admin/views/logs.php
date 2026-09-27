@@ -405,10 +405,27 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
              group -- registering an option to a group with no field submitting it
              makes options.php write null over it on every save of that group. */ ?>
     <div class="mshield-card" id="mshield-log-settings">
-        <h2 class="mshield-card-title"><?php esc_html_e( 'Log settings', 'mighty-shield' ); ?></h2>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Alerts and logs', 'mighty-shield' ); ?></h2>
         <form method="post" action="options.php">
             <?php settings_fields( 'mshield_logs' ); ?>
             <table class="form-table" role="presentation">
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Send alerts', 'mighty-shield' ); ?></th>
+                    <td>
+                        <label>
+                            <input type="hidden" name="mshield_ai_notify_admin" value="no" />
+                            <input type="checkbox" name="mshield_ai_notify_admin" value="yes" <?php checked( settings::get( 'mshield_ai_notify_admin' ), 'yes' ); ?> />
+                            <?php esc_html_e( 'Email me when MightyShield needs attention.', 'mighty-shield' ); ?>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Send to', 'mighty-shield' ); ?></th>
+                    <td>
+                        <input type="text" name="mshield_ai_notify_emails" value="<?php echo esc_attr( settings::get( 'mshield_ai_notify_emails' ) ); ?>" class="regular-text" />
+                        <p class="description"><?php esc_html_e( 'Comma-separated. Leave blank to use the site admin address.', 'mighty-shield' ); ?></p>
+                    </td>
+                </tr>
                 <tr>
                     <th scope="row"><?php esc_html_e( 'Log retention', 'mighty-shield' ); ?></th>
                     <td>

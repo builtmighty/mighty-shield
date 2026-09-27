@@ -1,6 +1,6 @@
 <?php
 /**
- * AI Detection settings view.
+ * AI Review settings view.
  *
  * @package MightyShield
  * @since   1.8.0
@@ -17,9 +17,6 @@ $provider    = settings::get( 'mshield_ai_provider' );
 // there is no flash of the wrong fields before the inline script runs.
 $hide        = ' style="display:none;"';
 $hide_p      = function( $key ) use ( $provider, $hide ) { return $provider === $key ? '' : $hide; };
-// The recipients row is never hidden: the low-rating alert on the Shielding
-// tab mails the same list whatever this checkbox says.
-$hide_notify = '';
 
 // One dropdown per provider, each in that provider's row, so the choices
 // change with the provider selected above. A saved id that is no longer on
@@ -48,11 +45,11 @@ $model_select = function( $key ) {
     <?php settings_fields( 'mshield_ai' ); ?>
 
     <div class="mshield-section">
-        <h2><?php esc_html_e( 'AI Detection', 'mighty-shield' ); ?></h2>
+        <h2><?php esc_html_e( 'AI review', 'mighty-shield' ); ?></h2>
         <p class="description"><?php esc_html_e( 'Uses an AI model to review orders that look legitimate to the rule-based layers. It targets stolen-card orders shipped to real, deliverable addresses, where every attribute passes on its own and only the pattern across them is suspicious.', 'mighty-shield' ); ?></p>
         <table class="form-table">
             <tr>
-                <th scope="row"><?php esc_html_e( 'Enable AI Detection', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Enable AI review', 'mighty-shield' ); ?></th>
                 <td>
                     <label>
                         <input type="hidden" name="mshield_ai_enabled" value="no" />
@@ -217,29 +214,6 @@ $model_select = function( $key ) {
         </table>
     </div>
 
-    <div class="mshield-section">
-        <h2><?php esc_html_e( 'Notifications', 'mighty-shield' ); ?></h2>
-        <table class="form-table">
-            <tr>
-                <th scope="row"><?php esc_html_e( 'Send alerts', 'mighty-shield' ); ?></th>
-                <td>
-                    <label>
-                        <input type="hidden" name="mshield_ai_notify_admin" value="no" />
-                        <input type="checkbox" name="mshield_ai_notify_admin" value="yes" <?php checked( settings::get( 'mshield_ai_notify_admin' ), 'yes' ); ?> />
-                        <?php esc_html_e( 'Email me when MightyShield needs attention.', 'mighty-shield' ); ?>
-                    </label>
-                </td>
-            </tr>
-            <tr class="mshield-ai-notify-only"<?php echo $hide_notify; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- '' or the literal style attribute defined at the top of this file ?>>
-                <th scope="row"><?php esc_html_e( 'Send to', 'mighty-shield' ); ?></th>
-                <td>
-                    <input type="text" name="mshield_ai_notify_emails" value="<?php echo esc_attr( settings::get( 'mshield_ai_notify_emails' ) ); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e( 'Comma-separated. Leave blank to use the site admin address.', 'mighty-shield' ); ?></p>
-                </td>
-            </tr>
-        </table>
-    </div>
-
     <?php submit_button(); ?>
 </form>
 
@@ -259,19 +233,10 @@ $model_select = function( $key ) {
         } );
     }
 
-
-    // The recipients row stays visible whatever the checkbox says; the
-    // low-rating alert uses the same list.
-    function syncNotify() {}
-
     document.querySelectorAll( 'input[name="mshield_ai_provider"]' ).forEach( function( input ) {
         input.addEventListener( 'change', syncProvider );
     } );
 
-    var notify = document.querySelector( 'input[type="checkbox"][name="mshield_ai_notify_admin"]' );
-    if ( notify ) { notify.addEventListener( 'change', syncNotify ); }
-
     syncProvider();
-    syncNotify();
 } )();
 </script>

@@ -116,7 +116,7 @@ $supported = gateways::supported_report();
             <thead>
                 <tr>
                     <th><?php esc_html_e( 'Payment method', 'mighty-shield' ); ?></th>
-                    <th style="width:190px;"><?php esc_html_e( 'Extra card verification', 'mighty-shield' ); ?></th>
+                    <th style="width:190px;"><?php esc_html_e( '3-D Secure', 'mighty-shield' ); ?></th>
                     <th style="width:190px;"><?php esc_html_e( 'Card checks', 'mighty-shield' ); ?></th>
                     <th style="width:190px;"><?php esc_html_e( 'Authorize without charging', 'mighty-shield' ); ?></th>
                 </tr>

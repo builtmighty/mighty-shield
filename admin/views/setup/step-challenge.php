@@ -49,7 +49,7 @@ setup_wizard::form_open( 'challenge' );
         <td>
             <?php
             admin_page::radios( 'mshield_captcha_provider', [
-                'off'          => __( 'Not now', 'mighty-shield' ),
+                'off'          => __( 'Off', 'mighty-shield' ),
                 'turnstile'    => __( 'Cloudflare Turnstile', 'mighty-shield' ),
                 'recaptcha_v3' => __( 'Google reCAPTCHA v3', 'mighty-shield' ),
             ], $mshield_provider );

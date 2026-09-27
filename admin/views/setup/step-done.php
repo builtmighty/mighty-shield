@@ -52,7 +52,7 @@ $mshield_rows = [
         'label' => __( 'Alerts go to', 'mighty-shield' ),
         'value' => implode( ', ', settings::notification_recipients() ),
         'tone'  => 'is-muted',
-        'where' => 'ai',
+        'where' => 'logs',
     ],
 ];
 

@@ -580,10 +580,10 @@ class admin_page {
             },
         ] );
 
-        register_setting( 'mshield_ai', 'mshield_ai_notify_admin', [
+        register_setting( 'mshield_logs', 'mshield_ai_notify_admin', [
             'sanitize_callback' => [ self::class, 'sanitize_checkbox' ],
         ] );
-        register_setting( 'mshield_ai', 'mshield_ai_notify_emails', [
+        register_setting( 'mshield_logs', 'mshield_ai_notify_emails', [
             'sanitize_callback' => [ self::class, 'sanitize_email_list' ],
         ] );
 
@@ -1828,7 +1828,9 @@ class admin_page {
 
         }
 
-        if( $nav ) self::render_hero( $tab );
+        // Not on the report and reading tabs: Payment, Logs and the manual
+        // have nothing to switch, and the switch there was noise.
+        if( $nav && ! in_array( $tab, [ 'payment', 'logs', 'documentation' ], true ) ) self::render_hero( $tab );
 
     }
 
