@@ -40,6 +40,63 @@ class ai_client {
     const MAX_TOKENS = 1024;
 
     /**
+     * The models offered per provider, id => label, default first.
+     *
+     * One list to update when a provider retires a model, which they do
+     * (Google retired the whole Gemini 1.5 series in September 2025 and a
+     * merchant on the old default got a 404 on every review). A saved id that
+     * is no longer here is still shown and kept, so an upgrade never silently
+     * moves a store onto a different model.
+     *
+     * @since   2.3.0
+     */
+    const MODELS = [
+        'anthropic' => [
+            'claude-haiku-4-5' => 'Claude Haiku 4.5 (fastest, lowest cost)',
+            'claude-sonnet-5'  => 'Claude Sonnet 5',
+            'claude-opus-5'    => 'Claude Opus 5',
+        ],
+        'openai' => [
+            'gpt-4o-mini'  => 'GPT-4o mini (fastest, lowest cost)',
+            'gpt-4.1-nano' => 'GPT-4.1 nano',
+            'gpt-4.1-mini' => 'GPT-4.1 mini',
+            'gpt-4.1'      => 'GPT-4.1',
+            'gpt-5-nano'   => 'GPT-5 nano',
+            'gpt-5-mini'   => 'GPT-5 mini',
+            'gpt-5'        => 'GPT-5',
+        ],
+        'gemini' => [
+            'gemini-2.5-flash'      => 'Gemini 2.5 Flash (fastest, lowest cost)',
+            'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash-Lite',
+            'gemini-2.5-pro'        => 'Gemini 2.5 Pro',
+            'gemini-2.0-flash'      => 'Gemini 2.0 Flash',
+        ],
+    ];
+
+    /**
+     * Models to offer for a provider, with the stored choice kept even when
+     * it is not on the list.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $provider   anthropic, openai or gemini.
+     * @return  array   id => label.
+     */
+    public static function models( $provider ) {
+
+        $list  = self::MODELS[ $provider ] ?? [];
+        $saved = trim( (string) settings::get( 'mshield_ai_' . $provider . '_model' ) );
+
+        if( $saved !== '' && ! isset( $list[ $saved ] ) ) {
+            /* translators: %s: a model id the merchant typed in before the list existed */
+            $list = [ $saved => sprintf( __( '%s (custom)', 'mighty-shield' ), $saved ) ] + $list;
+        }
+
+        return $list;
+
+    }
+
+    /**
      * The verdict schema every provider is held to.
      *
      * Replaces scraping a number out of prose. A regex over free text fails in

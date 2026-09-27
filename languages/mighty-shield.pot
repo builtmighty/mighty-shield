@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MightyShield 2.3.0\n"
 "Report-Msgid-Bugs-To: https://builtmighty.com\n"
-"POT-Creation-Date: 2026-09-27 15:53+0000\n"
+"POT-Creation-Date: 2026-09-27 15:58+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -80,6 +80,11 @@ msgid "%d selected"
 msgid_plural "%d selected"
 msgstr[0] ""
 msgstr[1] ""
+
+#. translators: %s: a model id the merchant typed in before the list existed
+#: includes/class-ai-client.php:92
+msgid "%s (custom)"
+msgstr ""
 
 #. translators: %s: human time difference, e.g. "3 days".
 #: admin/class-fraud-review.php:537
@@ -247,7 +252,7 @@ msgstr ""
 msgid "A real customer was blocked"
 msgstr ""
 
-#: admin/views/ai.php:136
+#: admin/views/ai.php:147
 msgid "A review costs money and adds a couple of seconds to checkout, so it runs only on the risk levels you choose and only during checkout, where its verdict can still change what happens to the order."
 msgstr ""
 
@@ -295,11 +300,11 @@ msgstr ""
 msgid "A wrong key fails open, but a blocked script means no token at all, and that is refused, which on the login form locks everyone out. Allowlist your own address on the Access tab before turning it on."
 msgstr ""
 
-#: admin/views/ai.php:55
+#: admin/views/ai.php:69
 msgid "AI Credentials"
 msgstr ""
 
-#: admin/views/ai.php:37
+#: admin/views/ai.php:51
 msgid "AI Detection"
 msgstr ""
 
@@ -308,15 +313,15 @@ msgid "AI Review"
 msgstr ""
 
 #. translators: %s: API error message.
-#: admin/class-admin-page.php:1481 includes/class-ai-client.php:672
+#: admin/class-admin-page.php:1481 includes/class-ai-client.php:729
 msgid "AI order review is unavailable and orders are NOT being reviewed. Last error: %s"
 msgstr ""
 
-#: includes/class-ai-client.php:341
+#: includes/class-ai-client.php:398
 msgid "AI returned an unrecognised verdict"
 msgstr ""
 
-#: includes/class-ai-client.php:327
+#: includes/class-ai-client.php:384
 msgid "AI returned no usable verdict"
 msgstr ""
 
@@ -337,7 +342,7 @@ msgid "AI tab"
 msgstr ""
 
 #. translators: %s: the name of the missing field.
-#: includes/class-ai-client.php:334
+#: includes/class-ai-client.php:391
 msgid "AI verdict is missing the \"%s\" field"
 msgstr ""
 
@@ -594,10 +599,6 @@ msgstr ""
 msgid "An order falls to the most severe risk level whose threshold its rating is at or below, and that level decides what happens to it. Rejected and Banned are fixed: they are refused before an order exists, so your payment processor is never contacted."
 msgstr ""
 
-#: admin/views/ai.php:163
-msgid "An order is scored first. If it lands on one of these levels it goes to the model, and the rating that comes back is what the blocking engine then acts on."
-msgstr ""
-
 #: admin/views/documentation.php:553
 msgid "An order leaves the queue the moment you rule on it, whether you do that here or on the order itself. Orders that failed the card checks after paying appear as a warning rather than something to approve or block: the money is already taken and the order is on its way, so the decision is whether to refund and cancel it yourself."
 msgstr ""
@@ -619,15 +620,15 @@ msgstr ""
 msgid "Anthropic"
 msgstr ""
 
-#: admin/views/ai.php:62
+#: admin/views/ai.php:76
 msgid "Anthropic (Claude)"
 msgstr ""
 
-#: admin/views/ai.php:72
+#: admin/views/ai.php:86
 msgid "Anthropic API Key"
 msgstr ""
 
-#: includes/class-ai-client.php:411
+#: includes/class-ai-client.php:468
 msgid "Anthropic returned no verdict"
 msgstr ""
 
@@ -1107,8 +1108,8 @@ msgstr ""
 msgid "Checks work together rather than separately. Three small concerns that individually would not be worth acting on can add up to a rating that is. That is the whole point of a rating: an order that looks slightly odd in several unrelated ways is more suspicious than one that looks odd in a single way."
 msgstr ""
 
-#: admin/views/ai.php:56
-msgid "Choose a provider and enter its connection details. Small, fast models are the right tier here. Reviews run inline with checkout, so latency and per-order cost matter more than raw capability."
+#: admin/views/ai.php:70
+msgid "Choose a provider and enter its connection details."
 msgstr ""
 
 #: admin/views/blocklist.php:33 admin/views/blocklist.php:73 admin/views/whitelist.php:25 admin/views/whitelist.php:49
@@ -1163,7 +1164,7 @@ msgstr ""
 msgid "Combined cost"
 msgstr ""
 
-#: admin/views/ai.php:242
+#: admin/views/ai.php:240
 msgid "Comma-separated. Leave blank to use the site admin address."
 msgstr ""
 
@@ -1269,7 +1270,7 @@ msgstr ""
 msgid "Customer"
 msgstr ""
 
-#: admin/views/ai.php:192
+#: admin/views/ai.php:191
 msgid "Customer Details"
 msgstr ""
 
@@ -1277,11 +1278,11 @@ msgstr ""
 msgid "Customer History"
 msgstr ""
 
-#: includes/class-ai-client.php:154
+#: includes/class-ai-client.php:211
 msgid "Daily AI review limit reached"
 msgstr ""
 
-#: admin/views/ai.php:205
+#: admin/views/ai.php:204
 msgid "Daily Limit"
 msgstr ""
 
@@ -1307,10 +1308,6 @@ msgstr ""
 
 #: admin/views/documentation.php:405 admin/views/documentation.php:445
 msgid "Default"
-msgstr ""
-
-#: admin/views/ai.php:82
-msgid "Default: claude-haiku-4-5, the fastest and lowest cost Claude model, well suited to per-order scoring."
 msgstr ""
 
 #: admin/views/logs.php:61
@@ -1369,7 +1366,7 @@ msgstr ""
 msgid "Discard the file"
 msgstr ""
 
-#: admin/class-admin-page.php:1501 includes/class-ai-client.php:677 protection/class-smarty-address-verifier.php:131
+#: admin/class-admin-page.php:1501 includes/class-ai-client.php:734 protection/class-smarty-address-verifier.php:131
 msgid "Dismiss"
 msgstr ""
 
@@ -1377,7 +1374,7 @@ msgstr ""
 msgid "Disposable email address"
 msgstr ""
 
-#: admin/views/ai.php:197
+#: admin/views/ai.php:196
 msgid "Do not send customers' personal details to the AI provider"
 msgstr ""
 
@@ -1437,7 +1434,7 @@ msgstr ""
 msgid "Email me when MightyShield needs attention"
 msgstr ""
 
-#: admin/views/ai.php:233
+#: admin/views/ai.php:232
 msgid "Email me when MightyShield needs attention."
 msgstr ""
 
@@ -1445,7 +1442,7 @@ msgstr ""
 msgid "Emails allowed per hour"
 msgstr ""
 
-#: admin/views/ai.php:41
+#: admin/views/ai.php:55
 msgid "Enable AI Detection"
 msgstr ""
 
@@ -1788,11 +1785,11 @@ msgstr ""
 msgid "Funds can be reserved and released without ever being taken."
 msgstr ""
 
-#: admin/views/ai.php:111
+#: admin/views/ai.php:123
 msgid "Gemini API Key"
 msgstr ""
 
-#: includes/class-ai-client.php:517
+#: includes/class-ai-client.php:574
 msgid "Gemini returned a verdict that was not valid JSON"
 msgstr ""
 
@@ -1816,7 +1813,7 @@ msgstr ""
 msgid "Goes through untouched."
 msgstr ""
 
-#: admin/views/ai.php:64
+#: admin/views/ai.php:78
 msgid "Google Gemini"
 msgstr ""
 
@@ -2172,7 +2169,7 @@ msgstr ""
 msgid "It takes about two minutes to set up. Nothing you choose here is permanent, and every one of these settings has its own tab afterwards."
 msgstr ""
 
-#: admin/views/ai.php:75 admin/views/ai.php:91 admin/views/ai.php:114
+#: admin/views/ai.php:89 admin/views/ai.php:104 admin/views/ai.php:126
 msgid "Key is saved. Leave blank to keep existing key."
 msgstr ""
 
@@ -2330,7 +2327,7 @@ msgstr ""
 msgid "Lower only means the model can take trust away but never give it back, so it can never talk a bad order into looking fine. Lower or raise lets it rescue an order the checks were too harsh on."
 msgstr ""
 
-#: admin/views/ai.php:184
+#: admin/views/ai.php:186
 msgid "Lower or raise the rating"
 msgstr ""
 
@@ -2489,7 +2486,7 @@ msgid "MightyShield works 24/7 to keep bots, card testers, scammers, fraudsters,
 msgstr ""
 
 #. translators: %s: the error the AI provider returned.
-#: includes/class-ai-client.php:613
+#: includes/class-ai-client.php:670
 msgid "MightyShield's AI order review is currently unavailable.\n\nReason: %s\n\nOrders are being allowed through WITHOUT AI review until this is resolved. Common causes:\n- Invalid or expired API key\n- Provider quota exhausted or rate limited\n- Network/API outage\n\nCheck your credentials under MightyShield > AI Review.\n\nThis alert is sent at most once per day."
 msgstr ""
 
@@ -2509,7 +2506,7 @@ msgid "MightyShield's bot challenge (%1$s) is rejecting all tokens because of a 
 msgstr ""
 
 #: admin/class-admin-page.php:223 admin/class-admin-page.php:1497 admin/class-admin-page.php:1514 admin/class-order-panel.php:1193
-#: admin/class-setup-wizard.php:185 includes/class-ai-client.php:669 protection/class-captcha.php:1347 protection/class-captcha.php:1405
+#: admin/class-setup-wizard.php:185 includes/class-ai-client.php:726 protection/class-captcha.php:1347 protection/class-captcha.php:1405
 #: protection/class-smarty-address-verifier.php:123
 msgid "MightyShield:"
 msgstr ""
@@ -2570,7 +2567,7 @@ msgstr ""
 msgid "Minimum seconds"
 msgstr ""
 
-#: admin/views/ai.php:79 admin/views/ai.php:102 admin/views/ai.php:118
+#: admin/views/ai.php:93 admin/views/ai.php:115 admin/views/ai.php:130
 msgid "Model"
 msgstr ""
 
@@ -2587,7 +2584,7 @@ msgid "More than fifty of them. Does the billing address exist. Has this card be
 msgstr ""
 
 #. translators: %d: reviews used today.
-#: admin/views/ai.php:214
+#: admin/views/ai.php:213
 msgid "Most reviews to run in one day. 0 means no limit. Used today: %d. Once the limit is reached, orders carry on as normal without a review, and a note is added to your logs."
 msgstr ""
 
@@ -2648,19 +2645,19 @@ msgid "No"
 msgstr ""
 
 #. translators: %s: provider name.
-#: includes/class-ai-client.php:214
+#: includes/class-ai-client.php:271
 msgid "No %s API key is saved. Enter one and save the page first: the key fields are write-only, so this tests what is stored, not what is typed."
 msgstr ""
 
-#: includes/class-ai-client.php:376
+#: includes/class-ai-client.php:433
 msgid "No Anthropic API key configured"
 msgstr ""
 
-#: includes/class-ai-client.php:481
+#: includes/class-ai-client.php:538
 msgid "No Gemini API key configured"
 msgstr ""
 
-#: includes/class-ai-client.php:426
+#: includes/class-ai-client.php:483
 msgid "No OpenAI API key configured"
 msgstr ""
 
@@ -2724,7 +2721,7 @@ msgstr ""
 msgid "No payment methods are currently enabled at checkout, so there is nothing to report."
 msgstr ""
 
-#: admin/views/ai.php:173
+#: admin/views/ai.php:175
 msgid "No reviews will run until a provider is set up above."
 msgstr ""
 
@@ -2858,11 +2855,11 @@ msgstr ""
 msgid "Nothing — MightyShield is in Observe mode"
 msgstr ""
 
-#: admin/views/ai.php:228
+#: admin/views/ai.php:227
 msgid "Notification"
 msgstr ""
 
-#: admin/views/ai.php:239
+#: admin/views/ai.php:237
 msgid "Notification Email(s)"
 msgstr ""
 
@@ -2870,7 +2867,7 @@ msgstr ""
 msgid "Notification settings saved."
 msgstr ""
 
-#: admin/views/ai.php:225
+#: admin/views/ai.php:224
 msgid "Notifications"
 msgstr ""
 
@@ -2938,10 +2935,6 @@ msgstr ""
 msgid "One switch for every alert: a review that rated an order badly, a service that has stopped responding, a bot challenge refusing everybody, or a wave of failed payments. Leave the address list empty to use the site administrator. Emails about low-rated orders are a separate switch on the Shielding tab and use the same list."
 msgstr ""
 
-#: admin/views/ai.php:235
-msgid "One switch for every alert: an AI review that rated an order badly, an address-verification or AI service that has stopped responding, a bot challenge that has started refusing everybody, or a wave of failed payments that looks like card testing. Emails about low-rated orders are a separate switch on the Shielding tab."
-msgstr ""
-
 #: admin/views/documentation.php:571
 msgid "One thing does outrank your verdict, and it should: a chargeback. If you release an order and the bank later takes the money back, that is recorded against everyone connected to it, exactly as it would be on any other order. Your judgement stands until reality contradicts it."
 msgstr ""
@@ -2961,11 +2954,11 @@ msgstr ""
 msgid "Only counts when the customer is signed in to an account carrying that address. Typing it at the checkout proves nothing, so it grants nothing."
 msgstr ""
 
-#: admin/views/ai.php:183
+#: admin/views/ai.php:185
 msgid "Only lower the rating"
 msgstr ""
 
-#: admin/views/ai.php:66
+#: admin/views/ai.php:80
 msgid "Only the selected provider's credentials are used. Keys for the others stay saved if you switch back."
 msgstr ""
 
@@ -2981,19 +2974,19 @@ msgstr ""
 msgid "Open your sign-in page in a private window and sign in. If it goes through, the keys are right. If it does not, the Logs tab will now say exactly what the provider objected to."
 msgstr ""
 
-#: admin/views/ai.php:63
+#: admin/views/ai.php:77
 msgid "OpenAI"
 msgstr ""
 
-#: admin/views/ai.php:88
+#: admin/views/ai.php:101
 msgid "OpenAI API Key"
 msgstr ""
 
-#: includes/class-ai-client.php:466
+#: includes/class-ai-client.php:523
 msgid "OpenAI returned a verdict that was not valid JSON"
 msgstr ""
 
-#: admin/views/ai.php:98
+#: admin/views/ai.php:111
 msgid "Optional. Only needed if your key belongs to more than one organization."
 msgstr ""
 
@@ -3118,7 +3111,7 @@ msgstr ""
 msgid "Organization"
 msgstr ""
 
-#: admin/views/ai.php:95
+#: admin/views/ai.php:108
 msgid "Organization ID"
 msgstr ""
 
@@ -3243,7 +3236,7 @@ msgstr ""
 msgid "Protection state"
 msgstr ""
 
-#: admin/views/ai.php:59 admin/views/blocking.php:494 admin/views/setup/step-challenge.php:48
+#: admin/views/ai.php:73 admin/views/blocking.php:494 admin/views/setup/step-challenge.php:48
 msgid "Provider"
 msgstr ""
 
@@ -3304,7 +3297,7 @@ msgstr ""
 msgid "Rating %s past orders. This runs in the background — you can leave this page."
 msgstr ""
 
-#: admin/views/ai.php:180
+#: admin/views/ai.php:182
 msgid "Rating Effect"
 msgstr ""
 
@@ -3410,10 +3403,6 @@ msgstr ""
 msgid "Rejected is offered too, and is worth considering if you would rather not turn anyone away on arithmetic alone. The review happens before the refusal, so with the rating effect set to lower or raise, a model that recognises an ordinary customer can rescue the order. Orders stopped by a single decisive check, such as a filled trap field or a card with a chargeback against it, are never sent: the model cannot overturn those, so the call would be wasted. Banned is not offered for the same reason."
 msgstr ""
 
-#: admin/views/ai.php:169
-msgid "Rejected is worth considering if you would rather not turn anyone away on arithmetic alone: the review happens before the refusal, so with the rating effect below set to raise as well as lower, a model that recognises an ordinary customer can lift the order out of refusal and into a hold for you to look at. Orders stopped by a single decisive signal — a hidden trap field, a failed bot challenge, a card with a chargeback — are never sent, because the model cannot overturn those and the call would be wasted."
-msgstr ""
-
 #: admin/views/blocklist.php:106 admin/views/whitelist.php:142
 msgid "Remove"
 msgstr ""
@@ -3454,7 +3443,7 @@ msgstr ""
 msgid "Request data"
 msgstr ""
 
-#: admin/views/ai.php:48
+#: admin/views/ai.php:62
 msgid "Requires valid API credentials below. Every review costs a request to your AI provider."
 msgstr ""
 
@@ -3478,7 +3467,7 @@ msgstr ""
 msgid "Review the setting"
 msgstr ""
 
-#: admin/views/ai.php:135
+#: admin/views/ai.php:146
 msgid "Reviewing"
 msgstr ""
 
@@ -3580,7 +3569,7 @@ msgstr ""
 msgid "Send alerts"
 msgstr ""
 
-#: admin/views/ai.php:46
+#: admin/views/ai.php:60
 msgid "Send orders to an AI model for fraud review."
 msgstr ""
 
@@ -3588,16 +3577,12 @@ msgstr ""
 msgid "Send to"
 msgstr ""
 
-#: admin/views/ai.php:139
+#: admin/views/ai.php:150
 msgid "Send to Review"
 msgstr ""
 
 #: admin/views/documentation.php:449
 msgid "Sends one real review request to the provider you selected, built exactly the way a live order builds it, and tells you what came back. Because it uses the real request, it catches a model name your provider does not recognise as readily as it catches a bad key. Save the page before testing: key fields are write-only, so the test uses what is stored. It costs one request and does not count against your daily limit."
-msgstr ""
-
-#: admin/views/ai.php:128
-msgid "Sends one real review request to the selected provider, using the same tool definition and schema a live order uses. This tests the saved key, not what is typed above, so save first. It costs one request and does not count against the daily limit."
 msgstr ""
 
 #: admin/views/documentation.php:452
@@ -3858,7 +3843,7 @@ msgstr ""
 msgid "Temporary blocks are separate and do not appear here. They are applied automatically when something trips a hard check, last an hour by default (Temporary block length, on the Scoring tab), and clear themselves."
 msgstr ""
 
-#: admin/class-admin-page.php:1661 admin/views/ai.php:126 admin/views/documentation.php:415 admin/views/documentation.php:449
+#: admin/class-admin-page.php:1661 admin/views/ai.php:137 admin/views/documentation.php:415 admin/views/documentation.php:449
 msgid "Test Connection"
 msgstr ""
 
@@ -3947,7 +3932,7 @@ msgstr ""
 msgid "The %s subscription is out of lookups (HTTP 402). The credentials are fine; the account needs topping up."
 msgstr ""
 
-#: includes/class-ai-client.php:562
+#: includes/class-ai-client.php:619
 msgid "The AI provider replied, but the response could not be read as JSON."
 msgstr ""
 
@@ -4240,12 +4225,8 @@ msgstr ""
 msgid "The release was sent to your payment processor, but it did not confirm the authorization was cancelled. The order has been left on hold so it stays in your queue. Check it in your processor dashboard."
 msgstr ""
 
-#: admin/views/ai.php:187
-msgid "The review returns its own rating from 1 to 100, judging the whole order. Lowering only means it can veto trust the checks granted, but never hand any back. Allowing it to raise lets a model that recognises an ordinary customer lift an order the checks were too harsh on by one level — from Rejected to High, from High to Elevated — never further, and never past evidence that arrived after it answered. Either way it cannot push an order into Trusted; that still takes a clean order history."
-msgstr ""
-
-#: admin/views/ai.php:200
-msgid "The review still sees what it needs: the email domain, whether the address looks plausible, the city and postcode, and the network the order came from. It sees but not the street address, mailbox name, phone number or exact IP. Slightly less accurate, and worth turning on if you would rather those details never left your site."
+#: admin/views/ai.php:199
+msgid "The review still sees what it needs, without specific customer information. Slightly less accurate."
 msgstr ""
 
 #: admin/views/documentation.php:361
@@ -4487,10 +4468,6 @@ msgstr ""
 msgid "Trusted"
 msgstr ""
 
-#: admin/views/ai.php:166
-msgid "Trusted and Low are most orders, so choosing them will cost real money. Elevated and High are the ambiguous ones, where a verdict is most likely to change the outcome."
-msgstr ""
-
 #: admin/views/setup/step-challenge.php:35
 msgid "Turn away the bots before they reach checkout"
 msgstr ""
@@ -4527,11 +4504,11 @@ msgstr ""
 msgid "Under WooCommerce, next to Orders, with a count beside it when something is waiting. <a href=\"%s\">The queue</a> is every order MightyShield stopped or flagged that nobody has ruled on yet, gathered in one place so you can work through them instead of hunting for them."
 msgstr ""
 
-#: includes/class-ai-client.php:510
+#: includes/class-ai-client.php:567
 msgid "Unexpected Gemini response shape"
 msgstr ""
 
-#: includes/class-ai-client.php:459
+#: includes/class-ai-client.php:516
 msgid "Unexpected OpenAI response shape"
 msgstr ""
 
@@ -4571,14 +4548,6 @@ msgstr ""
 msgid "Use AI to Review"
 msgstr ""
 
-#: admin/views/ai.php:121
-msgid "Use a Flash-tier model. Check your provider's current model list, because model IDs change over time."
-msgstr ""
-
-#: admin/views/ai.php:105
-msgid "Use a small, fast model. Check your provider's current model list, because model IDs change over time."
-msgstr ""
-
 #: admin/views/blocking.php:292
 msgid "Use the last column to tune. Plenty of High orders that you went on to approve means the threshold is too cautious and you are holding real customers. Orders that stayed in Low and later turned out bad means it is too generous."
 msgstr ""
@@ -4595,7 +4564,7 @@ msgstr ""
 msgid "User role"
 msgstr ""
 
-#: admin/views/ai.php:38
+#: admin/views/ai.php:52
 msgid "Uses an AI model to review orders that look legitimate to the rule-based layers. It targets stolen-card orders shipped to real, deliverable addresses, where every attribute passes on its own and only the pattern across them is suspicious."
 msgstr ""
 
@@ -4876,15 +4845,15 @@ msgstr ""
 msgid "Your API key is stored in your database and is only ever sent to the provider you chose. The order details go to that provider and nowhere else. If that matters to you, turn Hide customer details on: the model then sees that an address exists and how it compares to others, but not what it says."
 msgstr ""
 
-#: admin/views/ai.php:75
+#: admin/views/ai.php:89
 msgid "Your Anthropic API key."
 msgstr ""
 
-#: admin/views/ai.php:114
+#: admin/views/ai.php:126
 msgid "Your Google AI Studio API key."
 msgstr ""
 
-#: admin/views/ai.php:91
+#: admin/views/ai.php:104
 msgid "Your OpenAI API key."
 msgstr ""
 
@@ -4900,7 +4869,7 @@ msgstr ""
 msgid "Your checkout is currently closed to customers."
 msgstr ""
 
-#: admin/views/ai.php:174
+#: admin/views/ai.php:176
 msgid "Your choice here is remembered and takes effect as soon as one is."
 msgstr ""
 
@@ -4957,7 +4926,7 @@ msgstr ""
 msgid "[MightyShield] %1$s on order #%2$d"
 msgstr ""
 
-#: includes/class-ai-client.php:634
+#: includes/class-ai-client.php:691
 msgid "[MightyShield] AI order review is unavailable"
 msgstr ""
 
