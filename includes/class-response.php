@@ -629,7 +629,7 @@ class response {
                 $reason,
                 $order->get_formatted_billing_full_name(),
                 $order->get_billing_email(),
-                $order->get_customer_ip_address(),
+                ip_utils::order_ip( $order ),
                 $order->get_edit_order_url()
             )
         );
@@ -800,6 +800,15 @@ class response {
         // Processing and shipped with "held for review" written on it. The
         // hook is registered at load, for every request, and reads the meta
         // set above.
+        //
+        // Unless the payment has ALREADY been confirmed. The card verdict
+        // arrives from the processor after payment_complete() has fired the
+        // only hooks that hold, so waiting for a transition that has passed
+        // left the order in Processing with a note saying it was held. Hold
+        // it now; the function guards on status and on a reviewer's decision.
+        if( $order->is_paid() || $order->get_date_paid() ) {
+            self::hold_after_payment( $order->get_id() );
+        }
 
         db::log_event(
             ip_utils::get_client_ip(),
@@ -835,28 +844,21 @@ class response {
         // could ever ship it.
         if( (string) $order->get_meta( '_mshield_review' ) !== '' ) return;
 
-        // A status changed by hand is a decision too. The processing and
-        // completed hooks carry the transition, and WooCommerce marks it
-        // manual when somebody picked the status on the order screen. That
-        // person has looked at the order; the hold steps aside and says so.
-        // A transition with no such mark is the gateway confirming payment --
-        // in the checkout request, from a webhook, on the return from 3-D
-        // Secure -- and that is the moment this exists for.
-        if( is_array( $transition ) && ! empty( $transition['manual'] ) ) {
-
-            $order->update_meta_data( '_mshield_hold', 'released' );
-            $order->add_order_note( 'MightyShield: ' . __( 'Released from the post-payment hold by a status change made by hand.', 'mighty-shield' ) );
-            $order->save();
-
-            delete_transient( 'mshield_ai_pending_count' );
-
-            return;
-
-        }
-
         if( $order->get_status() === 'on-hold' ) return;
 
-        $order->update_status( 'on-hold', __( 'MightyShield: held for review.', 'mighty-shield' ) );
+        // A status changed by hand is re-held too, and told why. For a
+        // moment this branch released the hold instead, reasoning that a
+        // person had looked at the order -- but WooCommerce marks a bulk
+        // edit, a REST update and a bookkeeper confirming a bank transfer as
+        // manual as well, and none of those is a review. The safe direction
+        // is to keep holding and point at the panel, where Approve releases
+        // the hold in one click and records the decision.
+        $manual = is_array( $transition ) && ! empty( $transition['manual'] );
+
+        $order->update_status( 'on-hold', $manual
+            ? __( 'MightyShield: held for review. This order was held after payment and has not been reviewed; approve it from the MightyShield panel on this order, or from the Fraud Review queue, to release it.', 'mighty-shield' )
+            : __( 'MightyShield: held for review.', 'mighty-shield' )
+        );
 
         delete_transient( 'mshield_ai_pending_count' );
 

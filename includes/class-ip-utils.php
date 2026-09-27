@@ -103,6 +103,35 @@ class ip_utils {
     }
 
     /**
+     * The key a per-address counter or block is kept under.
+     *
+     * The address itself for IPv4. For IPv6 the /64, because a subscriber is
+     * handed at least that much and can put a fresh address on every
+     * request without a proxy: keyed on the exact address, the decline
+     * counter, the temporary block and the checkout rate limit were all
+     * defeated from one home connection. The identity graph already treats
+     * IPv6 this way (a /48, coarser still); this is the same idea for the
+     * short-lived counters. The log keeps the exact address.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $ip
+     * @return  string
+     */
+    public static function rate_key( $ip ) {
+
+        $ip = (string) $ip;
+
+        if( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) return $ip;
+
+        $bin = @inet_pton( $ip );
+        if( $bin === false || strlen( $bin ) !== 16 ) return $ip;
+
+        return inet_ntop( substr( $bin, 0, 8 ) . str_repeat( "\0", 8 ) ) . '/64';
+
+    }
+
+    /**
      * Whether an address is loopback or private.
      *
      * @since   2.0.0

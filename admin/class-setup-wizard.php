@@ -209,6 +209,12 @@ class setup_wizard {
 
         $saved = get_option( self::PROGRESS, '' );
 
+        // A finished walkthrough starts over from the beginning when it is
+        // opened again, as the manual promises. Resuming at 'done' put a
+        // merchant who came back to re-read the options on the Finish page,
+        // whose only button restarted the back-catalogue rating.
+        if( $saved === 'done' ) return self::STEPS[0];
+
         return \in_array( $saved, self::STEPS, true ) ? $saved : self::STEPS[0];
 
     }
@@ -342,8 +348,13 @@ class setup_wizard {
             //
             // Safe to fire and forget. It rates in the background, takes no
             // action on any order, and start() returns a WP_Error rather than
-            // throwing if WooCommerce is somehow not there.
-            $mshield_backfill = \MightyShield\Includes\backfill::start();
+            // throwing if WooCommerce is somehow not there. Never over a run
+            // in progress: finishing the walkthrough a second time must not
+            // throw away an afternoon's rating and start from zero.
+            $mshield_state    = \MightyShield\Includes\backfill::state();
+            $mshield_backfill = $mshield_state['status'] === 'running'
+                ? $mshield_state
+                : \MightyShield\Includes\backfill::start();
 
             $message = ( ! is_wp_error( $mshield_backfill ) && (int) $mshield_backfill['total'] > 0 )
                 ? sprintf(

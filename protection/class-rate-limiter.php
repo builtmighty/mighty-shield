@@ -68,7 +68,7 @@ class rate_limiter {
         $limit  = (int) settings::get( 'mshield_rate_checkout_limit' );
         $window = (int) settings::get( 'mshield_rate_checkout_window' );
 
-        $identifier = md5( $ip . '|checkout' );
+        $identifier = md5( ip_utils::rate_key( $ip ) . '|checkout' );
         $count = db::increment_rate_limit( $identifier, 'checkout', $window );
 
         // Also a score. The cap still turns a shopper away on a store that has
@@ -102,7 +102,7 @@ class rate_limiter {
         // transient was set before the IP was whitelisted.
         if( \MightyShield\Firewall\ip_whitelist::is_whitelisted( $ip ) ) return false;
 
-        $key = 'mshield_tempblock_' . md5( $ip );
+        $key = 'mshield_tempblock_' . md5( ip_utils::rate_key( $ip ) );
         return (bool) get_transient( $key );
 
     }
@@ -119,7 +119,9 @@ class rate_limiter {
     public static function temp_block_ip( $ip, $reason = '', $duration = 0 ) {
 
         $duration = (int) $duration > 0 ? (int) $duration : (int) settings::get( 'mshield_temp_block_duration' );
-        $key      = 'mshield_tempblock_' . md5( $ip );
+        // Keyed on the address for IPv4 and the /64 for IPv6, like every
+        // per-address counter: see ip_utils::rate_key().
+        $key      = 'mshield_tempblock_' . md5( ip_utils::rate_key( $ip ) );
 
         set_transient( $key, [
             'ip'      => $ip,

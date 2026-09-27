@@ -141,12 +141,22 @@ class outcomes {
 
         $order->update_meta_data( '_mshield_outcome', $outcome );
         $order->update_meta_data( '_mshield_outcome_weight', '' );
+
+        // A reviewer's Clean is superseded by a denial or a chargeback that
+        // arrives afterwards. Left in place, the panel kept "Clean" lit as
+        // the current verdict on an order the bank had just taken back, and
+        // the reviewer who came to correct it clicked Fraud -- which reversed
+        // the chargeback. See set_manual().
+        if( (string) $order->get_meta( '_mshield_review' ) === 'clean' && self::SEVERITY[ $outcome ] >= self::SEVERITY['denied'] ) {
+            $order->update_meta_data( '_mshield_review', '' );
+        }
+
         $order->save();
 
         db::set_risk_outcome( $order->get_id(), $outcome );
 
         db::log_event(
-            $order->get_customer_ip_address(),
+            \MightyShield\Includes\ip_utils::order_ip( $order ),
             'outcome',
             'flagged',
             sprintf( 'Order #%d recorded as %s — identity reputation updated', $order->get_id(), $outcome ),
@@ -202,6 +212,22 @@ class outcomes {
         // has nothing to reverse or credit until it is linked.
         self::ensure_linked( $order );
 
+        // A chargeback is the bank's finding and outranks a reviewer's Fraud,
+        // which says the same thing less severely. Confirming it must not
+        // reverse it: this used to take the -100 back off every identity and
+        // write -25 in its place, so the next order from that card scored a
+        // hold instead of the Banned floor. The verdict is recorded on the
+        // order; the outcome stands.
+        if( $existing === 'chargeback' && $outcome === 'denied' ) {
+
+            $order->update_meta_data( '_mshield_review', $verdict );
+            $order->add_order_note( 'MightyShield: ' . __( 'Marked as fraud by a reviewer. The chargeback already recorded against this order stands.', 'mighty-shield' ) );
+            $order->save();
+
+            return true;
+
+        }
+
         if( $existing !== '' && isset( self::SEVERITY[ $existing ] ) ) {
             entities::reverse_outcome( $order->get_id(), $existing, self::applied_weight( $order ) );
         }
@@ -229,7 +255,7 @@ class outcomes {
         db::set_risk_outcome( $order->get_id(), $outcome );
 
         db::log_event(
-            $order->get_customer_ip_address(),
+            \MightyShield\Includes\ip_utils::order_ip( $order ),
             'outcome',
             $verdict === 'fraud' ? 'blocked' : 'flagged',
             sprintf( 'Order #%d marked %s by a reviewer — identity reputation updated', $order->get_id(), $verdict ),
@@ -327,6 +353,9 @@ class outcomes {
 
         if( (string) $order->get_meta( '_mshield_paid_counted' ) === 'yes' ) return;
 
+        // Processing means money for a card, not for cash on delivery.
+        if( ! entities::order_is_paid( $order ) ) return;
+
         self::ensure_linked( $order );
 
         entities::count_paid( $order );
@@ -383,18 +412,29 @@ class outcomes {
 
         if( ! function_exists( 'wc_get_orders' ) ) return;
 
+        // Orders with an outcome are excluded in the query, not skipped in
+        // PHP. Skipping left them in the batch: on posts storage a meta-only
+        // save never moves date_modified, and on any storage every order
+        // approved in review and shipped from Processing stayed at the head
+        // of the list -- until two hundred of them filled the batch and the
+        // pass credited nothing, ever again.
         $orders = wc_get_orders( [
             'limit'         => 200,
             'status'        => [ 'wc-processing' ],
             'date_modified' => '<' . ( time() - self::SETTLED_AFTER ),
             'orderby'       => 'date_modified',
             'order'         => 'ASC',
+            'meta_query'    => [ [ 'key' => '_mshield_outcome', 'compare' => 'NOT EXISTS' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- a daily batch of 200, not a request
         ] );
 
         foreach( (array) $orders as $order ) {
 
             if( ! is_a( $order, 'WC_Order' ) ) continue;
             if( (string) $order->get_meta( '_mshield_outcome' ) !== '' ) continue;
+
+            // Processing is not settled for cash on delivery or a bank
+            // transfer nobody has confirmed. See entities::order_is_paid().
+            if( ! entities::order_is_paid( $order ) ) continue;
 
             self::record( $order, 'approved' );
 

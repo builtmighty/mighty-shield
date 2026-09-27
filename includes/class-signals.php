@@ -113,12 +113,20 @@ class signals {
         'address_velocity' => [
             'group'  => 'identity',
             // The drop-address signature — but also apartment buildings,
-            // offices, dorms and families. Tuned so the classic stolen-card
-            // profile (this + name mismatch + high value + geo mismatch) lands
-            // in "detained" rather than "rejected": that combination is real
-            // evidence but genuinely ambiguous, and refusing it outright would
-            // lose legitimate gift orders, keep no record, and teach the
-            // system nothing.
+            // offices, dorms and families.
+            //
+            // When this fires, address_bill_ship_mismatch is charged at half:
+            // the two say the same thing about the same parcel, and charging
+            // both in full (30 + 20) pushed the legitimate twin of the
+            // stolen-card profile -- a first gift to a dorm from a mailbox
+            // with no name in it -- past the Rejected line. The sums, on the
+            // default ladder: gift to a busy address (this + bill/ship at 10
+            // + name mismatch + high value + first order) is 70, High, a hold
+            // and a human; the same order from an IP in another country adds
+            // ip_geo_mismatch and is 85, Rejected. That is where each belongs:
+            // the ambiguous one is looked at, the one with the network
+            // against it too is refused, and the refusal is recorded against
+            // its identities.
             'weight' => 30.0,
             'floor'  => 'none',
         ],
@@ -152,9 +160,10 @@ class signals {
             // customers, which is exactly what the Scoring tab's "how often
             // did this fire" column is there to reveal.
             //
-            // 20 is enough to matter next to address_velocity and
-            // email_name_mismatch -- the three together are the drop-address
-            // profile -- and not enough to detain a birthday present.
+            // 20 is enough to matter next to email_name_mismatch and not
+            // enough to detain a birthday present. Next to address_velocity
+            // it is charged at half -- see that signal's comment -- because
+            // the two describe the same parcel.
             'weight' => 20.0,
             'floor'  => 'none',
         ],
@@ -182,7 +191,7 @@ class signals {
         ],
         'country_blocked' => [
             'group'  => 'identity',
-            // A floor, and one of only six. This is not evidence about the
+            // A floor, and one of only seven. This is not evidence about the
             // order -- it is the merchant saying "not there", and a decision
             // the merchant already made should not have to win an argument
             // against a trust score.
@@ -495,7 +504,14 @@ class signals {
             // decline rate is running far above normal, every unknown
             // customer costs a little more, because the one thing a spread-
             // out card-testing script cannot hide is the aggregate.
-            'weight' => 30.0,
+            //
+            // "A little more" is the promise, so this stays under
+            // ANOMALY_WEIGHT: at 30 it took a clean first-timer from Low to
+            // Elevated on its own and, with one gift address, into a hold --
+            // and capped every regular's history credit for the whole wave.
+            // At 12 it tips an order that already has something against it
+            // and leaves a clean one where it was.
+            'weight' => 12.0,
             'floor'  => 'none',
         ],
         'entity_chargeback' => [

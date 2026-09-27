@@ -202,7 +202,9 @@ class card_signals {
             if( is_array( $signals ) ) risk_context::restore( $signals );
         }
 
-        $emitted = self::emit( $order, $data );
+        $before = array_keys( risk_context::signals() );
+
+        self::emit( $order, $data );
 
         // The card has a name now, which it did not at checkout, so this is the
         // first moment its own history can be read. A card carrying a
@@ -215,7 +217,18 @@ class card_signals {
         // Nothing new to say. Re-dispatching the same verdict would re-flag an
         // order a merchant may already have reviewed, which is what the
         // _mshield_card_read guard above exists to prevent on a redelivery.
-        if( $emitted === 0 && ! risk_context::has( 'entity_chargeback' ) ) {
+        //
+        // "New" is any signal that was not in the stored verdict -- a card
+        // check that failed, or anything the card's own history just added.
+        // This used to proceed only on a failed card check or a chargeback,
+        // so a card a reviewer had marked Fraud, or one at BAD_REPUTATION
+        // from a run of refusals, was assessed, found wanting, and thrown
+        // away: entity_denied was computed and nothing was rated, held or
+        // noted. The one identity that survives rotating everything else was
+        // read and ignored.
+        $new = array_diff( array_keys( risk_context::signals() ), $before );
+
+        if( empty( $new ) ) {
             risk_context::reset();
             return;
         }
@@ -374,7 +387,7 @@ class card_signals {
             }
 
             db::log_event(
-                $order->get_customer_ip_address(),
+                \MightyShield\Includes\ip_utils::order_ip( $order ),
                 'card_signals',
                 'flagged',
                 sprintf( 'Order #%d: %s', $order->get_id(), implode( '; ', risk_context::reasons() ) ),

@@ -47,14 +47,33 @@ class risk_context {
     private static $ai_trust = null;
 
     /**
-     * A signal that costs at least this much, outside the history group, is
-     * an anomaly rather than a nuisance -- and past one, a good history hands
-     * back at most CREDIT_CAP_UNDER_ANOMALY. See trust().
+     * A signal that costs at least this much is an anomaly rather than a
+     * nuisance -- and past one, a good history hands back at most
+     * CREDIT_CAP_UNDER_ANOMALY. See trust().
      *
      * @since   2.3.0
      */
     const ANOMALY_WEIGHT = 15.0;
     const CREDIT_CAP_UNDER_ANOMALY = 15.0;
+
+    /**
+     * Signals that never count as an anomaly for the credit cap.
+     *
+     * These are the identity marks themselves and the two "new here" notes.
+     * They describe who the customer is, not what this order did, and they
+     * co-occur with a good history legitimately -- a regular whose /24 once
+     * carried somebody else's chargeback is still a regular.
+     *
+     * The test used to exempt the whole "history" Scoring-tab group, which
+     * also held the velocity and decline signals: rate_limited, velocity_*,
+     * failed_payments, email_root_velocity. Those are precisely the
+     * card-testing signals, so a tester who typed a regular's email got the
+     * full 40 points of that regular's history set against ten declined
+     * cards -- the account-takeover shape the cap exists to catch.
+     *
+     * @since   2.3.0
+     */
+    const CAP_EXEMPT = [ 'first_order', 'account_new', 'entity_trusted', 'entity_linked_bad', 'entity_denied', 'entity_chargeback' ];
 
     /**
      * Record the AI review's rating.
@@ -211,8 +230,7 @@ class risk_context {
                 $penalty += $contribution;
                 $blamed   = true;
 
-                $group = signals::CATALOG[ $signal['key'] ]['group'] ?? '';
-                if( $contribution >= self::ANOMALY_WEIGHT && $group !== 'history' ) $anomaly = true;
+                if( $contribution >= self::ANOMALY_WEIGHT && ! \in_array( $signal['key'], self::CAP_EXEMPT, true ) ) $anomaly = true;
 
             } elseif( $contribution < 0 ) {
 
@@ -228,8 +246,9 @@ class risk_context {
         // clean history plus a sudden anomaly -- a new country, a data-centre
         // connection, a parcel going somewhere the card has never been -- and
         // an offset large enough to swallow that is an offset that rewards the
-        // takeover. So once anything of real weight has fired outside the
-        // history group, the credit is capped at what a nuisance costs.
+        // takeover. So once anything of real weight has fired -- other than
+        // the identity marks themselves, see CAP_EXEMPT -- the credit is
+        // capped at what a nuisance costs.
         if( $anomaly ) $credit = min( $credit, self::CREDIT_CAP_UNDER_ANOMALY );
 
         $trust = risk_levels::BASELINE - $penalty + $credit;

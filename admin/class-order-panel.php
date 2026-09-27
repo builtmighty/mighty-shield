@@ -526,6 +526,10 @@ class order_panel {
             return __( 'The funds are reserved on the card but not taken.', 'mighty-shield' );
         }
 
+        if( ! self::has_money( $order ) ) {
+            return __( 'No payment has been recorded for this order yet.', 'mighty-shield' );
+        }
+
         return __( 'The payment has already been captured in full.', 'mighty-shield' );
 
     }
@@ -684,12 +688,39 @@ class order_panel {
         if( ! is_a( $order, 'WC_Order' ) ) return false;
         if( ! $order->has_status( 'on-hold' ) ) return false;
 
-        // Any of the three routes that put an order on hold. A merchant's own
-        // manual on-hold is not MightyShield's to act on.
+        // Only a hold MightyShield made. A flag is not a hold: a Low-rated
+        // order that a gateway parked On hold awaiting a bank transfer used to
+        // pass this test on its flag alone, so the queue offered Approve on an
+        // order nobody had paid for, described the money as "taken in full",
+        // and Approve moved it to Processing -- which WooCommerce treats as
+        // paid -- and shipped it.
         if( response::is_detained( $order ) ) return true;
         if( (string) $order->get_meta( '_mshield_hold' ) !== '' ) return true;
 
-        return (string) $order->get_meta( '_mshield_flagged' ) !== '';
+        return (string) $order->get_meta( '_mshield_card_flagged' ) === 'yes';
+
+    }
+
+    /**
+     * Whether money has actually arrived for this order.
+     *
+     * WooCommerce's is_paid() is a status test, and an order MightyShield
+     * held after payment is On hold, so that alone would say no to exactly
+     * the orders Approve exists for. The hold meta and the paid date both
+     * record that the charge happened; an authorization is money reserved.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order   $order
+     * @return  bool
+     */
+    private static function has_money( $order ) {
+
+        if( ai_capture::is_authorized( $order ) ) return true;
+        if( (string) $order->get_meta( '_mshield_hold' ) === 'paid' ) return true;
+        if( $order->get_date_paid() ) return true;
+
+        return $order->is_paid();
 
     }
 
@@ -932,6 +963,19 @@ class order_panel {
             $order->save();
         }
 
+        // No money, no Processing. An order still waiting for a bank
+        // transfer or a cheque must not be marked paid by a fraud verdict;
+        // the verdict is recorded and the status is the gateway's to move.
+        if( ! self::has_money( $order ) ) {
+
+            \MightyShield\Protection\outcomes::set_manual( $order, 'clean' );
+
+            db::log_event( ip_utils::order_ip( $order ), 'risk_engine', 'flagged', 'Order #' . $order->get_id() . ' cleared in review while still awaiting payment' );
+
+            return [ __( 'Verdict recorded. No payment has arrived for this order yet, so its status was left alone; it will move on when the payment does.', 'mighty-shield' ), 'success' ];
+
+        }
+
         if( ! $order->has_status( [ 'processing', 'completed' ] ) ) {
             $order->update_status( 'processing', __( 'MightyShield: approved in review.', 'mighty-shield' ) );
         } else {
@@ -1024,7 +1068,7 @@ class order_panel {
                 $order->save();
 
                 db::log_event(
-                    $order->get_customer_ip_address(),
+                    ip_utils::order_ip( $order ),
                     'risk_engine',
                     'flagged',
                     'Order #' . $order->get_id() . ' block attempted, authorization release UNCONFIRMED by the processor — left on hold'
@@ -1046,7 +1090,7 @@ class order_panel {
             \MightyShield\Protection\outcomes::set_manual( $order, 'fraud' );
 
             db::log_event(
-                $order->get_customer_ip_address(),
+                ip_utils::order_ip( $order ),
                 'risk_engine',
                 'blocked',
                 'Order #' . $order->get_id() . ' blocked in review, authorization released'

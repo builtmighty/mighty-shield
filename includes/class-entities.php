@@ -609,6 +609,7 @@ class entities {
         $now = is_string( $seen_at ) && $seen_at !== '' ? $seen_at : gmdate( 'Y-m-d H:i:s' );
 
         $order_id = (int) $order_id;
+        $counted  = null;   // whether the order has already been counted as paid; read once, lazily
 
         foreach( $set as $type => $value ) {
 
@@ -635,7 +636,34 @@ class entities {
             ) );
 
             if( $order_id > 0 ) {
-                self::link( $type, $hash, $order_id, $now );
+
+                $inserted = self::link( $type, $hash, $order_id, $now );
+
+                // An identity that joins an order AFTER the order was counted
+                // still gets its paid order. Stripe delivers the card after
+                // payment_complete(), so card_fp -- the one identity that
+                // survives a fraudster rotating everything else -- was linked
+                // after count_paid() had stamped the order and never accrued a
+                // paid order on any store. The order is loaded once, and only
+                // when a new link was actually written.
+                if( $inserted ) {
+
+                    if( $counted === null ) {
+                        $o       = function_exists( 'wc_get_order' ) ? wc_get_order( $order_id ) : null;
+                        $counted = is_object( $o ) && method_exists( $o, 'get_meta' ) && (string) $o->get_meta( '_mshield_paid_counted' ) === 'yes';
+                    }
+
+                    if( $counted ) {
+                        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+                        $wpdb->query( $wpdb->prepare(
+                            "UPDATE {$wpdb->prefix}mshield_entities SET order_count = order_count + 1 WHERE entity_type = %s AND entity_hash = %s",
+                            $type,
+                            $hash
+                        ) );
+                    }
+
+                }
+
             }
 
         }
@@ -669,6 +697,21 @@ class entities {
         $order_id = (int) $order->get_id();
         if( $order_id <= 0 ) return false;
 
+        // Orders from before order_count meant paid orders were counted by the
+        // old recorder when they were created, and carry no marker. Counting
+        // them again as they move to Completed, or as a reviewer re-rates
+        // them, would double every regular's history. The upgrade records
+        // when the meaning changed; anything placed before that is treated as
+        // already counted and marked so.
+        $epoch   = (int) get_option( 'mshield_paid_count_epoch', 0 );
+        $created = method_exists( $order, 'get_date_created' ) ? $order->get_date_created() : null;
+
+        if( $epoch > 0 && $created && $created->getTimestamp() < $epoch ) {
+            $order->update_meta_data( '_mshield_paid_counted', 'yes' );
+            $order->save();
+            return false;
+        }
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned tables; the only interpolations are $wpdb table names
         $moved = (int) $wpdb->query( $wpdb->prepare(
             "UPDATE {$wpdb->prefix}mshield_entities e
@@ -701,10 +744,28 @@ class entities {
 
         if( ! is_object( $order ) || ! method_exists( $order, 'has_status' ) ) return false;
 
+        // Cash on delivery, cheque and bank transfer reach Processing without
+        // any money having moved -- WooCommerce's own is_paid() is a status
+        // test and says yes to them too. Three parcels refused at the door and
+        // never cancelled would otherwise be three paid orders, fourteen days
+        // of age and a Trusted rating. For those, only Completed counts.
+        $method = method_exists( $order, 'get_payment_method' ) ? (string) $order->get_payment_method() : '';
+
+        if( \in_array( $method, self::OFFLINE_METHODS, true ) ) {
+            return $order->has_status( [ 'completed', 'refunded' ] );
+        }
+
         return ( method_exists( $order, 'is_paid' ) && $order->is_paid() )
             || $order->has_status( [ 'processing', 'completed', 'refunded' ] );
 
     }
+
+    /**
+     * Payment methods where Processing does not mean paid.
+     *
+     * @since   2.3.0
+     */
+    const OFFLINE_METHODS = [ 'cod', 'cheque', 'bacs' ];
 
     /**
      * Whether this identity is already linked to this order.
@@ -742,6 +803,7 @@ class entities {
      * @param   string  $hash
      * @param   int     $order_id
      * @param   string  $now
+     * @return  bool    Whether a NEW link was written.
      */
     private static function link( $type, $hash, $order_id, $now ) {
 
@@ -754,7 +816,7 @@ class entities {
             $hash
         ) );
 
-        if( $entity_id <= 0 ) return;
+        if( $entity_id <= 0 ) return false;
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->query( $wpdb->prepare(
@@ -764,6 +826,8 @@ class entities {
             $order_id,
             $now
         ) );
+
+        return (int) $wpdb->rows_affected > 0;
 
     }
 
@@ -852,14 +916,14 @@ class entities {
      * @param   array   $set    type => normalized value, from for_checkout().
      * @return  int     Identities recorded.
      */
-    public static function record_refusal( $set ) {
+    public static function record_refusal( $set, $weight = null ) {
 
         global $wpdb;
 
         if( empty( $set ) ) return 0;
 
         $now     = gmdate( 'Y-m-d H:i:s' );
-        $delta   = (float) self::OUTCOME_WEIGHTS['refused'];
+        $delta   = $weight === null ? (float) self::OUTCOME_WEIGHTS['refused'] : -abs( (float) $weight );
         $touched = 0;
 
         foreach( $set as $type => $value ) {
@@ -1022,7 +1086,10 @@ class entities {
 
         if( false === get_option( 'mshield_rehash_addresses', false ) ) return;
 
-        if( ! $force && ! is_admin() && ! wp_doing_cron() && ! ( defined( 'WP_CLI' ) && WP_CLI ) ) return;
+        // is_admin() is true for admin-ajax.php too, which themes call from a
+        // shopper's browser for cart fragments and the like -- so the AJAX
+        // test is what actually keeps this off a shopper's request.
+        if( ! $force && ( ! is_admin() || wp_doing_ajax() ) && ! wp_doing_cron() && ! ( defined( 'WP_CLI' ) && WP_CLI ) ) return;
 
         if( ! function_exists( 'wc_get_order' ) ) return;
 
@@ -1111,29 +1178,60 @@ class entities {
 
         // Nobody else has the new hash: rename in place, nothing else moves.
         if( ! $target ) {
+
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
-            $wpdb->update( $ents, [ 'entity_hash' => $hash ], [ 'id' => $id ], [ '%s' ], [ '%d' ] );
-            return;
+            $renamed = $wpdb->update( $ents, [ 'entity_hash' => $hash ], [ 'id' => $id ], [ '%s' ], [ '%d' ] );
+
+            if( $renamed !== false ) return;
+
+            // A checkout recorded the same address under the new hash between
+            // the SELECT and the UPDATE, so the rename hit the unique index.
+            // Ignoring that stranded the old row -- and its chargebacks --
+            // under a hash nothing would ever look up again. Read the newcomer
+            // and merge into it instead.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table; the value is bound
+            $target = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM {$ents} WHERE entity_type = 'address' AND entity_hash = %s",
+                $hash
+            ) );
+
+            if( ! $target ) return;
+
         }
 
         if( $target === $id ) return;
 
+        // An order linked to both spellings -- rated once under each -- must
+        // not be counted twice when the two rows become one.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table; every value is bound
+        $shared = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$links} a INNER JOIN {$links} b ON b.order_id = a.order_id
+             WHERE a.entity_id = %d AND b.entity_id = %d AND a.order_id > 0",
+            $id,
+            $target
+        ) );
+
         // Two spellings of one address. The survivor takes on everything the
-        // other one knew, then its links, then the other row goes.
+        // other one knew, then its links, then the other row goes. Reputation
+        // is clamped like every other write to it: two rows each at the floor
+        // must not sum to twice the floor.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table; every value is bound
         $wpdb->query( $wpdb->prepare(
             "UPDATE {$ents} t INNER JOIN {$ents} s ON s.id = %d
-             SET t.order_count      = t.order_count      + s.order_count,
+             SET t.order_count      = GREATEST( 0, t.order_count + s.order_count - %d ),
                  t.approved_count   = t.approved_count   + s.approved_count,
                  t.denied_count     = t.denied_count     + s.denied_count,
                  t.refund_count     = t.refund_count     + s.refund_count,
                  t.chargeback_count = t.chargeback_count + s.chargeback_count,
                  t.refused_count    = t.refused_count    + s.refused_count,
-                 t.reputation       = t.reputation       + s.reputation,
+                 t.reputation       = GREATEST( %f, LEAST( %f, t.reputation + s.reputation ) ),
                  t.first_seen       = LEAST( t.first_seen, s.first_seen ),
                  t.last_seen        = GREATEST( t.last_seen, s.last_seen )
              WHERE t.id = %d",
             $id,
+            $shared,
+            self::REPUTATION_FLOOR,
+            self::REPUTATION_CEILING,
             $target
         ) );
 
@@ -1216,10 +1314,17 @@ class entities {
         // returning first would make the one case this describes the one case
         // it could not see.
         //
-        // "Has bought" means a completed order, not merely a row. A row is
-        // also created by record_refusal(), so an attacker refused twelve
-        // times has twelve rows and still has never bought anything -- which
-        // is exactly the shape this should catch, not exempt.
+        // "Has bought" means a paid order, not merely a row. A row is also
+        // created by record_refusal(), so an attacker refused twelve times
+        // has twelve rows and still has never bought anything -- which is
+        // exactly the shape this should catch, not exempt.
+        //
+        // An order that was judged counts as having been here, paid or not.
+        // Since order_count became paid orders, an identity whose only order
+        // was held before payment and then denied in review had a count of
+        // zero, so entity_denied (70) and first_order (5) both fired and the
+        // sum sat exactly on the Rejected line -- refused outright where the
+        // catalogue says a prior denial is held and looked at.
         //
         // Silent when $set is empty: that is an order with no extractable
         // identity, which is a data problem rather than a new customer.
@@ -1228,7 +1333,14 @@ class entities {
             $bought = false;
 
             foreach( $rows as $row ) {
-                if( (int) $row['order_count'] > 0 ) { $bought = true; break; }
+                if( (int) $row['order_count'] > 0
+                    || (int) $row['approved_count'] > 0
+                    || (int) $row['denied_count'] > 0
+                    || (int) $row['chargeback_count'] > 0
+                    || (int) $row['refund_count'] > 0 ) {
+                    $bought = true;
+                    break;
+                }
             }
 
             if( ! $bought ) {

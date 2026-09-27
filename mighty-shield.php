@@ -351,6 +351,10 @@ function maybe_upgrade() {
         if( $high === false || (string) $high === '500.00' || (string) $high === '500' ) {
             update_option( 'mshield_ai_high_value_amount', '0' );
         }
+
+        // The block-checkout answer is recomputed on the next request rather
+        // than trusted across an upgrade, as its docblock always promised.
+        delete_option( 'mshield_block_checkout' );
     }
 
     // 2.1.1: relax the shared-IP thresholds, but only where the store is still
@@ -518,6 +522,12 @@ function load() {
     require_once MSHIELD_PATH . 'includes/class-response.php';
     require_once MSHIELD_PATH . 'includes/class-ai-detection.php';
     require_once MSHIELD_PATH . 'includes/class-entities.php';
+    // outcomes lives under protection/ but is needed on every request:
+    // on_paid(), credit_settled_orders() and hold_after_payment's neighbours
+    // are hooked below unconditionally, and with protection set to Disabled
+    // the file was only loaded for the admin -- so every payment confirmation
+    // on a Disabled store fatalled inside WP_Hook on an unknown class.
+    require_once MSHIELD_PATH . 'protection/class-outcomes.php';
     require_once MSHIELD_PATH . 'includes/class-api-error.php';
     require_once MSHIELD_PATH . 'includes/class-ai-client.php';
     require_once MSHIELD_PATH . 'includes/class-ai-capture.php';
@@ -610,6 +620,13 @@ function load() {
 
     // The dispute CSV a merchant uploaded and then walked away from.
     add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\dispute_import', 'sweep_temp' ] );
+
+    // The cached "is the checkout the block one" answer, recomputed when the
+    // merchant points WooCommerce at a different checkout page. Saving the
+    // page already refreshes it; reassigning the page never fired that hook.
+    add_action( 'update_option_woocommerce_checkout_page_id', function() {
+        \MightyShield\Admin\admin_page::uses_block_checkout( true );
+    } );
 
     // An order a reviewer released for payment waits in Pending until the
     // customer pays; WooCommerce would cancel it after the stock-hold window.

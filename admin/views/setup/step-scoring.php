@@ -2,8 +2,8 @@
 /**
  * Setup step: how strict the scoring should be.
  *
- * One choice that sets around forty individual trust costs, so a merchant who
- * does not want to make forty judgement calls does not have to make any.
+ * One choice that sets more than fifty individual trust costs, so a merchant
+ * who does not want to make fifty judgement calls does not have to make any.
  *
  * @package MightyShield
  * @since   2.0.2

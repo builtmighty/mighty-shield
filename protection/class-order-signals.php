@@ -246,6 +246,11 @@ class order_signals {
      */
     public static function emit( $fields ) {
 
+        // Two passes: answer every check, then emit. The second pass is what
+        // lets one check's confidence depend on another's answer regardless
+        // of the order they run in.
+        $found = [];
+
         foreach( self::CHECKS as $key => $method ) {
 
             // Already answered, at validation or by an earlier pass.
@@ -254,10 +259,28 @@ class order_signals {
             $reason = self::$method( $fields );
             if( $reason === null ) continue;
 
+            $found[ $key ] = $reason;
+
+        }
+
+        foreach( $found as $key => $reason ) {
+
+            $confidence = 1.0;
+
+            // Billing and delivery disagreeing, and the delivery address
+            // taking other people's orders, are one fact about one parcel.
+            // Charged in full together they pushed a first gift to a dorm
+            // past the Rejected line; at half, the ambiguous order is held
+            // and looked at. See the catalogue comment on address_velocity.
+            if( $key === 'address_bill_ship_mismatch'
+                && ( isset( $found['address_velocity'] ) || risk_context::has( 'address_velocity' ) ) ) {
+                $confidence = 0.5;
+            }
+
             // add() checks the per-signal toggle itself, so there is no second
             // on/off switch here. The old code had two, and only one of them
             // was reachable.
-            risk_context::add( $key, $reason );
+            risk_context::add( $key, $reason, $confidence );
 
         }
 

@@ -203,23 +203,43 @@ class checkout_timing {
      */
     public static function verify_token( $token ) {
 
-        if( $token === '' || strpos( $token, '|' ) === false ) return null;
+        // One answer per token per request. Both checkouts may ask more than
+        // once in the same submission, and the second ask must not be read
+        // as a replay.
+        static $seen = [];
+        if( array_key_exists( $token, $seen ) ) return $seen[ $token ];
+
+        if( $token === '' || strpos( $token, '|' ) === false ) return $seen[ $token ] = null;
 
         list( $ts, $sig ) = explode( '|', $token, 2 );
 
-        if( ! ctype_digit( $ts ) ) return null;
+        if( ! ctype_digit( $ts ) ) return $seen[ $token ] = null;
 
         // Bound to this session: see session_key(). A token from another
         // session -- or from no session -- does not verify.
         $expected = hash_hmac( 'sha256', $ts . '|' . self::session_key(), wp_salt( 'auth' ) );
-        if( ! hash_equals( $expected, $sig ) ) return null;
+        if( ! hash_equals( $expected, $sig ) ) return $seen[ $token ] = null;
 
         $elapsed = time() - (int) $ts;
 
         // Guard against clock skew (negative) or stale/replayed tokens (>2h).
-        if( $elapsed < 0 || $elapsed > 7200 ) return null;
+        if( $elapsed < 0 || $elapsed > 7200 ) return $seen[ $token ] = null;
 
-        return $elapsed;
+        // Used once per session. Binding the token to the session stopped a
+        // stranger replaying it; it did not stop the session's own script
+        // paying the minimum wait once and then submitting every 300 ms on
+        // the same token. A token is spent the first time it verifies, and
+        // the next submission needs a page load, and the wait, of its own.
+        if( function_exists( 'WC' ) && WC()->session && method_exists( WC()->session, 'get' ) ) {
+
+            $spent = (int) WC()->session->get( 'mshield_ct_spent' );
+            if( (int) $ts <= $spent ) return $seen[ $token ] = null;
+
+            WC()->session->set( 'mshield_ct_spent', (int) $ts );
+
+        }
+
+        return $seen[ $token ] = $elapsed;
 
     }
 

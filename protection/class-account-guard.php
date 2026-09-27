@@ -63,8 +63,16 @@ class account_guard {
         // and delivery address and check out minutes later at no cost.
         add_action( 'profile_update', [ $this, 'on_profile_update' ], 10, 3 );
         add_action( 'after_password_reset', [ $this, 'on_password_reset' ], 10, 1 );
-        add_action( 'woocommerce_customer_save_address', [ $this, 'on_account_changed' ], 10, 1 );
-        add_action( 'woocommerce_save_account_details', [ $this, 'on_account_changed' ], 10, 1 );
+
+        // A saved address counts only when it changed. WooCommerce fires the
+        // save hook after every successful submit of the address form,
+        // including one that changed nothing, and it fires after the write,
+        // so the old values are read first: template_redirect at 5 runs
+        // before WC_Form_Handler::save_address() on the same hook. The
+        // account-details form is covered by profile_update above, which
+        // compares the email and the password itself.
+        add_action( 'template_redirect', [ $this, 'snapshot_addresses' ], 5 );
+        add_action( 'woocommerce_customer_save_address', [ $this, 'on_address_saved' ], 10, 2 );
 
         // Coupons.
         add_filter( 'woocommerce_coupon_is_valid', [ $this, 'on_coupon_checked' ], 999, 2 );
@@ -205,6 +213,76 @@ class account_guard {
         if( $user_id <= 0 ) return;
 
         update_user_meta( $user_id, '_mshield_account_changed', time() );
+
+    }
+
+    /**
+     * The customer's stored addresses, read before the address form saves.
+     *
+     * @since   2.3.0
+     */
+    private static $addresses_before = null;
+
+    /**
+     * Remember the addresses on file before WooCommerce overwrites them.
+     *
+     * @since   2.3.0
+     */
+    public function snapshot_addresses() {
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- reading which form this is; WooCommerce verifies its own nonce before saving
+        if( ! is_user_logged_in() || ! isset( $_POST['action'] ) || $_POST['action'] !== 'edit_address' ) return;
+        if( ! class_exists( 'WC_Customer' ) ) return;
+
+        try {
+            $customer = new \WC_Customer( get_current_user_id() );
+            self::$addresses_before = [
+                'billing'  => (array) $customer->get_billing(),
+                'shipping' => (array) $customer->get_shipping(),
+            ];
+        } catch( \Exception $e ) {
+            self::$addresses_before = null;
+        }
+
+    }
+
+    /**
+     * An address form was saved: stamp the account only if the address moved.
+     *
+     * @since   2.3.0
+     *
+     * @param   int     $user_id
+     * @param   string  $type       billing | shipping
+     */
+    public function on_address_saved( $user_id, $type = '' ) {
+
+        $type = $type === 'shipping' ? 'shipping' : 'billing';
+
+        // No snapshot -- an older WooCommerce path, or a save from somewhere
+        // other than the form -- errs on the side of noticing.
+        if( self::$addresses_before === null || ! class_exists( 'WC_Customer' ) ) {
+            $this->on_account_changed( $user_id );
+            return;
+        }
+
+        try {
+            $customer = new \WC_Customer( (int) $user_id );
+            $after    = $type === 'shipping' ? (array) $customer->get_shipping() : (array) $customer->get_billing();
+        } catch( \Exception $e ) {
+            $this->on_account_changed( $user_id );
+            return;
+        }
+
+        $before = self::$addresses_before[ $type ] ?? [];
+
+        // Only the fields that describe where a parcel goes; a phone or an
+        // email edit on the same form is the other hooks' business.
+        foreach( [ 'address_1', 'address_2', 'city', 'state', 'postcode', 'country', 'first_name', 'last_name' ] as $field ) {
+            if( trim( (string) ( $before[ $field ] ?? '' ) ) !== trim( (string) ( $after[ $field ] ?? '' ) ) ) {
+                $this->on_account_changed( $user_id );
+                return;
+            }
+        }
 
     }
 

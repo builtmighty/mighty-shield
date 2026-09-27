@@ -17,7 +17,9 @@ $provider    = settings::get( 'mshield_ai_provider' );
 // there is no flash of the wrong fields before the inline script runs.
 $hide        = ' style="display:none;"';
 $hide_p      = function( $key ) use ( $provider, $hide ) { return $provider === $key ? '' : $hide; };
-$hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide;
+// The recipients row is never hidden: the low-rating alert on the Shielding
+// tab mails the same list whatever this checkbox says.
+$hide_notify = '';
 
 // Authorize needs a gateway that can reserve funds without capturing. Gated
 // here and again in the sanitize callback, so a stale POST or a gateway being
@@ -228,8 +230,9 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
                     <label>
                         <input type="hidden" name="mshield_ai_notify_admin" value="no" />
                         <input type="checkbox" name="mshield_ai_notify_admin" value="yes" <?php checked( settings::get( 'mshield_ai_notify_admin' ), 'yes' ); ?> />
-                        <?php esc_html_e( 'Email me when a review comes back badly rated.', 'mighty-shield' ); ?>
+                        <?php esc_html_e( 'Email me when MightyShield needs attention.', 'mighty-shield' ); ?>
                     </label>
+                    <p class="description"><?php esc_html_e( 'One switch for every alert: an AI review that rated an order badly, an address-verification or AI service that has stopped responding, a bot challenge that has started refusing everybody, or a wave of failed payments that looks like card testing. Emails about low-rated orders are a separate switch on the Shielding tab.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
             <tr class="mshield-ai-notify-only"<?php echo $hide_notify; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- '' or the literal style attribute defined at the top of this file ?>>
@@ -262,12 +265,9 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
     }
 
 
-    function syncNotify() {
-        var box = document.querySelector( 'input[type="checkbox"][name="mshield_ai_notify_admin"]' );
-        document.querySelectorAll( '.mshield-ai-notify-only' ).forEach( function( el ) {
-            show( el, !! ( box && box.checked ) );
-        } );
-    }
+    // The recipients row stays visible whatever the checkbox says; the
+    // low-rating alert uses the same list.
+    function syncNotify() {}
 
     document.querySelectorAll( 'input[name="mshield_ai_provider"]' ).forEach( function( input ) {
         input.addEventListener( 'change', syncProvider );

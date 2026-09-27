@@ -41,6 +41,14 @@ class failed_payment_tracker {
         // Track failed payment orders.
         add_action( 'woocommerce_order_status_failed', [ $this, 'track_failure' ], 10, 2 );
 
+        // The classic checkout resumes a failed order for the next attempt
+        // without touching its status, so the gateway's next "failed" is not
+        // a transition and fires nothing: a card tester working one cart
+        // through fifty cards counted once. Put the resumed order back to
+        // Pending, as the Store API does before every attempt, so each
+        // decline is a real transition.
+        add_action( 'woocommerce_resume_order', [ $this, 'on_resume' ] );
+
         // And charge the NEXT checkout for them. track_failure() runs after the
         // order exists and after its verdict was written, so a signal emitted
         // there went into a context nothing evaluated again -- failed_payments
@@ -75,7 +83,7 @@ class failed_payment_tracker {
         $ip   = ip_utils::get_client_ip();
         $keys = [];
 
-        if( $ip !== '' )    $keys['this address'] = md5( $ip . '|declines' );
+        if( $ip !== '' )    $keys['this address'] = md5( ip_utils::rate_key( $ip ) . '|declines' );
         if( $email !== '' ) $keys['this mailbox'] = md5( \MightyShield\Includes\entities::normalize( 'email_root', $email ) . '|declines' );
 
         foreach( $keys as $what => $key ) {
@@ -93,8 +101,43 @@ class failed_payment_tracker {
         // per-mailbox count under its limit by construction; what it cannot
         // hide is the store's own decline rate. While that is running hot,
         // every unknown customer costs a little more.
-        if( get_transient( 'mshield_store_under_attack' ) ) {
+        if( self::under_attack() ) {
             risk_context::add( 'store_under_attack', 'Payment failures across the whole store are running far above normal' );
+        }
+
+    }
+
+    /**
+     * Whether the store-wide breaker is armed.
+     *
+     * Kept in the rate-limit table like the counters, and for the same
+     * reason: a transient can be evicted by an object cache mid-wave, which
+     * disarmed the breaker and then re-armed it -- and re-sent the "once an
+     * hour" email -- on the next decline.
+     *
+     * @since   2.3.0
+     *
+     * @return  bool
+     */
+    public static function under_attack() {
+
+        return db::check_rate_limit( md5( 'store|attack' ), 'attack' ) > 0;
+
+    }
+
+    /**
+     * A failed order is being paid for again on the classic checkout.
+     *
+     * @since   2.3.0
+     *
+     * @param   int     $order_id
+     */
+    public function on_resume( $order_id ) {
+
+        $order = wc_get_order( $order_id );
+
+        if( $order && $order->has_status( 'failed' ) ) {
+            $order->update_status( 'pending', __( 'MightyShield: payment being retried.', 'mighty-shield' ) );
         }
 
     }
@@ -114,13 +157,20 @@ class failed_payment_tracker {
         // X-Real-IP to a fresh value per attempt was spreading their declines
         // across addresses nobody had, and the threshold was never reached.
         $ip = is_object( $order ) && method_exists( $order, 'get_meta' ) ? (string) $order->get_meta( '_mshield_ip' ) : '';
-        if( $ip === '' ) $ip = ip_utils::get_client_ip();
+
+        // Only a shopper's own attempt. An order the checkout never stamped
+        // -- a subscription renewal charged off-session, an order failed by
+        // hand, a cron job's retry -- is not a decline at the checkout, and
+        // counting it charged the store's own loopback address, fed the
+        // mailbox counter, and on a renewal night armed the store-wide
+        // breaker and emailed the merchant about an attack that was not one.
+        if( $ip === '' ) return;
 
         // Counted in the rate-limit table, not a transient: an object cache
         // can evict a transient at any moment, which would silently disable
         // exactly the counting this relies on. Three counters -- the address,
         // the mailbox, and the store as a whole.
-        $count = (int) db::increment_rate_limit( md5( $ip . '|declines' ), 'declines', HOUR_IN_SECONDS );
+        $count = (int) db::increment_rate_limit( md5( ip_utils::rate_key( $ip ) . '|declines' ), 'declines', HOUR_IN_SECONDS );
 
         $email = is_object( $order ) && method_exists( $order, 'get_billing_email' ) ? (string) $order->get_billing_email() : '';
         if( $email !== '' ) {
@@ -144,9 +194,10 @@ class failed_payment_tracker {
         // customer mistyping a card number; it is a script, and one that has
         // spread itself thin enough that nothing above noticed. Arm the
         // store_under_attack signal for an hour and tell the merchant once.
-        if( $store >= self::ATTACK_THRESHOLD && ! get_transient( 'mshield_store_under_attack' ) ) {
+        if( $store >= self::ATTACK_THRESHOLD && ! self::under_attack() ) {
 
-            set_transient( 'mshield_store_under_attack', time(), HOUR_IN_SECONDS );
+            // Armed for an hour, in the rate-limit table. See under_attack().
+            db::increment_rate_limit( md5( 'store|attack' ), 'attack', HOUR_IN_SECONDS );
 
             db::log_event( $ip, 'system', 'blocked', sprintf( 'Store-wide decline rate: %d failed payments in %d minutes', $store, (int) ( self::ATTACK_WINDOW / 60 ) ) );
 

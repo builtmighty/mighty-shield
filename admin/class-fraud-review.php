@@ -216,6 +216,17 @@ class fraud_review {
             self::decided( '_mshield_ai_decision' )
         );
 
+        // A verdict is not a disposition. An order MightyShield is still
+        // holding -- On hold with the money taken or reserved -- stays in
+        // the queue until Approve or Block moves it, whatever the reviewer
+        // clicked under "Your verdict". A Fraud verdict alone used to drop
+        // a held, paid order out of the queue and the badge with the money
+        // kept and nothing listing it any more.
+        $decided = array_values( array_filter( $decided, function( $id ) {
+            $order = wc_get_order( $id );
+            return ! ( $order && order_panel::needs_decision( $order ) );
+        } ) );
+
         $ids = array_values( array_diff( array_unique( $held ), $decided ) );
 
         rsort( $ids, SORT_NUMERIC );

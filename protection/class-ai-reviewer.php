@@ -385,7 +385,11 @@ class ai_reviewer {
             ],
             'email'      => (string) $order->get_billing_email(),
             'phone'      => (string) $order->get_billing_phone(),
-            'ip'         => (string) $order->get_customer_ip_address(),
+            // The address ip_utils resolved, stamped on the draft by
+            // store_api::prepare(); WooCommerce's copy is the header the
+            // shopper sent, and the model was being told the order came from
+            // wherever the attacker said.
+            'ip'         => ip_utils::order_ip( $order ),
             'user_id'    => (int) $order->get_user_id(),
             'total'      => (float) $order->get_total(),
             'currency'   => (string) $order->get_currency(),
@@ -809,7 +813,7 @@ class ai_reviewer {
             empty( $reasons ) ? __( 'no specific reasons given', 'mighty-shield' ) : implode( '; ', $reasons ),
             $order->get_formatted_billing_full_name(),
             $order->get_billing_email(),
-            $order->get_customer_ip_address(),
+            ip_utils::order_ip( $order ),
             $order->get_payment_method_title(),
             $order->get_edit_order_url()
         );

@@ -332,7 +332,7 @@ class store_api {
             // here; the signal is worth 80 and the engine does the rest.
             $limit  = (int) settings::get( 'mshield_rate_checkout_limit' );
             $window = (int) settings::get( 'mshield_rate_checkout_window' );
-            $count  = db::increment_rate_limit( md5( $ip . '|checkout' ), 'checkout', $window );
+            $count  = db::increment_rate_limit( md5( ip_utils::rate_key( $ip ) . '|checkout' ), 'checkout', $window );
 
             if( $count > $limit ) {
                 risk_context::add( 'rate_limited', "Checkout rate limit exceeded: {$count}/{$limit}" );

@@ -121,6 +121,22 @@ class adapter_stripe implements gateway_adapter {
      * @param   object          $notification
      * @param   \WC_Order|null  $order
      */
+    /**
+     * Decline codes and outcome reasons that mean the card itself is bad.
+     *
+     * @since   2.3.0
+     */
+    const FRAUD_DECLINES = [ 'stolen_card', 'lost_card', 'fraudulent', 'pickup_card', 'restricted_card', 'security_violation', 'highest_risk_level', 'elevated_risk_level', 'rule' ];
+
+    /**
+     * What an ordinary decline costs the card's reputation.
+     *
+     * A third of a refusal: nine of them, not three, to reach BAD_REPUTATION.
+     *
+     * @since   2.3.0
+     */
+    const PLAIN_DECLINE_WEIGHT = 3.0;
+
     public static function on_webhook( $type, $notification, $order ) {
 
         if( empty( $notification->data->object ) ) return;
@@ -131,15 +147,42 @@ class adapter_stripe implements gateway_adapter {
         // card's own identity takes the refusal, so the next order that pays
         // with it -- from a fresh email, a fresh address, a fresh IP -- meets
         // the history the earlier attempts wrote.
+        //
+        // Weighed by what the issuer said. A card reported stolen or lost, or
+        // a charge Stripe's own risk engine blocked, is the full refusal. An
+        // ordinary decline -- wrong CVC, insufficient funds, expired card --
+        // is what an honest customer's card does three times in a bad month,
+        // and at the full weight three of them made a real card known-bad
+        // and held the order that finally succeeded. Those cost a third.
+        // Each charge counts once, whatever Stripe redelivers, and a
+        // subscription renewal retried off-session is not a checkout at all.
         if( $type === 'charge.failed' ) {
 
             $fp = (string) ( $charge->payment_method_details->card->fingerprint ?? '' );
+            if( $fp === '' || ! class_exists( '\MightyShield\Includes\entities' ) ) return;
 
-            if( $fp !== '' && class_exists( '\MightyShield\Includes\entities' ) ) {
-                \MightyShield\Includes\entities::record_refusal( [
-                    'card_fp' => \MightyShield\Includes\entities::normalize( 'card_fp', $fp ),
-                ] );
+            $charge_id = (string) ( $charge->id ?? '' );
+            if( $charge_id !== '' ) {
+                $seen_key = 'mshield_chg_' . md5( $charge_id );
+                if( get_transient( $seen_key ) ) return;
+                set_transient( $seen_key, 1, WEEK_IN_SECONDS );
             }
+
+            $renewal = $order instanceof \WC_Order ? $order : self::order_for( $charge );
+            if( $renewal instanceof \WC_Order && function_exists( 'wcs_order_contains_renewal' ) && wcs_order_contains_renewal( $renewal ) ) return;
+
+            $code   = (string) ( $charge->failure_code ?? '' );
+            $reason = (string) ( $charge->outcome->reason ?? '' );
+            $kind   = (string) ( $charge->outcome->type ?? '' );
+
+            $fraudulent = \in_array( $code, self::FRAUD_DECLINES, true )
+                       || \in_array( $reason, self::FRAUD_DECLINES, true )
+                       || $kind === 'blocked';
+
+            \MightyShield\Includes\entities::record_refusal(
+                [ 'card_fp' => \MightyShield\Includes\entities::normalize( 'card_fp', $fp ) ],
+                $fraudulent ? null : self::PLAIN_DECLINE_WEIGHT
+            );
 
             return;
 

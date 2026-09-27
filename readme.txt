@@ -93,7 +93,7 @@ Your site is behind a reverse proxy or a load balancer on the same machine, so e
 
 Yes, and identically. Every check runs on both checkouts, including the ones that need something from the browser — the checkout timer, the device check, the hidden trap field and the bot challenge — so the same order is judged the same way whichever checkout your store uses.
 
-MightyShield detects which checkout you use and sets the Store API Firewall accordingly. The one combination that breaks a shop is the block checkout with the firewall in Allowlist mode, because that checkout is built on the very endpoints Allowlist mode closes. MightyShield warns you at the top of the Shielding tab and on your WordPress dashboard if it ever sees that pairing.
+MightyShield detects which checkout you use. The Store API Firewall's Allowlist mode, which closes the cart and checkout endpoints to everyone not on your allowlist, steps aside on a store whose checkout is the block one, because that checkout is built on those endpoints; the rating protects them instead, and the mode still governs every other Store API route. There is no setting that closes your checkout.
 
 = In what order does everything happen? =
 
@@ -127,7 +127,7 @@ Yes. Everything it shows a merchant or a shopper is translatable, the admin scre
 2. The setup wizard opens on activation. It takes about two minutes and covers scoring strictness, the bot challenge, alerts, and whether to enforce.
 3. Leave it in **Observe** mode to begin with. MightyShield rates every order and records what it would have done, without turning anyone away.
 4. After a week of your own traffic, open **WooCommerce > MightyShield > Scoring**. Any check firing on most of your orders is describing your customers rather than your fraudsters — turn it down.
-5. When the ratings look right, switch to **Enforce** on the Dashboard.
+5. When the ratings look right, set the protection control on the Dashboard to **Active**.
 
 Optional, and worth doing:
 
@@ -166,7 +166,8 @@ MightyShield stores the following on your own server, and sends none of it anywh
 
 * **Identities are stored hashed, never in the clear.** Email addresses, phone numbers, delivery addresses, device signatures, network blocks and card fingerprints are salted and hashed with a key unique to your site, so MightyShield can recognise a returning customer without holding their details. The salt is deleted when the plugin is uninstalled, which makes the hashes permanently unreadable.
 * **Logs** hold IP addresses, user agents and billing email addresses for blocked and flagged events. Kept 30 days by default; configurable on the Logs tab.
-* **Order ratings** hold the score, the level, and which checks fired. Kept as long as the order exists.
+* **IP lookups** cache the country and network of each checkout's IP address, keyed by the address, so the network checks do not repeat a lookup. Kept 90 days after the address was last seen.
+* **Order ratings** hold the score, the level, which checks fired, and the address the order was placed from. Kept as long as the order exists. When you remove personal data from an order in WooCommerce, MightyShield anonymises its copy of the address and the AI's reasons and the order's log entries along with it.
 * **Uninstalling removes all of it** — every table, every setting, and the hashing salt. Order notes and the fraud metadata attached to an order are deliberately left alone, because they are part of your own record of what happened.
 
 MightyShield answers WordPress's personal data export and erase requests from **Tools > Export Personal Data** and **Tools > Erase Personal Data**. The export includes what MightyShield holds about the person: their log entries and a summary of their hashed identities. The erase request removes their log entries and reports the hashed identities as retained, with the reason: they contain no readable data, and they are what stops somebody refused for fraud from coming straight back under a new name.
@@ -222,6 +223,24 @@ Fixes three network checks that had never worked and removes a blocking request 
 * Fixed: street names in non-Latin scripts were reduced to their house number, so unrelated neighbours shared one address identity.
 * Fixed: on a host with a persistent object cache, uninstalling and reinstalling could leave the plugin running without its tables.
 * Fixed: rating your past orders made every old order at an address look like last month's for thirty days.
+* Fixed: with protection set to Disabled, every payment confirmation and the nightly maintenance job failed outright.
+* Fixed: a good history could offset the card-testing signals — repeated declines, order and email velocity, the rate limit — in full. A regular's history now counts for at most a little against those, as it already did against every other real signal.
+* Fixed: a card a reviewer had marked as fraud, or one declined repeatedly, was ignored when it came back on a fresh email and address. Its history is now read and acted on.
+* Fixed: a hold after payment triggered by the card check arrived after the payment had already gone through and never actually held the order.
+* Fixed: on the classic checkout, a card tester working one cart through many cards counted as one decline. Each attempt now counts.
+* Fixed: a chargeback could be erased by a reviewer confirming the same order as fraud; the stale Clean verdict that led them there is now cleared when a chargeback arrives.
+* Fixed: an order a bank-transfer or cheque customer had not yet paid for was offered Approve in the review queue, and Approve marked it paid.
+* Fixed: the card fingerprint never accrued a paid order, so a returning card could never vouch for anyone.
+* Changed: an ordinary decline costs a card a third of what a fraud-shaped one does, each decline counts once however often the processor repeats it, and subscription renewals do not count at all.
+* Changed: the store-wide card-testing signal is a small nudge, as its description always said, rather than a level change on its own; and declines on orders the checkout never saw, such as renewals, no longer feed it.
+* Changed: the per-address decline, rate-limit and temporary-block counters treat an IPv6 /64 as one address.
+* Changed: rating an order rejected outright when both its delivery address was busy and it differed from the billing address. Those two facts about one parcel are now charged once, so a first gift to a dorm or office is held and looked at rather than refused.
+* Fixed: WooCommerce's own "Remove personal data" left MightyShield's copy of the address, the AI's reasons and the order's log entries in place.
+* Fixed: the setup walkthrough, when opened again, landed on its last page and restarted the back-catalogue rating from scratch.
+* Fixed: risk-level thresholds typed out of order made a level unreachable; they are now kept in order on save.
+* Fixed: the checkout timer's token could be reused within a session; it is spent on first use.
+* Fixed: the "Email me" switch on the AI tab now says what it governs, and the recipient list is no longer hidden while other alerts still use it.
+* Fixed: several copy corrections — the check count, the Banned row, the failed-payments description, the block-checkout firewall note, and the privacy-policy text, which said details were sent to MaxMind. They never are.
 
 = 2.2.0 =
 * Changed: everything now happens in one order, and it is the order you would expect. An order is scored, then reviewed by AI if you use it, then acted on, then created. Before this, half the scoring ran after the order already existed, which is after the last moment anything can be refused — so the decision to turn a checkout away was made on half the evidence, and the other half could only change what happened to an order that had already gone through.

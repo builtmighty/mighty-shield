@@ -219,6 +219,12 @@ class db {
         // number; the same re-hash covers it.
         if( $installed > 0 && $installed < 11 ) {
             update_option( 'mshield_rehash_addresses', 0, false );
+
+            // order_count changed meaning at schema 11, from orders created
+            // to orders paid. Everything placed before this moment was counted
+            // the old way; entities::count_paid() treats those as already
+            // counted so they are not counted twice as they complete.
+            add_option( 'mshield_paid_count_epoch', time(), '', 'no' );
         }
 
         update_option( 'mshield_db_version', self::SCHEMA_VERSION, true );
@@ -1649,9 +1655,13 @@ class db {
      *
      * What survives is the point:
      *
-     *   anything adverse   a denial, a chargeback, a refund or a refusal is the
-     *                      whole reason the table exists, and is kept
-     *                      regardless of age
+     *   anything adverse   a denial, a chargeback or a refund is the whole
+     *                      reason the table exists, and is kept regardless of
+     *                      age. A refusal on its own is not: it is the
+     *                      plugin's own arithmetic, written to every identity
+     *                      on the attempt including a carrier /24 shared by
+     *                      thousands, and record_refusal() promises those
+     *                      rows go after the retention window
      *   anything recent    seen inside the retention window
      *   anything linked    still attached to an order that still exists
      *
@@ -1743,7 +1753,6 @@ class db {
                     AND e.denied_count = 0
                     AND e.chargeback_count = 0
                     AND e.refund_count = 0
-                    AND e.refused_count = 0
                   LIMIT 5000",
                 $now,
                 $days

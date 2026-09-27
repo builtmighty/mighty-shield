@@ -11,7 +11,7 @@
  *                deleted on request.
  *
  *   The identity Salted hashes and counters -- how many orders this email has
- *   graph        placed, how many were refunded, how many became chargebacks.
+ *   graph        paid for, how many were refunded, how many became chargebacks.
  *                No value is stored in the clear anywhere. This is the store's
  *                fraud history, and it is RETAINED on an erasure request.
  *
@@ -62,8 +62,8 @@ class privacy {
      *
      * The other five -- phone, address, device, ip_block, card_fp -- are
      * hashes of values WordPress does not hand us, and a hash cannot be
-     * searched by anything but itself. They are reported in the export as a
-     * count so the total is not misrepresented.
+     * searched by anything but itself, so the export cannot find them by an
+     * email address and does not claim to.
      *
      * @since   2.3.0
      */
@@ -79,6 +79,68 @@ class privacy {
         add_filter( 'wp_privacy_personal_data_exporters', [ __CLASS__, 'register_exporter' ] );
         add_filter( 'wp_privacy_personal_data_erasers', [ __CLASS__, 'register_eraser' ] );
         add_action( 'admin_init', [ __CLASS__, 'add_policy_content' ] );
+
+        // WooCommerce's own "Remove personal data" on an order. It masks the
+        // customer IP it copied from the request and the email, and it did
+        // not know about the copy of the resolved address the recorder keeps,
+        // the model's reasons (which name the email when redaction is off),
+        // or the log rows keyed by the order. The order the merchant believed
+        // anonymised was not.
+        add_filter( 'woocommerce_privacy_remove_order_personal_data_meta', [ __CLASS__, 'order_meta_to_anonymise' ] );
+        add_action( 'woocommerce_privacy_remove_order_personal_data', [ __CLASS__, 'anonymise_order_log' ] );
+
+    }
+
+    /**
+     * Fraud metadata WooCommerce should anonymise with the order.
+     *
+     * @since   2.3.0
+     *
+     * @param   array   $meta   key => type (ip, text, email …).
+     * @return  array
+     */
+    public static function order_meta_to_anonymise( $meta ) {
+
+        return (array) $meta + [
+            '_mshield_ip'         => 'ip',
+            '_mshield_device'     => 'text',
+            '_mshield_ai_reasons' => 'text',
+        ];
+
+    }
+
+    /**
+     * Anonymise the log rows an order left behind.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order   $order
+     */
+    public static function anonymise_order_log( $order ) {
+
+        global $wpdb;
+
+        if( ! is_object( $order ) || ! method_exists( $order, 'get_id' ) ) return;
+
+        $order_id = (int) $order->get_id();
+        if( $order_id <= 0 ) return;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT id, ip FROM {$wpdb->prefix}mshield_log WHERE order_id = %d",
+            $order_id
+        ) );
+
+        foreach( (array) $rows as $row ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+            $wpdb->update(
+                $wpdb->prefix . 'mshield_log',
+                [ 'ip' => wp_privacy_anonymize_ip( (string) $row->ip ), 'request_data' => '' ],
+                [ 'id' => (int) $row->id ],
+                [ '%s', '%s' ],
+                [ '%d' ]
+            );
+        }
 
     }
 
@@ -189,7 +251,7 @@ class privacy {
                         'value' => $row['last_seen'],
                     ],
                     [
-                        'name'  => __( 'Orders placed', 'mighty-shield' ),
+                        'name'  => __( 'Orders paid for', 'mighty-shield' ),
                         'value' => $row['order_count'],
                     ],
                     [
@@ -335,7 +397,7 @@ class privacy {
         if( $done && self::has_identity( $email ) ) {
 
             $retained   = true;
-            $messages[] = __( 'MightyShield has kept this store\'s fraud history for this email address — how many orders it placed, and how many were refunded, reported as fraud or charged back. It is stored as a one-way salted hash rather than as the address itself, so it cannot be read back or turned into contact details; it can only be recognised if the same address is used again. It is kept because erasing it would let a chargeback be cleared by asking to be forgotten, and is permitted for fraud prevention and for defending legal claims. It is destroyed if MightyShield is uninstalled.', 'mighty-shield' );
+            $messages[] = __( 'MightyShield has kept this store\'s fraud history for this email address — how many orders it paid for, and how many were refunded, reported as fraud or charged back. It is stored as a one-way salted hash rather than as the address itself, so it cannot be read back or turned into contact details; it can only be recognised if the same address is used again. It is kept because erasing it would let a chargeback be cleared by asking to be forgotten, and is permitted for fraud prevention and for defending legal claims. It is destroyed if MightyShield is uninstalled.', 'mighty-shield' );
 
         }
 
@@ -433,9 +495,9 @@ class privacy {
 
         $content =
             '<h2>' . esc_html__( 'MightyShield fraud prevention', 'mighty-shield' ) . '</h2>'
-            . '<p>' . esc_html__( 'We check every order for signs of card fraud. To do that we record the IP address, browser and email address used on checkouts that are blocked or flagged, and we keep a history of how previous orders from the same customer turned out.', 'mighty-shield' ) . '</p>'
+            . '<p>' . esc_html__( 'We check every order for signs of card fraud. To do that we record the IP address each order was placed from, the IP address, browser and email address used on checkouts that are blocked or flagged, and a history of how previous orders from the same customer turned out. The country and network of each checkout\'s IP address are cached for 90 days so the check does not have to be repeated.', 'mighty-shield' ) . '</p>'
             . '<p>' . esc_html__( 'That history is stored as a one-way salted hash rather than as your details themselves, so it cannot be read back or used to contact you. Security log entries are deleted automatically after the retention period set in the plugin, 30 days by default.', 'mighty-shield' ) . '</p>'
-            . '<p>' . esc_html__( 'Depending on which optional features this store has enabled, checkout details may be sent to MaxMind, Smarty, Cloudflare, Google or an AI provider to be checked. See the plugin listing for exactly what each service receives.', 'mighty-shield' ) . '</p>';
+            . '<p>' . esc_html__( 'Where this store has set a MaxMind licence key, your IP address is looked up in a database held on this server; nothing is sent to MaxMind. Depending on which other optional features this store has enabled, checkout details may be sent to Smarty (US address verification), Cloudflare or Google (the bot challenge, which receives your IP address), or an AI provider (order details, with personal details masked by default) to be checked. See the plugin listing for exactly what each service receives.', 'mighty-shield' ) . '</p>';
 
         // Already well-formed HTML, so no wpautop — running it over content
         // that already has <h2> and <p> produces stray empty paragraphs.

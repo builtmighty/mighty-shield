@@ -342,7 +342,7 @@ class rescore {
         $order->save();
 
         db::log_event(
-            $order->get_customer_ip_address(),
+            ip_utils::order_ip( $order ),
             'risk_engine',
             'flagged',
             sprintf( 'Order #%d rated by hand: %s/100 → %s', $order_id, $verdict['trust'], $verdict['risk_level'] ),

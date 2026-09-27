@@ -372,7 +372,7 @@ class admin_page {
 
         foreach( array_keys( \MightyShield\Includes\risk_levels::DEFAULT_THRESHOLDS ) as $level ) {
             register_setting( 'mshield_blocking', 'mshield_level_' . $level . '_threshold', [
-                'sanitize_callback' => function( $value ) { return max( 1, min( 100, absint( $value ) ) ); },
+                'sanitize_callback' => function( $value ) use ( $level ) { return self::ordered_threshold( $level, $value ); },
             ] );
         }
 
@@ -2011,6 +2011,61 @@ class admin_page {
     }
 
     /**
+     * Clamp one risk-level threshold so the ladder stays in order.
+     *
+     * The four thresholds are saved one at a time, and each used to be
+     * clamped to 1..100 on its own. Typed the wrong way round -- High 80,
+     * Elevated 60 -- nothing objected, Elevated became unreachable, and the
+     * AI's one-level rescue had nowhere to go. The other values in the same
+     * submission are read here, so a High above Elevated is pulled back to
+     * one below it and the ladder always reads rejected < high < elevated < low.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $level
+     * @param   mixed   $value
+     * @return  int
+     */
+    public static function ordered_threshold( $level, $value ) {
+
+        $order = [ 'rejected', 'high', 'elevated', 'low' ];
+        $at    = array_search( $level, $order, true );
+
+        if( $at === false ) return max( 1, min( 100, absint( $value ) ) );
+
+        // Every value in this submission, this one included, sorted into the
+        // ladder's order: the smallest is Rejected's, the largest is Low's.
+        // Two typed the wrong way round simply swap places, which is what the
+        // merchant meant. Equal values are nudged apart so no level vanishes.
+        $values = [];
+
+        foreach( $order as $which ) {
+
+            $key = 'mshield_level_' . $which . '_threshold';
+
+            if( $which === $level ) {
+                $values[] = max( 1, min( 100, absint( $value ) ) );
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- options.php has already verified the settings nonce; this reads a sibling field of the same submission
+            } elseif( isset( $_POST[ $key ] ) ) {
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- as above
+                $values[] = max( 1, min( 100, absint( wp_unslash( $_POST[ $key ] ) ) ) );
+            } else {
+                $values[] = (int) \MightyShield\Includes\risk_levels::threshold( $which );
+            }
+
+        }
+
+        sort( $values, SORT_NUMERIC );
+
+        for( $i = 1; $i < count( $values ); $i++ ) {
+            if( $values[ $i ] <= $values[ $i - 1 ] ) $values[ $i ] = $values[ $i - 1 ] + 1;
+        }
+
+        return max( 1, min( 100, (int) $values[ $at ] ) );
+
+    }
+
+    /**
      * Whether this store's checkout page is the block one.
      *
      * Cached in an option because the answer is needed on the FRONT end, by the
@@ -2036,6 +2091,7 @@ class admin_page {
         }
 
         $answer = false;
+        $page   = 0;
 
         if( function_exists( 'wc_get_page_id' ) && function_exists( 'has_block' ) ) {
 
@@ -2045,7 +2101,12 @@ class admin_page {
 
         }
 
-        update_option( 'mshield_block_checkout', $answer ? 'yes' : 'no', false );
+        // Only a real answer is remembered. With no checkout page assigned
+        // yet the answer is "no", and caching that made a block checkout
+        // assigned a minute later invisible to the firewall for good.
+        if( $page > 0 ) {
+            update_option( 'mshield_block_checkout', $answer ? 'yes' : 'no', false );
+        }
 
         return $answer;
 
@@ -2087,28 +2148,15 @@ class admin_page {
      */
     public static function checkout_conflict() {
 
-        static $answer = null;
-
-        if( $answer !== null ) return $answer;
-
-        $answer = false;
-
-        // Never on the front end: has_block() loads the checkout page's post
-        // content, which is wasted work on every shopper request for a warning
-        // only an administrator can see or act on.
-        if( ! is_admin() ) return $answer;
-
-        if( settings::get( 'mshield_block_store_api' ) !== 'yes' )    return $answer;
-        if( settings::get( 'mshield_firewall_mode' ) !== 'whitelist' ) return $answer;
-
-        if( ! function_exists( 'wc_get_page_id' ) || ! function_exists( 'has_block' ) ) return $answer;
-
-        $page = (int) wc_get_page_id( 'checkout' );
-        if( $page <= 0 ) return $answer;
-
-        $answer = has_block( 'woocommerce/checkout', $page );
-
-        return $answer;
+        // There is no longer a combination that closes the shop. The Store
+        // API firewall's Allowlist mode steps aside on a store whose checkout
+        // is the block one (firewall/class-api-firewall.php), so the cart and
+        // checkout endpoints stay open there whatever the mode says. This
+        // used to test for the pairing and raise a red "your checkout is
+        // closed" banner on the wizard, every tab and the dashboard -- on
+        // stores where nothing was closed. Kept as a method so the callers
+        // stay simple; it now says what is true.
+        return false;
 
     }
 
