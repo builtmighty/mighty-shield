@@ -382,12 +382,12 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <li><strong><?php esc_html_e( 'History.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'What you already know about the people behind the order, from the orders they placed before this one. The only group that can give trust back as well as take it.', 'mighty-shield' ); ?></li>
         </ul>
 
-        <h3><?php esc_html_e( 'Reading the table', 'mighty-shield' ); ?></h3>
+        <h3><?php esc_html_e( 'Reading a check', 'mighty-shield' ); ?></h3>
         <ul>
             <li><strong><?php esc_html_e( 'On or off.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Switching a check off stops it contributing anything at all. Prefer lowering its cost first, so it still counts for something.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Trust cost.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'How much of the 100 an order loses when this check notices something. A check that is only partly sure costs proportionally less, which is what lets several small concerns add up without any one of them taking over.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Force level.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Makes one check decide the outcome on its own, whatever the rating says. Use it only for things a real customer essentially cannot do, such as filling in a hidden trap field. Anything genuinely ambiguous should be left on scoring only, so the rating can weigh it against everything else.', 'mighty-shield' ); ?></li>
-            <li><strong><?php esc_html_e( 'How often it fires.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Measured on your own orders over the last 30 days. This is the most useful column on the page. A check firing on half your orders is describing your customers, not your fraudsters.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'How often it fires.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Measured on your own orders over the last 30 days. This is the most useful number on the page. The list marks a check that fires on most orders, one that keeps firing on orders you approved, and one that fires together with another; the chips above the list show only those. A check firing on half your orders is describing your customers, not your fraudsters.', 'mighty-shield' ); ?></li>
         </ul>
         <div class="callout">
             <span class="callout-label"><?php esc_html_e( 'One check gives trust back', 'mighty-shield' ); ?></span>
@@ -430,7 +430,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         </div>
         <div class="callout">
             <span class="callout-label"><?php esc_html_e( 'Before you have any orders', 'mighty-shield' ); ?></span>
-            <p><?php esc_html_e( 'Until orders have been through the checkout there is nothing to measure, so the How often it fires column shows a dash. It fills in on its own. You do not need to touch any of this; the defaults are sensible for a normal store.', 'mighty-shield' ); ?></p>
+            <p><?php esc_html_e( 'Until orders have been through the checkout there is nothing to measure, so how often each check fires shows a dash. It fills in on its own. You do not need to touch any of this; the defaults are sensible for a normal store.', 'mighty-shield' ); ?></p>
         </div>
 
         <h2 id="ai"><?php esc_html_e( 'AI Review', 'mighty-shield' ); ?></h2>

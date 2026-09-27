@@ -461,44 +461,168 @@
 
     }
 
-    // Arriving from an order screen's "Adjust setting" link. The browser will
-    // jump to the row on its own -- the id is real -- but a settings table is a
-    // wall of near-identical rows, so landing on one is not the same as finding
-    // it. The flash is what makes the jump legible.
-    function initSignalJump() {
+    /* ---------- Scoring: the check list ---------- */
+    // The list is a set of real links to real ids, so it works without any of
+    // this; with it, one pane shows at a time, the hash tracks the selection,
+    // the list filters as you type, and the save bar counts what changed.
+    var checksDirty = 0;
 
-        var hash = window.location.hash || '';
-        if ( hash.indexOf( '#mshield-sig-' ) !== 0 ) return;
+    function initChecks() {
 
-        var row;
-        // An id from a signal key is [a-z_] only, but the hash comes from the
-        // address bar and anyone can type anything into it.
-        try { row = document.querySelector( hash ); } catch ( e ) { return; }
-        if ( ! row ) return;
+        var wrap = document.getElementById( 'mshield-checks' );
+        if ( ! wrap ) return;
 
-        // Native anchoring has already jumped by the time this runs, and lands
-        // the row under the admin bar. Re-centring costs nothing when it was
-        // already right.
-        if ( row.scrollIntoView ) {
-            row.scrollIntoView( { block: 'center' } );
+        var links   = Array.prototype.slice.call( wrap.querySelectorAll( '.ms-check' ) );
+        var panes   = Array.prototype.slice.call( wrap.querySelectorAll( '.mshield-checkpane' ) );
+        var find    = wrap.querySelector( '[data-checks-find]' );
+        var chips   = Array.prototype.slice.call( wrap.querySelectorAll( '[data-checks-filter]' ) );
+        var form    = document.getElementById( 'mshield-checks-form' );
+        var savebar = document.getElementById( 'mshield-savebar' );
+        var note    = savebar ? savebar.querySelector( '[data-savebar-note]' ) : null;
+        if ( ! links.length || ! panes.length ) return;
+
+        wrap.classList.add( 'is-js' );
+
+        function select( key, focusPane ) {
+            var found = false;
+            panes.forEach( function( p ) {
+                var on = p.getAttribute( 'data-key' ) === key;
+                p.classList.toggle( 'is-selected', on );
+                if ( on ) found = true;
+            } );
+            if ( ! found ) return false;
+            links.forEach( function( l ) {
+                var on = l.getAttribute( 'data-key' ) === key;
+                l.classList.toggle( 'is-selected', on );
+                if ( on ) l.setAttribute( 'aria-current', 'true' ); else l.removeAttribute( 'aria-current' );
+            } );
+            if ( focusPane ) {
+                var pane  = wrap.querySelector( '.mshield-checkpane.is-selected' );
+                var first = pane ? pane.querySelector( 'input:not([type="hidden"]), select, textarea, button' ) : null;
+                if ( first ) first.focus( { preventScroll: true } );
+            }
+            return true;
         }
 
-        row.classList.add( 'is-flash' );
+        function fromHash() {
+            var hash = window.location.hash || '';
+            var key  = hash.indexOf( '#mshield-sig-' ) === 0 ? hash.slice( '#mshield-sig-'.length ) : '';
+            if ( ! key || ! select( key, false ) ) select( links[ 0 ].getAttribute( 'data-key' ), false );
+        }
 
-        // Removed rather than left on, so a second visit to the same row
-        // flashes again instead of sitting there permanently highlighted.
-        window.setTimeout( function() { row.classList.remove( 'is-flash' ); }, 2600 );
+        links.forEach( function( l ) {
+            l.addEventListener( 'click', function( e ) {
+                e.preventDefault();
+                var key = l.getAttribute( 'data-key' );
+                select( key, true );
+                if ( window.history && window.history.replaceState ) {
+                    window.history.replaceState( null, '', '#mshield-sig-' + key );
+                }
+            } );
+            l.addEventListener( 'keydown', function( e ) {
+                if ( e.key !== 'ArrowDown' && e.key !== 'ArrowUp' ) return;
+                e.preventDefault();
+                var visible = links.filter( function( x ) { return ! x.classList.contains( 'is-hidden' ); } );
+                var i = visible.indexOf( l );
+                var n = visible[ i + ( e.key === 'ArrowDown' ? 1 : -1 ) ];
+                if ( n ) { n.focus(); n.click(); }
+            } );
+        } );
+
+        // In-pane links to another check ("fires together with X").
+        wrap.addEventListener( 'click', function( e ) {
+            var a = e.target.closest ? e.target.closest( '.mshield-checkpane a[href^="#mshield-sig-"]' ) : null;
+            if ( ! a ) return;
+            e.preventDefault();
+            var key = a.getAttribute( 'href' ).slice( '#mshield-sig-'.length );
+            if ( select( key, true ) && window.history && window.history.replaceState ) {
+                window.history.replaceState( null, '', '#mshield-sig-' + key );
+            }
+        } );
+
+        window.addEventListener( 'hashchange', fromHash );
+        fromHash();
+
+        // Filtering: a chip, and the search box, narrow the list.
+        var filter = 'all', query = '';
+        function applyFilter() {
+            links.forEach( function( l ) {
+                var flags = ' ' + ( l.getAttribute( 'data-flags' ) || '' ) + ' ';
+                var ok = ( filter === 'all' || flags.indexOf( ' ' + filter + ' ' ) !== -1 )
+                      && ( ! query || ( l.getAttribute( 'data-label' ) || '' ).indexOf( query ) !== -1 );
+                l.classList.toggle( 'is-hidden', ! ok );
+            } );
+            wrap.querySelectorAll( '.ms-group' ).forEach( function( g ) {
+                var any = g.querySelector( '.ms-check:not(.is-hidden)' );
+                g.classList.toggle( 'is-hidden', ! any );
+            } );
+        }
+        chips.forEach( function( c ) {
+            c.addEventListener( 'click', function() {
+                filter = c.getAttribute( 'data-checks-filter' ) || 'all';
+                chips.forEach( function( x ) { x.classList.toggle( 'is-on', x === c ); } );
+                applyFilter();
+            } );
+        } );
+        if ( find ) {
+            find.addEventListener( 'input', function() { query = find.value.trim().toLowerCase(); applyFilter(); } );
+        }
+
+        // Dirty tracking: a changed pane marks its row and the save bar.
+        var changed = {};
+        function syncDirty() {
+            checksDirty = Object.keys( changed ).length;
+            links.forEach( function( l ) { l.classList.toggle( 'is-changed', !! changed[ l.getAttribute( 'data-key' ) ] ); } );
+            if ( savebar ) savebar.classList.toggle( 'is-dirty', checksDirty > 0 );
+            if ( note ) {
+                note.textContent = checksDirty > 0
+                    /* translators: %d: number of checks with unsaved changes. */
+                    ? sprintf( _n( '%d check changed', '%d checks changed', checksDirty, 'mighty-shield' ), checksDirty )
+                    : '';
+            }
+        }
+        function onChange( e ) {
+            var pane = e.target.closest ? e.target.closest( '.mshield-checkpane' ) : null;
+            if ( ! pane ) return;
+            var key = pane.getAttribute( 'data-key' );
+            changed[ key ] = true;
+            // Keep the row in step with the pane: the cost, the on/off dot.
+            var link = links.filter( function( l ) { return l.getAttribute( 'data-key' ) === key; } )[ 0 ];
+            if ( link ) {
+                if ( e.target.hasAttribute( 'data-check-cost' ) ) {
+                    var cost = link.querySelector( '[data-cost]' );
+                    if ( cost ) cost.textContent = e.target.value;
+                    var earns = pane.querySelector( '[data-check-earns]' );
+                    if ( earns ) earns.hidden = ! ( parseFloat( e.target.value ) < 0 );
+                }
+                if ( e.target.hasAttribute( 'data-check-on' ) ) link.classList.toggle( 'is-off', ! e.target.checked );
+            }
+            syncDirty();
+        }
+        if ( form ) {
+            form.addEventListener( 'input', onChange );
+            form.addEventListener( 'change', onChange );
+            form.addEventListener( 'submit', function() { changed = {}; checksDirty = 0; } );
+            window.addEventListener( 'beforeunload', function( e ) {
+                if ( checksDirty > 0 ) { e.preventDefault(); e.returnValue = ''; }
+            } );
+        }
 
     }
 
     // Switching scoring profiles overwrites every trust cost, including any the
-    // merchant tuned by hand. The link knows how many rows it would replace, so
-    // ask before spending someone's afternoon.
+    // merchant tuned by hand, and throws away anything typed but not saved.
+    // The link knows how many rows it would replace, so ask first.
     function initScoringProfile() {
 
         document.querySelectorAll( '[data-mshield-profile]' ).forEach( function( link ) {
 
             link.addEventListener( 'click', function( e ) {
+
+                if ( checksDirty > 0 ) {
+                    if ( ! window.confirm( __( 'You have unsaved changes below. Switching the profile discards them. Continue?', 'mighty-shield' ) ) ) { e.preventDefault(); return; }
+                    checksDirty = 0;
+                }
 
                 var changes = parseInt( link.getAttribute( 'data-mshield-changes' ), 10 );
                 if ( ! changes || changes < 1 ) return;
@@ -628,6 +752,6 @@
         setTimeout( poll, 5000 );
     }
 
-    ready( function() { initTheme(); initDrawer(); initBulk(); initRadios(); initSteppers(); initChart(); initOrderPanel(); initSignalJump(); initScoringProfile(); initTestConnection(); initLogFilters(); initBackfill(); } );
+    ready( function() { initTheme(); initDrawer(); initBulk(); initRadios(); initSteppers(); initChart(); initOrderPanel(); initChecks(); initScoringProfile(); initTestConnection(); initLogFilters(); initBackfill(); } );
 
 } )();
