@@ -300,8 +300,10 @@ class ai_reviewer {
      * spend where it can actually change something:
      *
      *   trusted            skip — a known-good customer does not need an opinion
-     *   rejected / banned  skip — already decided; a second opinion changes nothing
-     *   everything else    review
+     *   banned             skip — reached only through a floor, which is settled
+     *   rejected           review only when the verdict may raise the rating;
+     *                      with "only lower" the order is already at the bottom
+     *   everything else    review, if the merchant chose the level
      *
      * "All orders" still overrides this for stores that want a verdict on
      * every order regardless of cost.
@@ -340,6 +342,14 @@ class ai_reviewer {
         // put the model in front of that decision. Banned is not offered —
         // it is reachable only through a floor, which the guard above has
         // already returned on.
+        //
+        // With the rating effect set to "only lower", a Rejected order is
+        // already at the bottom and the verdict cannot move it. The tab
+        // promises a review runs only where it can still change the outcome,
+        // so the call is not spent; the pill stays ticked for the day the
+        // merchant lets the model raise a rating.
+        if( $level === risk_levels::REJECTED && settings::get( 'mshield_ai_direction' ) !== 'both' ) return false;
+
         return risk_levels::ai_review( $level );
 
     }

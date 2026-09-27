@@ -576,7 +576,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <p><?php printf( wp_kses_post( __( 'Find them in the <a href="%1$s">Logs</a> and read the reason. Allowlist their address from the detail panel if it was a one off. If the same check is catching several real customers, open <a href="%2$s">Scoring</a>, find that check, and either lower its cost or switch it off. If a threshold is the problem, raise it on <a href="%3$s">Shielding</a>.', 'mighty-shield' ) ), esc_url( $logs_url ), esc_url( $scoring_url ), esc_url( $blocking_url ) ); ?></p>
 
         <h3><?php esc_html_e( 'My checkout stopped working', 'mighty-shield' ); ?></h3>
-        <p><?php printf( wp_kses_post( __( 'If your checkout page uses the Checkout block, set the Store API Firewall on <a href="%s">Shielding</a> to Blocklist mode. In Allowlist mode that firewall refuses the cart and checkout to every customer, which looks exactly like a broken shop. MightyShield warns you about this combination, but it is worth checking first whenever the checkout misbehaves.', 'mighty-shield' ) ), esc_url( $blocking_url ) ); ?></p>
+        <p><?php printf( wp_kses_post( __( 'The Store API Firewall never closes a block checkout, whichever mode it is in. Look first at the Blocklist under <a href="%1$s">Access</a> and at the <a href="%2$s">Logs</a> for a refused address.', 'mighty-shield' ) ), esc_url( $access_url ), esc_url( $logs_url ) ); ?></p>
 
         <h3><?php esc_html_e( 'We are under active attack', 'mighty-shield' ); ?></h3>
         <ol>

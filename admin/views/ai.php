@@ -182,8 +182,8 @@ $model_select = function( $key ) {
                 <th scope="row"><?php esc_html_e( 'Rating Effect', 'mighty-shield' ); ?></th>
                 <td>
                     <?php admin_page::radios( 'mshield_ai_direction', [
-                        'lower' => __( 'Only lower the rating', 'mighty-shield' ),
-                        'both'  => __( 'Lower or raise the rating', 'mighty-shield' ),
+                        'lower' => __( 'Only lower the trust rating', 'mighty-shield' ),
+                        'both'  => __( 'Lower or raise the trust rating', 'mighty-shield' ),
                     ], settings::get( 'mshield_ai_direction' ) ); ?>
                 </td>
             </tr>

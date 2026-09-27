@@ -392,7 +392,7 @@ foreach( $level_rows as $row ) {
                         'whitelist' => __( 'Classic checkout: block all non-allowlisted IPs', 'mighty-shield' ),
                         'blocklist' => __( 'Block/One-page checkout: allow shoppers, block only blocklisted IPs', 'mighty-shield' ),
                     ], settings::get( 'mshield_firewall_mode' ) ); ?>
-                    <p class="description"><?php esc_html_e( 'Use "Classic checkout" only if real customers never use the Store API (shortcode/classic checkout). If your store uses the block-based Checkout, choose the block/one-page option so real shoppers are not blocked.', 'mighty-shield' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'On a block checkout the firewall steps aside for the cart and checkout in either mode.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
         </table>

@@ -264,7 +264,11 @@ class response {
         $min = (int) settings::get( 'mshield_tarpit_min_ms' );
         $max = (int) settings::get( 'mshield_tarpit_max_ms' );
 
-        if( $max <= 0 || $max < $min ) return;
+        // Typed the wrong way round is still a range, not a request for no
+        // delay at all.
+        if( $max < $min ) [ $min, $max ] = [ $max, $min ];
+
+        if( $max <= 0 ) return;
 
         usleep( random_int( max( 0, $min ), $max ) * 1000 );
 

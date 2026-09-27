@@ -52,12 +52,12 @@ class ai_client {
      */
     const MODELS = [
         'anthropic' => [
-            'claude-haiku-4-5' => 'Claude Haiku 4.5 (fastest, lowest cost)',
+            'claude-haiku-4-5' => 'Claude Haiku 4.5 (recommended)',
             'claude-sonnet-5'  => 'Claude Sonnet 5',
             'claude-opus-5'    => 'Claude Opus 5',
         ],
         'openai' => [
-            'gpt-4o-mini'  => 'GPT-4o mini (fastest, lowest cost)',
+            'gpt-4o-mini'  => 'GPT-4o mini (recommended)',
             'gpt-4.1-nano' => 'GPT-4.1 nano',
             'gpt-4.1-mini' => 'GPT-4.1 mini',
             'gpt-4.1'      => 'GPT-4.1',
@@ -66,7 +66,7 @@ class ai_client {
             'gpt-5'        => 'GPT-5',
         ],
         'gemini' => [
-            'gemini-2.5-flash'      => 'Gemini 2.5 Flash (fastest, lowest cost)',
+            'gemini-2.5-flash'      => 'Gemini 2.5 Flash (recommended)',
             'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash-Lite',
             'gemini-2.5-pro'        => 'Gemini 2.5 Pro',
             'gemini-2.0-flash'      => 'Gemini 2.0 Flash',
