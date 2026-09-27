@@ -1767,7 +1767,10 @@ class admin_page {
         $theme_labels = [ 'system' => esc_html__( 'System', 'mighty-shield' ), 'light' => esc_html__( 'Light', 'mighty-shield' ), 'dark' => esc_html__( 'Dark', 'mighty-shield' ) ];
         $doc_url      = admin_url( 'admin.php?page=mighty-shield&tab=documentation' );
 
-        echo '<div class="wrap mshield-app" data-theme="' . esc_attr( $theme ) . '">';
+        // The tab rides on the wrapper so a stylesheet can treat one screen
+        // differently: the manual spreads to the full width of the column.
+        $tab_class = $tab !== '' ? ' is-tab-' . sanitize_html_class( $tab ) : '';
+        echo '<div class="wrap mshield-app' . esc_attr( $tab_class ) . '" data-theme="' . esc_attr( $theme ) . '">';
 
         // Header.
         echo '<div class="mshield-header">';

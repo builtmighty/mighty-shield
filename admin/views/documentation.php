@@ -54,7 +54,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             display: flex;
             align-items: flex-start;
             gap: 48px;
-            max-width: 1120px;
+            width: 100%;
         }
         .mshield-docs * { box-sizing: border-box; }
 
@@ -93,7 +93,6 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         /* Reading column */
         .mshield-docs-main {
             flex: 1 1 auto;
-            max-width: 760px;
             padding: 32px 40px 64px;
             min-width: 0;
         }
@@ -196,7 +195,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
                 border-bottom: 1px solid var(--border);
                 max-height: none;
             }
-            .mshield-docs-main { padding: 24px; max-width: none; }
+            .mshield-docs-main { padding: 24px; }
         }
     </style>
 

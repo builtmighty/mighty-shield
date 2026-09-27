@@ -59,6 +59,8 @@
     background:var(--bg);
     animation:ms-in .3s cubic-bezier(.22,1,.36,1);
 }
+/* The manual is a menu and a reading column; both use the whole width. */
+.mshield-app.is-tab-documentation { max-width:none; }
 
 /* Dark mode: repaint the surrounding WordPress admin chrome so there is no
    light gutter around the themed plugin area. */
