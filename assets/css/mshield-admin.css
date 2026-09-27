@@ -23,7 +23,10 @@
     --ink-danger:#c22b2d; --ink-warn:#96700a; --ink-flag:#6f43cc; --ink-ok:#0a7c26;
     --ink-orange:#c2570f; --ink-lime:#4a9c1f;
 
-    font-family:'Public Sans',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --sans:'Public Sans',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+    font-family:var(--sans);
     color:var(--fg);
 }
 
@@ -78,7 +81,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     body.mshield-theme-system #wpbody-content { background:#0e1116 !important; }
     body.mshield-theme-system #wpfooter { color:#6f7987; }
 }
-.mshield-mono { font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+.mshield-mono { font-family:var(--mono); }
 
 @keyframes ms-in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
 @keyframes ms-drawer { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:none} }
@@ -94,7 +97,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-title-row { display:flex; align-items:center; gap:9px; }
 .mshield-tagline { font-size:13px; color:var(--fg-2); margin-top:2px; }
 .mshield-version {
-    font-family:'JetBrains Mono',monospace; font-size:11px; padding:2px 7px; border-radius:20px;
+    font-family:var(--mono); font-size:11px; padding:2px 7px; border-radius:20px;
     background:var(--surface-2); border:1px solid var(--line); color:var(--fg-3);
 }
 .mshield-spacer { flex:1; }
@@ -158,7 +161,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-hero.is-observing .ms-accent { background:var(--warn); }
 .mshield-hero.is-observing .ms-ico    { background:rgba(219,166,23,.14); color:var(--ink-warn); }
 .mshield-hero-title { font-size:15.5px; font-weight:650; }
-.mshield-hero-meta { font-size:12.5px; color:var(--fg-2); margin-top:3px; font-family:'JetBrains Mono',monospace; }
+.mshield-hero-meta { font-size:12.5px; color:var(--fg-2); margin-top:3px; font-family:var(--mono); }
 
 /* The hero sits between the nav and the page on every tab now, rather than
    being the first item of the Dashboard's stack, so it carries its own spacing
@@ -307,7 +310,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-statcard .ms-big .n { font-size:30px; font-weight:700; letter-spacing:-.03em; }
 .mshield-statcard .ms-big .u { font-size:12px; color:var(--fg-3); }
 .mshield-statcard .ms-row { display:flex; justify-content:space-between; font-size:12.5px; color:var(--fg-2); padding:7px 0; border-top:1px solid var(--line-2); }
-.mshield-statcard .ms-row .v { font-family:'JetBrains Mono',monospace; color:var(--fg); }
+.mshield-statcard .ms-row .v { font-family:var(--mono); color:var(--fg); }
 
 /* ---------- Chart ---------- */
 .mshield-chart { width:100%; height:auto; display:block; overflow:visible; }
@@ -327,7 +330,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     background:var(--fg); color:var(--surface); border-radius:8px; padding:8px 10px; font-size:12px;
     box-shadow:var(--shadow-lg); min-width:132px; transition:opacity .1s ease;
 }
-.mshield-charttip .t-label { font-family:'JetBrains Mono',monospace; font-size:11px; opacity:.7; margin-bottom:4px; }
+.mshield-charttip .t-label { font-family:var(--mono); font-size:11px; opacity:.7; margin-bottom:4px; }
 .mshield-charttip .t-row { display:flex; align-items:center; gap:6px; line-height:1.7; }
 .mshield-charttip .t-row i { width:8px; height:8px; border-radius:2px; display:inline-block; }
 .mshield-charttip .t-row b { margin-left:auto; font-variant-numeric:tabular-nums; }
@@ -344,7 +347,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-iprow .loc .org { color:var(--fg-3); }
 .mshield-iprow .bar { flex:0 0 150px; height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; }
 .mshield-iprow .bar > span { display:block; height:100%; background:var(--danger); border-radius:3px; }
-.mshield-iprow .count { font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:600; width:56px; text-align:right; flex:none; }
+.mshield-iprow .count { font-family:var(--mono); font-size:13.5px; font-weight:600; width:56px; text-align:right; flex:none; }
 .mshield-iprow .ip-logs { font-size:12.5px; color:var(--brand); font-weight:600; flex:none; }
 @media screen and (max-width:600px) { .mshield-iprow .bar { display:none; } }
 
@@ -357,7 +360,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     color:var(--fg); font-size:13px; outline:none;
 }
 .mshield-search .mshield-input { width:100%; padding-left:33px; }
-.mshield-input:focus, .mshield-select:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(56,88,233,.14); }
+.mshield-input:focus, .mshield-select:focus { border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft); }
 
 .mshield-loglist { overflow-x:auto; }
 
@@ -522,7 +525,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-kv { display:grid; grid-template-columns:104px 1fr; gap:9px 14px; font-size:13px; }
 .mshield-kv .k { color:var(--fg-2); }
 .mshield-eyebrow { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--fg-3); margin-bottom:8px; }
-.mshield-raw { margin:0; padding:12px; border-radius:9px; background:var(--surface-2); border:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-size:11.5px; line-height:1.65; color:var(--fg-2); overflow:auto; white-space:pre-wrap; word-break:break-word; }
+.mshield-raw { margin:0; padding:12px; border-radius:9px; background:var(--surface-2); border:1px solid var(--line); font-family:var(--mono); font-size:11.5px; line-height:1.65; color:var(--fg-2); overflow:auto; white-space:pre-wrap; word-break:break-word; }
 .mshield-hidden { display:none; }
 
 /* ================================================================
@@ -536,18 +539,10 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-app .mshield-section .description,
 .mshield-app .mshield-section p.description { font-size:12px; color:var(--fg-2); }
 
-.mshield-app .mshield-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:18px; }
-.mshield-app .mshield-stat { background:var(--surface); border:1px solid var(--line); padding:16px 17px; border-radius:12px; box-shadow:var(--shadow); }
-.mshield-app .mshield-stat h3 { margin:0 0 5px; font-size:12.5px; font-weight:600; color:var(--fg-2); }
-.mshield-app .mshield-stat .number { font-size:30px; font-weight:700; letter-spacing:-.03em; color:var(--fg); }
-.mshield-app .mshield-stat .number.blocked { color:var(--ink-danger); }
-.mshield-app .mshield-stat .number.limited { color:var(--ink-warn); }
-.mshield-app .mshield-stat .number.flagged { color:var(--ink-flag); }
-
 .mshield-app .mshield-table { width:100%; border-collapse:collapse; }
 .mshield-app .mshield-table th, .mshield-app .mshield-table td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line-2); color:var(--fg); }
 .mshield-app .mshield-table th { background:var(--surface-2); font-weight:600; color:var(--fg-2); }
-.mshield-app .mshield-table code { background:var(--surface-2); border-radius:4px; padding:2px 6px; font-family:'JetBrains Mono',monospace; }
+.mshield-app .mshield-table code { background:var(--surface-2); border-radius:4px; padding:2px 6px; font-family:var(--mono); }
 
 /* Enable checkboxes in settings views become toggle switches.
  *
@@ -612,7 +607,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-app input[type="number"]:focus,
 .mshield-app input[type="password"]:focus,
 .mshield-app textarea:focus,
-.mshield-app select:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(56,88,233,.14); }
+.mshield-app select:focus { border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft); }
 
 .mshield-app .button {
     border-radius:7px; border:1px solid var(--line); background:var(--surface); color:var(--fg);
@@ -620,6 +615,9 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 }
 .mshield-app .button-primary { border-color:transparent; background:var(--brand); color:var(--on-brand); text-shadow:none; }
 .mshield-app .button-primary:hover { filter:brightness(1.08); background:var(--brand); }
+.mshield-app .button:hover { background:var(--surface-2); color:var(--fg); border-color:var(--line); }
+.mshield-app .button-primary:hover { color:var(--on-brand); }
+.mshield-app .button.button-small { padding:4px 10px; font-size:12px; }
 
 /* WordPress notices inside the app keep their own colors but round off. */
 .mshield-app .notice, .mshield-app div.error, .mshield-app div.updated { border-radius:8px; }
@@ -636,7 +634,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 
 .mshield-app .mshield-table .mshield-sig-name { font-weight:650; color:var(--fg); }
 .mshield-app .mshield-table .mshield-sig-key {
-    font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:var(--fg-3);
+    font-family:var(--mono); font-size:11px; color:var(--fg-3);
     background:transparent; padding:0;
 }
 
@@ -701,7 +699,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     text-align:center;
 }
 .mshield-scale .ms-range {
-    display:block; font-family:'JetBrains Mono',ui-monospace,monospace;
+    display:block; font-family:var(--mono);
     font-size:11px; color:var(--fg-3); margin-top:5px;
 }
 .mshield-scale .ms-name { display:block; font-size:12.5px; font-weight:650; margin-top:3px; }
@@ -928,7 +926,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-orderbox .ms-reasons .ms-detail { min-width:0; }
 .mshield-orderbox .ms-reasons .ms-why { color:var(--fg-2); display:block; }
 .mshield-orderbox .ms-reasons .ms-cost {
-    flex:none; font-family:'JetBrains Mono',ui-monospace,monospace;
+    flex:none; font-family:var(--mono);
     font-size:11.5px; font-weight:600; color:var(--fg-3);
 }
 .mshield-orderbox .ms-reasons .ms-tune {
@@ -1009,7 +1007,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     display:inline-flex; align-items:baseline; gap:6px; white-space:nowrap;
 }
 .mshield-rating .ms-score {
-    font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-family:var(--mono);
     font-size:14px; font-weight:700; color:currentColor; line-height:1;
 }
 .mshield-rating .ms-name { font-size:11.5px; font-weight:600; color:currentColor; opacity:.9; }
@@ -1044,11 +1042,11 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 /* The head row must not take the hover tint — it is not a row you can act on. */
 .mshield-queuerow.is-head:hover { background:var(--surface); }
 
-.mshield-queuerow .ms-ordernum { font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:700; text-decoration:none; }
+.mshield-queuerow .ms-ordernum { font-family:var(--mono); font-weight:700; text-decoration:none; }
 .mshield-queuerow .ms-name { display:block; font-weight:600; }
 .mshield-queuerow .ms-name + .mshield-hint { margin-top:1px; }
 .mshield-queuerow .ms-money { color:var(--fg-2); }
-.mshield-queuerow .ms-total { font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; }
+.mshield-queuerow .ms-total { font-family:var(--mono); font-weight:600; }
 .mshield-queuerow .ms-age { color:var(--fg-3); font-size:12.5px; }
 
 /* Right-aligned so the buttons line up down the page however many a row has —
@@ -1109,3 +1107,29 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 }
 .mshield-dashwidget .ms-conflict strong { display:block; color:var(--ink-danger); margin-bottom:2px; }
 .mshield-dashwidget .ms-conflict a { font-weight:600; white-space:nowrap; }
+
+/* ---------- Focus and motion ---------- */
+/* One visible ring for everything a keyboard can land on. The checkbox
+   toggles strip core's box-shadow ring, so the outline is what remains. */
+.mshield-app .mshield-btn:focus-visible,
+.mshield-app .mshield-navcard:focus-visible,
+.mshield-app .mshield-range-btn:focus-visible,
+.mshield-app .mshield-radio:has(input:focus-visible),
+.mshield-app .ms-choice:focus-visible,
+.mshield-app .mshield-logrow.is-clickable:focus-visible,
+.mshield-app .mshield-back a:focus-visible,
+.mshield-app .button:focus-visible,
+.mshield-app a:focus-visible,
+.mshield-app input[type="checkbox"]:focus-visible,
+.mshield-app select:focus-visible,
+.mshield-app textarea:focus-visible,
+.mshield-app input[type="file"]:focus-visible {
+    outline:2px solid var(--brand); outline-offset:2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mshield-app, .mshield-app *, .mshield-app *::before, .mshield-app *::after,
+    .mshield-drawer, .mshield-drawer *, .mshield-drawer-overlay {
+        animation:none !important; transition:none !important;
+    }
+}
