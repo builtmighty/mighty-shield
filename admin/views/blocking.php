@@ -520,7 +520,7 @@ foreach( $level_rows as $row ) {
             </tr>
 
             <tr>
-                <th scope="row"><?php esc_html_e( 'Where it applies', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Where it applies (always on)', 'mighty-shield' ); ?></th>
                 <td>
                     <?php
                     $cap_surfaces = [
