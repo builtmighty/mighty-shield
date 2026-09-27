@@ -16,7 +16,7 @@ $current_ip = ip_utils::get_client_ip();
 ?>
 
 <div class="mshield-section">
-    <h2><?php esc_html_e( 'Block', 'mighty-shield' ); ?></h2>
+    <h2><?php esc_html_e( 'Blocklist', 'mighty-shield' ); ?></h2>
     <p class="description"><?php esc_html_e( 'Permanently bar something from checkout. An IP address or range is refused before the order is scored; everything else is matched against the order and carries the same weight. Entries never expire until you remove them, and anything on the allowlist is never blocked.', 'mighty-shield' ); ?></p>
     <form method="post">
         <?php wp_nonce_field( 'mshield_blocklist_action' ); ?>
@@ -50,15 +50,12 @@ $current_ip = ip_utils::get_client_ip();
             </tr>
         </table>
         <p>
-            <input type="submit" name="mshield_block_add_ip" class="button button-primary" value="<?php esc_attr_e( 'Add to Blocklist', 'mighty-shield' ); ?>" />
+            <input type="submit" name="mshield_block_add_ip" class="mshield-btn is-primary" value="<?php esc_attr_e( 'Add to blocklist', 'mighty-shield' ); ?>" />
         </p>
     </form>
-</div>
 
-<div class="mshield-section">
-    <h2><?php esc_html_e( 'Blocked', 'mighty-shield' ); ?></h2>
     <?php if( empty( $blocklist ) ) : ?>
-        <p><?php esc_html_e( 'Nothing has been blocked yet.', 'mighty-shield' ); ?></p>
+        <p class="mshield-empty"><?php esc_html_e( 'Nothing has been blocked yet.', 'mighty-shield' ); ?></p>
     <?php else : ?>
         <?php
         // A blocklist row has held a type since 2.3.0; rows written before
@@ -103,7 +100,7 @@ $current_ip = ip_utils::get_client_ip();
                             'mshield_block_remove_ip'
                         );
                         ?>
-                        <a href="<?php echo esc_url( $remove_url ); ?>" class="button button-small" onclick="return confirm('<?php echo esc_js( __( 'Remove this from the blocklist?', 'mighty-shield' ) ); ?>');"><?php esc_html_e( 'Remove', 'mighty-shield' ); ?></a>
+                        <a href="<?php echo esc_url( $remove_url ); ?>" class="mshield-btn is-small" onclick="return confirm('<?php echo esc_js( __( 'Remove this from the blocklist?', 'mighty-shield' ) ); ?>');"><?php esc_html_e( 'Remove', 'mighty-shield' ); ?></a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

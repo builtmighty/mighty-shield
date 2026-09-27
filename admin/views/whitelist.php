@@ -30,7 +30,7 @@ $wp_role_names = wp_roles()->get_names();
 ?>
 
 <div class="mshield-section">
-    <h2><?php esc_html_e( 'Add Allowlist Entry', 'mighty-shield' ); ?></h2>
+    <h2><?php esc_html_e( 'Allowlist', 'mighty-shield' ); ?></h2>
     <p class="description"><?php esc_html_e( 'An allowlisted shopper is still rated and recorded, so your reports stay complete — but nothing is done about the rating: no hold, no challenge, no refusal. Use for trusted staff, offices, and known-good customers.', 'mighty-shield' ); ?></p>
     <form method="post">
         <?php wp_nonce_field( 'mshield_whitelist_action' ); ?>
@@ -81,15 +81,12 @@ $wp_role_names = wp_roles()->get_names();
             </tr>
         </table>
         <p>
-            <input type="submit" name="mshield_add_ip" class="button button-primary" value="<?php esc_attr_e( 'Add to Allowlist', 'mighty-shield' ); ?>" />
+            <input type="submit" name="mshield_add_ip" class="mshield-btn is-primary" value="<?php esc_attr_e( 'Add to allowlist', 'mighty-shield' ); ?>" />
         </p>
     </form>
-</div>
 
-<div class="mshield-section">
-    <h2><?php esc_html_e( 'Allowlisted Entries', 'mighty-shield' ); ?></h2>
     <?php if( empty( $whitelist ) ) : ?>
-        <p><?php esc_html_e( 'No entries have been allowlisted yet.', 'mighty-shield' ); ?></p>
+        <p class="mshield-empty"><?php esc_html_e( 'No entries have been allowlisted yet.', 'mighty-shield' ); ?></p>
     <?php else : ?>
         <table class="mshield-table">
             <thead>
@@ -135,7 +132,7 @@ $wp_role_names = wp_roles()->get_names();
                             'mshield_remove_ip'
                         );
                         ?>
-                        <a href="<?php echo esc_url( $remove_url ); ?>" class="button button-small" <?php /* esc_js, not esc_attr. esc_attr turns an apostrophe into &#039;, the
+                        <a href="<?php echo esc_url( $remove_url ); ?>" class="mshield-btn is-small" <?php /* esc_js, not esc_attr. esc_attr turns an apostrophe into &#039;, the
          browser decodes attribute entities before the JS parser sees the string,
          and the handler then breaks on any translation containing one -- so
          Remove silently stopped working in those languages. */ ?>

@@ -49,7 +49,7 @@ foreach( $level_rows as $row ) {
 
     <div class="mshield-section">
 
-        <h2><?php esc_html_e( 'Risk Levels', 'mighty-shield' ); ?></h2>
+        <h2><?php esc_html_e( 'Risk levels', 'mighty-shield' ); ?></h2>
 
         <p class="description">
             <?php esc_html_e( 'An order falls to the most severe risk level whose threshold its rating is at or below, and that level decides what happens to it.', 'mighty-shield' ); ?>
@@ -63,7 +63,7 @@ foreach( $level_rows as $row ) {
                     <th style="width:110px;"><?php esc_html_e( 'Trust at or below', 'mighty-shield' ); ?></th>
                     <?php /* No AI column any more. Which levels go to review is an
                              AI-review setting, so it lives on the AI Review tab as one
-                             "Send to Review" control -- five pills in a row rather than
+                             "Send to review" control -- five pills in a row rather than
                              a checkbox per row here, and one page to look at when the
                              question is "what does the model see". */ ?>
                     <th style="width:230px;"><?php esc_html_e( 'Action', 'mighty-shield' ); ?></th>
@@ -297,13 +297,13 @@ foreach( $level_rows as $row ) {
 
         <div class="mshield-card" style="margin-top:18px;">
 
-            <div class="mshield-card-title" style="margin-bottom:6px">
+            <h2 class="mshield-card-title">
                 <?php esc_html_e( 'If you enforced these thresholds', 'mighty-shield' ); ?>
-            </div>
+            </h2>
 
             <?php if( '' === $mshield_say ) : ?>
 
-                <p style="margin:0;color:var(--fg-2);font-size:13px">
+                <p class="description">
                     <?php
                     printf(
                         /* translators: %s: number of orders rated so far. */
@@ -315,7 +315,7 @@ foreach( $level_rows as $row ) {
 
             <?php else : ?>
 
-                <p style="margin:0 0 12px;font-size:13px"><strong><?php echo esc_html( $mshield_say ); ?></strong></p>
+                <p class="description"><strong><?php echo esc_html( $mshield_say ); ?></strong></p>
 
                 <?php if( $mshield_ref && $mshield_ref['total'] > 0 ) : ?>
                     <table class="mshield-table">
@@ -370,7 +370,7 @@ foreach( $level_rows as $row ) {
 
     <div class="mshield-section">
 
-        <h2><?php esc_html_e( 'Store API Firewall', 'mighty-shield' ); ?></h2>
+        <h2><?php esc_html_e( 'Store API firewall', 'mighty-shield' ); ?></h2>
 
         <p class="description"><?php esc_html_e( 'Controls access to the WooCommerce Store API cart and checkout endpoints (/wc/store/v1/…). Choose the mode that matches your checkout.', 'mighty-shield' ); ?></p>
 
@@ -386,7 +386,7 @@ foreach( $level_rows as $row ) {
                 </td>
             </tr>
             <tr>
-                <th scope="row"><?php esc_html_e( 'Firewall Mode', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Firewall mode', 'mighty-shield' ); ?></th>
                 <td>
                     <?php \MightyShield\Admin\admin_page::radios( 'mshield_firewall_mode', [
                         'whitelist' => __( 'Classic checkout: block all non-allowlisted IPs', 'mighty-shield' ),
@@ -431,7 +431,7 @@ foreach( $level_rows as $row ) {
 
     <div class="mshield-section">
 
-        <h2><?php esc_html_e( 'Bot Challenge', 'mighty-shield' ); ?></h2>
+        <h2><?php esc_html_e( 'Bot challenge', 'mighty-shield' ); ?></h2>
 
         <?php
         /* What it has actually been doing. The plugin recommends this control
@@ -515,7 +515,7 @@ foreach( $level_rows as $row ) {
                 <th scope="row"><?php esc_html_e( 'Secret key', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="password" name="mshield_captcha_secret_key" class="regular-text" value="" autocomplete="off"
-                           placeholder="<?php echo settings::get( 'mshield_captcha_secret_key' ) !== '' ? esc_attr__( 'saved. Leave blank to keep', 'mighty-shield' ) : ''; ?>" />
+                           placeholder="<?php echo settings::get( 'mshield_captcha_secret_key' ) !== '' ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>" />
                 </td>
             </tr>
 

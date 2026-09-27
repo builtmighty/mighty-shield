@@ -93,7 +93,7 @@ Your site is behind a reverse proxy or a load balancer on the same machine, so e
 
 Yes, and identically. Every check runs on both checkouts, including the ones that need something from the browser — the checkout timer, the device check, the hidden trap field and the bot challenge — so the same order is judged the same way whichever checkout your store uses.
 
-MightyShield detects which checkout you use. The Store API Firewall's Allowlist mode, which closes the cart and checkout endpoints to everyone not on your allowlist, steps aside on a store whose checkout is the block one, because that checkout is built on those endpoints; the rating protects them instead, and the mode still governs every other Store API route. There is no setting that closes your checkout.
+MightyShield detects which checkout you use. The Store API firewall's Allowlist mode, which closes the cart and checkout endpoints to everyone not on your allowlist, steps aside on a store whose checkout is the block one, because that checkout is built on those endpoints; the rating protects them instead, and the mode still governs every other Store API route. There is no setting that closes your checkout.
 
 = In what order does everything happen? =
 
@@ -256,7 +256,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 * Changed: the Blocking tab is now called Shielding.
 * New: Reject is offered as an action on any risk level, so you can refuse an order outright before it is created rather than holding it afterwards.
 * New: what your payment processor says about the card — whether the billing address matched, whether the security code matched, whether it was prepaid, its own fraud rating, and where the card was issued — are five checks on the Scoring tab with costs you control. They used to be a single checkbox that held an order when two of them failed, with no way to see what it weighed or to disagree with part of it. The defaults do exactly what that checkbox did.
-* New: Send to Review on the AI Review tab. Pick the risk levels worth a second opinion. Rejected can now be one of them: the review happens before the refusal, so a model can rescue an order the checks were too harsh on. Orders stopped by a single decisive check are never sent, because the model cannot overturn those and the call would be wasted.
+* New: Send to review on the AI Review tab. Pick the risk levels worth a second opinion. Rejected can now be one of them: the review happens before the refusal, so a model can rescue an order the checks were too harsh on. Orders stopped by a single decisive check are never sent, because the model cannot overturn those and the call would be wasted.
 * New: a checkout that MightyShield refuses is now remembered. Every record it kept required an order to exist, so it only ever learned from the orders it let through — somebody refused fifty times arrived at the fifty-first looking like a stranger.
 * Fixed: an order you released from Fraud Review could never afterwards record a chargeback, a refund, or anything else. That is exactly the population where being wrong matters most — the orders MightyShield flagged and you overruled — and it was also the only population the tuning report exists to measure. Your judgement still stands; a chargeback now updates the record anyway.
 * Fixed: a card was recorded but never read. A fraudster reusing a card behind a fresh email and a fresh address scored as a stranger while that card's chargeback sat in the table.
@@ -267,7 +267,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 * Fixed: on the block checkout, order velocity was never counted at all, so two of the velocity checks could not fire on it.
 * Fixed: a mismatched timezone temporarily barred the address it came from. That is a VPN, a traveller or an expat far more often than a bot, and the setting that caused it shipped switched on.
 * Fixed: the manual quoted five limits that had been relaxed in 2.1.1 and never updated, so it advertised thresholds five times tighter than the ones actually in use.
-* Fixed: the Risk Levels and Scoring tables were sized by their columns rather than by the panel holding them, leaving a gap down the right-hand side.
+* Fixed: the Risk levels and Scoring tables were sized by their columns rather than by the panel holding them, leaving a gap down the right-hand side.
 
 = 2.1.1 =
 * Fixed: choosing "Disabled" for protection broke every WordPress admin page, and the only way back to the setting was the admin page it had just broken. Recovering needed database access.
@@ -288,7 +288,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 * Fixed: eight settings that decide whether a check refuses an order or merely notes it had no screen at all, and three of them were set to refuse. They now sit beside the check they govern on the Scoring tab.
 * Fixed: several screens described behaviour the plugin no longer had, including the Blocking tab telling you front-end checks did not work on the block checkout.
 * Fixed: typing a currency symbol into an amount, like "$500", stored it as zero. A high-value threshold of zero treats every order as high value, and nothing said so. Amounts and scores now accept what people actually type and are kept inside sensible bounds.
-* New: the Bot Challenge panel now tells you what the challenge has been doing, instead of only what it is set to. How many visitors it turned away, how many it could not judge either way, and whether it has stopped refusing anyone on a form because the keys look wrong.
+* New: the Bot challenge panel now tells you what the challenge has been doing, instead of only what it is set to. How many visitors it turned away, how many it could not judge either way, and whether it has stopped refusing anyone on a form because the keys look wrong.
 * New: the action for each risk level now says what happens to the customer's money, which is the real difference between the three kinds of hold.
 * Fixed: an order held by the block checkout showed a vague reason in Fraud Review where the identical order from the classic checkout showed a clear one.
 * Fixed: three of the four ways a shopper gets temporarily blocked left nothing in the Logs, so there was no way to find out why somebody could not check out.
@@ -331,7 +331,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 * New: if the challenge refuses a run of visitors without a single one passing, MightyShield now treats that as its own fault rather than an attack, stops refusing people, and emails you. One success puts it straight back to normal. A broken key should cost you a warning, not every customer.
 * Fixed: Smarty address verification returned HTTP 401 on every call because credentials were sent in a form Smarty does not accept. Address verification works again.
 * Smarty and AI errors now tell you what actually went wrong. Rejected credentials, an exhausted subscription, a rate limit and an outage are four different problems needing four different responses, and they used to arrive as the same bare status code with advice that was wrong for three of them.
-* New: a Test Connection button for Smarty and for AI. It makes one real call using your saved credentials and tells you what came back. For Smarty it also works out which way this particular server can send credentials, and keeps it.
+* New: a Test connection button for Smarty and for AI. It makes one real call using your saved credentials and tells you what came back. For Smarty it also works out which way this particular server can send credentials, and keeps it.
 * New: Smarty and AI warnings can be dismissed once you have dealt with them. If the problem is still there, the next failed call brings the warning straight back.
 * Fixed: a warning about rejected credentials disappeared the moment you cleared the credentials it was warning about, which read as though the problem had been fixed.
 * Fixed: a Smarty or AI warning could stay on screen for several minutes after the service had recovered.
@@ -349,7 +349,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 * Fixed: the Fraud Review queue could time out and fail to load on stores with only a few dozen orders.
 * Fixed: AI review was rejected by the provider on every request and silently stopped reviewing orders. Failed reviews now report what the provider actually objected to instead of only a status code.
 * Fixed: reCAPTCHA v3 could never succeed on the block-based checkout, which would have refused every order the moment it was switched on.
-* New: MightyShield now warns you when the Store API Firewall is set in a way that closes a block-based checkout to your customers. That combination previously took a store offline with nothing anywhere to say why.
+* New: MightyShield now warns you when the Store API firewall is set in a way that closes a block-based checkout to your customers. That combination previously took a store offline with nothing anywhere to say why.
 * Rewrote the built-in documentation against the plugin as it actually is. It now covers every setting, including twelve that were not documented at all, and a Payment section explaining why the same risk level can do different things on different orders.
 
 = 1.9.0 =
@@ -399,7 +399,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 = 1.8.0 =
 * Added AI Fraud Detection: optionally send orders to an AI model (Anthropic Claude, OpenAI, or Google Gemini) for a 1–10 fraud rating; low-rated orders are held On hold for review with a per-order Approve/Deny panel, an optional authorize-only hold on supported gateways, and admin email alerts. Off by default.
 * Added block-based (Store API) checkout support: the server-side fraud checks — disposable email, order amount, address validation, ZIP/State, velocity, and rate limiting — now run on the block Checkout via the Store API, blocking or flagging per each layer's existing settings.
-* Added a Firewall Mode setting: "Classic checkout" (block all non-whitelisted IPs from the Store API, as before) or "Block/One-page checkout" (allow real shoppers, block only blocklisted IPs) so block-checkout stores are not locked out.
+* Added a Firewall mode setting: "Classic checkout" (block all non-whitelisted IPs from the Store API, as before) or "Block/One-page checkout" (allow real shoppers, block only blocklisted IPs) so block-checkout stores are not locked out.
 * Added front-end checks to the block Checkout: checkout timing, device fingerprinting, and Google reCAPTCHA v3 now ride along with the Store API request and are verified server-side, honoring each layer's block / flag / notify action.
 * Removed Test Mode (added in 1.7.0): the admin-bar force-trip toggle has been retired. Its per-user settings and log entries are cleaned up automatically on upgrade.
 * Note: on block checkout the honeypot and Cloudflare Turnstile are not evaluated — both require a rendered field/widget that the React Checkout block does not provide. Use reCAPTCHA v3 for a bot challenge on block checkout, or classic/one-page checkout for the full set.
@@ -415,7 +415,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 * Added a "Get IP" button in the Logs event drawer that fetches and stores IP data on demand without a page reload; cached data loads automatically on future views.
 * Log cleanup now also drops cached IP data for IPs no longer present in the log.
 * Made the events trend chart interactive: hover tooltips, and switchable 24-hour / 7-day / 30-day ranges (defaults to 30 days).
-* Fixed IPv6 display: no longer overlaps the bar in Top Blocked IPs or the Endpoint column in the logs; capitalized the "Top Blocked IPs" heading.
+* Fixed IPv6 display: no longer overlaps the bar in Top blocked IPs or the Endpoint column in the logs; capitalized the "Top blocked IPs" heading.
 
 = 1.5.0 =
 * Redesigned the admin interface: a modern card-based layout, a plugin header, and a light/dark theme toggle saved per user.

@@ -134,7 +134,7 @@ class dashboard_widget {
         printf(
             '<div class="ms-conflict"><strong>%s</strong> %s <a href="%s">%s</a></div>',
             esc_html__( 'Your checkout is closed to customers.', 'mighty-shield' ),
-            esc_html__( 'The Store API Firewall is set to Allowlist, and this store uses the block checkout, which needs those endpoints.', 'mighty-shield' ),
+            esc_html__( 'The Store API firewall is set to Allowlist, and this store uses the block checkout, which needs those endpoints.', 'mighty-shield' ),
             esc_url( admin_url( 'admin.php?page=mighty-shield&tab=blocking' ) ),
             esc_html__( 'Fix it', 'mighty-shield' )
         );

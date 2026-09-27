@@ -31,7 +31,7 @@ Three screens, and only three, decide how an order is treated:
 | Screen | What it sets |
 |---|---|
 | **Scoring** | Every check: on or off, what it costs, whether it can force a level on its own, and its own configuration. Grouped into Identity, Network, Behavior, Order, Payment and History. |
-| **AI Review** | Provider, keys, spend cap, redaction — and **Send to Review**, which picks the risk levels worth a second opinion. |
+| **AI Review** | Provider, keys, spend cap, redaction — and **Send to review**, which picks the risk levels worth a second opinion. |
 | **Shielding** | What a score means. Six risk levels, each with a threshold and an action. Plus the Store API firewall, the bot challenge and refusal behaviour. |
 
 Dashboard, Payment, Access and Logs report or list; they do not tune scoring or blocking.
@@ -61,7 +61,7 @@ Dashboard, Payment, Access and Logs report or list; they do not tune scoring or 
 - Daily cleanup of logs, rate limits, IP cache and stale customer history
 
 **AI review (optional)**
-- Anthropic, OpenAI or Google, with per-provider model names, a hard daily spend cap and a Test Connection that makes one real request
+- Anthropic, OpenAI or Google, with per-provider model names, a hard daily spend cap and a Test connection that makes one real request
 - Runs before the order is created, so its verdict can still prevent a sale
 - Send only the levels you choose; optionally redact customer details so names and addresses never leave your site
 

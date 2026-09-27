@@ -252,7 +252,7 @@ class ai_client {
      * Deliberately the same call review() makes, minimal prompt aside. A ping
      * that skipped the tool definition and the strict schema would pass while
      * real reviews returned HTTP 400 -- which is exactly the failure this store
-     * hit, and exactly what a Test Connection button is for.
+     * hit, and exactly what a Test connection button is for.
      *
      * It does not count against the daily budget and does not record a degraded
      * state: the merchant is standing at the screen watching the result, so

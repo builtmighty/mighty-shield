@@ -333,7 +333,7 @@ class ai_reviewer {
         $level = risk_levels::from_trust( risk_context::signal_trust() );
 
         // Which levels are worth a verdict is the merchant's call, set as
-        // "Send to Review" on the AI Review tab.
+        // "Send to review" on the AI Review tab.
         //
         // Rejected is among the levels they may choose, which it could not have
         // been before 2.2.0: the review ran after the order existed and a

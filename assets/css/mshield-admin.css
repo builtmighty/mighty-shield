@@ -139,7 +139,11 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 }
 .mshield-card.is-flush { padding:0; overflow:hidden; }
 .mshield-card-head { display:flex; align-items:center; gap:12px; padding:15px 18px; border-bottom:1px solid var(--line-2); }
-.mshield-card-title { font-size:15px; font-weight:650; }
+/* One heading style: the section h2 and the card title are the same thing. */
+.mshield-app .mshield-card-title { font-size:16px; font-weight:650; margin:0 0 6px; padding:0; color:var(--fg); }
+.mshield-app .mshield-card-head .mshield-card-title { margin:0; }
+.mshield-app .mshield-card-link { font-size:13px; font-weight:600; color:var(--brand); text-decoration:none; }
+.mshield-app .mshield-card-link:hover { text-decoration:underline; }
 .mshield-card-sub { font-size:12.5px; color:var(--fg-2); margin-top:2px; }
 .mshield-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
 .mshield-stack { display:flex; flex-direction:column; gap:18px; }
@@ -536,8 +540,17 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     padding:18px 20px; margin-bottom:18px; box-shadow:var(--shadow); color:var(--fg);
 }
 .mshield-app .mshield-section h2 { margin-top:0; font-size:16px; font-weight:650; color:var(--fg); }
-.mshield-app .mshield-section .description,
-.mshield-app .mshield-section p.description { font-size:12px; color:var(--fg-2); }
+/* Helper text: one sentence under a control or a card title. Hints (11px)
+   are for footnotes. */
+.mshield-app .description,
+.mshield-app p.description { font-size:12px; color:var(--fg-2); }
+.mshield-app .mshield-card > p.description,
+.mshield-app .mshield-card > form > p.description { margin:0 0 12px; }
+/* One empty state: a sentence where the content would have been. */
+.mshield-app .mshield-empty { margin:0; padding:4px 0; font-size:13px; color:var(--fg-2); }
+/* The Settings API save button, dressed as the app's primary button. */
+.mshield-app p.submit { margin:18px 0 0; padding:0; }
+.mshield-app p.submit .button-primary { padding:8px 13px; border-radius:7px; font-size:13px; font-weight:600; line-height:1.2; height:auto; min-height:0; }
 
 .mshield-app .mshield-table { width:100%; border-collapse:collapse; }
 .mshield-app .mshield-table th, .mshield-app .mshield-table td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line-2); color:var(--fg); }

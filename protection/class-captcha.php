@@ -1,6 +1,6 @@
 <?php
 /**
- * CAPTCHA / Bot Challenge.
+ * CAPTCHA / Bot challenge.
  *
  * Adds a Cloudflare Turnstile or Google reCAPTCHA v3 challenge to the classic
  * checkout and verifies the token server-side. Strong defense against automated
@@ -1196,7 +1196,7 @@ class captcha {
      * What the bot challenge has actually been doing.
      *
      * The plugin calls this its single most effective control and then showed a
-     * merchant nothing about it: no status, no last verdict, no Test Connection,
+     * merchant nothing about it: no status, no last verdict, no Test connection,
      * while the AI and address integrations each have one. Everything needed was
      * already being recorded and nothing read it back.
      *
@@ -1317,7 +1317,7 @@ class captcha {
             __(
                 "MightyShield's bot challenge (%1\$s) is rejecting all tokens because of a configuration error: %2\$s.\n\n" .
                 "To avoid blocking legitimate checkouts, the challenge is temporarily failing open (allowing orders) until this is fixed.\n\n" .
-                "Check the Site Key and Secret Key under MightyShield > Shielding > Bot Challenge.\n\n" .
+                "Check the Site Key and Secret Key under MightyShield > Shielding > Bot challenge.\n\n" .
                 "This alert is sent at most once per day.",
                 'mighty-shield'
             ),

@@ -1645,7 +1645,7 @@ class admin_page {
     }
 
     /**
-     * The Test Connection control, rendered the same way on every tab.
+     * The Test connection control, rendered the same way on every tab.
      *
      * A button is an action, not a setting, so it is called directly from a
      * view rather than registered in signals::SETTINGS -- anything in there is
@@ -1663,7 +1663,7 @@ class admin_page {
             '<p><button type="button" class="mshield-btn mshield-test" data-service="%s">%s</button>'
             . '<span class="mshield-test-result" aria-live="polite"></span></p>',
             esc_attr( $service ),
-            esc_html__( 'Test Connection', 'mighty-shield' )
+            esc_html__( 'Test connection', 'mighty-shield' )
         );
 
         if( $note !== '' ) printf( '<p class="description">%s</p>', esc_html( $note ) );
@@ -2197,7 +2197,7 @@ class admin_page {
         printf(
             '<div class="mshield-banner is-danger" style="margin-bottom:18px"><div><strong>%s</strong> %s <a href="%s">%s</a></div></div>',
             esc_html__( 'Your checkout is closed to customers.', 'mighty-shield' ),
-            esc_html__( 'This store uses the block checkout, which is built on the Store API, and the Store API Firewall is set to Allowlist. That combination refuses the cart and the checkout for everyone who is not on your allowlist, so no customer can buy. Set the firewall to Blocklist, or turn it off.', 'mighty-shield' ),
+            esc_html__( 'This store uses the block checkout, which is built on the Store API, and the Store API firewall is set to Allowlist. That combination refuses the cart and the checkout for everyone who is not on your allowlist, so no customer can buy. Set the firewall to Blocklist, or turn it off.', 'mighty-shield' ),
             esc_url( admin_url( 'admin.php?page=mighty-shield&tab=blocking' ) ),
             esc_html__( 'Change it on Shielding', 'mighty-shield' )
         );

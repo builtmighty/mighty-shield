@@ -421,7 +421,7 @@ class fraud_review {
         );
 
         printf(
-            '<p style="margin:0;color:var(--fg-2);font-size:13px">%s</p>',
+            '<p class="description">%s</p>',
             esc_html__( 'Orders held before payment, held after it, or flagged by a check land here. An empty queue means every one of them has been dealt with.', 'mighty-shield' )
         );
 

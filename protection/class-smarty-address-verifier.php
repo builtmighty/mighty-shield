@@ -408,7 +408,7 @@ class smarty_address_verifier {
 
                 $message .= ' ' . sprintf(
                     /* translators: %s: the transport in use, e.g. "HTTP Basic". */
-                    __( 'Credentials were sent as %s. Use Test Connection on the Scoring tab to find the form this server can actually deliver.', 'mighty-shield' ),
+                    __( 'Credentials were sent as %s. Use Test connection on the Scoring tab to find the form this server can actually deliver.', 'mighty-shield' ),
                     self::auth_mode() === 'query' ? __( 'query parameters', 'mighty-shield' ) : __( 'HTTP Basic', 'mighty-shield' )
                 );
 
@@ -456,7 +456,7 @@ class smarty_address_verifier {
      *
      * Basic keeps that intent and is the default. It is not documented on the US
      * Street page though, and some hosts and WAFs strip outbound Authorization
-     * headers, so which one works is a per-server question. Test Connection
+     * headers, so which one works is a per-server question. Test connection
      * answers it by trying both and storing the winner.
      *
      * Split out from call_smarty_api() so the test can drive either transport

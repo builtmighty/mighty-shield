@@ -406,7 +406,7 @@ class order_panel {
         printf(
             '<p class="ms-buttons"><a href="%s" class="button button-primary" data-mshield-rate>%s</a></p>',
             esc_url( self::action_url( $order, 'rate' ) ),
-            esc_html__( 'Rate Order', 'mighty-shield' )
+            esc_html__( 'Rate order', 'mighty-shield' )
         );
 
         // Only offered when a provider is actually configured. An unusable
@@ -414,7 +414,7 @@ class order_panel {
         if( ai_client::is_ready() ) {
             printf(
                 '<label class="ms-aitoggle"><input type="checkbox" id="mshield-use-ai" /> %s</label>',
-                esc_html__( 'Use AI to Review', 'mighty-shield' )
+                esc_html__( 'Use AI to review', 'mighty-shield' )
             );
         }
 
@@ -669,7 +669,7 @@ class order_panel {
     public static function approve_label( $order ) {
 
         return ! response::is_detained( $order ) && ai_capture::is_authorized( $order )
-            ? __( 'Approve & Capture', 'mighty-shield' )
+            ? __( 'Approve and capture', 'mighty-shield' )
             : __( 'Approve', 'mighty-shield' );
 
     }

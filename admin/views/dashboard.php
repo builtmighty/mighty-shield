@@ -78,7 +78,7 @@ $observing = $now['observing'];
     <div class="mshield-card">
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px">
             <div>
-                <div class="mshield-card-title" id="mshield-chart-title"><?php esc_html_e( 'Events over the past 30 days', 'mighty-shield' ); ?></div>
+                <h2 class="mshield-card-title" id="mshield-chart-title"><?php esc_html_e( 'Events over the past 30 days', 'mighty-shield' ); ?></h2>
                 <div class="mshield-card-sub" id="mshield-chart-sub"></div>
             </div>
             <span class="mshield-spacer"></span>
@@ -126,11 +126,11 @@ $observing = $now['observing'];
     <div class="mshield-card is-flush">
         <div class="mshield-card-head">
             <div>
-                <div class="mshield-card-title"><?php esc_html_e( 'Top Blocked IPs', 'mighty-shield' ); ?></div>
+                <h2 class="mshield-card-title"><?php esc_html_e( 'Top blocked IPs', 'mighty-shield' ); ?></h2>
                 <div class="mshield-card-sub"><?php esc_html_e( 'Past 7 days', 'mighty-shield' ); ?></div>
             </div>
             <span class="mshield-spacer"></span>
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) ); ?>" style="font-size:13px;font-weight:600;color:var(--brand)"><?php esc_html_e( 'View all logs →', 'mighty-shield' ); ?></a>
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) ); ?>" class="mshield-card-link"><?php esc_html_e( 'View all logs →', 'mighty-shield' ); ?></a>
         </div>
         <?php foreach( $top_ips as $row ) :
             $pct = round( (int) $row->total / $ip_max * 100 );

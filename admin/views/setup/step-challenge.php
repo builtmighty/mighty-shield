@@ -64,7 +64,7 @@ setup_wizard::form_open( 'challenge' );
         <th scope="row"><?php esc_html_e( 'Site key', 'mighty-shield' ); ?></th>
         <td>
             <input type="text" name="mshield_captcha_site_key" class="regular-text" value=""
-                   placeholder="<?php echo $mshield_has_site ? esc_attr__( 'saved — leave blank to keep', 'mighty-shield' ) : ''; ?>" />
+                   placeholder="<?php echo $mshield_has_site ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>" />
             <p class="description">
                 <?php esc_html_e( 'Turnstile: your Cloudflare dashboard. reCAPTCHA: the Google admin console, and it must be a v3 key.', 'mighty-shield' ); ?>
             </p>
@@ -75,7 +75,7 @@ setup_wizard::form_open( 'challenge' );
         <th scope="row"><?php esc_html_e( 'Secret key', 'mighty-shield' ); ?></th>
         <td>
             <input type="password" name="mshield_captcha_secret_key" class="regular-text" value="" autocomplete="off"
-                   placeholder="<?php echo $mshield_has_sec ? esc_attr__( 'saved — leave blank to keep', 'mighty-shield' ) : ''; ?>" />
+                   placeholder="<?php echo $mshield_has_sec ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>" />
             <p class="description">
                 <?php esc_html_e( 'From the same place, and from the same site as the key above. A key from one site with a secret from another is rejected on every request.', 'mighty-shield' ); ?>
             </p>

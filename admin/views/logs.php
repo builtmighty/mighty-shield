@@ -131,7 +131,7 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
     </form>
 
     <?php if( empty( $logs ) ) : ?>
-        <div class="mshield-card"><p style="margin:0;color:var(--fg-2)"><?php esc_html_e( 'No log entries found.', 'mighty-shield' ); ?></p></div>
+        <div class="mshield-card"><p class="mshield-empty"><?php esc_html_e( 'No log entries found.', 'mighty-shield' ); ?></p></div>
     <?php else : ?>
 
     <!-- Bulk form + table -->
@@ -243,11 +243,11 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
     $mshield_bf_run = 'running' === $mshield_bf['status'];
     ?>
     <div class="mshield-card">
-        <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Rate past orders', 'mighty-shield' ); ?></div>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Rate past orders', 'mighty-shield' ); ?></h2>
 
         <?php if( $mshield_bf_run ) : ?>
 
-            <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+            <p class="description">
                 <?php
                 printf(
                     /* translators: 1: orders rated so far, 2: total orders. */
@@ -264,15 +264,15 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
 
         <?php else : ?>
 
-            <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+            <p class="description">
                 <?php esc_html_e( 'MightyShield only knows the customers it has seen since you installed it, so on a new install nobody has a history and nobody earns trust. Rating your past orders fills that in, and the next real order is judged against what your store already knows instead of against nothing.', 'mighty-shield' ); ?>
             </p>
-            <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+            <p class="description">
                 <?php esc_html_e( 'Nothing is done to any order — no holds, no cancellations, no emails. Ratings from past orders are partial, because the bot, timing and device checks measure the checkout as it happens and that moment has gone.', 'mighty-shield' ); ?>
             </p>
 
             <?php if( 'complete' === $mshield_bf['status'] || 'cancelled' === $mshield_bf['status'] ) : ?>
-                <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+                <p class="description">
                     <strong>
                         <?php
                         printf(
@@ -288,7 +288,7 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
 
             <form method="post">
                 <?php wp_nonce_field( 'mshield_backfill_action' ); ?>
-                <label style="font-size:13px">
+                <label>
                     <?php esc_html_e( 'How far back', 'mighty-shield' ); ?>
                     <select name="mshield_backfill_days">
                         <option value="90"><?php esc_html_e( '90 days', 'mighty-shield' ); ?></option>
@@ -306,19 +306,19 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
     <!-- Chargeback import -->
     <?php $mshield_dis = get_transient( \MightyShield\Includes\dispute_import::preview_key() ); ?>
     <div class="mshield-card">
-        <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Import chargebacks', 'mighty-shield' ); ?></div>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Import chargebacks', 'mighty-shield' ); ?></h2>
 
         <?php if( is_array( $mshield_dis ) ) : ?>
 
             <?php if( (int) $mshield_dis['matched'] === 0 ) : ?>
 
-                <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+                <p class="description">
                     <?php esc_html_e( 'None of the columns in that file matched an order. Dispute reports identify a payment the way your processor knows it, so the file needs to contain either the transaction reference stored on the order or the order number itself.', 'mighty-shield' ); ?>
                 </p>
 
             <?php else : ?>
 
-                <p style="margin:0 0 12px;font-size:13px">
+                <p class="description">
                     <strong>
                         <?php
                         printf(
@@ -373,10 +373,10 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
 
         <?php else : ?>
 
-            <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+            <p class="description">
                 <?php esc_html_e( 'MightyShield learns from chargebacks automatically on Stripe, which tells it when one happens. Every other processor disputes into a dashboard it cannot see — so on those, the strongest signal there is never reaches the scoring.', 'mighty-shield' ); ?>
             </p>
-            <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px">
+            <p class="description">
                 <?php esc_html_e( 'Export your dispute report as CSV and upload it here. Nothing is recorded until you have seen which column it matched on and said so. The file is read once and deleted.', 'mighty-shield' ); ?>
             </p>
 
@@ -391,26 +391,26 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
 
     <!-- Maintenance -->
     <div class="mshield-card">
-        <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Maintenance', 'mighty-shield' ); ?></div>
-        <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px"><?php esc_html_e( 'Clear all log entries. This action cannot be undone.', 'mighty-shield' ); ?></p>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Maintenance', 'mighty-shield' ); ?></h2>
+        <p class="description"><?php esc_html_e( 'Clear all log entries. This action cannot be undone.', 'mighty-shield' ); ?></p>
         <form method="post">
             <?php wp_nonce_field( 'mshield_clear_logs_action' ); ?>
-            <button type="submit" name="mshield_clear_logs" value="1" class="mshield-btn is-danger" onclick="return confirm('<?php echo esc_js( __( 'Are you sure? This will delete all log entries.', 'mighty-shield' ) ); ?>');"><?php esc_html_e( 'Clear All Logs', 'mighty-shield' ); ?></button>
+            <button type="submit" name="mshield_clear_logs" value="1" class="mshield-btn is-danger" onclick="return confirm('<?php echo esc_js( __( 'Are you sure? This will delete all log entries.', 'mighty-shield' ) ); ?>');"><?php esc_html_e( 'Clear all logs', 'mighty-shield' ); ?></button>
         </form>
     </div>
 
-    <!-- Log Settings -->
+    <!-- Log settings -->
     <?php /* Moved here from the Access tab in 1.9.3, next to the logs it governs.
              This is the only Settings API form on the page, so it carries its own
              group -- registering an option to a group with no field submitting it
              makes options.php write null over it on every save of that group. */ ?>
     <div class="mshield-card" id="mshield-log-settings">
-        <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Log Settings', 'mighty-shield' ); ?></div>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Log settings', 'mighty-shield' ); ?></h2>
         <form method="post" action="options.php">
             <?php settings_fields( 'mshield_logs' ); ?>
             <table class="form-table" role="presentation">
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Log Retention', 'mighty-shield' ); ?></th>
+                    <th scope="row"><?php esc_html_e( 'Log retention', 'mighty-shield' ); ?></th>
                     <td>
                         <input type="number" name="mshield_log_retention_days" value="<?php echo esc_attr( settings::get( 'mshield_log_retention_days' ) ); ?>" min="1" max="365" class="small-text" />
                         <?php esc_html_e( 'days', 'mighty-shield' ); ?>
@@ -418,7 +418,7 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Customer History', 'mighty-shield' ); ?></th>
+                    <th scope="row"><?php esc_html_e( 'Customer history', 'mighty-shield' ); ?></th>
                     <td>
                         <input type="number" name="mshield_entity_retention_days" value="<?php echo esc_attr( settings::get( 'mshield_entity_retention_days' ) ); ?>" min="0" max="3650" class="small-text" />
                         <?php esc_html_e( 'days', 'mighty-shield' ); ?>

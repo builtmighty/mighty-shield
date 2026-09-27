@@ -204,7 +204,7 @@ class settings {
      *
      * Paired with get() so a caller that stores a setting reads the same key
      * through the same door. Only for settings the plugin discovers for itself
-     * -- the transport Test Connection finds, say -- never for form input,
+     * -- the transport Test connection finds, say -- never for form input,
      * which goes through the registered sanitizers on the settings group.
      *
      * @since   2.0.1

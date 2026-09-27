@@ -55,7 +55,7 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
 
 <div class="mshield-section">
 
-    <h2><?php esc_html_e( 'Scoring Profile', 'mighty-shield' ); ?></h2>
+    <h2><?php esc_html_e( 'Scoring profile', 'mighty-shield' ); ?></h2>
 
     <p class="description">
         <?php esc_html_e( 'Set every trust cost below at once. Pick the one that sounds like your store, then change any individual row that is catching customers you want to keep.', 'mighty-shield' ); ?>
@@ -113,7 +113,7 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
 
 <div class="mshield-section">
 
-    <h2><?php esc_html_e( 'Trust Rating', 'mighty-shield' ); ?></h2>
+    <h2><?php esc_html_e( 'Trust rating', 'mighty-shield' ); ?></h2>
 
     <p class="description">
         <?php esc_html_e( 'Every order is rated from 1 to 100.', 'mighty-shield' ); ?>
@@ -348,7 +348,7 @@ $mshield_ov  = \MightyShield\Includes\signal_report::overlaps( $mshield_rep );
 
                                             <?php elseif( $field['type'] === 'password' ) : ?>
                                                 <input type="password" name="<?php echo esc_attr( $opt ); ?>" value=""
-                                                       placeholder="<?php echo $val !== '' ? esc_attr__( 'saved. Leave blank to keep', 'mighty-shield' ) : ''; ?>"
+                                                       placeholder="<?php echo $val !== '' ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>"
                                                        autocomplete="off" />
 
                                             <?php else : ?>
