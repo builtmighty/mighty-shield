@@ -120,6 +120,9 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
             <option value="degraded" <?php selected( $filter_action, 'degraded' ); ?>><?php esc_html_e( 'Needs attention', 'mighty-shield' ); ?></option>
         </select>
 
+        <?php if( $filter_ip ) : ?>
+            <span class="mshield-chip"><?php echo esc_html( $filter_ip ); ?><a href="<?php echo esc_url( remove_query_arg( [ 'filter_ip', 'paged' ] ) ); ?>" aria-label="<?php esc_attr_e( 'Stop filtering by this address', 'mighty-shield' ); ?>">&times;</a></span>
+        <?php endif; ?>
         <button type="submit" class="mshield-btn"><?php esc_html_e( 'Filter', 'mighty-shield' ); ?></button>
         <?php if( $filter_action || $filter_ip || $search || $range ) : ?>
             <a href="<?php echo esc_url( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) ); ?>" class="mshield-btn"><?php esc_html_e( 'Clear', 'mighty-shield' ); ?></a>
@@ -242,7 +245,7 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
     $mshield_bf     = \MightyShield\Includes\backfill::state();
     $mshield_bf_run = 'running' === $mshield_bf['status'];
     ?>
-    <div class="mshield-card">
+    <div class="mshield-card" id="mshield-backfill"<?php echo $mshield_bf_run ? ' data-running="1"' : ''; ?>>
         <h2 class="mshield-card-title"><?php esc_html_e( 'Rate past orders', 'mighty-shield' ); ?></h2>
 
         <?php if( $mshield_bf_run ) : ?>
@@ -252,8 +255,8 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
                 printf(
                     /* translators: 1: orders rated so far, 2: total orders. */
                     esc_html__( 'Rating your past orders: %1$s of %2$s done. This continues in the background, so you can leave this page.', 'mighty-shield' ),
-                    esc_html( number_format_i18n( (int) $mshield_bf['done'] ) ),
-                    esc_html( number_format_i18n( (int) $mshield_bf['total'] ) )
+                    '<span data-bf="done">' . esc_html( number_format_i18n( (int) $mshield_bf['done'] ) ) . '</span>',
+                    '<span data-bf="total">' . esc_html( number_format_i18n( (int) $mshield_bf['total'] ) ) . '</span>'
                 );
                 ?>
             </p>

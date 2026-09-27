@@ -532,10 +532,25 @@
             var out   = btn.parentNode.querySelector( '.mshield-test-result' );
             var label = btn.textContent;
 
+            // The test runs against the SAVED key. A key typed but not saved
+            // would test the old one, so the button waits until it is saved.
+            var testing = false;
+            var form    = btn.closest( 'form' );
+            var keys    = form ? Array.prototype.slice.call( form.querySelectorAll( 'input[type="password"]' ) ) : [];
+            function syncDirty() {
+                if ( testing ) return;
+                var dirty = keys.some( function( k ) { return k.value !== ''; } );
+                btn.disabled = dirty;
+                btn.title    = dirty ? __( 'Save first', 'mighty-shield' ) : '';
+            }
+            keys.forEach( function( k ) { k.addEventListener( 'input', syncDirty ); } );
+            syncDirty();
+
             btn.addEventListener( 'click', function() {
 
                 if ( ! cfg.ajaxUrl ) return;
 
+                testing         = true;
                 btn.disabled    = true;
                 btn.textContent = __( 'Testing…', 'mighty-shield' );
                 if ( out ) { out.className = 'mshield-test-result'; out.textContent = ''; }
@@ -567,7 +582,7 @@
                             out.textContent = __( 'The test could not be run. Reload the page and try again.', 'mighty-shield' );
                         }
                     } )
-                    .then( function() { btn.disabled = false; btn.textContent = label; } );
+                    .then( function() { testing = false; btn.textContent = label; syncDirty(); } );
 
             } );
 
@@ -575,6 +590,44 @@
 
     }
 
-    ready( function() { initTheme(); initDrawer(); initBulk(); initRadios(); initSteppers(); initChart(); initOrderPanel(); initSignalJump(); initScoringProfile(); initTestConnection(); } );
+    /* ---------- Log filters ---------- */
+    // A changed select applies itself; the Filter button stays for the search
+    // box and for a browser without script.
+    function initLogFilters() {
+        var form = document.querySelector( '.mshield-filters' );
+        if ( ! form ) return;
+        form.querySelectorAll( 'select' ).forEach( function( sel ) {
+            sel.addEventListener( 'change', function() { form.submit(); } );
+        } );
+    }
+
+    /* ---------- Past-orders rating ---------- */
+    // While the run is on, the counter follows it; when it ends, the page
+    // reloads to show the finished state.
+    function initBackfill() {
+        var card = document.getElementById( 'mshield-backfill' );
+        if ( ! card || card.getAttribute( 'data-running' ) !== '1' || ! cfg.ajaxUrl ) return;
+
+        var done  = card.querySelector( '[data-bf="done"]' );
+        var total = card.querySelector( '[data-bf="total"]' );
+
+        function poll() {
+            var url = cfg.ajaxUrl + '?action=mshield_backfill_state&nonce=' + encodeURIComponent( cfg.bfNonce || '' );
+            fetch( url, { credentials:'same-origin' } )
+                .then( function( r ) { return r.json(); } )
+                .then( function( res ) {
+                    if ( ! res || ! res.success || ! res.data ) return;
+                    if ( res.data.status !== 'running' ) { window.location.reload(); return; }
+                    if ( done )  done.textContent  = res.data.done;
+                    if ( total ) total.textContent = res.data.total;
+                    setTimeout( poll, 5000 );
+                } )
+                .catch( function() { setTimeout( poll, 15000 ); } );
+        }
+
+        setTimeout( poll, 5000 );
+    }
+
+    ready( function() { initTheme(); initDrawer(); initBulk(); initRadios(); initSteppers(); initChart(); initOrderPanel(); initSignalJump(); initScoringProfile(); initTestConnection(); initLogFilters(); initBackfill(); } );
 
 } )();

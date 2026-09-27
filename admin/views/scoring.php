@@ -431,12 +431,12 @@ $mshield_ov  = \MightyShield\Includes\signal_report::overlaps( $mshield_rep );
 
                         <td>
                             <?php if( ! $sampled ) : ?>
-                                <span class="mshield-pill">&mdash;</span>
+                                <span class="mshield-readout">&mdash;</span>
                             <?php elseif( $fired === 0 ) : ?>
-                                <span class="mshield-pill"><?php esc_html_e( 'never', 'mighty-shield' ); ?></span>
+                                <span class="mshield-readout"><?php esc_html_e( 'never', 'mighty-shield' ); ?></span>
                             <?php else :
-                                $tone = $rate >= 50 ? 'is-danger' : ( $rate >= 15 ? 'is-warn' : 'is-ok' ); ?>
-                                <span class="mshield-pill <?php echo esc_attr( $tone ); ?>">
+                                $tone = $rate >= 50 ? 'is-danger' : ( $rate >= 15 ? 'is-warn' : '' ); ?>
+                                <span class="mshield-readout <?php echo esc_attr( $tone ); ?>">
                                     <?php echo esc_html( number_format_i18n( $rate, 1 ) ); ?>%
                                     (<?php echo esc_html( number_format_i18n( $fired ) ); ?>)
                                 </span>

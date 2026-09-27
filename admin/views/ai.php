@@ -130,7 +130,7 @@ $model_select = function( $key ) {
             <tr>
                 <th scope="row"><?php esc_html_e( 'Test connection', 'mighty-shield' ); ?></th>
                 <td>
-                    <?php admin_page::test_button( 'ai' ); ?>
+                    <?php admin_page::test_button( 'ai', __( 'Tests the saved key. Save first.', 'mighty-shield' ) ); ?>
                 </td>
             </tr>
         </table>

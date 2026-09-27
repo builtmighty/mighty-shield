@@ -181,6 +181,7 @@ class admin_page {
         add_action( 'wp_ajax_mshield_get_ip', [ $this, 'ajax_get_ip' ] );
         add_action( 'wp_ajax_mshield_chart', [ $this, 'ajax_chart' ] );
         add_action( 'wp_ajax_mshield_test_connection', [ $this, 'ajax_test_connection' ] );
+        add_action( 'wp_ajax_mshield_backfill_state', [ $this, 'ajax_backfill_state' ] );
         add_filter( 'admin_body_class', [ $this, 'admin_body_class' ] );
         // Late, so notices registered by other plugins are already in place.
         add_action( 'in_admin_header', [ $this, 'suppress_notices' ], 1000 );
@@ -680,6 +681,29 @@ class admin_page {
     }
 
     /**
+     * Where to go after allowlisting or blocking from a log row.
+     *
+     * Back to the log the merchant was reading, with its filters and page,
+     * when that is where they came from; otherwise the list they changed.
+     *
+     * @since   2.3.0
+     *
+     * @param   string  $tab    The Access tab alias to fall back to.
+     * @return  string  URL.
+     */
+    private static function back_to_logs_or( $tab ) {
+
+        $referer = wp_get_referer();
+
+        if( $referer && strpos( $referer, 'page=mighty-shield' ) !== false && strpos( $referer, 'tab=logs' ) !== false ) {
+            return $referer;
+        }
+
+        return admin_url( 'admin.php?page=mighty-shield&tab=' . $tab );
+
+    }
+
+    /**
      * Handle admin actions (whitelist add/remove).
      *
      * @since   1.0.0
@@ -831,7 +855,7 @@ class admin_page {
                 }
             }
 
-            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=blocklist' ) );
+            wp_safe_redirect( self::back_to_logs_or( 'blocklist' ) );
             exit;
 
         }
@@ -844,7 +868,7 @@ class admin_page {
                 set_transient( 'mshield_admin_notice', $this->whitelist_add( 'ip', $value, 'Whitelisted from logs' ), 30 );
             }
 
-            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=whitelist' ) );
+            wp_safe_redirect( self::back_to_logs_or( 'whitelist' ) );
             exit;
 
         }
@@ -1347,6 +1371,7 @@ class admin_page {
             'ipNonce'    => wp_create_nonce( 'mshield_get_ip' ),
             'chartNonce' => wp_create_nonce( 'mshield_chart' ),
             'testNonce'  => wp_create_nonce( 'mshield_test_connection' ),
+            'bfNonce'    => wp_create_nonce( 'mshield_backfill_state' ),
         ] );
 
     }
@@ -1667,6 +1692,27 @@ class admin_page {
         );
 
         if( $note !== '' ) printf( '<p class="description">%s</p>', esc_html( $note ) );
+
+    }
+
+    /**
+     * AJAX: the state of the past-orders rating run, for the Logs card to
+     * keep its counter moving without a reload.
+     *
+     * @since   2.3.0
+     */
+    public function ajax_backfill_state() {
+
+        if( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
+        if( ! check_ajax_referer( 'mshield_backfill_state', 'nonce', false ) ) wp_send_json_error( '', 400 );
+
+        $state = \MightyShield\Includes\backfill::state();
+
+        wp_send_json_success( [
+            'status' => (string) $state['status'],
+            'done'   => number_format_i18n( (int) $state['done'] ),
+            'total'  => number_format_i18n( (int) $state['total'] ),
+        ] );
 
     }
 

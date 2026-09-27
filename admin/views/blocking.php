@@ -248,12 +248,12 @@ foreach( $level_rows as $row ) {
 
                     <td>
                         <?php if( ! $stat ) : ?>
-                            <span class="mshield-pill">&mdash;</span>
+                            <span class="mshield-readout">&mdash;</span>
                         <?php else :
                             $approved = (int) ( $stat['outcomes']['approved'] ?? 0 );
                             $bad      = (int) ( $stat['outcomes']['chargeback'] ?? 0 ) + (int) ( $stat['outcomes']['denied'] ?? 0 );
                             ?>
-                            <span class="mshield-pill">
+                            <span class="mshield-readout">
                                 <?php
                                 printf(
                                     /* translators: %s: number of orders. */

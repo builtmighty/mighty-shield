@@ -1146,3 +1146,22 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
         animation:none !important; transition:none !important;
     }
 }
+
+/* ---------- Readouts ---------- */
+/* A number the plugin is telling you, next to a control you can change:
+   flat, monospaced, no border, so it never reads as a control. */
+.mshield-app .mshield-readout {
+    display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:6px;
+    background:var(--surface-2); font-family:var(--mono); font-size:12px; color:var(--fg); white-space:nowrap;
+}
+.mshield-app .mshield-readout.is-warn { color:var(--ink-warn); }
+.mshield-app .mshield-readout.is-danger { color:var(--ink-danger); }
+.mshield-app .mshield-readout.is-ok { color:var(--ink-ok); }
+
+/* An active filter that has no visible control of its own. */
+.mshield-app .mshield-chip {
+    display:inline-flex; align-items:center; gap:6px; padding:5px 6px 5px 11px; border-radius:999px;
+    background:var(--brand-soft); color:var(--fg); font-family:var(--mono); font-size:12px;
+}
+.mshield-app .mshield-chip a { color:var(--fg-2); text-decoration:none; font-size:15px; line-height:1; padding:0 4px; border-radius:50%; }
+.mshield-app .mshield-chip a:hover { color:var(--fg); background:var(--surface); }
