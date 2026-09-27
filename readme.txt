@@ -193,8 +193,17 @@ Fixes three network checks that had never worked and removes a blocking request 
 == Changelog ==
 
 = 2.3.0 =
+* Changed: the Scoring tab is a list of checks with one check's settings beside it, instead of six tables. Find a check by name, or show only the ones costing you customers, firing together, or switched off. Save pins itself to the window once something has changed and says how many checks changed.
+* Changed: the Dashboard leads with the chart, then what is waiting for you, what enforcing would do, and what your orders say about the weights.
+* Changed: the admin reads as one product: sentence case throughout, one heading style, one helper-text style, one empty state, one save button, and the manual on the same palette and fonts as the tabs, in dark mode too.
+* Changed: alerts live on the Logs tab, under Alerts and logs, since they govern every email the plugin sends.
+* Fixed: the order edit screen turned dark behind WooCommerce's white boxes for anyone whose computer prefers dark mode.
+* Fixed: exporting the log ignored the filters on screen.
+* Fixed: an unpaid held order read "Taken in full" in the review queue, and approving it offered Approve again forever.
+* Fixed: the Fraud Review page did not exist while protection was off, and the dashboard widget linked to it anyway.
+* Fixed: every control can be reached and seen from the keyboard, and text on buttons meets contrast in dark mode.
 * New: MightyShield now tells you what enforcing would actually do. Observe mode always recorded what it would have done; now the Shielding tab turns that into the answer you are really after — how many of your recent orders these thresholds would have refused, how many of those turned out to be fraud, and how many were real customers you would have lost. No other fraud plugin shows you the second number, and it is the one that makes a threshold a decision rather than a guess.
-* New: the Scoring tab reports what your own orders say about your weights — which checks keep firing on orders that turned out fine, and which pairs are firing on the same orders and so charging one fact twice.
+* New: MightyShield reports what your own orders say about your weights — which checks keep firing on orders that turned out fine, and which pairs are firing on the same orders and so charging one fact twice. On the Dashboard, and on each check on the Scoring tab.
 * New: import chargebacks from a CSV. MightyShield learns from disputes automatically on Stripe and could never see them on any other processor, so the strongest signal there is never reached the scoring. Export your dispute report, upload it, and check which column it matched before anything is recorded.
 * New: velocity now also counts one email identity across variations of it — dots, plus-tags and alias domains all point at one inbox, so rotating addresses no longer resets the counter.
 * New: a list of parcel-forwarding addresses you want flagged. It ships empty on purpose: a bundled list of "known" forwarders is a list of real warehouses, and one wrong entry refuses every order a legitimate business places from it.
