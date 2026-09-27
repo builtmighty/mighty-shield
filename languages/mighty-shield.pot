@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MightyShield 2.3.0\n"
 "Report-Msgid-Bugs-To: https://builtmighty.com\n"
-"POT-Creation-Date: 2026-09-27 18:46+0000\n"
+"POT-Creation-Date: 2026-09-27 18:50+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -412,7 +412,7 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: admin/class-admin-page.php:2004 admin/views/payment.php:73
+#: admin/class-admin-page.php:2004 admin/views/blocking.php:482 admin/views/payment.php:73
 msgid "Active"
 msgstr ""
 
@@ -2143,7 +2143,7 @@ msgstr ""
 msgid "In the last %3$d days it turned away %1$d visitors, and %2$d more could not be confirmed either way."
 msgstr ""
 
-#: admin/views/payment.php:75
+#: admin/views/blocking.php:478 admin/views/payment.php:75
 msgid "Inactive"
 msgstr ""
 
@@ -2778,10 +2778,6 @@ msgstr ""
 #. translators: %s: comma-separated action names.
 #: admin/views/blocking.php:243
 msgid "Not offered here, because no active payment method can do it: %s."
-msgstr ""
-
-#: admin/views/blocking.php:478
-msgid "Not running."
 msgstr ""
 
 #: admin/views/setup/step-done.php:47
@@ -3517,10 +3513,6 @@ msgstr ""
 
 #: admin/views/blocking.php:445
 msgid "Run the fraud checks on the block-based checkout too."
-msgstr ""
-
-#: admin/views/blocking.php:482
-msgid "Running."
 msgstr ""
 
 #: admin/views/documentation.php:417

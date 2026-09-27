@@ -475,11 +475,11 @@ foreach( actions::keys() as $mshield_act ) {
             <div>
                 <?php if( ! $mshield_cap['ready'] ) : ?>
 
-                    <strong><?php esc_html_e( 'Not running.', 'mighty-shield' ); ?></strong>
+                    <strong><?php esc_html_e( 'Inactive', 'mighty-shield' ); ?></strong>
 
                 <?php else : ?>
 
-                    <strong><?php esc_html_e( 'Running.', 'mighty-shield' ); ?></strong>
+                    <strong><?php esc_html_e( 'Active', 'mighty-shield' ); ?></strong>
                     <?php
                     printf(
                         /* translators: 1: number refused, 2: number unconfirmed, 3: number of days. */
