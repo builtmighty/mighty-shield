@@ -37,19 +37,15 @@ $actions = \MightyShield\Includes\actions::CATALOG;
 <div class="mshield-docs">
 
     <style>
+        /* The app's own tokens, so the manual is the same product as the tabs
+           and follows the theme toggle like everything else. */
         .mshield-docs {
-            --bg: #ffffff;
-            --surface: #f5f5f7;
-            --text: #1d1d1f;
-            --text-secondary: #6e6e73;
-            --border: #d2d2d7;
-            --accent: #d4121f;
-            --accent-tint: #fdecec;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: var(--text);
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            font-family: var(--sans);
+            color: var(--fg);
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
             margin-top: 12px;
             display: flex;
             align-items: flex-start;
@@ -65,7 +61,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             top: 32px;
             align-self: flex-start;
             padding: 28px 20px;
-            border-right: 1px solid var(--border);
+            border-right: 1px solid var(--line);
             max-height: calc(100vh - 64px);
             overflow-y: auto;
         }
@@ -74,7 +70,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            color: var(--text-secondary);
+            color: var(--fg-2);
             margin: 22px 0 8px;
         }
         .mshield-docs-nav .nav-title:first-child { margin-top: 0; }
@@ -82,13 +78,13 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             display: block;
             padding: 5px 10px;
             font-size: 14px;
-            color: var(--text);
+            color: var(--fg);
             text-decoration: none;
             border-left: 2px solid transparent;
             border-radius: 0 4px 4px 0;
         }
-        .mshield-docs-nav a:hover { color: #000; background: var(--surface); }
-        .mshield-docs-nav a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+        .mshield-docs-nav a:hover { color: var(--fg); background: var(--surface-2); }
+        .mshield-docs-nav a.active { color: var(--brand); border-left-color: var(--brand); font-weight: 600; }
 
         /* Reading column */
         .mshield-docs-main {
@@ -96,49 +92,49 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             padding: 32px 40px 64px;
             min-width: 0;
         }
-        .mshield-docs-main h1 {
-            font-size: 40px;
+        .mshield-docs-main .mshield-docs-title {
+            font-size: 26px;
             font-weight: 700;
             line-height: 1.1;
             letter-spacing: -0.02em;
             margin: 0 0 8px;
-            color: var(--text);
+            color: var(--fg);
         }
-        .mshield-docs-main .lede { font-size: 17px; color: var(--text-secondary); margin: 0 0 8px; }
-        .mshield-docs-main h2 {
-            font-size: 28px;
+        .mshield-docs-main .lede { font-size: 15px; color: var(--fg-2); margin: 0 0 8px; }
+        .mshield-docs-main h2:not(.mshield-docs-title) {
+            font-size: 21px;
             font-weight: 600;
             line-height: 1.2;
             letter-spacing: -0.01em;
             margin: 56px 0 12px;
             padding-top: 12px;
-            color: var(--text);
+            color: var(--fg);
         }
         .mshield-docs-main h3 {
-            font-size: 20px;
+            font-size: 17px;
             font-weight: 600;
             line-height: 1.3;
             margin: 32px 0 8px;
-            color: var(--text);
+            color: var(--fg);
         }
         .mshield-docs-main h4 {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             line-height: 1.35;
             margin: 24px 0 6px;
-            color: var(--text);
+            color: var(--fg);
         }
         .mshield-docs-main p,
-        .mshield-docs-main li { font-size: 16px; line-height: 1.6; color: var(--text); }
-        .mshield-docs-main a { color: var(--accent); text-decoration: none; }
+        .mshield-docs-main li { font-size: 14px; line-height: 1.6; color: var(--fg); }
+        .mshield-docs-main a { color: var(--brand); text-decoration: none; }
         .mshield-docs-main a:hover { text-decoration: underline; }
         .mshield-docs-main code {
-            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-            font-size: 14px;
-            background: var(--surface);
+            font-family: var(--mono);
+            font-size: 12.5px;
+            background: var(--surface-2);
             border-radius: 4px;
             padding: 2px 6px;
-            color: var(--text);
+            color: var(--fg);
         }
         .mshield-docs-main table {
             width: 100%;
@@ -148,40 +144,40 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         }
         .mshield-docs-main th,
         .mshield-docs-main td {
-            border: 1px solid var(--border);
+            border: 1px solid var(--line);
             padding: 8px 12px;
             text-align: left;
             vertical-align: top;
             line-height: 1.5;
         }
-        .mshield-docs-main th { background: var(--surface); font-weight: 600; }
-        .mshield-docs-main .default { color: var(--text-secondary); white-space: nowrap; }
+        .mshield-docs-main th { background: var(--surface-2); font-weight: 600; }
+        .mshield-docs-main .default { color: var(--fg-2); white-space: nowrap; }
 
         .mshield-docs-main .callout {
-            border: 1px solid var(--border);
-            border-left: 3px solid var(--text-secondary);
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--fg-2);
             border-radius: 6px;
             padding: 12px 16px;
             margin: 20px 0;
-            background: var(--bg);
+            background: var(--surface);
         }
         .mshield-docs-main .callout .callout-label {
             font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            color: var(--text-secondary);
+            color: var(--fg-2);
             display: block;
             margin-bottom: 4px;
         }
-        .mshield-docs-main .callout.important { border-left-color: var(--accent); background: var(--accent-tint); }
-        .mshield-docs-main .callout.important .callout-label { color: var(--accent); }
+        .mshield-docs-main .callout.important { border-left-color: var(--brand); background: var(--brand-soft); }
+        .mshield-docs-main .callout.important .callout-label { color: var(--brand); }
         .mshield-docs-main .callout p { margin: 0; font-size: 15px; }
 
         .mshield-docs-main .field {
             font-weight: 600;
         }
-        .mshield-docs-main hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+        .mshield-docs-main hr { border: 0; border-top: 1px solid var(--line); margin: 40px 0; }
         .mshield-docs-main ul, .mshield-docs-main ol { padding-left: 22px; }
         .mshield-docs-main li { margin: 4px 0; }
 
@@ -192,7 +188,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
                 flex-basis: auto;
                 width: 100%;
                 border-right: 0;
-                border-bottom: 1px solid var(--border);
+                border-bottom: 1px solid var(--line);
                 max-height: none;
             }
             .mshield-docs-main { padding: 24px; }
@@ -227,7 +223,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
 
     <main class="mshield-docs-main">
 
-        <h1><?php esc_html_e( 'MightyShield', 'mighty-shield' ); ?></h1>
+        <h2 class="mshield-docs-title"><?php esc_html_e( 'The manual', 'mighty-shield' ); ?></h2>
         <p class="lede"><?php esc_html_e( 'MightyShield works 24/7 to keep bots, card testers, scammers, fraudsters, and the people running stolen cards from making more work for you, so that you can get on with selling instead of cleaning up after them. It is built to be fine-tuned to your customers rather than somebody else\'s, and everything below explains how to do that by specifying what each setting does and when to reach for it.', 'mighty-shield' ); ?></p>
 
         <h2 id="overview"><?php esc_html_e( 'Overview', 'mighty-shield' ); ?></h2>
