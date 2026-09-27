@@ -52,10 +52,12 @@
     function initTheme() {
         var app    = document.querySelector( '.mshield-app' );
         var toggle = document.getElementById( 'mshield-theme-toggle' );
-        if ( ! app ) return;
+        // Only where the toggle lives. The order panel carries the app class
+        // inside WooCommerce's own screen, and syncing there painted the
+        // whole order page dark behind its white boxes.
+        if ( ! app || ! toggle ) return;
 
         syncBody( app.getAttribute( 'data-theme' ) );
-        if ( ! toggle ) return;
 
         toggle.addEventListener( 'click', function() {
             var next = THEME_NEXT[ app.getAttribute( 'data-theme' ) ] || 'system';

@@ -58,12 +58,10 @@ class fraud_review {
      */
     public function register_menu() {
 
-        // Gated on AI review when the queue only ever held AI-flagged orders.
-        // It now lists everything the risk engine left waiting on a human, so
-        // gating it on AI would hide held orders from every store that has not
-        // configured a model — which is most of them.
-        if( settings::get( 'mshield_enabled' ) !== 'yes' ) return;
-
+        // Not gated on protection being on. Held orders exist whether it is
+        // on or off, and the dashboard widget links here either way; with the
+        // page unregistered that link met "you are not allowed to access this
+        // page".
         $count = self::pending_count();
 
         $title = esc_html__( 'Fraud Review', 'mighty-shield' );
@@ -390,8 +388,8 @@ class fraud_review {
                     ? sprintf(
                         /* translators: %s: number of orders. */
                         _n(
-                            '%s order is held or flagged and has not been decided yet. Approve or block it here, or open it for the full picture.',
-                            '%s orders are held or flagged and have not been decided yet. Approve or block them here, or open one for the full picture.',
+                            '%s order is held or flagged and has not been decided yet. Approve or block it, or give a verdict, here or from the order.',
+                            '%s orders are held or flagged and have not been decided yet. Approve or block them, or give a verdict, here or from the order.',
                             $total,
                             'mighty-shield'
                         ),
@@ -580,9 +578,22 @@ class fraud_review {
             printf(
                 '<a href="%s" class="mshield-btn is-small ms-block" onclick="return confirm(\'%s\');">%s</a>',
                 esc_url( order_panel::action_url( $order, 'block', $ret, $paged ) ),
-                esc_attr( order_panel::BLOCK_CONFIRM ),
+                esc_js( order_panel::block_confirm( $order ) ),
                 esc_html__( 'Block', 'mighty-shield' )
             );
+
+        } else {
+
+            // A flagged order that has gone on to Processing is not held, so
+            // there is nothing to approve or block; a verdict is what takes it
+            // out of the queue, and it was only reachable from the order screen.
+            foreach( [ 'clean' => __( 'Clean', 'mighty-shield' ), 'fraud' => __( 'Fraud', 'mighty-shield' ) ] as $key => $label ) {
+                printf(
+                    '<a href="%s" class="mshield-btn is-small">%s</a>',
+                    esc_url( order_panel::action_url( $order, 'verdict_' . $key, 'queue', $paged ) ),
+                    esc_html( $label )
+                );
+            }
 
         }
 

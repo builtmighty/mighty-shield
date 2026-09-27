@@ -47,7 +47,29 @@ class order_panel {
      *
      * @since   1.9.6
      */
-    const BLOCK_CONFIRM = 'Block this order? This cancels it and blocks the customer IP.';
+    /**
+     * The confirmation before Block, worded for what Block will do to the
+     * money on this order. One fixed sentence used to promise a cancellation
+     * on the branch where an unconfirmed release leaves the order on hold.
+     *
+     * @since   2.3.0
+     *
+     * @param   \WC_Order   $order
+     * @return  string  Translated, unescaped.
+     */
+    public static function block_confirm( $order ) {
+
+        if( response::is_detained( $order ) ) {
+            return __( 'Block this order? It is cancelled and the address is blocked. Nothing was charged.', 'mighty-shield' );
+        }
+
+        if( ai_capture::is_authorized( $order ) ) {
+            return __( 'Block this order? The reserved payment is released and the address is blocked. If the processor cannot confirm the release, the order stays on hold.', 'mighty-shield' );
+        }
+
+        return __( 'Block this order? It is cancelled and the address is blocked. The payment is not refunded; refund it from the order if you need to.', 'mighty-shield' );
+
+    }
 
     /**
      * Construct.
@@ -197,13 +219,11 @@ class order_panel {
         $order = self::resolve_order( $subject );
         if( ! $order ) return;
 
-        $theme = get_user_meta( get_current_user_id(), 'mshield_admin_theme', true );
-        if( ! \in_array( $theme, [ 'light', 'dark', 'system' ], true ) ) $theme = 'system';
-
-        printf(
-            '<div class="mshield-app mshield-orderbox" data-theme="%s">',
-            esc_attr( $theme )
-        );
+        // No data-theme, like the orders column and the dashboard widget: a
+        // panel inside WooCommerce's white metabox follows that page. With
+        // Dark chosen this painted near-white text into a white box, and the
+        // shared script repainted the whole order screen dark behind it.
+        echo '<div class="mshield-app mshield-orderbox">';
 
         $row = rescore::stored( $order );
 
@@ -488,7 +508,7 @@ class order_panel {
         printf(
             '<a href="%s" class="button ms-block" onclick="return confirm(\'%s\');">%s</a>',
             esc_url( self::action_url( $order, 'block' ) ),
-            esc_attr( self::BLOCK_CONFIRM ),
+            esc_js( self::block_confirm( $order ) ),
             esc_html__( 'Block', 'mighty-shield' )
         );
 
@@ -546,6 +566,7 @@ class order_panel {
 
         if( response::is_detained( $order ) )        return __( 'Never charged', 'mighty-shield' );
         if( ai_capture::is_authorized( $order ) )    return __( 'Reserved, not taken', 'mighty-shield' );
+        if( ! self::has_money( $order ) )              return __( 'No payment yet', 'mighty-shield' );
 
         return __( 'Taken in full', 'mighty-shield' );
 
@@ -695,7 +716,12 @@ class order_panel {
         // and Approve moved it to Processing -- which WooCommerce treats as
         // paid -- and shipped it.
         if( response::is_detained( $order ) ) return true;
-        if( (string) $order->get_meta( '_mshield_hold' ) !== '' ) return true;
+
+        // 'released' is the record of a decision already made, not a hold:
+        // with it counted, an approved order left On hold for a bank transfer
+        // was offered Approve again, forever.
+        $hold = (string) $order->get_meta( '_mshield_hold' );
+        if( $hold !== '' && $hold !== 'released' ) return true;
 
         return (string) $order->get_meta( '_mshield_card_flagged' ) === 'yes';
 
@@ -967,6 +993,14 @@ class order_panel {
         // transfer or a cheque must not be marked paid by a fraud verdict;
         // the verdict is recorded and the status is the gateway's to move.
         if( ! self::has_money( $order ) ) {
+
+            // The decision is made, so the hold is over even though the status
+            // is not ours to move; otherwise the order stays in the queue with
+            // Approve offered again.
+            if( (string) $order->get_meta( '_mshield_hold' ) !== '' ) {
+                $order->update_meta_data( '_mshield_hold', 'released' );
+                $order->save();
+            }
 
             \MightyShield\Protection\outcomes::set_manual( $order, 'clean' );
 

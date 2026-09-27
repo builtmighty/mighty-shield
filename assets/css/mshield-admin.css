@@ -14,7 +14,7 @@
    of a full plugin page. Stating the tokens twice is how they would drift. */
 .mshield-app, .mshield-scope {
     --bg:#f0f0f1; --surface:#ffffff; --surface-2:#f6f7f8;
-    --fg:#1d2327; --fg-2:#50575e; --fg-3:#8c9196;
+    --fg:#1d2327; --fg-2:#50575e; --fg-3:#6b7178; --on-brand:#ffffff;
     --line:#e2e4e7; --line-2:#eff0f2;
     --brand:#3858e9; --brand-soft:#eef1fe;
     --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.05);
@@ -29,7 +29,7 @@
 
 .mshield-app[data-theme="dark"], .mshield-scope[data-theme="dark"] {
     --bg:#0e1116; --surface:#161a20; --surface-2:#1d222a;
-    --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#6f7987;
+    --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#8a94a1; --on-brand:#0e1116;
     --line:#272e38; --line-2:#212831;
     --brand:#7d95ff; --brand-soft:#1a2140;
     --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 44px rgba(0,0,0,.55);
@@ -42,7 +42,7 @@
 @media (prefers-color-scheme: dark) {
     .mshield-app[data-theme="system"], .mshield-scope[data-theme="system"] {
         --bg:#0e1116; --surface:#161a20; --surface-2:#1d222a;
-        --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#6f7987;
+        --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#8a94a1; --on-brand:#0e1116;
         --line:#272e38; --line-2:#212831;
         --brand:#7d95ff; --brand-soft:#1a2140;
         --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 44px rgba(0,0,0,.55);
@@ -106,8 +106,8 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     font-size:13px; font-weight:500; box-shadow:var(--shadow); text-decoration:none; line-height:1.2;
 }
 .mshield-btn:hover { background:var(--surface-2); color:var(--fg); }
-.mshield-btn.is-primary { border-color:transparent; background:var(--brand); color:#fff; font-weight:600; }
-.mshield-btn.is-primary:hover { filter:brightness(1.08); background:var(--brand); color:#fff; }
+.mshield-btn.is-primary { border-color:transparent; background:var(--brand); color:var(--on-brand); font-weight:600; }
+.mshield-btn.is-primary:hover { filter:brightness(1.08); background:var(--brand); color:var(--on-brand); }
 .mshield-btn.is-danger { border-color:transparent; background:var(--danger); color:#fff; font-weight:600; }
 .mshield-btn.is-small { padding:6px 11px; font-size:12.5px; }
 
@@ -125,9 +125,9 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 }
 .mshield-navcard:hover { color:var(--fg); border-color:var(--brand); }
 .mshield-navcard.is-active {
-    background:var(--brand); color:#fff; border-color:transparent; box-shadow:0 4px 14px rgba(56,88,233,.26);
+    background:var(--brand); color:var(--on-brand); border-color:transparent; box-shadow:0 4px 14px rgba(56,88,233,.26);
 }
-.mshield-navcard.is-active:hover { color:#fff; }
+.mshield-navcard.is-active:hover { color:var(--on-brand); }
 
 /* ---------- Cards ---------- */
 .mshield-card {
@@ -321,7 +321,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     color:var(--fg-2); font-size:12.5px; font-weight:600; cursor:pointer;
 }
 .mshield-range-btn:hover { border-color:var(--brand); color:var(--fg); }
-.mshield-range-btn.is-active { background:var(--brand); border-color:transparent; color:#fff; }
+.mshield-range-btn.is-active { background:var(--brand); border-color:transparent; color:var(--on-brand); }
 .mshield-charttip {
     position:absolute; top:8px; left:0; pointer-events:none; z-index:3;
     background:var(--fg); color:var(--surface); border-radius:8px; padding:8px 10px; font-size:12px;
@@ -595,7 +595,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-radio.is-disabled:hover { border-color:var(--line); color:var(--fg-2); }
 .mshield-radio.is-checked,
 .mshield-radio:has(input:checked) {
-    background:var(--brand); border-color:transparent; color:#fff; box-shadow:0 2px 8px rgba(56,88,233,.24);
+    background:var(--brand); border-color:transparent; color:var(--on-brand); box-shadow:0 2px 8px rgba(56,88,233,.24);
 }
 
 /* Form controls inside settings views. */
@@ -618,7 +618,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     border-radius:7px; border:1px solid var(--line); background:var(--surface); color:var(--fg);
     box-shadow:var(--shadow); height:auto; padding:6px 13px;
 }
-.mshield-app .button-primary { border-color:transparent; background:var(--brand); color:#fff; text-shadow:none; }
+.mshield-app .button-primary { border-color:transparent; background:var(--brand); color:var(--on-brand); text-shadow:none; }
 .mshield-app .button-primary:hover { filter:brightness(1.08); background:var(--brand); }
 
 /* WordPress notices inside the app keep their own colors but round off. */
@@ -763,16 +763,12 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
    pill can never disagree with the rating shown everywhere else. */
 .mshield-level-pills { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
 
-/* Full width: the row divides evenly between the levels.
-   Author's own rule, kept in the spelling it was given in. display:none rather
-   than an off-screen input is a deliberate call -- a display:none input takes
-   no keyboard focus, so the focus-visible style further down cannot fire and
-   these are reachable by pointer only. :checked still drives the sibling
-   selectors either way, because display:none hides an element without removing
-   it from the DOM. */
-.mshield-level-pills > input,
+/* The checkbox is off-screen, not display:none: a display:none input takes
+   no keyboard focus, so the pills were reachable by pointer only. Same pattern
+   as .mshield-radio input; :checked still drives the sibling selectors. */
 .mshield-level-pills > label input {
-    display: none;
+    position:absolute !important; opacity:0 !important; width:1px !important; height:1px !important;
+    margin:0 !important; padding:0 !important; pointer-events:none; appearance:none !important; -webkit-appearance:none !important;
 }
 
 .mshield-level-pills > label,

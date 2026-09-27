@@ -61,7 +61,17 @@ $action_labels = [
     'degraded'     => __( 'Degraded', 'mighty-shield' ),
 ];
 
-$export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&mshield_export_logs=1' ), 'mshield_export_logs' );
+// The filters the screen is showing travel with the export; the handler
+// reads the same names. Without them a filtered view exported every row.
+$export_url = wp_nonce_url( add_query_arg( array_filter( [
+    'page'               => 'mighty-shield',
+    'tab'                => 'logs',
+    'mshield_export_logs' => 1,
+    'filter_action'      => $filter_action,
+    'filter_ip'          => $filter_ip,
+    's'                  => $search,
+    'range'              => $range,
+] ), admin_url( 'admin.php' ) ), 'mshield_export_logs' );
 ?>
 
 <div class="mshield-stack">
