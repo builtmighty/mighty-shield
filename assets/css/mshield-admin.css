@@ -481,6 +481,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-setup-blurbs { margin:13px 0 18px; }
 .mshield-app span.mshield-hint,
 .mshield-app p.mshield-hint { font-size:11px; color:var(--fg-3); }
+.mshield-app span.mshield-hint { display:block; margin-top:5px; }
 .mshield-setup-blurbs .mshield-hint { margin:0 0 7px; line-height:1.5; }
 
 .mshield-app .mshield-setup-summary { width:100%; }
