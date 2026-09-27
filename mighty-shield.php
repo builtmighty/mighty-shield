@@ -355,6 +355,10 @@ function maybe_upgrade() {
         // The block-checkout answer is recomputed on the next request rather
         // than trusted across an upgrade, as its docblock always promised.
         delete_option( 'mshield_block_checkout' );
+
+        // The low-rating alert no longer has its own figure; it follows the
+        // notification switch and the High threshold.
+        delete_option( 'mshield_alert_below_trust' );
     }
 
     // 2.1.1: relax the shared-IP thresholds, but only where the store is still

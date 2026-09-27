@@ -479,6 +479,8 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-setup-ladder { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 20px; }
 
 .mshield-setup-blurbs { margin:13px 0 18px; }
+.mshield-app span.mshield-hint,
+.mshield-app p.mshield-hint { font-size:11px; color:var(--fg-3); }
 .mshield-setup-blurbs .mshield-hint { margin:0 0 7px; line-height:1.5; }
 
 .mshield-app .mshield-setup-summary { width:100%; }

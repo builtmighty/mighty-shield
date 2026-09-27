@@ -475,15 +475,6 @@ class admin_page {
             'sanitize_callback' => [ $this, 'sanitize_refusal_note' ],
         ] );
 
-        // Clamped to 1-99 when set, because 0 is the off switch and 100 would
-        // mail on literally every order.
-        register_setting( 'mshield_blocking', 'mshield_alert_below_trust', [
-            'sanitize_callback' => function( $value ) {
-                $n = absint( $value );
-                return $n === 0 ? 0 : max( 1, min( 99, $n ) );
-            },
-        ] );
-
         register_setting( 'mshield_ai', 'mshield_ai_daily_cap', [
             'sanitize_callback' => function( $value ) { return max( 0, absint( $value ) ); },
         ] );

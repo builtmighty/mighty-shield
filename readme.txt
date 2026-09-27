@@ -36,7 +36,7 @@ Nothing is enforced until you say so. MightyShield installs in Observe mode: it 
 * Phone checks — a US area code from the wrong state, and virtual-line numbers nobody can be reached on
 * "Large order" judged against your own takings rather than a figure picked out of the air, plus an optional hard ceiling
 * Allow and block lists that match on phone, name, postcode, city, country and email as well as IP address
-* An alert when an order rates badly, sent even in Observe mode, at most one an hour
+* An alert when an order rates where your settings would hold it, sent even in Observe mode, at most one an hour
 * A background pass that rates your existing orders, so a fresh install starts out recognising your regulars
 * A forecast of what enforcing would do to orders you have already taken, including how many real customers it would have turned away
 * Smarty USPS address verification for US billing addresses with automatic ZIP/State fallback
@@ -205,7 +205,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 * New: a hard order-total ceiling, off by default.
 * Changed: "large order" now means large **for your store**. It was a fixed 500.00, which never fired on a store selling candles and fired on every order at a store selling sofas. MightyShield now works it out from your own completed orders and keeps it current. Set your own figure and yours is used instead.
 * New: allow and block lists match on phone, name, postcode, city and country, not just IP addresses — and the block list on email too. Letting one trade customer through, or barring one repeat offender, no longer needs their IP address.
-* New: email me when an order rates badly. Sent whatever MightyShield did about it, including nothing in Observe mode, which is when it is most useful. At most one an hour, and it says how many others there were.
+* New: email me when an order rates badly enough to be held. Part of the one notification switch, sent whatever MightyShield did about it, including nothing in Observe mode, which is when it is most useful. At most one an hour, and it says how many others there were.
 * New: rate your past orders. A new install knows none of your customers, so nobody earns trust and no previous chargeback counts for anything until months of orders have gone by. This fills that in from the orders you already have, in the background, without touching a single one of them. It runs automatically when you finish setup, and is on the Logs tab afterwards.
 * Fixed: the three network checks — data centre, VPN/proxy, and location mismatch — had never fired on any install. They were fed by ip-api.com over an encrypted connection, which that service refuses unless you pay, so every lookup failed. This also means every checkout was making a request that could take up to five seconds and was always going to fail. Both are gone.
 * Changed: network intelligence now comes from a MaxMind database on your own server, using the free licence key WooCommerce already asks for under Settings > Integrations. Nothing about your customers is sent anywhere, and there is no longer any network request on the checkout path — unless you switch on the optional email-domain DNS check on the Scoring tab, which asks your own server's resolver whether the domain can receive mail. Without a key, the two remaining network checks stay quiet rather than guessing.

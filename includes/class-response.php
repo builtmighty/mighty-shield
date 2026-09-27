@@ -653,6 +653,12 @@ class response {
      * under ninety-nine copies of it. The count since the last message is
      * carried in the next one, so nothing is hidden -- only batched.
      *
+     * Governed by the one notification switch, like every other alert, and
+     * keyed to the store's own High threshold: an order rated where it would
+     * be held or refused is one the merchant asked to hear about. There is
+     * no separate figure to set; the thresholds already say what "bad" means
+     * on this store.
+     *
      * @since   2.3.0
      *
      * @param   \WC_Order   $order
@@ -660,10 +666,10 @@ class response {
      */
     public static function maybe_alert( $order, $verdict ) {
 
-        $threshold = (float) settings::get( 'mshield_alert_below_trust' );
+        if( ! settings::alerts_enabled() ) return;
 
-        // 0 is off, and is the default. A store that has not asked for these
-        // should not start receiving them because it installed an update.
+        $threshold = (float) risk_levels::threshold( 'high' );
+
         if( $threshold <= 0 ) return;
 
         $trust = isset( $verdict['trust'] ) ? (float) $verdict['trust'] : 100.0;
@@ -682,8 +688,8 @@ class response {
         $others = $pending - 1;
 
         $body = sprintf(
-            /* translators: 1: the order's trust rating, 2: the rating you asked to hear about, 3: order number, 4: risk level, 5: what MightyShield did, 6: customer name, 7: customer email, 8: a note about other low-rated orders, or nothing, 9: link to the order. */
-            __( "An order rated %1\$s out of 100, at or below the %2\$s you asked to hear about.\n\nOrder: #%3\$d\nRating: %1\$s (%4\$s)\nWhat MightyShield did: %5\$s\nCustomer: %6\$s (%7\$s)\n\n%8\$s\n\nReview this order: %9\$s", 'mighty-shield' ),
+            /* translators: 1: the order's trust rating, 2: the High threshold, 3: order number, 4: risk level, 5: what MightyShield did, 6: customer name, 7: customer email, 8: a note about other low-rated orders, or nothing, 9: link to the order. */
+            __( "An order rated %1\$s out of 100, at or below %2\$s, the point where your settings hold an order.\n\nOrder: #%3\$d\nRating: %1\$s (%4\$s)\nWhat MightyShield did: %5\$s\nCustomer: %6\$s (%7\$s)\n\n%8\$s\n\nReview this order: %9\$s", 'mighty-shield' ),
             number_format( $trust, 0 ),
             number_format( $threshold, 0 ),
             $order->get_id(),

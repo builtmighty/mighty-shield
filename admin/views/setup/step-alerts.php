@@ -24,7 +24,7 @@ setup_wizard::form_open( 'alerts' );
 <h1 class="mshield-setup-title"><?php esc_html_e( 'Who should hear about it?', 'mighty-shield' ); ?></h1>
 
 <p class="mshield-setup-lede">
-    <?php esc_html_e( 'MightyShield emails you when something needs a person: an AI review that rated an order badly, a service it relies on that has stopped responding, or a bot challenge that has started refusing everybody. These are rare and they are not marketing. Emails about low-rated orders are a separate switch on the Shielding tab, off until you set the rating you want to hear about.', 'mighty-shield' ); ?>
+    <?php esc_html_e( 'MightyShield emails you when something needs a person: an AI review that rated an order badly, a service it relies on that has stopped responding, or a bot challenge that has started refusing everybody. These are rare and they are not marketing. The same switch covers an order that rates badly enough to be held, whatever MightyShield did about it.', 'mighty-shield' ); ?>
 </p>
 
 <table class="form-table" role="presentation">

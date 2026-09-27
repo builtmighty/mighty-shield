@@ -52,11 +52,7 @@ foreach( $level_rows as $row ) {
         <h2><?php esc_html_e( 'Risk Levels', 'mighty-shield' ); ?></h2>
 
         <p class="description">
-            <?php esc_html_e( 'An order falls to the most severe risk level whose threshold its rating is at or below, and that level decides what happens to it. Rejected and Banned are fixed: they are refused before an order exists, so your payment processor is never contacted.', 'mighty-shield' ); ?>
-            <?php printf(
-                wp_kses_post( __( 'Some actions depend on your processor; which of yours can do what is on the <a href="%s">Payment</a> tab.', 'mighty-shield' ) ),
-                esc_url( admin_url( 'admin.php?page=mighty-shield&tab=payment' ) )
-            ); ?>
+            <?php esc_html_e( 'An order falls to the most severe risk level whose threshold its rating is at or below, and that level decides what happens to it.', 'mighty-shield' ); ?>
         </p>
 
         <div class="mshield-tablewrap">
@@ -288,10 +284,6 @@ foreach( $level_rows as $row ) {
         </table>
         </div>
 
-        <p class="description" style="margin-top:12px;">
-            <?php esc_html_e( 'Use the last column to tune. Plenty of High orders that you went on to approve means the threshold is too cautious and you are holding real customers. Orders that stayed in Low and later turned out bad means it is too generous.', 'mighty-shield' ); ?>
-        </p>
-
         <?php
         /* What enforcing would have done to orders you have already taken.
            Sits directly under the thresholds because it is the answer to the
@@ -411,7 +403,7 @@ foreach( $level_rows as $row ) {
 
         <h2><?php esc_html_e( 'Block Checkout Protection', 'mighty-shield' ); ?></h2>
 
-        <p class="description"><?php esc_html_e( 'Run the fraud checks on the block-based Checkout, which submits through the Store API. Every check works there, including the ones that need something from the browser: the checkout timer, the device check, the hidden decoy field and the bot challenge. The same order is judged the same way whichever checkout your store uses.', 'mighty-shield' ); ?></p>
+        <p class="description"><?php esc_html_e( 'Run the fraud checks on the block-based Checkout, which submits through the Store API.', 'mighty-shield' ); ?></p>
 
         <table class="form-table" role="presentation">
             <tr>
@@ -454,7 +446,6 @@ foreach( $level_rows as $row ) {
                 <?php if( ! $mshield_cap['ready'] ) : ?>
 
                     <strong><?php esc_html_e( 'Not running.', 'mighty-shield' ); ?></strong>
-                    <?php esc_html_e( 'Pick a provider and save both keys below. Until then nothing is challenged and no order is affected.', 'mighty-shield' ); ?>
 
                 <?php else : ?>
 
@@ -498,9 +489,6 @@ foreach( $level_rows as $row ) {
                         'turnstile'    => __( 'Cloudflare Turnstile', 'mighty-shield' ),
                         'recaptcha_v3' => __( 'Google reCAPTCHA v3', 'mighty-shield' ),
                     ], $cap_provider ); ?>
-                    <p class="description">
-                        <?php esc_html_e( 'Nothing is challenged until a provider and both keys are set. A wrong key or a provider outage lets requests through rather than refusing everyone, and emails you once a day until it is fixed.', 'mighty-shield' ); ?>
-                    </p>
                 </td>
             </tr>
 
@@ -549,13 +537,6 @@ foreach( $level_rows as $row ) {
                             <?php echo esc_html( $label ); ?>
                         </label>
                     <?php endforeach; ?>
-                    <p class="description">
-                        <?php esc_html_e( 'Checkout is always covered. A failed challenge refuses a login, registration or password reset; a comment is held for moderation instead, because losing a real reader\'s comment outright is worse than making them wait.', 'mighty-shield' ); ?>
-                    </p>
-                    <p class="description">
-                        <strong><?php esc_html_e( 'Login is off by default.', 'mighty-shield' ); ?></strong>
-                        <?php esc_html_e( 'A wrong key fails open, but a blocked script means no token at all, and that is refused, which on the login form locks everyone out. Allowlist your own address on the Access tab before turning it on.', 'mighty-shield' ); ?>
-                    </p>
                 </td>
             </tr>
 
@@ -586,7 +567,7 @@ foreach( $level_rows as $row ) {
                         <?php esc_html_e( 'Delay refused checkouts by a random amount', 'mighty-shield' ); ?>
                     </label>
                     <p class="description">
-                        <?php esc_html_e( 'Automated card testing depends on getting a fast, consistent answer. Refusing slowly, with a message that varies and reads like an ordinary bank decline, means an attacker cannot tell what tripped or time their way around it. Genuine customers are never refused, so this does not affect them.', 'mighty-shield' ); ?>
+                        <?php esc_html_e( 'Automated card testing depends on getting a fast, consistent answer. Refusing slowly, with a message that varies and reads like an ordinary bank decline, means an attacker cannot tell what tripped or time their way around it.', 'mighty-shield' ); ?>
                     </p>
                     <p>
                         <label>
@@ -609,10 +590,6 @@ foreach( $level_rows as $row ) {
             <tr>
                 <th scope="row"><?php esc_html_e( 'What a refused customer reads', 'mighty-shield' ); ?></th>
                 <td>
-                    <p class="description">
-                        <?php esc_html_e( 'MightyShield picks one of these at random each time, so nobody can submit the same order twice and learn anything from the difference in the answer. None of them says what tripped, on purpose. These cover refusals that come from the rating; an individual check that refuses on its own says something specific instead, because the customer usually needs to fix it, as with a mistyped postcode.', 'mighty-shield' ); ?>
-                    </p>
-
                     <ul class="mshield-examples">
                         <?php foreach( response::refusal_messages() as $mshield_example ) : ?>
                             <li><?php echo esc_html( $mshield_example ); ?></li>
@@ -629,59 +606,6 @@ foreach( $level_rows as $row ) {
                               placeholder="<?php esc_attr_e( 'Need help with this order? Call us on &lt;a href=&quot;tel:5551234567&quot;&gt;(555) 123-4567&lt;/a&gt;.', 'mighty-shield' ); ?>"><?php
                         echo esc_textarea( settings::get( 'mshield_refusal_note' ) );
                     ?></textarea>
-
-                    <p class="description">
-                        <?php esc_html_e( 'Being vague protects the store, but it leaves the occasional real customer with no idea who to talk to. This is where you give them a way through. It is added to the end of every refusal, whatever caused it.', 'mighty-shield' ); ?>
-                    </p>
-                    <p class="description">
-                        <?php
-                        // Each tag name is escaped on its own, then joined with
-                        // the markup. Escaping the joined string would escape
-                        // the separators along with it and print them.
-                        $mshield_tags = array_map(
-                            function( $mshield_tag ) { return '<code>&lt;' . esc_html( $mshield_tag ) . '&gt;</code>'; },
-                            array_keys( \MightyShield\Admin\admin_page::refusal_note_tags() )
-                        );
-
-                        printf(
-                            /* translators: %s: the list of permitted HTML tags. */
-                            esc_html__( 'Links work, so a phone number or an email address can be tapped. Bold and italic work too. In full: %s.', 'mighty-shield' ),
-                            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- each tag was escaped individually just above; only the separators are added here
-                            implode( ', ', $mshield_tags )
-                        );
-                        ?>
-                    </p>
-                    <p class="mshield-hint">
-                        <?php esc_html_e( 'Leave it empty and refusals read exactly as they do above.', 'mighty-shield' ); ?>
-                    </p>
-                </td>
-            </tr>
-            <tr>
-                <th scope="row"><?php esc_html_e( 'Email me about bad orders', 'mighty-shield' ); ?></th>
-                <td>
-                    <label>
-                        <?php esc_html_e( 'Tell me when an order rates at or below', 'mighty-shield' ); ?>
-                        <input type="number" name="mshield_alert_below_trust" min="0" max="99" step="1"
-                               value="<?php echo esc_attr( (int) settings::get( 'mshield_alert_below_trust' ) ); ?>"
-                               class="small-text" />
-                        <?php esc_html_e( 'out of 100', 'mighty-shield' ); ?>
-                    </label>
-                    <p class="description">
-                        <?php esc_html_e( 'Sent whatever MightyShield did about the order — including nothing, in Observe mode, which is when this is most useful. Set it to 0 to switch it off.', 'mighty-shield' ); ?>
-                    </p>
-                    <p class="description">
-                        <?php
-                        printf(
-                            /* translators: 1: rejected threshold, 2: high threshold. */
-                            esc_html__( 'On your current thresholds, %1$s or below is refused outright and %2$s or below is held. Somewhere around those figures is usually what you want.', 'mighty-shield' ),
-                            esc_html( number_format( (float) \MightyShield\Includes\risk_levels::threshold( 'rejected' ), 0 ) ),
-                            esc_html( number_format( (float) \MightyShield\Includes\risk_levels::threshold( 'high' ), 0 ) )
-                        );
-                        ?>
-                    </p>
-                    <p class="mshield-hint">
-                        <?php esc_html_e( 'At most one message an hour. A card-testing run is a hundred bad orders in ten minutes, and the message says how many others there were.', 'mighty-shield' ); ?>
-                    </p>
                 </td>
             </tr>
         </table>
