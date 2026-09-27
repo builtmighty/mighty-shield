@@ -2,10 +2,10 @@
 /**
  * Scoring tab.
  *
- * A list of every check on the left, grouped; the selected check's settings on
- * the right: what it costs, whether it can force a risk level on its own, how
- * often it has fired on real traffic, and its own fields. Without JavaScript
- * every pane renders in order under its group, which is the same form.
+ * Every check on one grid, grouped: whether it is on, what it costs, whether
+ * it can force a risk level on its own, and how often it has actually fired
+ * on real traffic. Every score is visible and editable at once; only a
+ * check's extra fields fold away under its row.
  *
  * Uses .mshield-section and the app's own components so it inherits the
  * palette and reads in dark mode.
@@ -40,7 +40,7 @@ $sampled = $total > 0;
 
 // What the store's own history says about these weights: which checks keep
 // firing on orders that turned out fine, and which pairs fire together. Both
-// mark the check in the list and say so in its pane.
+// are said under the check's name, and the chips above can show only those.
 $mshield_rep = \MightyShield\Includes\signal_report::analyse( 90 );
 $mshield_fp  = \MightyShield\Includes\signal_report::false_positives( $mshield_rep );
 $mshield_ov  = \MightyShield\Includes\signal_report::overlaps( $mshield_rep );
@@ -174,133 +174,149 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
 
     <div class="mshield-checks" id="mshield-checks">
 
-        <?php /* The list. Real links to real ids, so the order screen's "Adjust
-                 setting" link and a browser without script both land on the
-                 pane; the script turns the same links into a selector. */ ?>
-        <aside class="mshield-checklist" aria-label="<?php esc_attr_e( 'Checks', 'mighty-shield' ); ?>">
-
-            <div class="mshield-checks-tools">
-                <input type="search" class="mshield-input" data-checks-find
-                       placeholder="<?php esc_attr_e( 'Find a check', 'mighty-shield' ); ?>"
-                       aria-label="<?php esc_attr_e( 'Find a check', 'mighty-shield' ); ?>" />
-                <div class="mshield-checks-chips" role="group" aria-label="<?php esc_attr_e( 'Show', 'mighty-shield' ); ?>">
-                    <button type="button" class="mshield-chipbtn is-on" data-checks-filter="all">
+        <div class="mshield-section mshield-checks-tools">
+            <input type="search" class="mshield-input" data-checks-find
+                   placeholder="<?php esc_attr_e( 'Find a check', 'mighty-shield' ); ?>"
+                   aria-label="<?php esc_attr_e( 'Find a check', 'mighty-shield' ); ?>" />
+            <div class="mshield-checks-chips" role="group" aria-label="<?php esc_attr_e( 'Show', 'mighty-shield' ); ?>">
+                <button type="button" class="mshield-chipbtn is-on" data-checks-filter="all">
+                    <?php
+                    /* translators: %s: number of checks. */
+                    printf( esc_html__( 'All %s', 'mighty-shield' ), esc_html( number_format_i18n( count( $mshield_all_keys ) ) ) );
+                    ?>
+                </button>
+                <?php if( $mshield_fp ) : ?>
+                    <button type="button" class="mshield-chipbtn" data-checks-filter="fp">
                         <?php
                         /* translators: %s: number of checks. */
-                        printf( esc_html__( 'All %s', 'mighty-shield' ), esc_html( number_format_i18n( count( $mshield_all_keys ) ) ) );
+                        printf( esc_html__( 'Costing you customers %s', 'mighty-shield' ), esc_html( number_format_i18n( count( $mshield_fp ) ) ) );
                         ?>
                     </button>
-                    <?php if( $mshield_fp ) : ?>
-                        <button type="button" class="mshield-chipbtn" data-checks-filter="fp">
-                            <?php
-                            /* translators: %s: number of checks. */
-                            printf( esc_html__( 'Costing you customers %s', 'mighty-shield' ), esc_html( number_format_i18n( count( $mshield_fp ) ) ) );
-                            ?>
-                        </button>
-                    <?php endif; ?>
-                    <?php if( $mshield_pairs ) : ?>
-                        <button type="button" class="mshield-chipbtn" data-checks-filter="ov">
-                            <?php
-                            /* translators: %s: number of checks. */
-                            printf( esc_html__( 'Firing together %s', 'mighty-shield' ), esc_html( number_format_i18n( count( $mshield_pairs ) ) ) );
-                            ?>
-                        </button>
-                    <?php endif; ?>
-                    <?php if( $mshield_off ) : ?>
-                        <button type="button" class="mshield-chipbtn" data-checks-filter="off">
-                            <?php
-                            /* translators: %s: number of checks. */
-                            printf( esc_html__( 'Off %s', 'mighty-shield' ), esc_html( number_format_i18n( $mshield_off ) ) );
-                            ?>
-                        </button>
-                    <?php endif; ?>
-                </div>
+                <?php endif; ?>
+                <?php if( $mshield_pairs ) : ?>
+                    <button type="button" class="mshield-chipbtn" data-checks-filter="ov">
+                        <?php
+                        /* translators: %s: number of checks. */
+                        printf( esc_html__( 'Firing together %s', 'mighty-shield' ), esc_html( number_format_i18n( count( $mshield_pairs ) ) ) );
+                        ?>
+                    </button>
+                <?php endif; ?>
+                <?php if( $mshield_off ) : ?>
+                    <button type="button" class="mshield-chipbtn" data-checks-filter="off">
+                        <?php
+                        /* translators: %s: number of checks. */
+                        printf( esc_html__( 'Off %s', 'mighty-shield' ), esc_html( number_format_i18n( $mshield_off ) ) );
+                        ?>
+                    </button>
+                <?php endif; ?>
             </div>
+        </div>
 
-            <?php foreach( signals::groups() as $group_key => $group_label ) : ?>
-                <div class="ms-group" data-group="<?php echo esc_attr( $group_key ); ?>">
-                    <span class="ms-group-name"><?php echo esc_html( $group_label ); ?></span>
+        <?php foreach( signals::groups() as $group_key => $group_label ) : ?>
+
+            <div class="mshield-section mshield-checkgroup" data-group="<?php echo esc_attr( $group_key ); ?>">
+
+                <h2><?php echo esc_html( $group_label ); ?></h2>
+
+                <div class="mshield-checkgrid" role="table">
+                    <div class="mshield-checkrow is-head" role="row">
+                        <span role="columnheader"><?php esc_html_e( 'On', 'mighty-shield' ); ?></span>
+                        <span role="columnheader"><?php esc_html_e( 'Check', 'mighty-shield' ); ?></span>
+                        <span role="columnheader"><?php esc_html_e( 'Trust cost', 'mighty-shield' ); ?></span>
+                        <span role="columnheader"><?php esc_html_e( 'Force level', 'mighty-shield' ); ?></span>
+                        <span role="columnheader"><?php esc_html_e( 'Fires', 'mighty-shield' ); ?></span>
+                        <span role="columnheader"></span>
+                    </div>
+
                     <?php foreach( signals::in_group( $group_key ) as $key ) :
 
                         $weight  = signals::weight( $key );
+                        $floor   = signals::floor( $key );
                         $enabled = signals::is_enabled( $key );
-                        $fired   = isset( $stats[ $key ] ) ? (int) $stats[ $key ]['count'] : 0;
-                        $rate    = $total > 0 ? ( $fired / $total ) * 100 : 0;
+                        $desc    = signals::description( $key );
+                        $fields  = signals::fields( $key );
+
+                        $fired = isset( $stats[ $key ] ) ? (int) $stats[ $key ]['count'] : 0;
+                        $rate  = $total > 0 ? ( $fired / $total ) * 100 : 0;
+
+                        $keys = array_keys( $floor_choices );
+                        $at   = array_search( $floor, $keys, true );
+                        if( $at === false ) $at = 0;
 
                         $flags = [];
                         if( isset( $mshield_fp[ $key ] ) )    $flags[] = 'fp';
                         if( isset( $mshield_pairs[ $key ] ) ) $flags[] = 'ov';
                         if( ! $enabled )                      $flags[] = 'off';
                         ?>
-                        <a href="#mshield-sig-<?php echo esc_attr( $key ); ?>"
-                           class="ms-check<?php echo $enabled ? '' : ' is-off'; ?>"
-                           data-key="<?php echo esc_attr( $key ); ?>"
-                           data-label="<?php echo esc_attr( strtolower( signals::label( $key ) ) ); ?>"
-                           data-flags="<?php echo esc_attr( implode( ' ', $flags ) ); ?>">
-                            <span class="ms-dot" aria-hidden="true"></span>
-                            <span class="ms-label"><?php echo esc_html( signals::label( $key ) ); ?></span>
-                            <?php if( $sampled && $rate >= 50 ) : ?>
-                                <span class="ms-noisy" title="<?php esc_attr_e( 'Fires on most orders', 'mighty-shield' ); ?>" aria-label="<?php esc_attr_e( 'Fires on most orders', 'mighty-shield' ); ?>">!</span>
-                            <?php endif; ?>
-                            <span class="ms-cost" data-cost><?php echo esc_html( number_format_i18n( $weight, 0 ) ); ?></span>
-                            <?php if( ! empty( signals::fields( $key ) ) ) : ?>
-                                <span class="ms-more" aria-hidden="true">&#9656;</span>
-                            <?php endif; ?>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
-            <?php endforeach; ?>
 
-        </aside>
+                        <?php /* The order screen's "Adjust setting" link lands on this id. */ ?>
+                        <div class="mshield-checkrow<?php echo $enabled ? '' : ' is-off'; ?>" role="row"
+                             id="mshield-sig-<?php echo esc_attr( $key ); ?>"
+                             data-key="<?php echo esc_attr( $key ); ?>"
+                             data-label="<?php echo esc_attr( strtolower( signals::label( $key ) ) ); ?>"
+                             data-flags="<?php echo esc_attr( implode( ' ', $flags ) ); ?>">
 
-        <?php /* The panes. One per check, every one in the form; the script
-                 shows the selected one and hides the rest. */ ?>
-        <div class="mshield-checkpanes">
-
-            <?php foreach( signals::groups() as $group_key => $group_label ) : ?>
-                <?php foreach( signals::in_group( $group_key ) as $key ) :
-
-                    $weight  = signals::weight( $key );
-                    $floor   = signals::floor( $key );
-                    $enabled = signals::is_enabled( $key );
-                    $desc    = signals::description( $key );
-
-                    $fired = isset( $stats[ $key ] ) ? (int) $stats[ $key ]['count'] : 0;
-                    $rate  = $total > 0 ? ( $fired / $total ) * 100 : 0;
-
-                    $keys = array_keys( $floor_choices );
-                    $at   = array_search( $floor, $keys, true );
-                    if( $at === false ) $at = 0;
-                    ?>
-                    <section class="mshield-checkpane mshield-section" id="mshield-sig-<?php echo esc_attr( $key ); ?>" data-key="<?php echo esc_attr( $key ); ?>" tabindex="-1">
-
-                        <div class="ms-pane-head">
-                            <div>
-                                <span class="ms-pane-group"><?php echo esc_html( $group_label ); ?></span>
-                                <h2><?php echo esc_html( signals::label( $key ) ); ?></h2>
-                                <?php if( $desc !== '' ) : ?>
-                                    <p class="description"><?php echo esc_html( $desc ); ?></p>
-                                <?php endif; ?>
-                            </div>
-                            <label class="ms-pane-on">
+                            <span class="ms-cell ms-cell-on" role="cell">
                                 <input type="checkbox"
                                        name="mshield_sig_<?php echo esc_attr( $key ); ?>_enabled"
-                                       value="yes" <?php checked( $enabled ); ?> data-check-on />
-                                <?php esc_html_e( 'On', 'mighty-shield' ); ?>
-                            </label>
-                        </div>
+                                       value="yes" <?php checked( $enabled ); ?> data-check-on
+                                       aria-label="<?php echo esc_attr( sprintf(
+                                           /* translators: %s: check name. */
+                                           __( '%s on', 'mighty-shield' ),
+                                           signals::label( $key )
+                                       ) ); ?>" />
+                            </span>
 
-                        <div class="ms-pane-row">
-                            <label class="ms-pane-field">
-                                <span><?php esc_html_e( 'Trust cost', 'mighty-shield' ); ?></span>
+                            <span class="ms-cell ms-cell-name" role="cell">
+                                <span class="ms-name-line">
+                                    <span class="mshield-sig-name"><?php echo esc_html( signals::label( $key ) ); ?></span>
+                                    <?php if( $desc !== '' ) : ?>
+                                        <span class="mshield-tip" tabindex="0" role="note"
+                                              aria-label="<?php echo esc_attr( $desc ); ?>"
+                                              data-tip="<?php echo esc_attr( $desc ); ?>">?</span>
+                                    <?php endif; ?>
+                                </span>
+                                <?php if( isset( $mshield_fp[ $key ] ) ) : ?>
+                                    <span class="mshield-hint">
+                                        <?php
+                                        printf(
+                                            /* translators: 1: orders that turned out fine, 2: orders that turned out bad. */
+                                            esc_html__( 'Fired on %1$s orders you approved and %2$s that went bad, in 90 days.', 'mighty-shield' ),
+                                            esc_html( number_format_i18n( $mshield_fp[ $key ]['good'] ) ),
+                                            esc_html( number_format_i18n( $mshield_fp[ $key ]['bad'] ) )
+                                        );
+                                        ?>
+                                    </span>
+                                <?php endif; ?>
+                                <?php if( isset( $mshield_pairs[ $key ] ) ) : ?>
+                                    <?php foreach( $mshield_pairs[ $key ] as $mshield_pair ) : ?>
+                                        <span class="mshield-hint">
+                                            <?php
+                                            printf(
+                                                /* translators: 1: the other check's name, 2: number of orders. */
+                                                esc_html__( 'Fires with %1$s on %2$s orders: one fact counted twice.', 'mighty-shield' ),
+                                                '<a href="#mshield-sig-' . esc_attr( $mshield_pair['other'] ) . '">' . esc_html( signals::label( $mshield_pair['other'] ) ) . '</a>',
+                                                esc_html( number_format_i18n( $mshield_pair['together'] ) )
+                                            );
+                                            ?>
+                                        </span>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </span>
+
+                            <span class="ms-cell ms-cell-cost" role="cell">
                                 <input type="number" step="1" min="-100" max="100"
                                        name="mshield_sig_<?php echo esc_attr( $key ); ?>_weight"
-                                       value="<?php echo esc_attr( $weight ); ?>" data-check-cost />
+                                       value="<?php echo esc_attr( $weight ); ?>" data-check-cost
+                                       aria-label="<?php echo esc_attr( sprintf(
+                                           /* translators: %s: check name. */
+                                           __( 'Trust cost for %s', 'mighty-shield' ),
+                                           signals::label( $key )
+                                       ) ); ?>" />
                                 <span class="mshield-hint" data-check-earns<?php echo $weight < 0 ? '' : ' hidden'; ?>><?php esc_html_e( 'earns trust back', 'mighty-shield' ); ?></span>
-                            </label>
+                            </span>
 
-                            <div class="ms-pane-field">
-                                <span><?php esc_html_e( 'Force level', 'mighty-shield' ); ?></span>
+                            <span class="ms-cell ms-cell-floor" role="cell">
                                 <?php /* A stepper rather than a select, so the value can carry
                                          its level's colour. The hidden input is what posts, so a
                                          browser with no script still saves what was stored. The
@@ -339,140 +355,124 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
                                     <input type="hidden" name="mshield_sig_<?php echo esc_attr( $key ); ?>_floor"
                                            value="<?php echo esc_attr( $floor ); ?>" />
                                 </div>
-                            </div>
-                        </div>
+                            </span>
 
-                        <div class="ms-pane-readouts">
-                            <?php if( ! $sampled ) : ?>
-                                <span class="mshield-readout">&mdash;</span>
-                                <span class="mshield-hint"><?php esc_html_e( 'No rated orders in the last 30 days.', 'mighty-shield' ); ?></span>
-                            <?php elseif( $fired === 0 ) : ?>
-                                <span class="mshield-readout"><?php esc_html_e( 'never', 'mighty-shield' ); ?></span>
-                                <span class="mshield-hint"><?php esc_html_e( 'Has not fired in the last 30 days.', 'mighty-shield' ); ?></span>
-                            <?php else :
-                                $tone = $rate >= 50 ? 'is-danger' : ( $rate >= 15 ? 'is-warn' : '' ); ?>
-                                <span class="mshield-readout <?php echo esc_attr( $tone ); ?>"><?php echo esc_html( number_format_i18n( $rate, 1 ) ); ?>%</span>
-                                <span class="mshield-hint">
-                                    <?php
-                                    printf(
+                            <span class="ms-cell ms-cell-rate" role="cell">
+                                <?php if( ! $sampled ) : ?>
+                                    <span class="mshield-readout" title="<?php esc_attr_e( 'No rated orders in the last 30 days', 'mighty-shield' ); ?>">&mdash;</span>
+                                <?php elseif( $fired === 0 ) : ?>
+                                    <span class="mshield-readout" title="<?php esc_attr_e( 'Has not fired in the last 30 days', 'mighty-shield' ); ?>"><?php esc_html_e( 'never', 'mighty-shield' ); ?></span>
+                                <?php else :
+                                    $tone  = $rate >= 50 ? 'is-danger' : ( $rate >= 15 ? 'is-warn' : '' );
+                                    $title = sprintf(
                                         /* translators: 1: number of orders it fired on, 2: number of orders rated. */
-                                        esc_html__( 'Fired on %1$s of the %2$s orders rated in the last 30 days.', 'mighty-shield' ),
-                                        esc_html( number_format_i18n( $fired ) ),
-                                        esc_html( number_format_i18n( $total ) )
+                                        __( 'Fired on %1$s of the %2$s orders rated in the last 30 days', 'mighty-shield' ),
+                                        number_format_i18n( $fired ),
+                                        number_format_i18n( $total )
                                     );
-                                    if( $rate >= 50 ) {
-                                        echo ' ' . esc_html__( 'Fires on most orders, so probably too noisy to be worth its cost.', 'mighty-shield' );
-                                    }
+                                    if( $rate >= 50 ) $title .= '. ' . __( 'Fires on most orders, so probably too noisy to be worth its cost.', 'mighty-shield' );
                                     ?>
-                                </span>
-                            <?php endif; ?>
-
-                            <?php if( isset( $mshield_fp[ $key ] ) ) : ?>
-                                <span class="mshield-readout is-warn">
-                                    <?php
-                                    /* translators: %s: number of orders. */
-                                    printf( esc_html__( '%s approved', 'mighty-shield' ), esc_html( number_format_i18n( $mshield_fp[ $key ]['good'] ) ) );
-                                    ?>
-                                </span>
-                                <span class="mshield-hint">
-                                    <?php
-                                    printf(
-                                        /* translators: 1: orders that turned out fine, 2: orders that turned out bad. */
-                                        esc_html__( 'In the last 90 days it fired on %1$s orders that turned out fine and %2$s that turned out bad.', 'mighty-shield' ),
-                                        esc_html( number_format_i18n( $mshield_fp[ $key ]['good'] ) ),
-                                        esc_html( number_format_i18n( $mshield_fp[ $key ]['bad'] ) )
-                                    );
-                                    ?>
-                                </span>
-                            <?php endif; ?>
-
-                            <?php if( isset( $mshield_pairs[ $key ] ) ) : ?>
-                                <?php foreach( $mshield_pairs[ $key ] as $mshield_pair ) : ?>
-                                    <span class="mshield-hint">
-                                        <?php
-                                        printf(
-                                            /* translators: 1: the other check's name, 2: number of orders, 3: combined cost. */
-                                            esc_html__( 'Fires together with %1$s on %2$s orders, a combined cost of %3$s. One fact arriving twice; turning one down keeps the evidence and stops it counting double.', 'mighty-shield' ),
-                                            '<a href="#mshield-sig-' . esc_attr( $mshield_pair['other'] ) . '">' . esc_html( signals::label( $mshield_pair['other'] ) ) . '</a>',
-                                            esc_html( number_format_i18n( $mshield_pair['together'] ) ),
-                                            esc_html( number_format_i18n( $mshield_pair['cost'], 0 ) )
-                                        );
-                                        ?>
+                                    <span class="mshield-readout <?php echo esc_attr( $tone ); ?>" title="<?php echo esc_attr( $title ); ?>">
+                                        <?php echo esc_html( number_format_i18n( $rate, 1 ) ); ?>%
+                                        <?php if( $rate >= 50 ) : ?><b class="ms-noisy" aria-hidden="true">!</b><?php endif; ?>
                                     </span>
-                                <?php endforeach; ?>
+                                <?php endif; ?>
+                            </span>
+
+                            <span class="ms-cell ms-cell-more" role="cell">
+                                <?php if( ! empty( $fields ) ) : ?>
+                                    <button type="button" class="ms-caret" data-check-more aria-expanded="false"
+                                            aria-label="<?php echo esc_attr( sprintf(
+                                                /* translators: %s: check name. */
+                                                __( 'More settings for %s', 'mighty-shield' ),
+                                                signals::label( $key )
+                                            ) ); ?>">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M6 9l6 6 6-6"></path>
+                                        </svg>
+                                    </button>
+                                <?php endif; ?>
+                            </span>
+
+                            <?php if( ! empty( $fields ) ) : ?>
+                                <?php /* A native <details>, so it opens without script; the caret
+                                         above toggles the same element when script is present. */ ?>
+                                <details class="ms-row-more" data-check-details>
+                                    <summary><?php esc_html_e( 'More settings', 'mighty-shield' ); ?></summary>
+                                    <div class="mshield-sig-config">
+                                        <?php foreach( $fields as $field ) :
+                                            $opt = $field['option'];
+                                            $val = settings::get( $opt );
+
+                                            // radios() emits its own <label> per bubble, and a label
+                                            // inside a label breaks click targeting, so that type gets
+                                            // a div wrapper instead.
+                                            $tag = $field['type'] === 'radios' ? 'div' : 'label';
+                                            $cls = 'mshield-sig-field';
+                                            if( $field['type'] === 'check' )  $cls .= ' is-toggle';
+                                            if( $field['type'] === 'radios' ) $cls .= ' is-radios';
+                                            if( ! empty( $field['stack'] ) ) $cls .= ' is-stacked';
+                                            ?>
+                                            <<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $tag is 'div' or 'label', set above ?> class="<?php echo esc_attr( $cls ); ?>">
+                                                <span><?php echo esc_html( $field['label'] ); ?></span>
+
+                                                <?php if( $field['type'] === 'radios' ) : ?>
+                                                    <?php admin_page::radios( $opt, $field['choices'], $val ); ?>
+
+                                                <?php elseif( $field['type'] === 'check' ) : ?>
+                                                    <input type="checkbox" name="<?php echo esc_attr( $opt ); ?>" value="yes" <?php checked( $val === 'yes' ); ?> />
+
+                                                <?php elseif( $field['type'] === 'number' ) : ?>
+                                                    <input type="number" name="<?php echo esc_attr( $opt ); ?>"
+                                                           value="<?php echo esc_attr( $val ); ?>"
+                                                           min="<?php echo esc_attr( $field['min'] ?? 0 ); ?>"
+                                                           max="<?php echo esc_attr( $field['max'] ?? 100000 ); ?>" />
+
+                                                <?php elseif( $field['type'] === 'select' ) : ?>
+                                                    <select name="<?php echo esc_attr( $opt ); ?>">
+                                                        <?php foreach( $field['choices'] as $cv => $cl ) : ?>
+                                                            <option value="<?php echo esc_attr( $cv ); ?>" <?php selected( $val, $cv ); ?>>
+                                                                <?php echo esc_html( $cl ); ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+
+                                                <?php elseif( $field['type'] === 'textarea' ) : ?>
+                                                    <textarea name="<?php echo esc_attr( $opt ); ?>" rows="3"><?php echo esc_textarea( $val ); ?></textarea>
+
+                                                <?php elseif( $field['type'] === 'password' ) : ?>
+                                                    <input type="password" name="<?php echo esc_attr( $opt ); ?>" value=""
+                                                           placeholder="<?php echo $val !== '' ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>"
+                                                           autocomplete="off" />
+
+                                                <?php else : ?>
+                                                    <input type="text" name="<?php echo esc_attr( $opt ); ?>" value="<?php echo esc_attr( $val ); ?>" />
+                                                <?php endif; ?>
+                                            </<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $tag is 'div' or 'label', set above ?>>
+                                        <?php endforeach; ?>
+
+                                        <?php /* An action, not a setting, so it is called here rather
+                                                 than added to signals::SETTINGS, where the group save
+                                                 would write null over it. */ ?>
+                                        <?php if( $key === 'address_unverified' ) : ?>
+                                            <div class="mshield-sig-action">
+                                                <?php admin_page::test_button( 'smarty', __( 'Tests the saved Auth ID and token. Save first. Costs one lookup.', 'mighty-shield' ) ); ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </details>
                             <?php endif; ?>
+
                         </div>
 
-                        <?php $fields = signals::fields( $key ); ?>
-                        <?php if( ! empty( $fields ) ) : ?>
-                            <div class="mshield-sig-config">
-                                <?php foreach( $fields as $field ) :
-                                    $opt = $field['option'];
-                                    $val = settings::get( $opt );
+                    <?php endforeach; ?>
 
-                                    // radios() emits its own <label> per bubble, and a label
-                                    // inside a label breaks click targeting, so that type gets
-                                    // a div wrapper instead.
-                                    $tag = $field['type'] === 'radios' ? 'div' : 'label';
-                                    $cls = 'mshield-sig-field';
-                                    if( $field['type'] === 'check' )  $cls .= ' is-toggle';
-                                    if( $field['type'] === 'radios' ) $cls .= ' is-radios';
-                                    if( ! empty( $field['stack'] ) ) $cls .= ' is-stacked';
-                                    ?>
-                                    <<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $tag is 'div' or 'label', set above ?> class="<?php echo esc_attr( $cls ); ?>">
-                                        <span><?php echo esc_html( $field['label'] ); ?></span>
+                </div>
 
-                                        <?php if( $field['type'] === 'radios' ) : ?>
-                                            <?php admin_page::radios( $opt, $field['choices'], $val ); ?>
+            </div>
 
-                                        <?php elseif( $field['type'] === 'check' ) : ?>
-                                            <input type="checkbox" name="<?php echo esc_attr( $opt ); ?>" value="yes" <?php checked( $val === 'yes' ); ?> />
-
-                                        <?php elseif( $field['type'] === 'number' ) : ?>
-                                            <input type="number" name="<?php echo esc_attr( $opt ); ?>"
-                                                   value="<?php echo esc_attr( $val ); ?>"
-                                                   min="<?php echo esc_attr( $field['min'] ?? 0 ); ?>"
-                                                   max="<?php echo esc_attr( $field['max'] ?? 100000 ); ?>" />
-
-                                        <?php elseif( $field['type'] === 'select' ) : ?>
-                                            <select name="<?php echo esc_attr( $opt ); ?>">
-                                                <?php foreach( $field['choices'] as $cv => $cl ) : ?>
-                                                    <option value="<?php echo esc_attr( $cv ); ?>" <?php selected( $val, $cv ); ?>>
-                                                        <?php echo esc_html( $cl ); ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-
-                                        <?php elseif( $field['type'] === 'textarea' ) : ?>
-                                            <textarea name="<?php echo esc_attr( $opt ); ?>" rows="3"><?php echo esc_textarea( $val ); ?></textarea>
-
-                                        <?php elseif( $field['type'] === 'password' ) : ?>
-                                            <input type="password" name="<?php echo esc_attr( $opt ); ?>" value=""
-                                                   placeholder="<?php echo $val !== '' ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>"
-                                                   autocomplete="off" />
-
-                                        <?php else : ?>
-                                            <input type="text" name="<?php echo esc_attr( $opt ); ?>" value="<?php echo esc_attr( $val ); ?>" />
-                                        <?php endif; ?>
-                                    </<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $tag is 'div' or 'label', set above ?>>
-                                <?php endforeach; ?>
-
-                                <?php /* An action, not a setting, so it is called here rather
-                                         than added to signals::SETTINGS, where the group save
-                                         would write null over it. */ ?>
-                                <?php if( $key === 'address_unverified' ) : ?>
-                                    <div class="mshield-sig-action">
-                                        <?php admin_page::test_button( 'smarty', __( 'Tests the saved Auth ID and token. Save first. Costs one lookup.', 'mighty-shield' ) ); ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        <?php endif; ?>
-
-                    </section>
-                <?php endforeach; ?>
-            <?php endforeach; ?>
-
-        </div>
+        <?php endforeach; ?>
 
     </div>
 

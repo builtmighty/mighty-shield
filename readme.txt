@@ -193,7 +193,7 @@ Fixes three network checks that had never worked and removes a blocking request 
 == Changelog ==
 
 = 2.3.0 =
-* Changed: the Scoring tab is a list of checks with one check's settings beside it, instead of six tables. Find a check by name, or show only the ones costing you customers, firing together, or switched off. Save pins itself to the window once something has changed and says how many checks changed.
+* Changed: every check on the Scoring tab is on one grid, with its cost, force level and how often it fires in the row and its extra settings folded under a caret. Find a check by name, or show only the ones costing you customers, firing together, or switched off. Save pins itself to the window once something has changed and says how many checks changed.
 * Changed: the Dashboard leads with the chart, then what is waiting for you, what enforcing would do, and what your orders say about the weights.
 * Changed: the admin reads as one product: sentence case throughout, one heading style, one helper-text style, one empty state, one save button, and the manual on the same palette and fonts as the tabs, in dark mode too.
 * Changed: alerts live on the Logs tab, under Alerts and logs, since they govern every email the plugin sends.

@@ -1166,16 +1166,11 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-app .mshield-chip a { color:var(--fg-2); text-decoration:none; font-size:15px; line-height:1; padding:0 4px; border-radius:50%; }
 .mshield-app .mshield-chip a:hover { color:var(--fg); background:var(--surface); }
 
-/* ---------- Scoring: the check list and its pane ---------- */
-/* Without script every pane renders in order; with it (.is-js) the list is a
-   selector and one pane shows at a time. */
-.mshield-app .mshield-checks { display:grid; grid-template-columns:300px minmax(0,1fr); gap:18px; align-items:start; }
-.mshield-app .mshield-checklist {
-    background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
-    padding:12px 10px; position:sticky; top:46px; max-height:calc(100vh - 70px); overflow:auto;
-}
-.mshield-app .mshield-checks-tools { padding:2px 4px 10px; border-bottom:1px solid var(--line-2); margin-bottom:8px; }
-.mshield-app .mshield-checks-tools .mshield-input { width:100%; box-sizing:border-box; margin-bottom:8px; }
+/* ---------- Scoring: every check on one grid ---------- */
+/* One row per check: on, name, cost, force level, how often it fires, and a
+   caret only when there is more to set. Every score is visible at once. */
+.mshield-app .mshield-checks-tools { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 16px; }
+.mshield-app .mshield-checks-tools .mshield-input { width:240px; max-width:100%; }
 .mshield-app .mshield-checks-chips { display:flex; flex-wrap:wrap; gap:6px; }
 .mshield-app .mshield-chipbtn {
     padding:4px 10px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
@@ -1184,52 +1179,58 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-app .mshield-chipbtn:hover { border-color:var(--brand); color:var(--fg); }
 .mshield-app .mshield-chipbtn.is-on { background:var(--brand); border-color:transparent; color:var(--on-brand); }
 .mshield-app .mshield-chipbtn:focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
-.mshield-app .ms-group { margin:6px 0 2px; }
-.mshield-app .ms-group-name {
-    display:block; padding:8px 8px 4px; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--fg-3);
+
+.mshield-app .mshield-checkgroup { padding:14px 16px 6px; }
+.mshield-app .mshield-checkgroup > h2 { margin-bottom:6px; }
+.mshield-app .mshield-checkgroup.is-hidden { display:none; }
+.mshield-app .mshield-checkgrid { display:flex; flex-direction:column; }
+.mshield-app .mshield-checkrow {
+    display:grid; grid-template-columns:44px minmax(0,1fr) 110px 190px 90px 30px;
+    align-items:center; column-gap:12px; padding:9px 4px; border-top:1px solid var(--line-2);
 }
-.mshield-app .ms-check {
-    display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px;
-    color:var(--fg); text-decoration:none; font-size:13px; line-height:1.3; border-left:2px solid transparent;
+.mshield-app .mshield-checkrow.is-head {
+    border-top:0; padding-top:2px; padding-bottom:6px;
+    font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--fg-3);
 }
-.mshield-app .ms-check:hover { background:var(--surface-2); color:var(--fg); }
-.mshield-app .ms-check.is-selected { background:var(--brand-soft); border-left-color:var(--brand); }
-.mshield-app .ms-check .ms-dot { width:8px; height:8px; border-radius:50%; background:var(--brand); flex:none; }
-.mshield-app .ms-check.is-off .ms-dot { background:transparent; border:1.5px solid var(--fg-3); }
-.mshield-app .ms-check.is-off .ms-label { color:var(--fg-2); }
-.mshield-app .ms-check .ms-label { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mshield-app .ms-check .ms-cost { font-family:var(--mono); font-size:12px; color:var(--fg-2); flex:none; min-width:24px; text-align:right; }
-.mshield-app .ms-check .ms-more { color:var(--fg-3); font-size:11px; flex:none; }
-.mshield-app .ms-check .ms-noisy {
-    flex:none; width:15px; height:15px; border-radius:50%; background:rgba(214,54,56,.14); color:var(--ink-danger);
-    font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center;
+.mshield-app .mshield-checkrow.is-hidden { display:none; }
+.mshield-app .mshield-checkrow.is-off .mshield-sig-name { color:var(--fg-2); }
+.mshield-app .mshield-checkrow.is-changed { background:var(--brand-soft); border-radius:8px; }
+.mshield-app .mshield-checkrow.is-flash { animation:mshield-flash 2.6s ease-out 1; }
+.mshield-app .mshield-checkrow .ms-cell { min-width:0; }
+.mshield-app .mshield-checkrow .ms-cell-name { display:flex; flex-direction:column; gap:2px; }
+.mshield-app .mshield-checkrow .ms-name-line { display:flex; align-items:center; gap:6px; }
+.mshield-app .mshield-checkrow .mshield-sig-name { font-weight:650; color:var(--fg); }
+.mshield-app .mshield-checkrow .ms-cell-name .mshield-hint { margin:0; }
+.mshield-app .mshield-checkrow .ms-cell-cost { display:flex; flex-direction:column; gap:2px; }
+.mshield-app .mshield-checkrow .ms-cell-cost input[type="number"] { width:78px; }
+.mshield-app .mshield-checkrow .ms-cell-cost .mshield-hint { margin:0; }
+.mshield-app .mshield-checkrow .ms-noisy { color:var(--ink-danger); font-weight:700; margin-left:2px; }
+.mshield-app .mshield-checkrow .ms-caret {
+    display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; padding:0;
+    border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--fg-2); cursor:pointer;
 }
-.mshield-app .ms-check.is-changed .ms-label::after { content:' \2022'; color:var(--brand); }
-.mshield-app .ms-check.is-hidden, .mshield-app .ms-group.is-hidden { display:none; }
-.mshield-app .mshield-checkpane { margin-bottom:18px; outline:none; }
-.mshield-app .mshield-checks.is-js .mshield-checkpane { display:none; }
-.mshield-app .mshield-checks.is-js .mshield-checkpane.is-selected { display:block; }
-.mshield-app .ms-pane-head { display:flex; align-items:flex-start; gap:16px; }
-.mshield-app .ms-pane-head > div { flex:1 1 auto; min-width:0; }
-.mshield-app .ms-pane-head h2 { margin:0 0 4px; }
-.mshield-app .ms-pane-group { display:block; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--fg-3); margin-bottom:4px; }
-.mshield-app .ms-pane-on { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; flex:none; margin-top:2px; }
-.mshield-app .ms-pane-row { display:flex; flex-wrap:wrap; gap:14px 28px; margin:16px 0 6px; }
-.mshield-app .ms-pane-field { display:flex; align-items:center; gap:10px; font-size:13px; }
-.mshield-app .ms-pane-field > span:first-child { font-weight:600; color:var(--fg-2); }
-.mshield-app .ms-pane-field input[type="number"] { width:82px; }
-.mshield-app .ms-pane-readouts { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:12px 0 4px; border-top:1px solid var(--line-2); margin-top:10px; }
-.mshield-app .ms-pane-readouts .mshield-hint { display:inline; margin:0; }
-.mshield-app .mshield-checkpane .mshield-sig-config { margin-top:14px; padding-top:12px; border-top:1px solid var(--line-2); }
+.mshield-app .mshield-checkrow .ms-caret:hover { border-color:var(--brand); color:var(--fg); }
+.mshield-app .mshield-checkrow .ms-caret[aria-expanded="true"] svg { transform:rotate(180deg); }
+.mshield-app .mshield-checkrow .ms-row-more { grid-column:2 / -1; margin:6px 0 2px; }
+.mshield-app .mshield-checkrow .ms-row-more > summary { font-size:12px; font-weight:600; color:var(--fg-2); cursor:pointer; }
+/* With script the caret opens it, so the summary line is noise. */
+.mshield-app .mshield-checks.is-js .ms-row-more > summary { display:none; }
+.mshield-app .mshield-checkrow .ms-row-more .mshield-sig-config { margin-top:6px; }
+
 .mshield-app .mshield-savebar {
     display:flex; align-items:center; gap:12px; margin-top:6px; padding:12px 16px;
     background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
 }
-.mshield-app .mshield-savebar.is-dirty { position:sticky; bottom:12px; box-shadow:var(--shadow-lg); border-color:var(--brand); }
+.mshield-app .mshield-savebar.is-dirty { position:sticky; bottom:12px; z-index:5; box-shadow:var(--shadow-lg); border-color:var(--brand); }
 .mshield-app .mshield-savebar .ms-savebar-note { font-size:13px; color:var(--fg-2); }
+
 @media screen and (max-width:900px) {
-    .mshield-app .mshield-checks { grid-template-columns:1fr; }
-    .mshield-app .mshield-checklist { position:static; max-height:none; }
+    .mshield-app .mshield-checkrow { grid-template-columns:36px minmax(0,1fr) 30px; row-gap:8px; }
+    .mshield-app .mshield-checkrow.is-head { display:none; }
+    .mshield-app .mshield-checkrow .ms-cell-cost,
+    .mshield-app .mshield-checkrow .ms-cell-floor,
+    .mshield-app .mshield-checkrow .ms-cell-rate { grid-column:2 / 3; }
+    .mshield-app .mshield-checkrow .ms-cell-more { grid-column:3; grid-row:1; }
 }
 
 /* ---------- Dashboard: the work row ---------- */

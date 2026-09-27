@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MightyShield 2.3.0\n"
 "Report-Msgid-Bugs-To: https://builtmighty.com\n"
-"POT-Creation-Date: 2026-09-27 18:25+0000\n"
+"POT-Creation-Date: 2026-09-27 18:36+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -78,7 +78,7 @@ msgid "%d IP addresses added to the blocklist."
 msgstr ""
 
 #. translators: %d: number of checks with unsaved changes.
-#: assets/js/mshield-admin.js:580
+#: assets/js/mshield-admin.js:562
 msgid "%d check changed"
 msgid_plural "%d checks changed"
 msgstr[0] ""
@@ -114,11 +114,6 @@ msgid "%s answered and returned a verdict in the expected shape."
 msgstr ""
 
 #. translators: %s: number of orders.
-#: admin/views/scoring.php:374
-msgid "%s approved"
-msgstr ""
-
-#. translators: %s: number of orders.
 #: includes/class-forecast.php:281
 msgid "%s completed normally, so you would have turned away a real customer."
 msgid_plural "%s completed normally, so you would have turned away that many real customers."
@@ -145,6 +140,11 @@ msgid "%s of those did turn out to be fraud."
 msgid_plural "%s of those did turn out to be fraud."
 msgstr[0] ""
 msgstr[1] ""
+
+#. translators: %s: check name.
+#: admin/views/scoring.php:265
+msgid "%s on"
+msgstr ""
 
 #. translators: %s: number of orders.
 #: admin/class-fraud-review.php:390
@@ -546,7 +546,7 @@ msgid "Alerts."
 msgstr ""
 
 #. translators: %s: number of checks.
-#: admin/views/scoring.php:190
+#: admin/views/scoring.php:185
 msgid "All %s"
 msgstr ""
 
@@ -1051,6 +1051,10 @@ msgstr ""
 msgid "Charged back, or you marked them fraud"
 msgstr ""
 
+#: admin/views/scoring.php:224
+msgid "Check"
+msgstr ""
+
 #: admin/views/documentation.php:313
 msgid "Check <a href=\"%s\">Scoring</a>. It shows how often each check actually fires on your traffic. Anything firing on most of your orders is describing your customers rather than your fraudsters, so lower what it costs or switch it off."
 msgstr ""
@@ -1109,10 +1113,6 @@ msgstr ""
 
 #: includes/class-privacy.php:274
 msgid "Checkouts refused"
-msgstr ""
-
-#: admin/views/scoring.php:180
-msgid "Checks"
 msgstr ""
 
 #: admin/views/setup/step-welcome.php:33
@@ -1220,7 +1220,7 @@ msgid "Controls access to the WooCommerce Store API cart and checkout endpoints 
 msgstr ""
 
 #. translators: %s: number of checks.
-#: admin/views/scoring.php:197
+#: admin/views/scoring.php:192
 msgid "Costing you customers %s"
 msgstr ""
 
@@ -1640,7 +1640,7 @@ msgstr ""
 msgid "Filters."
 msgstr ""
 
-#: admin/views/scoring.php:184 admin/views/scoring.php:185
+#: admin/views/scoring.php:179 admin/views/scoring.php:180
 msgid "Find a check"
 msgstr ""
 
@@ -1657,21 +1657,26 @@ msgid "Finish setup"
 msgstr ""
 
 #. translators: 1: number of orders it fired on, 2: number of orders rated.
-#: admin/views/scoring.php:359
-msgid "Fired on %1$s of the %2$s orders rated in the last 30 days."
+#: admin/views/scoring.php:369
+msgid "Fired on %1$s of the %2$s orders rated in the last 30 days"
 msgstr ""
 
-#: admin/views/scoring.php:243
-msgid "Fires on most orders"
+#. translators: 1: orders that turned out fine, 2: orders that turned out bad.
+#: admin/views/scoring.php:284
+msgid "Fired on %1$s orders you approved and %2$s that went bad, in 90 days."
 msgstr ""
 
-#: admin/views/scoring.php:364
+#: admin/views/scoring.php:227
+msgid "Fires"
+msgstr ""
+
+#: admin/views/scoring.php:373
 msgid "Fires on most orders, so probably too noisy to be worth its cost."
 msgstr ""
 
-#. translators: 1: the other check's name, 2: number of orders, 3: combined cost.
-#: admin/views/scoring.php:395
-msgid "Fires together with %1$s on %2$s orders, a combined cost of %3$s. One fact arriving twice; turning one down keeps the evidence and stops it counting double."
+#. translators: 1: the other check's name, 2: number of orders.
+#: admin/views/scoring.php:297
+msgid "Fires with %1$s on %2$s orders: one fact counted twice."
 msgstr ""
 
 #: admin/views/blocking.php:389
@@ -1679,7 +1684,7 @@ msgid "Firewall mode"
 msgstr ""
 
 #. translators: %s: number of checks.
-#: admin/views/scoring.php:205
+#: admin/views/scoring.php:200
 msgid "Firing together %s"
 msgstr ""
 
@@ -1749,12 +1754,12 @@ msgstr ""
 msgid "For the risk levels you choose, a model looks at the order and gives its own rating. By default it can only lower the number, never raise it."
 msgstr ""
 
-#: admin/views/scoring.php:303
+#: admin/views/scoring.php:226
 msgid "Force level"
 msgstr ""
 
 #. translators: %s: signal name.
-#: admin/views/scoring.php:312
+#: admin/views/scoring.php:328
 msgid "Force level for %s"
 msgstr ""
 
@@ -1852,8 +1857,8 @@ msgstr ""
 msgid "HTTP Basic"
 msgstr ""
 
-#: admin/views/scoring.php:351
-msgid "Has not fired in the last 30 days."
+#: admin/views/scoring.php:364
+msgid "Has not fired in the last 30 days"
 msgstr ""
 
 #: admin/class-order-panel.php:599 admin/class-order-panel.php:603
@@ -2138,11 +2143,6 @@ msgstr ""
 msgid "In the last %3$d days it turned away %1$d visitors, and %2$d more could not be confirmed either way."
 msgstr ""
 
-#. translators: 1: orders that turned out fine, 2: orders that turned out bad.
-#: admin/views/scoring.php:381
-msgid "In the last 90 days it fired on %1$s orders that turned out fine and %2$s that turned out bad."
-msgstr ""
-
 #: admin/views/payment.php:75
 msgid "Inactive"
 msgstr ""
@@ -2245,7 +2245,7 @@ msgstr ""
 msgid "Leaving a comment"
 msgstr ""
 
-#: admin/views/scoring.php:318
+#: admin/views/scoring.php:334
 msgid "Less severe"
 msgstr ""
 
@@ -2386,7 +2386,7 @@ msgid "Matched against a stored order when you review or re-rate it, never at ch
 msgstr ""
 
 #: admin/views/documentation.php:393
-msgid "Measured on your own orders over the last 30 days. This is the most useful number on the page. The list marks a check that fires on most orders, one that keeps firing on orders you approved, and one that fires together with another; the chips above the list show only those. A check firing on half your orders is describing your customers, not your fraudsters."
+msgid "Measured on your own orders over the last 30 days. This is the most useful column on the page. A check that fires on most orders is marked, and one that keeps firing on orders you approved or fires together with another says so under its name; the chips above the grid show only those. A check firing on half your orders is describing your customers, not your fraudsters."
 msgstr ""
 
 #: admin/views/documentation.php:407 includes/class-signals.php:727
@@ -2573,7 +2573,16 @@ msgstr ""
 msgid "More orders from one connection in minutes than a shopper would place."
 msgstr ""
 
-#: admin/views/scoring.php:331
+#: admin/views/scoring.php:402
+msgid "More settings"
+msgstr ""
+
+#. translators: %s: check name.
+#: admin/views/scoring.php:387
+msgid "More settings for %s"
+msgstr ""
+
+#: admin/views/scoring.php:347
 msgid "More severe"
 msgstr ""
 
@@ -2728,8 +2737,8 @@ msgstr ""
 msgid "No payment yet"
 msgstr ""
 
-#: admin/views/scoring.php:348
-msgid "No rated orders in the last 30 days."
+#: admin/views/scoring.php:362
+msgid "No rated orders in the last 30 days"
 msgstr ""
 
 #: admin/views/ai.php:169
@@ -2896,11 +2905,11 @@ msgid "Off"
 msgstr ""
 
 #. translators: %s: number of checks.
-#: admin/views/scoring.php:213
+#: admin/views/scoring.php:208
 msgid "Off %s"
 msgstr ""
 
-#: admin/views/documentation.php:411 admin/views/documentation.php:414 admin/views/documentation.php:450 admin/views/scoring.php:289
+#: admin/views/documentation.php:411 admin/views/documentation.php:414 admin/views/documentation.php:450 admin/views/scoring.php:223
 msgid "On"
 msgstr ""
 
@@ -3329,7 +3338,7 @@ msgid "Reaches your processor"
 msgstr ""
 
 #: admin/views/documentation.php:388
-msgid "Reading a check"
+msgid "Reading the grid"
 msgstr ""
 
 #: admin/views/blocklist.php:80 admin/views/logs.php:163 assets/js/mshield-admin.js:148
@@ -3521,7 +3530,7 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: assets/js/mshield-admin.js:668
+#: assets/js/mshield-admin.js:656
 msgid "Save first"
 msgstr ""
 
@@ -3649,7 +3658,7 @@ msgstr ""
 msgid "Shields are up"
 msgstr ""
 
-#: admin/views/scoring.php:186
+#: admin/views/scoring.php:181
 msgid "Show"
 msgstr ""
 
@@ -3803,7 +3812,7 @@ msgid "Switching a check off stops it contributing anything at all. Prefer lower
 msgstr ""
 
 #. translators: 1: the profile's name, 2: how many trust costs the merchant changed by hand.
-#: assets/js/mshield-admin.js:632
+#: assets/js/mshield-admin.js:620
 msgid "Switching to %1$s will replace %2$d trust cost you have changed, and switch every check back on. Continue?"
 msgid_plural "Switching to %1$s will replace %2$d trust costs you have changed, and switch every check back on. Continue?"
 msgstr[0] ""
@@ -3841,11 +3850,11 @@ msgstr ""
 msgid "Test connection"
 msgstr ""
 
-#: assets/js/mshield-admin.js:679
+#: assets/js/mshield-admin.js:667
 msgid "Testing…"
 msgstr ""
 
-#: admin/views/scoring.php:465
+#: admin/views/scoring.php:460
 msgid "Tests the saved Auth ID and token. Save first. Costs one lookup."
 msgstr ""
 
@@ -4283,7 +4292,7 @@ msgstr ""
 msgid "The table is divided into six groups, by what a check is actually looking at. The grouping is there so you can reason about a whole category at once — if your customers keep tripping the Network checks, that is a different problem from tripping the Identity ones."
 msgstr ""
 
-#: assets/js/mshield-admin.js:693 assets/js/mshield-admin.js:706
+#: assets/js/mshield-admin.js:681 assets/js/mshield-admin.js:694
 msgid "The test could not be run. Reload the page and try again."
 msgstr ""
 
@@ -4437,8 +4446,13 @@ msgstr ""
 msgid "Trust at or below"
 msgstr ""
 
-#: admin/views/scoring.php:295
+#: admin/views/scoring.php:225
 msgid "Trust cost"
+msgstr ""
+
+#. translators: %s: check name.
+#: admin/views/scoring.php:313
+msgid "Trust cost for %s"
 msgstr ""
 
 #: admin/views/documentation.php:391
@@ -4811,7 +4825,7 @@ msgstr ""
 msgid "You do not have permission to set up MightyShield."
 msgstr ""
 
-#: assets/js/mshield-admin.js:623
+#: assets/js/mshield-admin.js:611
 msgid "You have unsaved changes below. Switching the profile discards them. Continue?"
 msgstr ""
 
@@ -4967,7 +4981,7 @@ msgstr ""
 msgid "e.g., Office IP, VIP customer"
 msgstr ""
 
-#: admin/views/scoring.php:299
+#: admin/views/scoring.php:316
 msgid "earns trust back"
 msgstr ""
 
@@ -4991,7 +5005,7 @@ msgstr ""
 msgid "n/a"
 msgstr ""
 
-#: admin/views/scoring.php:350
+#: admin/views/scoring.php:364
 msgid "never"
 msgstr ""
 
@@ -5040,7 +5054,7 @@ msgid "runs the checks on the block based checkout as well as the classic one. L
 msgstr ""
 
 #: admin/views/ai.php:85 admin/views/ai.php:99 admin/views/ai.php:120 admin/views/blocking.php:507
-#: admin/views/scoring.php:451 admin/views/setup/step-challenge.php:67 admin/views/setup/step-challenge.php:78
+#: admin/views/scoring.php:446 admin/views/setup/step-challenge.php:67 admin/views/setup/step-challenge.php:78
 msgid "saved, leave blank to keep"
 msgstr ""
 

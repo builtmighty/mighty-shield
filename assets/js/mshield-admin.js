@@ -461,10 +461,10 @@
 
     }
 
-    /* ---------- Scoring: the check list ---------- */
-    // The list is a set of real links to real ids, so it works without any of
-    // this; with it, one pane shows at a time, the hash tracks the selection,
-    // the list filters as you type, and the save bar counts what changed.
+    /* ---------- Scoring: the check grid ---------- */
+    // Every score is on the page already; this only narrows the grid, opens a
+    // row's extra fields, lands on a row from the order screen's link, and
+    // counts what changed so the save bar can say so.
     var checksDirty = 0;
 
     function initChecks() {
@@ -472,90 +472,51 @@
         var wrap = document.getElementById( 'mshield-checks' );
         if ( ! wrap ) return;
 
-        var links   = Array.prototype.slice.call( wrap.querySelectorAll( '.ms-check' ) );
-        var panes   = Array.prototype.slice.call( wrap.querySelectorAll( '.mshield-checkpane' ) );
+        var rows    = Array.prototype.slice.call( wrap.querySelectorAll( '.mshield-checkrow[data-key]' ) );
+        var groups  = Array.prototype.slice.call( wrap.querySelectorAll( '.mshield-checkgroup' ) );
         var find    = wrap.querySelector( '[data-checks-find]' );
         var chips   = Array.prototype.slice.call( wrap.querySelectorAll( '[data-checks-filter]' ) );
         var form    = document.getElementById( 'mshield-checks-form' );
         var savebar = document.getElementById( 'mshield-savebar' );
         var note    = savebar ? savebar.querySelector( '[data-savebar-note]' ) : null;
-        if ( ! links.length || ! panes.length ) return;
+        if ( ! rows.length ) return;
 
         wrap.classList.add( 'is-js' );
 
-        function select( key, focusPane ) {
-            var found = false;
-            panes.forEach( function( p ) {
-                var on = p.getAttribute( 'data-key' ) === key;
-                p.classList.toggle( 'is-selected', on );
-                if ( on ) found = true;
-            } );
-            if ( ! found ) return false;
-            links.forEach( function( l ) {
-                var on = l.getAttribute( 'data-key' ) === key;
-                l.classList.toggle( 'is-selected', on );
-                if ( on ) l.setAttribute( 'aria-current', 'true' ); else l.removeAttribute( 'aria-current' );
-            } );
-            if ( focusPane ) {
-                var pane  = wrap.querySelector( '.mshield-checkpane.is-selected' );
-                var first = pane ? pane.querySelector( 'input:not([type="hidden"]), select, textarea, button' ) : null;
-                if ( first ) first.focus( { preventScroll: true } );
-            }
-            return true;
+        // The caret opens the row's <details>; without script the summary does.
+        function setOpen( row, open ) {
+            var det   = row.querySelector( '[data-check-details]' );
+            var caret = row.querySelector( '[data-check-more]' );
+            if ( ! det ) return;
+            det.open = open;
+            if ( caret ) caret.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
         }
-
-        function fromHash() {
-            var hash = window.location.hash || '';
-            var key  = hash.indexOf( '#mshield-sig-' ) === 0 ? hash.slice( '#mshield-sig-'.length ) : '';
-            if ( ! key || ! select( key, false ) ) select( links[ 0 ].getAttribute( 'data-key' ), false );
-        }
-
-        links.forEach( function( l ) {
-            l.addEventListener( 'click', function( e ) {
-                e.preventDefault();
-                var key = l.getAttribute( 'data-key' );
-                select( key, true );
-                if ( window.history && window.history.replaceState ) {
-                    window.history.replaceState( null, '', '#mshield-sig-' + key );
-                }
-            } );
-            l.addEventListener( 'keydown', function( e ) {
-                if ( e.key !== 'ArrowDown' && e.key !== 'ArrowUp' ) return;
-                e.preventDefault();
-                var visible = links.filter( function( x ) { return ! x.classList.contains( 'is-hidden' ); } );
-                var i = visible.indexOf( l );
-                var n = visible[ i + ( e.key === 'ArrowDown' ? 1 : -1 ) ];
-                if ( n ) { n.focus(); n.click(); }
-            } );
+        rows.forEach( function( row ) {
+            var caret = row.querySelector( '[data-check-more]' );
+            var det   = row.querySelector( '[data-check-details]' );
+            if ( ! caret || ! det ) return;
+            caret.addEventListener( 'click', function() { setOpen( row, ! det.open ); } );
         } );
 
-        // In-pane links to another check ("fires together with X").
-        wrap.addEventListener( 'click', function( e ) {
-            var a = e.target.closest ? e.target.closest( '.mshield-checkpane a[href^="#mshield-sig-"]' ) : null;
-            if ( ! a ) return;
-            e.preventDefault();
-            var key = a.getAttribute( 'href' ).slice( '#mshield-sig-'.length );
-            if ( select( key, true ) && window.history && window.history.replaceState ) {
-                window.history.replaceState( null, '', '#mshield-sig-' + key );
-            }
-        } );
-
-        window.addEventListener( 'hashchange', fromHash );
-        fromHash();
-
-        // Filtering: a chip, and the search box, narrow the list.
+        // A chip, and the search box, narrow the grid; an empty group hides.
         var filter = 'all', query = '';
         function applyFilter() {
-            links.forEach( function( l ) {
-                var flags = ' ' + ( l.getAttribute( 'data-flags' ) || '' ) + ' ';
+            rows.forEach( function( r ) {
+                var flags = ' ' + ( r.getAttribute( 'data-flags' ) || '' ) + ' ';
                 var ok = ( filter === 'all' || flags.indexOf( ' ' + filter + ' ' ) !== -1 )
-                      && ( ! query || ( l.getAttribute( 'data-label' ) || '' ).indexOf( query ) !== -1 );
-                l.classList.toggle( 'is-hidden', ! ok );
+                      && ( ! query || ( r.getAttribute( 'data-label' ) || '' ).indexOf( query ) !== -1 );
+                r.classList.toggle( 'is-hidden', ! ok );
             } );
-            wrap.querySelectorAll( '.ms-group' ).forEach( function( g ) {
-                var any = g.querySelector( '.ms-check:not(.is-hidden)' );
-                g.classList.toggle( 'is-hidden', ! any );
+            groups.forEach( function( g ) {
+                g.classList.toggle( 'is-hidden', ! g.querySelector( '.mshield-checkrow[data-key]:not(.is-hidden)' ) );
             } );
+        }
+        function resetFilter() {
+            filter = 'all';
+            query  = '';
+            if ( find ) find.value = '';
+            chips.forEach( function( x ) { x.classList.toggle( 'is-on', x.getAttribute( 'data-checks-filter' ) === 'all' ); } );
+            applyFilter();
         }
         chips.forEach( function( c ) {
             c.addEventListener( 'click', function() {
@@ -566,13 +527,34 @@
         } );
         if ( find ) {
             find.addEventListener( 'input', function() { query = find.value.trim().toLowerCase(); applyFilter(); } );
+            // Enter in the search box must not submit the settings form.
+            find.addEventListener( 'keydown', function( e ) { if ( e.key === 'Enter' ) e.preventDefault(); } );
         }
 
-        // Dirty tracking: a changed pane marks its row and the save bar.
+        // Arriving from "Adjust setting" on an order, or from a "fires with"
+        // link: centre the row, open its fields, and flash it once.
+        function land( hash ) {
+            if ( ! hash || hash.indexOf( '#mshield-sig-' ) !== 0 ) return;
+            var row;
+            // The hash comes from the address bar; anyone can type anything.
+            try { row = wrap.querySelector( hash ); } catch ( e ) { return; }
+            if ( ! row ) return;
+            if ( row.classList.contains( 'is-hidden' ) ) resetFilter();
+            setOpen( row, true );
+            if ( row.scrollIntoView ) row.scrollIntoView( { block: 'center' } );
+            row.classList.remove( 'is-flash' );
+            void row.offsetWidth;
+            row.classList.add( 'is-flash' );
+            window.setTimeout( function() { row.classList.remove( 'is-flash' ); }, 2600 );
+        }
+        window.addEventListener( 'hashchange', function() { land( window.location.hash ); } );
+        land( window.location.hash );
+
+        // Dirty tracking: a changed row is marked and the save bar counts it.
         var changed = {};
         function syncDirty() {
             checksDirty = Object.keys( changed ).length;
-            links.forEach( function( l ) { l.classList.toggle( 'is-changed', !! changed[ l.getAttribute( 'data-key' ) ] ); } );
+            rows.forEach( function( r ) { r.classList.toggle( 'is-changed', !! changed[ r.getAttribute( 'data-key' ) ] ); } );
             if ( savebar ) savebar.classList.toggle( 'is-dirty', checksDirty > 0 );
             if ( note ) {
                 note.textContent = checksDirty > 0
@@ -582,23 +564,29 @@
             }
         }
         function onChange( e ) {
-            var pane = e.target.closest ? e.target.closest( '.mshield-checkpane' ) : null;
-            if ( ! pane ) return;
-            var key = pane.getAttribute( 'data-key' );
-            changed[ key ] = true;
-            // Keep the row in step with the pane: the cost, the on/off dot.
-            var link = links.filter( function( l ) { return l.getAttribute( 'data-key' ) === key; } )[ 0 ];
-            if ( link ) {
-                if ( e.target.hasAttribute( 'data-check-cost' ) ) {
-                    var cost = link.querySelector( '[data-cost]' );
-                    if ( cost ) cost.textContent = e.target.value;
-                    var earns = pane.querySelector( '[data-check-earns]' );
-                    if ( earns ) earns.hidden = ! ( parseFloat( e.target.value ) < 0 );
-                }
-                if ( e.target.hasAttribute( 'data-check-on' ) ) link.classList.toggle( 'is-off', ! e.target.checked );
+            var t = e.target;
+            if ( ! t || ! t.closest ) return;
+            if ( t.hasAttribute && t.hasAttribute( 'data-checks-find' ) ) return;
+            var row = t.closest( '.mshield-checkrow[data-key]' );
+            if ( ! row ) return;
+            changed[ row.getAttribute( 'data-key' ) ] = true;
+            if ( t.hasAttribute( 'data-check-cost' ) ) {
+                var earns = row.querySelector( '[data-check-earns]' );
+                if ( earns ) earns.hidden = ! ( parseFloat( t.value ) < 0 );
+            }
+            if ( t.hasAttribute( 'data-check-on' ) ) {
+                row.classList.toggle( 'is-off', ! t.checked );
+                var flags = ( row.getAttribute( 'data-flags' ) || '' ).split( ' ' ).filter( function( f ) { return f && f !== 'off'; } );
+                if ( ! t.checked ) flags.push( 'off' );
+                row.setAttribute( 'data-flags', flags.join( ' ' ) );
             }
             syncDirty();
         }
+        // Steppers change a hidden input, which fires no event of its own.
+        wrap.addEventListener( 'click', function( e ) {
+            var step = e.target.closest ? e.target.closest( '.ms-step' ) : null;
+            if ( step ) onChange( { target: step } );
+        } );
         if ( form ) {
             form.addEventListener( 'input', onChange );
             form.addEventListener( 'change', onChange );
