@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MightyShield 2.3.0\n"
 "Report-Msgid-Bugs-To: https://builtmighty.com\n"
-"POT-Creation-Date: 2026-09-27 18:21+0000\n"
+"POT-Creation-Date: 2026-09-27 18:25+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -34,9 +34,19 @@ msgstr ""
 msgid "%1$d turned out fine, %2$d turned out bad"
 msgstr ""
 
+#. translators: 1: check name, 2: check name, 3: number of orders.
+#: admin/views/dashboard.php:184
+msgid "%1$s and %2$s fire together on %3$s orders."
+msgstr ""
+
 #. translators: 1: number of events, 2: percentage of them that were blocked.
 #: assets/js/mshield-admin.js:315
 msgid "%1$s events · %2$d%% blocked"
+msgstr ""
+
+#. translators: 1: check name, 2: number of orders.
+#: admin/views/dashboard.php:169
+msgid "%1$s fired on %2$s orders you approved."
 msgstr ""
 
 #. translators: 1: service name, 2: HTTP status code.
@@ -164,11 +174,11 @@ msgstr ""
 msgid "&larr; Back"
 msgstr ""
 
-#: admin/views/documentation.php:406
+#: admin/views/documentation.php:409
 msgid "0 (learned from your orders)"
 msgstr ""
 
-#: admin/views/documentation.php:416
+#: admin/views/documentation.php:419
 msgid "1 hour"
 msgstr ""
 
@@ -176,15 +186,15 @@ msgstr ""
 msgid "1 year"
 msgstr ""
 
-#: admin/views/documentation.php:415
+#: admin/views/documentation.php:418
 msgid "20 per hour"
 msgstr ""
 
-#: admin/views/dashboard.php:94
+#: admin/views/dashboard.php:102
 msgid "24 hours"
 msgstr ""
 
-#: admin/views/documentation.php:407
+#: admin/views/documentation.php:410
 msgid "3 orders / 30 days"
 msgstr ""
 
@@ -200,11 +210,11 @@ msgstr ""
 msgid "3-D Secure verification"
 msgstr ""
 
-#: admin/views/dashboard.php:92 admin/views/dashboard.php:116
+#: admin/views/dashboard.php:100 admin/views/dashboard.php:216
 msgid "30 days"
 msgstr ""
 
-#: admin/views/dashboard.php:93 admin/views/dashboard.php:115
+#: admin/views/dashboard.php:101 admin/views/dashboard.php:215
 msgid "7 days"
 msgstr ""
 
@@ -220,7 +230,7 @@ msgstr ""
 msgid "A chargeback, a refund, a fraud verdict or a refused checkout is never forgotten while the record is still in use — only quiet, clean records that nothing links to any more are cleared out. Set to 0 to keep everything."
 msgstr ""
 
-#: admin/views/documentation.php:412
+#: admin/views/documentation.php:415
 msgid "A checkout completed faster than this was almost certainly not typed by a person."
 msgstr ""
 
@@ -228,7 +238,7 @@ msgstr ""
 msgid "A clean run of past orders, so this one starts with the benefit of the doubt. The only signal that adds trust rather than spending it."
 msgstr ""
 
-#: admin/views/dashboard.php:49
+#: admin/views/dashboard.php:62
 msgid "A couple of minutes now, and MightyShield will be doing what you actually want rather than what it defaults to."
 msgstr ""
 
@@ -236,7 +246,7 @@ msgstr ""
 msgid "A gift or prepaid card used for an expensive physical order. Untraceable and non-recoverable, which is the appeal."
 msgstr ""
 
-#: admin/views/documentation.php:446
+#: admin/views/documentation.php:449
 msgid "A hard ceiling on how many orders can be sent for review in a day, so a flood of traffic cannot run up a bill. 0 means no limit."
 msgstr ""
 
@@ -244,7 +254,7 @@ msgstr ""
 msgid "A hard limit you set. Different from the check above, which scales with your own takings — this one is a number you chose and does not move."
 msgstr ""
 
-#: admin/views/documentation.php:558
+#: admin/views/documentation.php:561
 msgid "A heavy mark against. Enough on its own to push the next order to a level you will see."
 msgstr ""
 
@@ -252,15 +262,15 @@ msgstr ""
 msgid "A hidden trap field, a signed timer, and, if you have turned them on, the device check and the bot challenge are placed in the form."
 msgstr ""
 
-#: admin/views/documentation.php:560
+#: admin/views/documentation.php:563
 msgid "A mark against, lighter than one of yours. Three of them is enough for the next attempt to be treated as a known bad address."
 msgstr ""
 
-#: admin/views/documentation.php:529
+#: admin/views/documentation.php:532
 msgid "A rating worked out afterwards is a partial one"
 msgstr ""
 
-#: admin/views/documentation.php:571
+#: admin/views/documentation.php:574
 msgid "A real customer was blocked"
 msgstr ""
 
@@ -284,15 +294,15 @@ msgstr ""
 msgid "A safe way to get set up without risking real orders:"
 msgstr ""
 
-#: admin/views/documentation.php:496
+#: admin/views/documentation.php:499
 msgid "A single address, or a range in CIDR form. Your own office is the usual case."
 msgstr ""
 
-#: admin/views/documentation.php:556
+#: admin/views/documentation.php:559
 msgid "A small credit. Three of these with nothing bad is what earns Trusted."
 msgstr ""
 
-#: admin/views/documentation.php:353
+#: admin/views/documentation.php:356
 msgid "A summary on the main WordPress dashboard, so the state of your protection is the first thing you see when you log in. It reports and does not change anything."
 msgstr ""
 
@@ -300,7 +310,7 @@ msgstr ""
 msgid "A throwaway inbox from a service that hands them out freely and deletes them minutes later."
 msgstr ""
 
-#: admin/views/documentation.php:557
+#: admin/views/documentation.php:560
 msgid "A very small mark against. Most refunds are ordinary returns and only matter in volume."
 msgstr ""
 
@@ -308,7 +318,7 @@ msgstr ""
 msgid "A week of observing costs nothing and tells you a lot."
 msgstr ""
 
-#: admin/class-admin-page.php:2072 admin/views/documentation.php:209 admin/views/documentation.php:436
+#: admin/class-admin-page.php:2072 admin/views/documentation.php:209 admin/views/documentation.php:439
 msgid "AI Review"
 msgstr ""
 
@@ -333,7 +343,7 @@ msgstr ""
 msgid "AI review"
 msgstr ""
 
-#: admin/views/dashboard.php:67
+#: admin/views/dashboard.php:76
 msgid "AI review is switched on but has no provider."
 msgstr ""
 
@@ -350,7 +360,7 @@ msgstr ""
 msgid "AI verdict is missing the \"%s\" field"
 msgstr ""
 
-#: admin/views/documentation.php:530
+#: admin/views/documentation.php:533
 msgid "About half the checks look at the visit rather than the order: whether a hidden trap field was filled in, how fast the form was completed, what the browser reported, how many orders that address placed in the previous quarter hour. None of that is kept, and re running it now would measure your own browser sitting in the admin."
 msgstr ""
 
@@ -358,7 +368,7 @@ msgstr ""
 msgid "Above the Low threshold"
 msgstr ""
 
-#: admin/class-admin-page.php:2080 admin/views/documentation.php:212 admin/views/documentation.php:490
+#: admin/class-admin-page.php:2080 admin/views/documentation.php:212 admin/views/documentation.php:493
 msgid "Access"
 msgstr ""
 
@@ -418,7 +428,7 @@ msgstr ""
 msgid "Add a hidden trap field to checkout"
 msgstr ""
 
-#: admin/views/dashboard.php:71
+#: admin/views/dashboard.php:80
 msgid "Add a key"
 msgstr ""
 
@@ -434,7 +444,7 @@ msgstr ""
 msgid "Add your own line to the end of every refusal"
 msgstr ""
 
-#: admin/views/documentation.php:463
+#: admin/views/documentation.php:466
 msgid "Add your own line to the end of every refusal."
 msgstr ""
 
@@ -470,7 +480,7 @@ msgstr ""
 msgid "Address looks made up"
 msgstr ""
 
-#: admin/views/documentation.php:404
+#: admin/views/documentation.php:407
 msgid "Address sensitivity"
 msgstr ""
 
@@ -478,7 +488,7 @@ msgstr ""
 msgid "Address used by several other buyers"
 msgstr ""
 
-#: admin/views/documentation.php:407
+#: admin/views/documentation.php:410
 msgid "Address velocity"
 msgstr ""
 
@@ -495,8 +505,12 @@ msgstr ""
 msgid "Address verification (Smarty) is degraded and is falling back to a basic ZIP and state check. Full USPS verification is NOT running. Last error: %s"
 msgstr ""
 
-#: admin/views/documentation.php:506
+#: admin/views/documentation.php:509
 msgid "Addresses refused outright, before any check runs. Entries stay until you remove them. MightyShield adds one itself in one case: when you block an order in review, and only if the address is neither allowlisted nor your own server's. An order rated Banned puts its address under a day-long temporary block instead, because the address is rarely the fraudster's alone: on a mobile carrier or an office it is hundreds of people, and the identities that earned the ban, the card and the mailbox, are what refuse the next attempt."
+msgstr ""
+
+#: admin/views/dashboard.php:175 admin/views/dashboard.php:191
+msgid "Adjust"
 msgstr ""
 
 #: admin/class-order-panel.php:387
@@ -527,7 +541,7 @@ msgstr ""
 msgid "Alerts go to"
 msgstr ""
 
-#: admin/views/documentation.php:516
+#: admin/views/documentation.php:519
 msgid "Alerts."
 msgstr ""
 
@@ -538,6 +552,10 @@ msgstr ""
 
 #: admin/views/logs.php:109
 msgid "All actions"
+msgstr ""
+
+#: admin/views/dashboard.php:229
+msgid "All logs"
 msgstr ""
 
 #: admin/class-admin-page.php:1010
@@ -552,7 +570,7 @@ msgstr ""
 msgid "Allowed"
 msgstr ""
 
-#: admin/views/documentation.php:493 admin/views/whitelist.php:33
+#: admin/views/documentation.php:496 admin/views/whitelist.php:33
 msgid "Allowlist"
 msgstr ""
 
@@ -564,7 +582,7 @@ msgstr ""
 msgid "Allowlist entry removed."
 msgstr ""
 
-#: admin/views/documentation.php:469
+#: admin/views/documentation.php:472
 msgid "Allowlist mode."
 msgstr ""
 
@@ -580,7 +598,7 @@ msgstr ""
 msgid "Always allowlist your own IP or account before switching protection to Active. That is what keeps you from locking yourself out of your own checkout."
 msgstr ""
 
-#: admin/views/documentation.php:423
+#: admin/views/documentation.php:426
 msgid "An account younger than this when it orders is treated as brand new."
 msgstr ""
 
@@ -592,15 +610,15 @@ msgstr ""
 msgid "An allowlisted shopper is still rated and recorded, so your reports stay complete — but nothing is done about the rating: no hold, no challenge, no refusal. Use for trusted staff, offices, and known-good customers."
 msgstr ""
 
-#: admin/views/documentation.php:494
+#: admin/views/documentation.php:497
 msgid "An allowlisted shopper is still rated and recorded, so your reports stay complete; what the allowlist stops is anything being done about the rating. Nine kinds of entry. The first four decide at checkout:"
 msgstr ""
 
-#: admin/views/documentation.php:411
+#: admin/views/documentation.php:414
 msgid "An invisible field on the checkout. A person never sees it; a bot fills it in. Almost no false positives."
 msgstr ""
 
-#: admin/views/documentation.php:437
+#: admin/views/documentation.php:440
 msgid "An optional second opinion. After the checks have scored an order, a language model is shown everything MightyShield already knows about it and asked for its own rating out of 100."
 msgstr ""
 
@@ -608,11 +626,11 @@ msgstr ""
 msgid "An order falls to the most severe risk level whose threshold its rating is at or below, and that level decides what happens to it."
 msgstr ""
 
-#: admin/views/documentation.php:548
+#: admin/views/documentation.php:551
 msgid "An order leaves the queue the moment you rule on it, whether you do that here or on the order itself. Orders that failed the card checks after paying appear as a warning rather than something to approve or block: the money is already taken and the order is on its way, so the decision is whether to refund and cancel it yourself."
 msgstr ""
 
-#: admin/views/documentation.php:524
+#: admin/views/documentation.php:527
 msgid "An order placed before MightyShield was installed, or while it was switched off, has no rating. Rate order works one out from what the order still contains. It changes nothing about the order and will not hold or cancel anything, however badly it scores."
 msgstr ""
 
@@ -625,7 +643,7 @@ msgstr ""
 msgid "An order starts at 100 and spends trust as checks notice things. But an order with nothing known about the customer is capped at 94, which is Low. The top of the scale has to be earned by a clean run of past orders, because knowing nothing about someone is not the same as trusting them."
 msgstr ""
 
-#: admin/views/documentation.php:443
+#: admin/views/documentation.php:446
 msgid "Anthropic"
 msgstr ""
 
@@ -641,7 +659,7 @@ msgstr ""
 msgid "Anthropic returned no verdict"
 msgstr ""
 
-#: admin/views/documentation.php:443
+#: admin/views/documentation.php:446
 msgid "Anthropic, OpenAI or Google. Each has its own key field and its own model name, which you can change if you want a cheaper or a stronger one."
 msgstr ""
 
@@ -662,7 +680,7 @@ msgstr ""
 msgid "Approve"
 msgstr ""
 
-#: admin/views/documentation.php:526 admin/views/documentation.php:546
+#: admin/views/documentation.php:529 admin/views/documentation.php:549
 msgid "Approve and Block."
 msgstr ""
 
@@ -675,7 +693,7 @@ msgstr ""
 msgid "Approve failed. The authorization could not be captured: %s. The order remains on hold."
 msgstr ""
 
-#: admin/views/documentation.php:534
+#: admin/views/documentation.php:537
 msgid "Approve moves the order to Processing. Block cancels it and blocks the address, then tells you to refund from the order items panel. It will not refund automatically, because that is real money moving and it should be a decision you make with the amount in front of you."
 msgstr ""
 
@@ -727,7 +745,7 @@ msgstr ""
 msgid "Automated card testing depends on getting a fast, consistent answer. Refusing slowly, with a message that varies and reads like an ordinary bank decline, means an attacker cannot tell what tripped or time their way around it."
 msgstr ""
 
-#: admin/views/documentation.php:462
+#: admin/views/documentation.php:465
 msgid "Automated card testing relies on a quick, consistent answer. Refusing slowly, with a message that varies and reads like an ordinary bank decline, means an attacker cannot work out what tripped or time their way around it. Genuine customers are never refused, so it does not affect them. It does hold a server process for the length of the delay, which is the only reason to turn it off. The delay is random between a minimum and a maximum you set, 3 and 8 seconds by default, and the randomness is the point: a fixed delay is itself a signal."
 msgstr ""
 
@@ -739,7 +757,7 @@ msgstr ""
 msgid "Balanced"
 msgstr ""
 
-#: admin/views/documentation.php:367
+#: admin/views/documentation.php:370
 msgid "Balanced."
 msgstr ""
 
@@ -751,7 +769,7 @@ msgstr ""
 msgid "Banned has no rating range because no rating can produce it. It is reachable only when a check forces it, and three do by default: an order linked to a previous chargeback, an address on your blocklist, and a customer, phone or address on your blocklist."
 msgstr ""
 
-#: admin/views/documentation.php:559
+#: admin/views/documentation.php:562
 msgid "Bans the next order outright, whatever it scores."
 msgstr ""
 
@@ -760,7 +778,7 @@ msgstr ""
 msgid "Based on the most recent %s rated orders."
 msgstr ""
 
-#: admin/views/documentation.php:432
+#: admin/views/documentation.php:435
 msgid "Before you have any orders"
 msgstr ""
 
@@ -768,7 +786,7 @@ msgstr ""
 msgid "Behavior"
 msgstr ""
 
-#: admin/views/documentation.php:379
+#: admin/views/documentation.php:382
 msgid "Behavior."
 msgstr ""
 
@@ -816,7 +834,7 @@ msgstr ""
 msgid "Block checkout"
 msgstr ""
 
-#: admin/views/documentation.php:476
+#: admin/views/documentation.php:479
 msgid "Block checkout protection"
 msgstr ""
 
@@ -849,12 +867,12 @@ msgstr ""
 msgid "Block/One-page checkout: allow shoppers, block only blocklisted IPs"
 msgstr ""
 
-#: admin/class-dashboard-widget.php:206 admin/views/blocking.php:245 admin/views/dashboard.php:86 admin/views/dashboard.php:105
+#: admin/class-dashboard-widget.php:206 admin/views/blocking.php:245 admin/views/dashboard.php:94 admin/views/dashboard.php:205
 #: admin/views/logs.php:57 admin/views/logs.php:110 assets/js/mshield-admin.js:347
 msgid "Blocked"
 msgstr ""
 
-#: admin/views/documentation.php:402
+#: admin/views/documentation.php:405
 msgid "Blocked email domains"
 msgstr ""
 
@@ -874,11 +892,11 @@ msgstr ""
 msgid "Blocked, rate limited and flagged events over 24 hours, 7 days or 30 days. Hovering gives you the numbers for any single point."
 msgstr ""
 
-#: admin/views/blocklist.php:19 admin/views/documentation.php:505
+#: admin/views/blocklist.php:19 admin/views/documentation.php:508
 msgid "Blocklist"
 msgstr ""
 
-#: admin/views/documentation.php:470
+#: admin/views/documentation.php:473
 msgid "Blocklist mode."
 msgstr ""
 
@@ -908,7 +926,7 @@ msgstr ""
 msgid "Bot challenge saved."
 msgstr ""
 
-#: admin/views/documentation.php:461
+#: admin/views/documentation.php:464
 msgid "Bot challenge."
 msgstr ""
 
@@ -956,11 +974,11 @@ msgstr ""
 msgid "Bulk actions"
 msgstr ""
 
-#: admin/views/documentation.php:410 admin/views/documentation.php:444
+#: admin/views/documentation.php:413 admin/views/documentation.php:447
 msgid "Button"
 msgstr ""
 
-#: admin/views/documentation.php:513
+#: admin/views/documentation.php:516
 msgid "By time, by what happened, or by searching for an address, an email or a reason."
 msgstr ""
 
@@ -993,7 +1011,7 @@ msgstr ""
 msgid "Cautious"
 msgstr ""
 
-#: admin/views/documentation.php:368
+#: admin/views/documentation.php:371
 msgid "Cautious."
 msgstr ""
 
@@ -1013,7 +1031,7 @@ msgstr ""
 msgid "Change this any time. Switching the verdict takes back whatever the previous one did to this customer's standing."
 msgstr ""
 
-#: admin/views/documentation.php:559
+#: admin/views/documentation.php:562
 msgid "Chargeback"
 msgstr ""
 
@@ -1049,7 +1067,7 @@ msgstr ""
 msgid "Check the bot challenge works"
 msgstr ""
 
-#: admin/views/documentation.php:403
+#: admin/views/documentation.php:406
 msgid "Check the domain can receive mail"
 msgstr ""
 
@@ -1057,7 +1075,7 @@ msgstr ""
 msgid "Checkout and login events this store recorded against this email address."
 msgstr ""
 
-#: admin/views/documentation.php:415
+#: admin/views/documentation.php:418
 msgid "Checkout attempts per hour"
 msgstr ""
 
@@ -1101,11 +1119,15 @@ msgstr ""
 msgid "Checks look at each order"
 msgstr ""
 
-#: admin/views/documentation.php:408
+#: admin/views/documentation.php:411
 msgid "Checks that a US postcode belongs to the state given with it."
 msgstr ""
 
-#: admin/views/documentation.php:409
+#: admin/views/documentation.php:347
+msgid "Checks that keep firing on orders you approved, and pairs that fire together, each with a link to that check on Scoring."
+msgstr ""
+
+#: admin/views/documentation.php:412
 msgid "Checks the billing address against a real postal database. Needs a Smarty account and its two credentials. Off unless you have one."
 msgstr ""
 
@@ -1129,7 +1151,7 @@ msgstr ""
 msgid "Clean"
 msgstr ""
 
-#: admin/views/documentation.php:525
+#: admin/views/documentation.php:528
 msgid "Clean or Fraud."
 msgstr ""
 
@@ -1153,7 +1175,7 @@ msgstr ""
 msgid "Cloudflare Turnstile"
 msgstr ""
 
-#: admin/views/documentation.php:461
+#: admin/views/documentation.php:464
 msgid "Cloudflare Turnstile or Google reCAPTCHA v3, and which pages it guards. These run whether protection is Observing or Active. A failed comment is held for moderation rather than refused."
 msgstr ""
 
@@ -1173,11 +1195,11 @@ msgstr ""
 msgid "Comments"
 msgstr ""
 
-#: admin/views/documentation.php:221 admin/views/documentation.php:569
+#: admin/views/documentation.php:221 admin/views/documentation.php:572
 msgid "Common situations"
 msgstr ""
 
-#: admin/views/documentation.php:556
+#: admin/views/documentation.php:559
 msgid "Completed"
 msgstr ""
 
@@ -1260,7 +1282,7 @@ msgstr ""
 msgid "Custom"
 msgstr ""
 
-#: admin/views/documentation.php:370
+#: admin/views/documentation.php:373
 msgid "Custom."
 msgstr ""
 
@@ -1280,7 +1302,7 @@ msgstr ""
 msgid "Daily AI review limit reached"
 msgstr ""
 
-#: admin/views/ai.php:198 admin/views/documentation.php:446
+#: admin/views/ai.php:198 admin/views/documentation.php:449
 msgid "Daily limit"
 msgstr ""
 
@@ -1292,7 +1314,7 @@ msgstr ""
 msgid "Dashboard"
 msgstr ""
 
-#: admin/views/documentation.php:207 admin/views/documentation.php:352
+#: admin/views/documentation.php:207 admin/views/documentation.php:355
 msgid "Dashboard widget"
 msgstr ""
 
@@ -1300,7 +1322,7 @@ msgstr ""
 msgid "Date"
 msgstr ""
 
-#: admin/views/documentation.php:400 admin/views/documentation.php:440
+#: admin/views/documentation.php:403 admin/views/documentation.php:443
 msgid "Default"
 msgstr ""
 
@@ -1332,7 +1354,7 @@ msgstr ""
 msgid "Details are on your blocklist"
 msgstr ""
 
-#: admin/views/documentation.php:413
+#: admin/views/documentation.php:416
 msgid "Device check"
 msgstr ""
 
@@ -1340,7 +1362,7 @@ msgstr ""
 msgid "Device clock is set to another country"
 msgstr ""
 
-#: admin/views/documentation.php:417
+#: admin/views/documentation.php:420
 msgid "Different emails per hour"
 msgstr ""
 
@@ -1348,7 +1370,7 @@ msgstr ""
 msgid "Disabled"
 msgstr ""
 
-#: admin/views/documentation.php:355
+#: admin/views/documentation.php:358
 msgid "Disabled, Observing or Active. There is no switch on it, because changing that belongs on the screen that explains what the three mean."
 msgstr ""
 
@@ -1380,7 +1402,7 @@ msgstr ""
 msgid "Dots, plus-tags and alias domains all point at one inbox, and that inbox has ordered several times in the last hour. Changing the spelling is how a card tester gets a fresh start."
 msgstr ""
 
-#: admin/views/documentation.php:517
+#: admin/views/documentation.php:520
 msgid "Downloads the current filtered view as a spreadsheet file."
 msgstr ""
 
@@ -1392,7 +1414,7 @@ msgstr ""
 msgid "Each risk level is set to one action. These are all of them, with what each one does to the customer's money. Reject comes first because it is the one that stops the order happening at all; the rest run from the gentlest to the most disruptive."
 msgstr ""
 
-#: admin/views/documentation.php:554
+#: admin/views/documentation.php:557
 msgid "Effect on the next order"
 msgstr ""
 
@@ -1416,7 +1438,7 @@ msgstr ""
 msgid "Email address cannot receive mail"
 msgstr ""
 
-#: admin/views/documentation.php:498
+#: admin/views/documentation.php:501
 msgid "Email address."
 msgstr ""
 
@@ -1432,7 +1454,7 @@ msgstr ""
 msgid "Emails allowed per hour"
 msgstr ""
 
-#: admin/views/ai.php:52 admin/views/documentation.php:442
+#: admin/views/ai.php:52 admin/views/documentation.php:445
 msgid "Enable AI review"
 msgstr ""
 
@@ -1461,7 +1483,7 @@ msgstr ""
 msgid "Events over the past 24 hours"
 msgstr ""
 
-#: admin/views/dashboard.php:81 assets/js/mshield-admin.js:254
+#: admin/views/dashboard.php:89 assets/js/mshield-admin.js:254
 msgid "Events over the past 30 days"
 msgstr ""
 
@@ -1469,11 +1491,11 @@ msgstr ""
 msgid "Events over the past 7 days"
 msgstr ""
 
-#: admin/views/documentation.php:398
+#: admin/views/documentation.php:401
 msgid "Every check has its own settings on its row. These are the ones with numbers worth knowing about."
 msgstr ""
 
-#: admin/views/documentation.php:362
+#: admin/views/documentation.php:365
 msgid "Every check in one table, with what it costs and how often it has actually fired on your traffic. This is where you tune MightyShield to your own customers."
 msgstr ""
 
@@ -1481,11 +1503,11 @@ msgstr ""
 msgid "Every check runs and each one that notices something takes trust away. Some checks can force a risk level on their own, whatever the rating says."
 msgstr ""
 
-#: admin/views/documentation.php:511
+#: admin/views/documentation.php:514
 msgid "Every event MightyShield recorded, newest first. Click a row for the full detail, including where the address is and what the request looked like."
 msgstr ""
 
-#: admin/views/documentation.php:483
+#: admin/views/documentation.php:486
 msgid "Every method currently available at your checkout, with a straight yes or no on each of the three capabilities."
 msgstr ""
 
@@ -1517,7 +1539,7 @@ msgstr ""
 msgid "Everyone is new once, so this only matters next to something else."
 msgstr ""
 
-#: admin/views/documentation.php:499
+#: admin/views/documentation.php:502
 msgid "Everyone with that role. Be careful with broad roles: allowlisting Customer exempts every registered shopper on your site."
 msgstr ""
 
@@ -1554,7 +1576,7 @@ msgstr ""
 msgid "Export your dispute report as CSV and upload it here. Nothing is recorded until you have seen which column it matched on and said so. The file is read once and deleted."
 msgstr ""
 
-#: admin/views/documentation.php:517
+#: admin/views/documentation.php:520
 msgid "Export."
 msgstr ""
 
@@ -1570,7 +1592,7 @@ msgstr ""
 msgid "Failed card checks"
 msgstr ""
 
-#: admin/views/documentation.php:422
+#: admin/views/documentation.php:425
 msgid "Failed coupons per hour"
 msgstr ""
 
@@ -1578,7 +1600,7 @@ msgstr ""
 msgid "Failed logins allowed per hour"
 msgstr ""
 
-#: admin/views/documentation.php:421
+#: admin/views/documentation.php:424
 msgid "Failed logins per hour"
 msgstr ""
 
@@ -1586,7 +1608,7 @@ msgstr ""
 msgid "Failed payments across the whole store are running far above normal, which is what card testing spread across many addresses looks like. For an hour, every unknown customer costs a little more."
 msgstr ""
 
-#: admin/views/documentation.php:419
+#: admin/views/documentation.php:422
 msgid "Failed payments per hour"
 msgstr ""
 
@@ -1614,7 +1636,7 @@ msgstr ""
 msgid "Filter"
 msgstr ""
 
-#: admin/views/documentation.php:513
+#: admin/views/documentation.php:516
 msgid "Filters."
 msgstr ""
 
@@ -1622,7 +1644,7 @@ msgstr ""
 msgid "Find a check"
 msgstr ""
 
-#: admin/views/documentation.php:572
+#: admin/views/documentation.php:575
 msgid "Find them in the <a href=\"%1$s\">Logs</a> and read the reason. Allowlist their address from the detail panel if it was a one off. If the same check is catching several real customers, open <a href=\"%2$s\">Scoring</a>, find that check, and either lower its cost or switch it off. If a threshold is the problem, raise it on <a href=\"%3$s\">Shielding</a>."
 msgstr ""
 
@@ -1630,7 +1652,7 @@ msgstr ""
 msgid "Finish"
 msgstr ""
 
-#: admin/views/dashboard.php:52
+#: admin/views/dashboard.php:65
 msgid "Finish setup"
 msgstr ""
 
@@ -1681,7 +1703,7 @@ msgstr ""
 msgid "Flag for review"
 msgstr ""
 
-#: admin/class-dashboard-widget.php:208 admin/class-fraud-review.php:506 admin/views/dashboard.php:88 admin/views/dashboard.php:107
+#: admin/class-dashboard-widget.php:208 admin/class-fraud-review.php:506 admin/views/dashboard.php:96 admin/views/dashboard.php:207
 #: admin/views/logs.php:59 admin/views/logs.php:112 assets/js/mshield-admin.js:349
 msgid "Flagged"
 msgstr ""
@@ -1703,7 +1725,7 @@ msgstr ""
 msgid "Flagged for review."
 msgstr ""
 
-#: admin/views/documentation.php:497
+#: admin/views/documentation.php:500
 msgid "Follows the person rather than where they are, so it survives a changing home address."
 msgstr ""
 
@@ -1711,15 +1733,15 @@ msgstr ""
 msgid "For a store seeing more fraud than it used to. Everything specific costs more, and device information starts being collected."
 msgstr ""
 
-#: admin/views/documentation.php:368
+#: admin/views/documentation.php:371
 msgid "For a store seeing more fraud than it used to. The checks that point at a specific problem cost more, and MightyShield starts collecting device information at checkout."
 msgstr ""
 
-#: admin/views/documentation.php:369 includes/class-scoring-profiles.php:441
+#: admin/views/documentation.php:372 includes/class-scoring-profiles.php:441
 msgid "For a store under attack, or one selling things worth stealing. Expect to review more orders by hand."
 msgstr ""
 
-#: admin/views/documentation.php:460
+#: admin/views/documentation.php:463
 msgid "For each level: the rating at or below which it applies, what it does, and whether the order still reaches your processor. The last column shows how orders at that level actually turned out, which is what tells you whether a threshold is right."
 msgstr ""
 
@@ -1736,7 +1758,7 @@ msgstr ""
 msgid "Force level for %s"
 msgstr ""
 
-#: admin/views/documentation.php:389
+#: admin/views/documentation.php:392
 msgid "Force level."
 msgstr ""
 
@@ -1744,12 +1766,12 @@ msgstr ""
 msgid "Forwarding addresses, one per line — a street line, or a postcode"
 msgstr ""
 
-#: admin/class-fraud-review.php:590 admin/class-order-panel.php:452 admin/views/documentation.php:558
+#: admin/class-fraud-review.php:590 admin/class-order-panel.php:452 admin/views/documentation.php:561
 msgid "Fraud"
 msgstr ""
 
 #: admin/class-fraud-review.php:67 admin/class-fraud-review.php:74 admin/class-fraud-review.php:382 admin/views/documentation.php:217
-#: admin/views/documentation.php:540
+#: admin/views/documentation.php:543
 msgid "Fraud Review"
 msgstr ""
 
@@ -1765,7 +1787,7 @@ msgstr ""
 msgid "From the Google reCAPTCHA admin console. Must be a v3 key."
 msgstr ""
 
-#: admin/views/documentation.php:514
+#: admin/views/documentation.php:517
 msgid "From the detail panel you can allowlist an address or block it permanently."
 msgstr ""
 
@@ -1821,7 +1843,7 @@ msgstr ""
 msgid "Guessing at discount codes"
 msgstr ""
 
-#: admin/views/documentation.php:422
+#: admin/views/documentation.php:425
 msgid "Guessing at discount codes in bulk is its own kind of attack."
 msgstr ""
 
@@ -1838,7 +1860,7 @@ msgstr ""
 msgid "Held after payment"
 msgstr ""
 
-#: admin/views/documentation.php:536
+#: admin/views/documentation.php:539
 msgid "Held before payment."
 msgstr ""
 
@@ -1870,11 +1892,11 @@ msgstr ""
 msgid "Held orders can be captured or voided, but only if PayPal's own intent is set to Authorize. MightyShield cannot switch it per order."
 msgstr ""
 
-#: admin/views/documentation.php:535
+#: admin/views/documentation.php:538
 msgid "Held with the payment only authorized."
 msgstr ""
 
-#: admin/views/documentation.php:534
+#: admin/views/documentation.php:537
 msgid "Held with the payment taken."
 msgstr ""
 
@@ -1886,7 +1908,7 @@ msgstr ""
 msgid "Here is where you have landed. Every line has a tab behind it, and none of it is permanent."
 msgstr ""
 
-#: admin/views/documentation.php:411
+#: admin/views/documentation.php:414
 msgid "Hidden trap field"
 msgstr ""
 
@@ -1894,7 +1916,7 @@ msgstr ""
 msgid "Hidden trap field was filled in"
 msgstr ""
 
-#: admin/views/documentation.php:447
+#: admin/views/documentation.php:450
 msgid "Hide customer details"
 msgstr ""
 
@@ -1902,7 +1924,7 @@ msgstr ""
 msgid "High"
 msgstr ""
 
-#: admin/views/documentation.php:406
+#: admin/views/documentation.php:409
 msgid "High value amount"
 msgstr ""
 
@@ -1914,7 +1936,7 @@ msgstr ""
 msgid "History"
 msgstr ""
 
-#: admin/views/documentation.php:382
+#: admin/views/documentation.php:385
 msgid "History."
 msgstr ""
 
@@ -1930,7 +1952,7 @@ msgstr ""
 msgid "How far back"
 msgstr ""
 
-#: admin/views/documentation.php:218 admin/views/documentation.php:550
+#: admin/views/documentation.php:218 admin/views/documentation.php:553
 msgid "How it learns"
 msgstr ""
 
@@ -1942,55 +1964,59 @@ msgstr ""
 msgid "How long MightyShield remembers the customers, addresses, cards and networks behind past orders. This is the memory the scoring reads, so it is kept far longer than the log."
 msgstr ""
 
-#: admin/views/documentation.php:416
+#: admin/views/documentation.php:419
 msgid "How long an address stays temporarily blocked after tripping a hard check. It clears itself. A temporary block costs an order trust rather than refusing it, because the address may be a whole office or a mobile network."
 msgstr ""
 
-#: admin/views/documentation.php:545
+#: admin/views/documentation.php:548
 msgid "How long the order has been sitting there. A held order nobody has looked at for three days is the thing this screen exists to put in front of you."
 msgstr ""
 
-#: admin/views/documentation.php:420
+#: admin/views/documentation.php:423
 msgid "How many accounts one address may create in an hour."
 msgstr ""
 
-#: admin/views/documentation.php:415
+#: admin/views/documentation.php:418
 msgid "How many checkout attempts one address may make in the window before it is rate limited."
 msgstr ""
 
-#: admin/views/documentation.php:515
+#: admin/views/documentation.php:518
 msgid "How many days of log entries to keep. Older entries are removed automatically once a day."
 msgstr ""
 
-#: admin/views/documentation.php:417
+#: admin/views/documentation.php:420
 msgid "How many different email addresses one network may use in an hour. Card testing looks exactly like this."
 msgstr ""
 
-#: admin/views/documentation.php:421
+#: admin/views/documentation.php:424
 msgid "How many failed sign ins one address may make before it counts against an order from them."
 msgstr ""
 
-#: admin/views/documentation.php:357
+#: admin/views/documentation.php:345
+msgid "How many orders are held or flagged and not yet decided, with the way into the Fraud Review queue."
+msgstr ""
+
+#: admin/views/documentation.php:360
 msgid "How many orders are held or flagged with nobody having ruled on them, and a button into the review queue. It only turns amber when there is something to do."
 msgstr ""
 
-#: admin/views/documentation.php:414
+#: admin/views/documentation.php:417
 msgid "How many orders one device may place in an hour before it counts against them."
 msgstr ""
 
-#: admin/views/documentation.php:418
+#: admin/views/documentation.php:421
 msgid "How many orders one network may place in a quarter of an hour."
 msgstr ""
 
-#: admin/views/documentation.php:407
+#: admin/views/documentation.php:410
 msgid "How many orders to the same delivery address, over how many days, before it looks like a drop address."
 msgstr ""
 
-#: admin/views/documentation.php:388
+#: admin/views/documentation.php:391
 msgid "How much of the 100 an order loses when this check notices something. A check that is only partly sure costs proportionally less, which is what lets several small concerns add up without any one of them taking over."
 msgstr ""
 
-#: admin/views/documentation.php:390
+#: admin/views/documentation.php:393
 msgid "How often it fires."
 msgstr ""
 
@@ -1998,11 +2024,11 @@ msgstr ""
 msgid "How strict should the scoring be?"
 msgstr ""
 
-#: admin/views/documentation.php:379
+#: admin/views/documentation.php:382
 msgid "How the checkout was filled in: the hidden trap field, how long it took, what the browser says about itself, whether anything was typed or clicked, and the bot challenge."
 msgstr ""
 
-#: admin/views/documentation.php:374
+#: admin/views/documentation.php:377
 msgid "How the checks are grouped"
 msgstr ""
 
@@ -2018,11 +2044,11 @@ msgstr ""
 msgid "How this works"
 msgstr ""
 
-#: admin/views/documentation.php:404
+#: admin/views/documentation.php:407
 msgid "How willing the made up address check is to call an address nonsense. High catches more and objects to more unusual real addresses."
 msgstr ""
 
-#: admin/views/documentation.php:587
+#: admin/views/documentation.php:590
 msgid "I want to turn everything off"
 msgstr ""
 
@@ -2047,7 +2073,7 @@ msgstr ""
 msgid "IP address or CIDR range"
 msgstr ""
 
-#: admin/views/documentation.php:496
+#: admin/views/documentation.php:499
 msgid "IP address or range."
 msgstr ""
 
@@ -2071,23 +2097,27 @@ msgstr ""
 msgid "Identity type"
 msgstr ""
 
-#: admin/views/documentation.php:377
+#: admin/views/documentation.php:380
 msgid "Identity."
 msgstr ""
 
-#: admin/views/documentation.php:487
+#: admin/views/documentation.php:490
 msgid "If a level is set to ask for 3-D Secure and the customer pays with a method that cannot, that order is flagged instead. If a level is set to authorize and hold and the method cannot reserve money, the order is held before payment instead. Nothing is skipped; something less is done, and the order note says which."
 msgstr ""
 
-#: admin/views/blocking.php:301
+#: admin/views/blocking.php:301 admin/views/dashboard.php:126
 msgid "If you enforced these thresholds"
 msgstr ""
 
-#: admin/views/documentation.php:365
+#: admin/views/documentation.php:346
+msgid "If you enforced these thresholds."
+msgstr ""
+
+#: admin/views/documentation.php:368
 msgid "If you would rather not judge every check one at a time, pick a profile at the top of the tab and it sets every trust cost at once. You can still change any individual row afterwards."
 msgstr ""
 
-#: admin/views/documentation.php:473
+#: admin/views/documentation.php:476
 msgid "If your checkout stops working"
 msgstr ""
 
@@ -2099,7 +2129,7 @@ msgstr ""
 msgid "Important"
 msgstr ""
 
-#: admin/views/documentation.php:349
+#: admin/views/documentation.php:352
 msgid "In Observing nothing is refused or held because of what MightyShield worked out. An order that trips the hidden trap field is rated Rejected, recorded as such, and still goes through — that is the point, so you can see what enforcing would have done before it does it. What still acts are your own lists: an address on your blocklist is refused, and the Store API firewall keeps whichever mode you set, because those are instructions you gave, not ratings."
 msgstr ""
 
@@ -2145,7 +2175,7 @@ msgstr ""
 msgid "Invalid email address."
 msgstr ""
 
-#: admin/views/documentation.php:438
+#: admin/views/documentation.php:441
 msgid "It is off until you add an API key, and it is only asked about the risk levels you choose, so it never costs you anything on ordinary orders. If the provider is unreachable or you have hit your daily cap, the order simply proceeds on its checks alone."
 msgstr ""
 
@@ -2166,7 +2196,7 @@ msgstr ""
 msgid "Known good customer"
 msgstr ""
 
-#: admin/views/documentation.php:394
+#: admin/views/documentation.php:397
 msgid "Known good customer has a negative cost. It is the only check that adds trust rather than spending it, and it is the only way an order can reach Trusted. A customer earns it with three or more orders, a clean history and at least two weeks on the books — so three quick purchases on a stolen card earn nothing — and loses it the moment anything connected to them goes bad. Past a real anomaly on an order it can hand back only a little, because a taken-over account is exactly a good history with something suddenly wrong."
 msgstr ""
 
@@ -2259,7 +2289,7 @@ msgstr ""
 msgid "Login"
 msgstr ""
 
-#: admin/class-admin-page.php:2081 admin/views/dashboard.php:159 admin/views/documentation.php:213 admin/views/documentation.php:510
+#: admin/class-admin-page.php:2081 admin/views/dashboard.php:259 admin/views/documentation.php:213 admin/views/documentation.php:513
 msgid "Logs"
 msgstr ""
 
@@ -2271,11 +2301,11 @@ msgstr ""
 msgid "Looking up…"
 msgstr ""
 
-#: admin/views/documentation.php:413
+#: admin/views/documentation.php:416
 msgid "Looks at what the browser reports about itself, to spot automated browsers. Off by default because it needs JavaScript and can be noisy."
 msgstr ""
 
-#: admin/views/documentation.php:403
+#: admin/views/documentation.php:406
 msgid "Looks up whether anything is actually listening for email at that domain. A domain that cannot receive mail is not a real customer. This is the one check that asks something outside your server during a checkout — your own DNS resolver — which is why it is off until you switch it on."
 msgstr ""
 
@@ -2291,11 +2321,11 @@ msgstr ""
 msgid "Low"
 msgstr ""
 
-#: admin/views/documentation.php:445
+#: admin/views/documentation.php:448
 msgid "Lower only"
 msgstr ""
 
-#: admin/views/documentation.php:445
+#: admin/views/documentation.php:448
 msgid "Lower only means the model can take trust away but never give it back, so it can never talk a bad order into looking fine. Lower or raise lets it rescue an order the checks were too harsh on."
 msgstr ""
 
@@ -2307,11 +2337,11 @@ msgstr ""
 msgid "Maintenance"
 msgstr ""
 
-#: admin/views/documentation.php:389
+#: admin/views/documentation.php:392
 msgid "Makes one check decide the outcome on its own, whatever the rating says. Use it only for things a real customer essentially cannot do, such as filling in a hidden trap field. Anything genuinely ambiguous should be left on scoring only, so the rating can weigh it against everything else."
 msgstr ""
 
-#: admin/views/documentation.php:410
+#: admin/views/documentation.php:413
 msgid "Makes one real call to Smarty with the credentials you have saved, and tells you exactly what came back. It also works out which of the two ways of sending credentials your server can actually deliver, and keeps that. Save the page before testing: the token field is write-only, so the test uses what is stored, not what is typed. Costs one lookup from your Smarty account."
 msgstr ""
 
@@ -2351,15 +2381,15 @@ msgstr ""
 msgid "Marked as fraud. MightyShield will weigh this against future orders from the same customer, address, card or network."
 msgstr ""
 
-#: admin/views/documentation.php:500
+#: admin/views/documentation.php:503
 msgid "Matched against a stored order when you review or re-rate it, never at checkout. A shopper types all five into the form, so an allowlisted postcode would otherwise let anyone who typed it skip every hold."
 msgstr ""
 
-#: admin/views/documentation.php:390
+#: admin/views/documentation.php:393
 msgid "Measured on your own orders over the last 30 days. This is the most useful number on the page. The list marks a check that fires on most orders, one that keeps firing on orders you approved, and one that fires together with another; the chips above the list show only those. A check firing on half your orders is describing your customers, not your fraudsters."
 msgstr ""
 
-#: admin/views/documentation.php:404 includes/class-signals.php:727
+#: admin/views/documentation.php:407 includes/class-signals.php:727
 msgid "Medium"
 msgstr ""
 
@@ -2405,7 +2435,7 @@ msgstr ""
 msgid "MightyShield learns from chargebacks automatically on Stripe, which tells it when one happens. Every other processor disputes into a dashboard it cannot see — so on those, the strongest signal there is never reaches the scoring."
 msgstr ""
 
-#: admin/views/documentation.php:474
+#: admin/views/documentation.php:477
 msgid "MightyShield never closes the cart or the checkout on a block checkout store, whatever this setting says. If you ever see an empty cart or a checkout that will not load, look first at the Blocklist under Access and at the Logs tab for a refused address."
 msgstr ""
 
@@ -2445,7 +2475,7 @@ msgstr ""
 msgid "MightyShield supports these payment processors specifically, so it can ask for extra card verification, hold an authorization without taking the money, or read back the card checks. Every other processor still gets the full scoring pipeline and the full response ladder."
 msgstr ""
 
-#: admin/views/documentation.php:560
+#: admin/views/documentation.php:563
 msgid "MightyShield turned the checkout away"
 msgstr ""
 
@@ -2519,11 +2549,11 @@ msgstr ""
 msgid "MightyShield: your store may be under a card-testing attack"
 msgstr ""
 
-#: admin/views/documentation.php:412
+#: admin/views/documentation.php:415
 msgid "Minimum checkout seconds"
 msgstr ""
 
-#: admin/views/documentation.php:405
+#: admin/views/documentation.php:408
 msgid "Minimum order amount"
 msgstr ""
 
@@ -2556,7 +2586,7 @@ msgstr ""
 msgid "Most reviews to run in one day. 0 means no limit. Used today: %d. Once the limit is reached, orders carry on as normal without a review, and a note is added to your logs."
 msgstr ""
 
-#: admin/views/documentation.php:574
+#: admin/views/documentation.php:577
 msgid "My checkout stopped working"
 msgstr ""
 
@@ -2572,6 +2602,11 @@ msgstr ""
 msgid "Need help with this order? Call us on &lt;a href=&quot;tel:5551234567&quot;&gt;(555) 123-4567&lt;/a&gt;."
 msgstr ""
 
+#. translators: %s: number of orders rated so far.
+#: admin/views/dashboard.php:132
+msgid "Needs 20 rated orders; %s so far."
+msgstr ""
+
 #: admin/views/logs.php:120
 msgid "Needs attention"
 msgstr ""
@@ -2580,7 +2615,7 @@ msgstr ""
 msgid "Network"
 msgstr ""
 
-#: admin/views/documentation.php:378
+#: admin/views/documentation.php:381
 msgid "Network."
 msgstr ""
 
@@ -2592,7 +2627,7 @@ msgstr ""
 msgid "Never charged"
 msgstr ""
 
-#: admin/views/documentation.php:423
+#: admin/views/documentation.php:426
 msgid "New account minutes"
 msgstr ""
 
@@ -2673,8 +2708,8 @@ msgstr ""
 msgid "No log entries were selected."
 msgstr ""
 
-#: admin/views/dashboard.php:68
-msgid "No order has been or will be reviewed until an API key is saved. Scoring is unaffected — every other check is still running."
+#: admin/views/dashboard.php:77
+msgid "No order is reviewed until an API key is saved. Every other check is still running."
 msgstr ""
 
 #: admin/views/blocking.php:342
@@ -2743,7 +2778,7 @@ msgstr ""
 msgid "Not set up"
 msgstr ""
 
-#: admin/views/documentation.php:370
+#: admin/views/documentation.php:373
 msgid "Not something you pick. It appears on its own as soon as you change a row yourself, and goes away again if you set that row back. Switching to a profile while you are on Custom replaces the rows you changed, so MightyShield asks first."
 msgstr ""
 
@@ -2753,6 +2788,10 @@ msgstr ""
 
 #: includes/class-signals.php:1157
 msgid "Not the email, the phone, the address, the device or the card. Every store wants first-time customers, so this is close to weightless — it is here so the rating can tell \"new\" apart from \"known good\"."
+msgstr ""
+
+#: admin/views/dashboard.php:232
+msgid "Nothing blocked in the past 7 days."
 msgstr ""
 
 #: admin/views/documentation.php:336
@@ -2795,7 +2834,7 @@ msgstr ""
 msgid "Nothing is listening at that domain, so the customer could never read an order confirmation."
 msgstr ""
 
-#: admin/views/documentation.php:442
+#: admin/views/documentation.php:445
 msgid "Nothing is sent anywhere until this is on and a key is saved."
 msgstr ""
 
@@ -2811,12 +2850,20 @@ msgstr ""
 msgid "Nothing tripped. This order looked ordinary on every check that ran."
 msgstr ""
 
+#: admin/views/dashboard.php:120
+msgid "Nothing waiting."
+msgstr ""
+
 #: admin/class-order-panel.php:542
 msgid "Nothing was charged. The order never reached the payment processor."
 msgstr ""
 
 #: includes/class-risk-levels.php:475
 msgid "Nothing wrong, nothing vouching for it either. Where an unknown customer starts."
+msgstr ""
+
+#: admin/views/dashboard.php:160
+msgid "Nothing yet."
 msgstr ""
 
 #: includes/class-response.php:701
@@ -2839,8 +2886,12 @@ msgstr ""
 msgid "Observing. Orders are rated and recorded, but not acted on"
 msgstr ""
 
-#: admin/views/blocking.php:477 admin/views/documentation.php:403 admin/views/documentation.php:409 admin/views/documentation.php:413
-#: admin/views/documentation.php:442 admin/views/setup/step-challenge.php:52
+#: admin/views/dashboard.php:152
+msgid "Of the last 30 days of orders, re-rated against the thresholds on Shielding."
+msgstr ""
+
+#: admin/views/blocking.php:477 admin/views/documentation.php:406 admin/views/documentation.php:412 admin/views/documentation.php:416
+#: admin/views/documentation.php:445 admin/views/setup/step-challenge.php:52
 msgid "Off"
 msgstr ""
 
@@ -2849,15 +2900,15 @@ msgstr ""
 msgid "Off %s"
 msgstr ""
 
-#: admin/views/documentation.php:408 admin/views/documentation.php:411 admin/views/documentation.php:447 admin/views/scoring.php:289
+#: admin/views/documentation.php:411 admin/views/documentation.php:414 admin/views/documentation.php:450 admin/views/scoring.php:289
 msgid "On"
 msgstr ""
 
-#: admin/views/documentation.php:581
+#: admin/views/documentation.php:584
 msgid "On <a href=\"%s\">Scoring</a>, lower the checkout attempts per hour and the different emails per hour, and raise the cost of the checks that are firing on the attack."
 msgstr ""
 
-#: admin/views/documentation.php:580
+#: admin/views/documentation.php:583
 msgid "On <a href=\"%s\">Shielding</a>, raise the Rejected threshold so more orders are refused outright, and set Elevated to something firmer than 3-D Secure if your processor cannot do it."
 msgstr ""
 
@@ -2865,15 +2916,15 @@ msgstr ""
 msgid "On a block checkout the firewall steps aside for the cart and checkout in either mode."
 msgstr ""
 
-#: admin/views/documentation.php:216 admin/views/documentation.php:520
+#: admin/views/documentation.php:216 admin/views/documentation.php:523
 msgid "On an order"
 msgstr ""
 
-#: admin/views/documentation.php:387
+#: admin/views/documentation.php:390
 msgid "On or off."
 msgstr ""
 
-#: admin/views/documentation.php:588
+#: admin/views/documentation.php:591
 msgid "On the <a href=\"%s\">Dashboard</a>, set the protection switch to Disabled. Nothing is checked and nothing is recorded until you switch it back. Deactivating the plugin does the same and keeps all your settings and history."
 msgstr ""
 
@@ -2886,15 +2937,15 @@ msgstr ""
 msgid "Onboarding"
 msgstr ""
 
-#: admin/views/documentation.php:393
+#: admin/views/documentation.php:396
 msgid "One check gives trust back"
 msgstr ""
 
-#: admin/views/documentation.php:516
+#: admin/views/documentation.php:519
 msgid "One switch for every email MightyShield sends: an order rated badly enough to be held, a review that rated one badly, a service that has stopped responding, a bot challenge refusing everybody, or a wave of failed payments. Leave the address list empty to use the site administrator. At most one email an hour per kind."
 msgstr ""
 
-#: admin/views/documentation.php:566
+#: admin/views/documentation.php:569
 msgid "One thing does outrank your verdict, and it should: a chargeback. If you release an order and the bank later takes the money back, that is recorded against everyone connected to it, exactly as it would be on any other order. Your judgement stands until reality contradicts it."
 msgstr ""
 
@@ -2909,7 +2960,7 @@ msgstr[1] ""
 msgid "One visitor cycling through addresses, which is how card testing looks from the outside."
 msgstr ""
 
-#: admin/views/documentation.php:498
+#: admin/views/documentation.php:501
 msgid "Only counts when the customer is signed in to an account carrying that address. Typing it at the checkout proves nothing, so it grants nothing."
 msgstr ""
 
@@ -2921,11 +2972,11 @@ msgstr ""
 msgid "Only the selected provider's credentials are used. Keys for the others stay saved if you switch back."
 msgstr ""
 
-#: admin/views/documentation.php:521
+#: admin/views/documentation.php:524
 msgid "Open any order and MightyShield is in the right hand column, above the fold. Everything it knows about that order is there, and everything you can do about it."
 msgstr ""
 
-#: admin/class-dashboard-widget.php:271
+#: admin/class-dashboard-widget.php:271 admin/views/dashboard.php:118 admin/views/dashboard.php:121
 msgid "Open queue"
 msgstr ""
 
@@ -3006,7 +3057,7 @@ msgstr ""
 msgid "Order total is unusually small"
 msgstr ""
 
-#: admin/views/documentation.php:380
+#: admin/views/documentation.php:383
 msgid "Order."
 msgstr ""
 
@@ -3026,11 +3077,11 @@ msgstr ""
 msgid "Orders allowed per hour from one email"
 msgstr ""
 
-#: admin/views/documentation.php:406
+#: admin/views/documentation.php:409
 msgid "Orders at or above this cost a little trust, and a prepaid card used on one is its own check in the Payment group. At 0 it is worked out from your own completed orders — the point below which 95 in 100 of them fall — and kept current daily; 500.00 stands in until there are enough orders to learn from. Type a figure and yours is used instead."
 msgstr ""
 
-#: admin/views/documentation.php:405
+#: admin/views/documentation.php:408
 msgid "Orders below this are treated as suspicious. Card testers use the cheapest thing in the shop, so set it just under your genuine cheapest item."
 msgstr ""
 
@@ -3046,7 +3097,7 @@ msgstr ""
 msgid "Orders paid for"
 msgstr ""
 
-#: admin/views/documentation.php:418
+#: admin/views/documentation.php:421
 msgid "Orders per 15 minutes"
 msgstr ""
 
@@ -3078,7 +3129,7 @@ msgstr ""
 msgid "Other orders needed"
 msgstr ""
 
-#: admin/views/documentation.php:565
+#: admin/views/documentation.php:568
 msgid "Outcomes only ever get worse: an order recorded as a chargeback will not quietly go back to being fine. Your own Clean or Fraud verdict is the exception. It can be changed as often as you like, in either direction, and changing it takes back whatever the previous verdict did."
 msgstr ""
 
@@ -3090,7 +3141,7 @@ msgstr ""
 msgid "Partial"
 msgstr ""
 
-#: admin/views/dashboard.php:130
+#: admin/views/dashboard.php:226
 msgid "Past 7 days"
 msgstr ""
 
@@ -3098,7 +3149,7 @@ msgstr ""
 msgid "PayPal did not capture the authorization. Check the order notes."
 msgstr ""
 
-#: admin/class-admin-page.php:2079 admin/views/documentation.php:211 admin/views/documentation.php:478 includes/class-signals.php:1228
+#: admin/class-admin-page.php:2079 admin/views/documentation.php:211 admin/views/documentation.php:481 includes/class-signals.php:1228
 msgid "Payment"
 msgstr ""
 
@@ -3115,7 +3166,7 @@ msgstr ""
 msgid "Payment methods that cannot do this fall back to \"%s\"."
 msgstr ""
 
-#: admin/views/documentation.php:381
+#: admin/views/documentation.php:384
 msgid "Payment."
 msgstr ""
 
@@ -3139,7 +3190,7 @@ msgstr ""
 msgid "Phone number is a virtual line"
 msgstr ""
 
-#: admin/views/documentation.php:500
+#: admin/views/documentation.php:503
 msgid "Phone, name, postcode, city or country."
 msgstr ""
 
@@ -3151,7 +3202,7 @@ msgstr ""
 msgid "Postcode"
 msgstr ""
 
-#: admin/views/documentation.php:408
+#: admin/views/documentation.php:411
 msgid "Postcode and state check"
 msgstr ""
 
@@ -3195,11 +3246,11 @@ msgstr ""
 msgid "Provider"
 msgstr ""
 
-#: admin/views/documentation.php:443
+#: admin/views/documentation.php:446
 msgid "Provider and model"
 msgstr ""
 
-#: admin/views/documentation.php:585
+#: admin/views/documentation.php:588
 msgid "Put the thresholds back when it is over. Settings tightened during an attack will refuse real customers on ordinary traffic."
 msgstr ""
 
@@ -3215,7 +3266,7 @@ msgstr ""
 msgid "Rate past orders"
 msgstr ""
 
-#: admin/class-dashboard-widget.php:207 admin/views/dashboard.php:87 admin/views/dashboard.php:106 admin/views/logs.php:58
+#: admin/class-dashboard-widget.php:207 admin/views/dashboard.php:95 admin/views/dashboard.php:206 admin/views/logs.php:58
 #: admin/views/logs.php:111 assets/js/mshield-admin.js:348
 msgid "Rate-limited"
 msgstr ""
@@ -3256,7 +3307,7 @@ msgstr ""
 msgid "Rating an order after the fact gives a partial rating."
 msgstr ""
 
-#: admin/views/ai.php:176 admin/views/documentation.php:445
+#: admin/views/ai.php:176 admin/views/documentation.php:448
 msgid "Rating effect"
 msgstr ""
 
@@ -3277,7 +3328,7 @@ msgstr ""
 msgid "Reaches your processor"
 msgstr ""
 
-#: admin/views/documentation.php:385
+#: admin/views/documentation.php:388
 msgid "Reading a check"
 msgstr ""
 
@@ -3298,7 +3349,7 @@ msgstr ""
 msgid "Recorded %1$s chargebacks. %2$s were already known, and %3$s rows matched no order."
 msgstr ""
 
-#: admin/views/documentation.php:557
+#: admin/views/documentation.php:560
 msgid "Refunded"
 msgstr ""
 
@@ -3310,7 +3361,7 @@ msgstr ""
 msgid "Refusals"
 msgstr ""
 
-#: admin/views/documentation.php:560
+#: admin/views/documentation.php:563
 msgid "Refused"
 msgstr ""
 
@@ -3322,11 +3373,11 @@ msgstr ""
 msgid "Refused, and the address is temporarily blocked for a day."
 msgstr ""
 
-#: admin/views/documentation.php:470
+#: admin/views/documentation.php:473
 msgid "Refuses only addresses on your blocklist, on every route."
 msgstr ""
 
-#: admin/views/documentation.php:469
+#: admin/views/documentation.php:472
 msgid "Refuses those endpoints to everyone who is not on your allowlist. Right for a store using the classic checkout, where customers never touch them. On a store whose checkout page uses the Checkout block, this mode steps aside for the cart and checkout endpoints, because that checkout is built on them; the rating protects them instead, and the mode still governs every other Store API route."
 msgstr ""
 
@@ -3334,7 +3385,7 @@ msgstr ""
 msgid "Registration"
 msgstr ""
 
-#: admin/views/documentation.php:420
+#: admin/views/documentation.php:423
 msgid "Registrations per hour"
 msgstr ""
 
@@ -3350,7 +3401,7 @@ msgstr ""
 msgid "Rejected and Banned orders never reach your payment processor, and High defaults to an action that does not either. That is what keeps spam attempts off your decline and dispute figures."
 msgstr ""
 
-#: admin/views/documentation.php:455
+#: admin/views/documentation.php:458
 msgid "Rejected is offered too, and is worth considering if you would rather not turn anyone away on arithmetic alone. The review happens before the refusal, so with the rating effect set to lower or raise, a model that recognises an ordinary customer can rescue the order. Orders stopped by a single decisive check, such as a filled trap field or a card with a chargeback against it, are never sent: the model cannot overturn those, so the call would be wasted. Banned is not offered for the same reason."
 msgstr ""
 
@@ -3370,7 +3421,7 @@ msgstr ""
 msgid "Removed from the blocklist."
 msgstr ""
 
-#: admin/views/documentation.php:419
+#: admin/views/documentation.php:422
 msgid "Repeated declines from one address, or through one mailbox, are the clearest sign of card testing there is. Each is counted separately against this limit."
 msgstr ""
 
@@ -3406,7 +3457,7 @@ msgstr ""
 msgid "Resetting a password"
 msgstr ""
 
-#: admin/views/documentation.php:515
+#: admin/views/documentation.php:518
 msgid "Retention."
 msgstr ""
 
@@ -3430,7 +3481,7 @@ msgstr ""
 msgid "Risk levels"
 msgstr ""
 
-#: admin/views/documentation.php:460
+#: admin/views/documentation.php:463
 msgid "Risk levels."
 msgstr ""
 
@@ -3442,11 +3493,11 @@ msgstr ""
 msgid "Role %s added to allowlist."
 msgstr ""
 
-#: admin/views/documentation.php:499
+#: admin/views/documentation.php:502
 msgid "Role."
 msgstr ""
 
-#: admin/views/documentation.php:514
+#: admin/views/documentation.php:517
 msgid "Row actions."
 msgstr ""
 
@@ -3462,7 +3513,7 @@ msgstr ""
 msgid "Running."
 msgstr ""
 
-#: admin/views/documentation.php:414
+#: admin/views/documentation.php:417
 msgid "Same device order limit"
 msgstr ""
 
@@ -3474,7 +3525,7 @@ msgstr ""
 msgid "Save first"
 msgstr ""
 
-#: admin/class-admin-page.php:2068 admin/views/documentation.php:208 admin/views/documentation.php:361 admin/views/setup/step-done.php:32
+#: admin/class-admin-page.php:2068 admin/views/documentation.php:208 admin/views/documentation.php:364 admin/views/setup/step-done.php:32
 msgid "Scoring"
 msgstr ""
 
@@ -3486,7 +3537,7 @@ msgstr ""
 msgid "Scoring profile"
 msgstr ""
 
-#: admin/views/documentation.php:364
+#: admin/views/documentation.php:367
 msgid "Scoring profiles"
 msgstr ""
 
@@ -3536,11 +3587,11 @@ msgstr ""
 msgid "Send to review"
 msgstr ""
 
-#: admin/views/documentation.php:444
+#: admin/views/documentation.php:447
 msgid "Sends one real review request to the provider you selected, built exactly the way a live order builds it, and tells you what came back. Because it uses the real request, it catches a model name your provider does not recognise as readily as it catches a bad key. Save the page before testing: key fields are write-only, so the test uses what is stored. It costs one request and does not count against your daily limit."
 msgstr ""
 
-#: admin/views/documentation.php:447
+#: admin/views/documentation.php:450
 msgid "Sends the shape of the customer's details rather than the details themselves, so the name, address and email never leave your site. It costs some accuracy, which is why the choice is yours."
 msgstr ""
 
@@ -3553,11 +3604,11 @@ msgstr ""
 msgid "Separate several with commas. Left empty, they go to %s, the site administrator address."
 msgstr ""
 
-#: admin/views/documentation.php:579
+#: admin/views/documentation.php:582
 msgid "Set the switch on the <a href=\"%s\">Dashboard</a> to Active, if it is not already. That is what makes the ratings do anything."
 msgstr ""
 
-#: admin/views/documentation.php:400 admin/views/documentation.php:440
+#: admin/views/documentation.php:403 admin/views/documentation.php:443
 msgid "Setting"
 msgstr ""
 
@@ -3578,7 +3629,7 @@ msgstr ""
 msgid "Setup complete. You can change any of it from these tabs at any time."
 msgstr ""
 
-#: admin/views/dashboard.php:48
+#: admin/views/dashboard.php:61
 msgid "Setup is not finished."
 msgstr ""
 
@@ -3586,7 +3637,7 @@ msgstr ""
 msgid "Setup progress"
 msgstr ""
 
-#: admin/class-admin-page.php:2078 admin/views/documentation.php:210 admin/views/documentation.php:457
+#: admin/class-admin-page.php:2078 admin/views/dashboard.php:153 admin/views/documentation.php:210 admin/views/documentation.php:460
 msgid "Shielding"
 msgstr ""
 
@@ -3607,7 +3658,7 @@ msgstr ""
 msgid "Showing %1$d of %2$s"
 msgstr ""
 
-#: admin/views/documentation.php:526
+#: admin/views/documentation.php:529
 msgid "Shown on orders MightyShield is holding. What they do depends on what happened to the money, which the panel states before the buttons."
 msgstr ""
 
@@ -3643,11 +3694,11 @@ msgstr ""
 msgid "Slow down refusals"
 msgstr ""
 
-#: admin/views/documentation.php:462
+#: admin/views/documentation.php:465
 msgid "Slow down refusals."
 msgstr ""
 
-#: admin/views/documentation.php:409
+#: admin/views/documentation.php:412
 msgid "Smarty address verification"
 msgstr ""
 
@@ -3667,7 +3718,7 @@ msgstr ""
 msgid "Smarty replied, but the response could not be read as JSON."
 msgstr ""
 
-#: admin/views/documentation.php:531
+#: admin/views/documentation.php:534
 msgid "So Rate order works from what is left: the address, the email, the location, the totals, and the customer's own history with you. That is genuinely useful, but a 90 from it is not the same statement as a 90 earned at checkout, and the panel says so wherever it shows one."
 msgstr ""
 
@@ -3703,7 +3754,7 @@ msgstr ""
 msgid "Stopped before payment"
 msgstr ""
 
-#: admin/views/documentation.php:543
+#: admin/views/documentation.php:546
 msgid "Stopped before payment, held after it, held on an authorization, failed card checks, or the name of whichever check flagged it."
 msgstr ""
 
@@ -3711,7 +3762,7 @@ msgstr ""
 msgid "Stopped. Everything rated so far is kept."
 msgstr ""
 
-#: admin/views/blocking.php:373 admin/views/documentation.php:466
+#: admin/views/blocking.php:373 admin/views/documentation.php:469
 msgid "Store API firewall"
 msgstr ""
 
@@ -3719,7 +3770,7 @@ msgstr ""
 msgid "Strict"
 msgstr ""
 
-#: admin/views/documentation.php:369
+#: admin/views/documentation.php:372
 msgid "Strict."
 msgstr ""
 
@@ -3743,11 +3794,11 @@ msgstr ""
 msgid "Supported"
 msgstr ""
 
-#: admin/views/documentation.php:482
+#: admin/views/documentation.php:485
 msgid "Supported processors."
 msgstr ""
 
-#: admin/views/documentation.php:387
+#: admin/views/documentation.php:390
 msgid "Switching a check off stops it contributing anything at all. Prefer lowering its cost first, so it still counts for something."
 msgstr ""
 
@@ -3770,7 +3821,7 @@ msgstr ""
 msgid "Taken in full"
 msgstr ""
 
-#: admin/views/documentation.php:544
+#: admin/views/documentation.php:547
 msgid "Taken in full, reserved but not taken, or never charged. Read from your payment processor rather than from what MightyShield asked it to do."
 msgstr ""
 
@@ -3778,15 +3829,15 @@ msgstr ""
 msgid "Telling MightyShield how this order turned out is what teaches it. It weighs your answer against future orders from the same customer, address, card or network."
 msgstr ""
 
-#: admin/views/documentation.php:416
+#: admin/views/documentation.php:419
 msgid "Temporary block length"
 msgstr ""
 
-#: admin/views/documentation.php:507
+#: admin/views/documentation.php:510
 msgid "Temporary blocks are separate and do not appear here. They are applied automatically when something trips a hard check, last an hour by default (Temporary block length, on the Scoring tab), and clear themselves."
 msgstr ""
 
-#: admin/class-admin-page.php:1691 admin/views/ai.php:131 admin/views/documentation.php:410 admin/views/documentation.php:444
+#: admin/class-admin-page.php:1691 admin/views/ai.php:131 admin/views/documentation.php:413 admin/views/documentation.php:447
 msgid "Test connection"
 msgstr ""
 
@@ -3838,7 +3889,7 @@ msgstr ""
 msgid "That file is larger than 8MB. A dispute report should be far smaller."
 msgstr ""
 
-#: admin/views/documentation.php:503
+#: admin/views/documentation.php:506
 msgid "That has one consequence worth knowing. If your site sits behind a reverse proxy or a load balancer on the same machine, every shopper reaches PHP from the server's own address, and so every shopper is allowlisted: the log shows 127.0.0.1 on every row and nothing is enforced. MightyShield deliberately does not trust the X-Forwarded-For header on its own, because a shopper can send it too. Tell it which header your proxy sets by adding a MSHIELD_IP_HEADER constant to wp-config.php, for example HTTP_X_REAL_IP; it is honoured only on connections that arrive from a private or loopback address, or from a Cloudflare edge. Cloudflare's own header is recognised without any setting."
 msgstr ""
 
@@ -3891,7 +3942,7 @@ msgstr ""
 msgid "The MaxMind licence key was refused. A newly created key can take a few minutes to become active."
 msgstr ""
 
-#: admin/views/documentation.php:427
+#: admin/views/documentation.php:430
 msgid "The Payment checks answer late"
 msgstr ""
 
@@ -3899,7 +3950,7 @@ msgstr ""
 msgid "The Store API firewall is set to Allowlist, and this store uses the block checkout, which needs those endpoints."
 msgstr ""
 
-#: admin/views/documentation.php:575
+#: admin/views/documentation.php:578
 msgid "The Store API firewall never closes a block checkout, whichever mode it is in. Look first at the Blocklist under <a href=\"%1$s\">Access</a> and at the <a href=\"%2$s\">Logs</a> for a refused address."
 msgstr ""
 
@@ -3911,7 +3962,7 @@ msgstr ""
 msgid "The address is one you have listed as a freight forwarder or reshipper. Goods bought on a stolen card are often sent to one so they can leave the country before the chargeback lands."
 msgstr ""
 
-#: admin/views/documentation.php:508
+#: admin/views/documentation.php:511
 msgid "The allowlist always wins. An address on both lists is allowed."
 msgstr ""
 
@@ -3941,7 +3992,7 @@ msgstr ""
 msgid "The browser's time zone does not match where the order is billed."
 msgstr ""
 
-#: admin/views/documentation.php:345
+#: admin/views/documentation.php:348
 msgid "The busiest offenders of the past week, with where they are and a link to their log entries."
 msgstr ""
 
@@ -3977,11 +4028,11 @@ msgstr ""
 msgid "The checkout page loads."
 msgstr ""
 
-#: admin/views/documentation.php:428
+#: admin/views/documentation.php:431
 msgid "The checks in the Payment group — whether the billing address matched the card, whether the security code matched, whether it was a prepaid card, what your processor's own fraud scoring said — are the only ones that cannot run at checkout. Your payment processor is the only thing that knows the answers, and it does not answer until the payment has gone through."
 msgstr ""
 
-#: admin/views/documentation.php:397
+#: admin/views/documentation.php:400
 msgid "The checks, and what they look at"
 msgstr ""
 
@@ -4014,11 +4065,11 @@ msgstr ""
 msgid "The delivery name and the email share nothing. Ordinary for older or work addresses, but common on orders placed with someone else's details."
 msgstr ""
 
-#: admin/views/documentation.php:523
+#: admin/views/documentation.php:526
 msgid "The dial at the top is the same 1 to 100 scale as the Scoring tab, coloured to match. Underneath are the checks that actually tripped, worst first, with what each one cost."
 msgstr ""
 
-#: admin/views/documentation.php:551
+#: admin/views/documentation.php:554
 msgid "The email address, phone number, delivery address, network and card behind every order are remembered and linked together. None of it is stored in readable form: it is all scrambled with a key unique to your site, so the records hold no personal detail and cannot be matched against another store."
 msgstr ""
 
@@ -4050,11 +4101,15 @@ msgstr ""
 msgid "The funds are reserved on the card but not taken."
 msgstr ""
 
-#: admin/views/documentation.php:535
+#: admin/views/documentation.php:538
 msgid "The funds are reserved on the card but not taken. Approve and Capture takes them and moves the order to Processing. Block releases the reservation, cancels the order and blocks the address, with nothing left to refund."
 msgstr ""
 
-#: admin/views/documentation.php:356
+#: admin/views/documentation.php:346
+msgid "The last 30 days of orders re-rated against the thresholds on Shielding: how many would have been refused, how many of those were fraud, and how many were real customers. The full breakdown is on Shielding, next to the thresholds."
+msgstr ""
+
+#: admin/views/documentation.php:359
 msgid "The last 7 days."
 msgstr ""
 
@@ -4070,7 +4125,7 @@ msgstr ""
 msgid "The money"
 msgstr ""
 
-#: admin/views/documentation.php:544
+#: admin/views/documentation.php:547
 msgid "The money."
 msgstr ""
 
@@ -4086,7 +4141,7 @@ msgstr ""
 msgid "The number belongs to a state the order has nothing to do with. Weak on its own: mobile numbers follow people when they move."
 msgstr ""
 
-#: admin/views/documentation.php:482
+#: admin/views/documentation.php:485
 msgid "The ones MightyShield was built for specifically, with what each can do and whether you have it active. Every other processor still gets the full scoring pipeline and the full response ladder."
 msgstr ""
 
@@ -4114,11 +4169,11 @@ msgstr ""
 msgid "The order is submitted."
 msgstr ""
 
-#: admin/views/documentation.php:556
+#: admin/views/documentation.php:559
 msgid "The order reached Completed"
 msgstr ""
 
-#: admin/views/documentation.php:557
+#: admin/views/documentation.php:560
 msgid "The order was refunded"
 msgstr ""
 
@@ -4151,7 +4206,7 @@ msgstr ""
 msgid "The processor did not confirm the authorization was cancelled."
 msgstr ""
 
-#: admin/views/documentation.php:536
+#: admin/views/documentation.php:539
 msgid "The processor was never contacted. Approve sends the order back to Pending and gives you a link to pass to the customer so they can pay. Block cancels it. Either way nothing was charged."
 msgstr ""
 
@@ -4172,7 +4227,7 @@ msgstr ""
 msgid "The rating is acted on: risky orders are held for review, and the worst are refused at checkout. Real money and real customers are affected from the next order onwards."
 msgstr ""
 
-#: admin/views/documentation.php:523
+#: admin/views/documentation.php:526
 msgid "The rating."
 msgstr ""
 
@@ -4184,7 +4239,7 @@ msgstr ""
 msgid "The review still sees what it needs, without specific customer information. Slightly less accurate."
 msgstr ""
 
-#: admin/views/documentation.php:356
+#: admin/views/documentation.php:359
 msgid "The same chart as the Dashboard, over a shorter window because a sidebar column is narrow, with the totals beside it. The Dashboard tab still shows 30 days."
 msgstr ""
 
@@ -4196,7 +4251,7 @@ msgstr ""
 msgid "The same device has run through checkout repeatedly, whatever address it came from."
 msgstr ""
 
-#: admin/views/documentation.php:546
+#: admin/views/documentation.php:549
 msgid "The same two actions as the panel on the order itself, doing exactly the same things. Clearing ten held orders does not mean opening ten orders."
 msgstr ""
 
@@ -4208,7 +4263,7 @@ msgstr ""
 msgid "The state of your protection, and what it has been doing."
 msgstr ""
 
-#: admin/views/documentation.php:355
+#: admin/views/documentation.php:358
 msgid "The status stripe."
 msgstr ""
 
@@ -4220,11 +4275,11 @@ msgstr ""
 msgid "The store is seeing a wave of declines"
 msgstr ""
 
-#: admin/views/documentation.php:372
+#: admin/views/documentation.php:375
 msgid "The stricter profiles deliberately leave some checks alone. Detecting a VPN, a shared office address, a shopper who never moved the mouse or a browser with no cookies all catch real customers as readily as they catch fraud, so raising them would mean turning away travellers, people using a keyboard alone, and small businesses. Those checks stay where they are on every profile, and the ones that point at automation or a stolen card are what goes up."
 msgstr ""
 
-#: admin/views/documentation.php:375
+#: admin/views/documentation.php:378
 msgid "The table is divided into six groups, by what a check is actually looking at. The grouping is there so you can reason about a whole category at once — if your customers keep tripping the Network checks, that is a different problem from tripping the Identity ones."
 msgstr ""
 
@@ -4236,7 +4291,7 @@ msgstr ""
 msgid "The three digits on the back were wrong, which someone holding the real card rarely gets wrong."
 msgstr ""
 
-#: admin/views/documentation.php:463
+#: admin/views/documentation.php:466
 msgid "The three refusal messages are shown above the box so you can see what a refused customer reads. They are deliberately vague, and that vagueness is what stops an attacker learning anything from them. The cost is paid by the occasional real customer who gets caught by mistake and has no idea who to talk to. Put your phone number or your support address here and it is added to the end of every refusal, whatever caused it. Links work, so the number can be tapped on a phone. Leave it empty and nothing changes."
 msgstr ""
 
@@ -4244,7 +4299,7 @@ msgstr ""
 msgid "The timing marker never came back. Usually page caching stripping it, occasionally a script that skipped the form."
 msgstr ""
 
-#: admin/views/documentation.php:359
+#: admin/views/documentation.php:362
 msgid "The widget appears only for people who can manage WooCommerce. To hide it, use Screen Options at the top of the dashboard. That is a per person setting, so hiding it does not take it away from anyone else."
 msgstr ""
 
@@ -4274,7 +4329,7 @@ msgstr ""
 msgid "These orders will be handled as \"%s\" instead."
 msgstr ""
 
-#: admin/views/documentation.php:429
+#: admin/views/documentation.php:432
 msgid "They are ordinary checks in every other way: they have a trust cost you set here, and it is added to what the checkout already found rather than judged on its own. What differs is what can be done about the result. The money has moved by then, so an order that falls far enough is held before it ships rather than refused. A successful charge that failed the address and the security code is one of the strongest signs of a stolen card there is, and it costs you nothing to stop the parcel."
 msgstr ""
 
@@ -4282,7 +4337,7 @@ msgstr ""
 msgid "This connection has tried to check out more times than you allow in the window."
 msgstr ""
 
-#: admin/views/documentation.php:467
+#: admin/views/documentation.php:470
 msgid "This controls access to the WooCommerce cart and checkout endpoints, and it is the one setting here that can close your shop if it is set wrongly."
 msgstr ""
 
@@ -4334,7 +4389,7 @@ msgstr ""
 msgid "This will overwrite changes you have made."
 msgstr ""
 
-#: admin/views/documentation.php:480
+#: admin/views/documentation.php:483
 msgid "Three of the actions need cooperation from the processor: asking for 3-D Secure, reserving money without taking it, and reading back the card checks after payment. Processors differ, so the same risk level can behave differently on two orders paid different ways."
 msgstr ""
 
@@ -4362,11 +4417,11 @@ msgstr ""
 msgid "Too many orders from one device"
 msgstr ""
 
-#: admin/views/dashboard.php:129
-msgid "Top blocked IPs"
+#: admin/views/dashboard.php:225
+msgid "Top blocked addresses"
 msgstr ""
 
-#: admin/views/documentation.php:345
+#: admin/views/documentation.php:348
 msgid "Top blocked addresses."
 msgstr ""
 
@@ -4374,7 +4429,7 @@ msgstr ""
 msgid "Total"
 msgstr ""
 
-#: admin/views/dashboard.php:104
+#: admin/views/dashboard.php:204
 msgid "Total events"
 msgstr ""
 
@@ -4386,7 +4441,7 @@ msgstr ""
 msgid "Trust cost"
 msgstr ""
 
-#: admin/views/documentation.php:388
+#: admin/views/documentation.php:391
 msgid "Trust cost."
 msgstr ""
 
@@ -4411,7 +4466,7 @@ msgstr ""
 msgid "Turn away the bots before they reach checkout"
 msgstr ""
 
-#: admin/views/documentation.php:582
+#: admin/views/documentation.php:585
 msgid "Turn on the bot challenge on <a href=\"%s\">Shielding</a> if you have not. It is the single most effective thing against automated checkout traffic."
 msgstr ""
 
@@ -4439,7 +4494,7 @@ msgstr ""
 msgid "US postcode does not match the state"
 msgstr ""
 
-#: admin/views/documentation.php:541
+#: admin/views/documentation.php:544
 msgid "Under WooCommerce, next to Orders, with a count beside it when something is waiting. <a href=\"%s\">The queue</a> is every order MightyShield stopped or flagged that nobody has ruled on yet, gathered in one place so you can work through them instead of hunting for them."
 msgstr ""
 
@@ -4463,11 +4518,11 @@ msgstr ""
 msgid "Unrated"
 msgstr ""
 
-#: admin/views/documentation.php:524
+#: admin/views/documentation.php:527
 msgid "Unrated orders."
 msgstr ""
 
-#: admin/views/documentation.php:433
+#: admin/views/documentation.php:436
 msgid "Until orders have been through the checkout there is nothing to measure, so how often each check fires shows a dash. It fills in on its own. You do not need to touch any of this; the defaults are sensible for a normal store."
 msgstr ""
 
@@ -4515,10 +4570,6 @@ msgstr ""
 msgid "Verify US addresses with Smarty"
 msgstr ""
 
-#: admin/views/dashboard.php:133
-msgid "View all logs →"
-msgstr ""
-
 #: includes/class-ai-capture.php:577
 msgid "Voiding is not supported for this gateway."
 msgstr ""
@@ -4531,11 +4582,19 @@ msgstr ""
 msgid "Waiting"
 msgstr ""
 
+#: admin/views/dashboard.php:112
+msgid "Waiting for you"
+msgstr ""
+
+#: admin/views/documentation.php:345
+msgid "Waiting for you."
+msgstr ""
+
 #: admin/class-fraud-review.php:381
 msgid "Waiting on you"
 msgstr ""
 
-#: admin/views/documentation.php:545
+#: admin/views/documentation.php:548
 msgid "Waiting."
 msgstr ""
 
@@ -4543,11 +4602,11 @@ msgstr ""
 msgid "Watch first, or act now?"
 msgstr ""
 
-#: admin/views/documentation.php:583
+#: admin/views/documentation.php:586
 msgid "Watch the <a href=\"%1$s\">Logs</a> and block the worst addresses permanently from <a href=\"%2$s\">Access</a>."
 msgstr ""
 
-#: admin/views/documentation.php:577
+#: admin/views/documentation.php:580
 msgid "We are under active attack"
 msgstr ""
 
@@ -4567,7 +4626,7 @@ msgstr ""
 msgid "What MightyShield can do"
 msgstr ""
 
-#: admin/views/documentation.php:348
+#: admin/views/documentation.php:351
 msgid "What Observing still does"
 msgstr ""
 
@@ -4583,7 +4642,7 @@ msgstr ""
 msgid "What each rating means"
 msgstr ""
 
-#: admin/views/documentation.php:554 includes/class-privacy.php:309
+#: admin/views/documentation.php:557 includes/class-privacy.php:309
 msgid "What happened"
 msgstr ""
 
@@ -4595,23 +4654,23 @@ msgstr ""
 msgid "What happens by default"
 msgstr ""
 
-#: admin/views/documentation.php:380
+#: admin/views/documentation.php:383
 msgid "What is being bought, and for how much."
 msgstr ""
 
-#: admin/views/documentation.php:451
+#: admin/views/documentation.php:454
 msgid "What is sent, and to whom"
 msgstr ""
 
-#: admin/views/documentation.php:357
+#: admin/views/documentation.php:360
 msgid "What is waiting."
 msgstr ""
 
-#: admin/views/documentation.php:400 admin/views/documentation.php:440
+#: admin/views/documentation.php:403 admin/views/documentation.php:443
 msgid "What it does"
 msgstr ""
 
-#: admin/views/documentation.php:367
+#: admin/views/documentation.php:370
 msgid "What most stores should use, and what MightyShield ships with. Catches the obvious attacks and leaves ordinary customers alone."
 msgstr ""
 
@@ -4623,19 +4682,27 @@ msgstr ""
 msgid "What this store has seen from this identity before. Stored as a one-way salted hash, never as the address itself."
 msgstr ""
 
-#: admin/views/documentation.php:382
+#: admin/views/documentation.php:385
 msgid "What you already know about the people behind the order, from the orders they placed before this one. The only group that can give trust back as well as take it."
 msgstr ""
 
-#: admin/views/documentation.php:479
+#: admin/views/dashboard.php:158
+msgid "What your orders say"
+msgstr ""
+
+#: admin/views/documentation.php:347
+msgid "What your orders say."
+msgstr ""
+
+#: admin/views/documentation.php:482
 msgid "What your payment processors can and cannot do, and therefore what MightyShield can ask of them. This tab has no settings. It is a report."
 msgstr ""
 
-#: admin/views/documentation.php:381
+#: admin/views/documentation.php:384
 msgid "What your processor says about the card once the payment has gone through. See the note below, because these behave differently from the rest."
 msgstr ""
 
-#: admin/views/documentation.php:552
+#: admin/views/documentation.php:555
 msgid "When an order turns out well or badly, that verdict is applied to everything connected to it. The next order from any of them starts with that history behind it. This is what catches someone who changes their email and tries again, because they rarely change everything at once."
 msgstr ""
 
@@ -4643,15 +4710,15 @@ msgstr ""
 msgid "Where it applies (always on)"
 msgstr ""
 
-#: admin/views/documentation.php:378
+#: admin/views/documentation.php:381
 msgid "Where it came from: your blocklist, temporary blocks, whether the connection is a data centre or a VPN, and whether it resolves anywhere near the delivery address."
 msgstr ""
 
-#: admin/views/documentation.php:554
+#: admin/views/documentation.php:557
 msgid "Where it comes from"
 msgstr ""
 
-#: admin/views/documentation.php:458
+#: admin/views/documentation.php:461
 msgid "Where the trust rating turns into something happening. This is the tab that decides what your customers actually experience."
 msgstr ""
 
@@ -4663,11 +4730,11 @@ msgstr ""
 msgid "Where to ask"
 msgstr ""
 
-#: admin/views/documentation.php:537
+#: admin/views/documentation.php:540
 msgid "Which of the three you see is read from your payment processor, not from what MightyShield asked it to do. The two can differ, and being told your money is merely reserved when it has actually been taken is the worst mistake this screen could make."
 msgstr ""
 
-#: admin/views/documentation.php:454
+#: admin/views/documentation.php:457
 msgid "Which risk levels get a review is the Send to review setting on this tab: select the levels you want a second opinion on. Elevated and High are on by default. Trusted and Low are not, because that is most of your orders and reviewing them multiplies the cost for very little."
 msgstr ""
 
@@ -4675,11 +4742,11 @@ msgstr ""
 msgid "Who should hear about it?"
 msgstr ""
 
-#: admin/views/documentation.php:491
+#: admin/views/documentation.php:494
 msgid "Who skips every check, and who is refused outright."
 msgstr ""
 
-#: admin/views/documentation.php:377
+#: admin/views/documentation.php:380
 msgid "Who the order says it is from: the email address, the delivery address, whether the postcode matches the state, whether the address exists at all, and how many other buyers have used it."
 msgstr ""
 
@@ -4691,7 +4758,7 @@ msgstr ""
 msgid "Why a new customer is never Trusted"
 msgstr ""
 
-#: admin/views/documentation.php:486
+#: admin/views/documentation.php:489
 msgid "Why an action can change per order"
 msgstr ""
 
@@ -4699,7 +4766,7 @@ msgstr ""
 msgid "Why it is held"
 msgstr ""
 
-#: admin/views/documentation.php:543
+#: admin/views/documentation.php:546
 msgid "Why it is held."
 msgstr ""
 
@@ -4720,7 +4787,7 @@ msgstr ""
 msgid "WordPress user"
 msgstr ""
 
-#: admin/views/documentation.php:497
+#: admin/views/documentation.php:500
 msgid "WordPress user."
 msgstr ""
 
@@ -4748,7 +4815,7 @@ msgstr ""
 msgid "You have unsaved changes below. Switching the profile discards them. Continue?"
 msgstr ""
 
-#: admin/views/documentation.php:558
+#: admin/views/documentation.php:561
 msgid "You marked it, or blocked it in review"
 msgstr ""
 
@@ -4768,7 +4835,7 @@ msgstr ""
 msgid "You or MightyShield barred this network earlier."
 msgstr ""
 
-#: admin/views/documentation.php:452
+#: admin/views/documentation.php:455
 msgid "Your API key is stored in your database and is only ever sent to the provider you chose. The order details go to that provider and nowhere else. If that matters to you, turn Hide customer details on: the model then sees that an address exists and how it compares to others, but not what it says."
 msgstr ""
 
@@ -4796,7 +4863,7 @@ msgstr ""
 msgid "Your current IP: "
 msgstr ""
 
-#: admin/views/documentation.php:402
+#: admin/views/documentation.php:405
 msgid "Your own list, on top of the built in list of throwaway email providers. One domain per line."
 msgstr ""
 
@@ -4808,7 +4875,7 @@ msgstr ""
 msgid "Your payment could not be authorized. Please check your details and try again."
 msgstr ""
 
-#: admin/views/documentation.php:483
+#: admin/views/documentation.php:486
 msgid "Your payment methods."
 msgstr ""
 
@@ -4816,11 +4883,11 @@ msgstr ""
 msgid "Your processor is the only thing that knows whether the billing address and the security code matched the card, and it answers once the payment has gone through. Those answers are checks like any other: they cost trust, they are added to what the checkout already found, and the rating is worked out again. Nothing can be refused by then, so an order that falls far enough is held before it ships instead."
 msgstr ""
 
-#: admin/views/documentation.php:559
+#: admin/views/documentation.php:562
 msgid "Your processor reported a dispute"
 msgstr ""
 
-#: admin/views/documentation.php:502
+#: admin/views/documentation.php:505
 msgid "Your server's own address is added automatically when the plugin is activated, so that scheduled tasks and admin work are never blocked."
 msgstr ""
 
@@ -4828,11 +4895,11 @@ msgstr ""
 msgid "Your verdict"
 msgstr ""
 
-#: admin/views/documentation.php:564
+#: admin/views/documentation.php:567
 msgid "Your verdict outranks everything"
 msgstr ""
 
-#: admin/views/documentation.php:525
+#: admin/views/documentation.php:528
 msgid "Your verdict, and the single most valuable thing on this panel. Change it whenever you like: if a chargeback arrives six months later, mark it Fraud then, and if one turns out to be a family member using the card, mark it Clean and the penalty is taken back off."
 msgstr ""
 
@@ -4904,7 +4971,7 @@ msgstr ""
 msgid "earns trust back"
 msgstr ""
 
-#: admin/views/documentation.php:402
+#: admin/views/documentation.php:405
 msgid "empty"
 msgstr ""
 
@@ -4912,7 +4979,7 @@ msgstr ""
 msgid "export as CSV"
 msgstr ""
 
-#: admin/views/dashboard.php:114
+#: admin/views/dashboard.php:214
 msgid "last 24h"
 msgstr ""
 
@@ -4940,6 +5007,12 @@ msgstr ""
 msgid "or"
 msgstr ""
 
+#: admin/views/dashboard.php:116
+msgid "order held or flagged"
+msgid_plural "orders held or flagged"
+msgstr[0] ""
+msgstr[1] ""
+
 #. translators: %s: the transport in use, e.g. "HTTP Basic".
 #: protection/class-smarty-address-verifier.php:412
 msgid "query parameters"
@@ -4954,7 +5027,15 @@ msgstr ""
 msgid "reCAPTCHA scored this visitor below %s"
 msgstr ""
 
-#: admin/views/documentation.php:476
+#: admin/views/dashboard.php:149
+msgid "real customers"
+msgstr ""
+
+#: admin/views/dashboard.php:141
+msgid "refused"
+msgstr ""
+
+#: admin/views/documentation.php:479
 msgid "runs the checks on the block based checkout as well as the classic one. Leave it on. Every check now works the same on both, including the ones that need something from the browser, such as the checkout timer, the device check, the hidden decoy field and the bot challenge, so the same order is judged the same way whichever checkout your store uses."
 msgstr ""
 
@@ -5034,4 +5115,8 @@ msgstr ""
 
 #: admin/class-order-column.php:199
 msgid "unknown"
+msgstr ""
+
+#: admin/views/dashboard.php:145
+msgid "were fraud"
 msgstr ""
