@@ -1474,7 +1474,21 @@ class admin_page {
             'mshield_captcha_degraded' => __( 'The bot challenge is misconfigured and is failing open so it does not block checkout. Last error: %s', 'mighty-shield' ),
         ];
 
+        // A feature switched OFF cannot be degraded, so its banner is not
+        // shown; the record stays for the day it is switched back on. A
+        // feature left on with a key cleared still shows it: clearing the bad
+        // key is how a merchant reacts, and the banner vanishing reads as
+        // fixed.
+        $cap_provider = settings::get( 'mshield_captcha_provider' );
+        $in_use = [
+            'mshield_ai_degraded'      => settings::get( 'mshield_ai_enabled' ) === 'yes',
+            'mshield_smarty_degraded'  => settings::get( 'mshield_smarty_enabled' ) === 'yes',
+            'mshield_captcha_degraded' => $cap_provider === 'turnstile' || $cap_provider === 'recaptcha_v3',
+        ];
+
         foreach( $sources as $option => $template ) {
+
+            if( empty( $in_use[ $option ] ) ) continue;
 
             $degraded = get_option( $option );
             if( empty( $degraded ) || empty( $degraded['time'] ) ) continue;

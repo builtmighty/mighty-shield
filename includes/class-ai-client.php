@@ -716,6 +716,9 @@ class ai_client {
 
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
 
+        // Switched off is not degraded. Left on with a key cleared still is.
+        if( settings::get( 'mshield_ai_enabled' ) !== 'yes' ) return;
+
         $degraded = get_option( 'mshield_ai_degraded' );
         if( empty( $degraded ) || empty( $degraded['time'] ) ) return;
 

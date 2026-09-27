@@ -1338,6 +1338,13 @@ class captcha {
 
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
 
+        // A challenge switched OFF cannot be misconfigured, so nothing is
+        // said. A provider chosen with a key cleared is a different case and
+        // still gets the warning: clearing the bad key is how a merchant
+        // reacts to it, and the warning vanishing then reads as fixed.
+        $provider = settings::get( 'mshield_captcha_provider' );
+        if( $provider !== 'turnstile' && $provider !== 'recaptcha_v3' ) return;
+
         $degraded = get_option( 'mshield_captcha_degraded' );
         if( empty( $degraded ) || empty( $degraded['time'] ) ) return;
         if( ( time() - (int) $degraded['time'] ) > DAY_IN_SECONDS ) return;

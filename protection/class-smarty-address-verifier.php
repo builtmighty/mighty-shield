@@ -108,6 +108,9 @@ class smarty_address_verifier {
 
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
 
+        // Switched off is not degraded. Left on with a token cleared still is.
+        if( settings::get( 'mshield_smarty_enabled' ) !== 'yes' ) return;
+
         $degraded = get_option( 'mshield_smarty_degraded' );
         if( empty( $degraded ) || empty( $degraded['time'] ) ) return;
 
