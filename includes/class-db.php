@@ -805,8 +805,13 @@ class db {
             $forensics['ua'] = substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 255 );
         }
 
+        // is_string(): the checkout hooks that log here run before WooCommerce
+        // has cleaned the posted fields, and sanitize_email() calls strlen()
+        // before anything else, which on PHP 8 throws for `billing_email[]=x`.
+        // Every layer on woocommerce_checkout_process logs through this
+        // method, so an array here took the whole checkout request down.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
-        if( ! empty( $_POST['billing_email'] ) ) {
+        if( ! empty( $_POST['billing_email'] ) && is_string( $_POST['billing_email'] ) ) {
             // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
             $forensics['email'] = sanitize_email( wp_unslash( $_POST['billing_email'] ) );
         }

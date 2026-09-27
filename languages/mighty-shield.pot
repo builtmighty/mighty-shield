@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MightyShield 2.3.0\n"
 "Report-Msgid-Bugs-To: https://builtmighty.com\n"
-"POT-Creation-Date: 2026-09-27 01:09+0000\n"
+"POT-Creation-Date: 2026-09-27 15:53+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -68,7 +68,7 @@ msgid "%d IP addresses added to the blocklist."
 msgstr ""
 
 #. translators: %d: number of orders.
-#: protection/class-outcomes.php:527
+#: protection/class-outcomes.php:530
 msgid "%d order reported as fraud. MightyShield will weigh this against future orders from the same customer, address, card or network."
 msgid_plural "%d orders reported as fraud. MightyShield will weigh these against future orders from the same customers, devices, addresses or networks."
 msgstr[0] ""
@@ -87,7 +87,7 @@ msgid "%s ago"
 msgstr ""
 
 #. translators: %s: provider name.
-#: admin/class-admin-page.php:1617
+#: admin/class-admin-page.php:1634
 msgid "%s answered and returned a verdict in the expected shape."
 msgstr ""
 
@@ -303,7 +303,7 @@ msgstr ""
 msgid "AI Detection"
 msgstr ""
 
-#: admin/class-admin-page.php:1999 admin/views/documentation.php:214 admin/views/documentation.php:441
+#: admin/class-admin-page.php:2016 admin/views/documentation.php:214 admin/views/documentation.php:441
 msgid "AI Review"
 msgstr ""
 
@@ -349,11 +349,11 @@ msgstr ""
 msgid "Above the Low threshold"
 msgstr ""
 
-#: admin/class-admin-page.php:2007 admin/views/documentation.php:217 admin/views/documentation.php:496
+#: admin/class-admin-page.php:2024 admin/views/documentation.php:217 admin/views/documentation.php:496
 msgid "Access"
 msgstr ""
 
-#: firewall/class-api-firewall.php:126 firewall/class-ip-blocklist.php:143
+#: firewall/class-api-firewall.php:126 firewall/class-ip-blocklist.php:148
 msgid "Access denied."
 msgstr ""
 
@@ -393,11 +393,11 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: admin/class-admin-page.php:1931 admin/views/payment.php:73
+#: admin/class-admin-page.php:1948 admin/views/payment.php:73
 msgid "Active"
 msgstr ""
 
-#: admin/class-admin-page.php:1932
+#: admin/class-admin-page.php:1949
 msgid "Active. Orders are blocked and held by their rating"
 msgstr ""
 
@@ -779,7 +779,7 @@ msgid "Between"
 msgstr ""
 
 #: admin/views/payment.php:149
-msgid "Billing address and security code results are read after payment. This needs webhooks set up in your provider's dashboard. Without them the results never arrive and the checks are simply skipped."
+msgid "Billing address and security code results are read after payment. This needs webhooks set up in your provider's dashboard. Without them the results never arrive and the checks are simply skipped. On Stripe it also needs WooCommerce Stripe Gateway 9.8.0 or newer."
 msgstr ""
 
 #: includes/class-signals.php:1101
@@ -958,7 +958,7 @@ msgstr ""
 msgid "By time, by what happened, or by searching for an address, an email or a reason."
 msgstr ""
 
-#: includes/class-ai-capture.php:411 includes/class-ai-capture.php:443
+#: includes/class-ai-capture.php:417 includes/class-ai-capture.php:449
 msgid "Capture failed."
 msgstr ""
 
@@ -967,7 +967,7 @@ msgstr ""
 msgid "Capture failed: %s. The order is still on hold."
 msgstr ""
 
-#: includes/class-ai-capture.php:463
+#: includes/class-ai-capture.php:469
 msgid "Capturing is not supported for this gateway."
 msgstr ""
 
@@ -995,7 +995,7 @@ msgstr ""
 msgid "Change"
 msgstr ""
 
-#: admin/class-admin-page.php:2177
+#: admin/class-admin-page.php:2194
 msgid "Change it on Shielding"
 msgstr ""
 
@@ -1289,11 +1289,11 @@ msgstr ""
 msgid "Daily limit"
 msgstr ""
 
-#: admin/class-admin-page.php:1759 assets/js/mshield-admin.js:43
+#: admin/class-admin-page.php:1776 assets/js/mshield-admin.js:43
 msgid "Dark"
 msgstr ""
 
-#: admin/class-admin-page.php:1994 admin/views/documentation.php:211 admin/views/documentation.php:345
+#: admin/class-admin-page.php:2011 admin/views/documentation.php:211 admin/views/documentation.php:345
 msgid "Dashboard"
 msgstr ""
 
@@ -1353,7 +1353,7 @@ msgstr ""
 msgid "Different emails per hour"
 msgstr ""
 
-#: admin/class-admin-page.php:1916
+#: admin/class-admin-page.php:1933
 msgid "Disabled"
 msgstr ""
 
@@ -1361,7 +1361,7 @@ msgstr ""
 msgid "Disabled, Observing or Active. There is no switch on it, because changing that belongs on the screen that explains what the three mean."
 msgstr ""
 
-#: admin/class-admin-page.php:1917
+#: admin/class-admin-page.php:1934
 msgid "Disabled. No orders are checked"
 msgstr ""
 
@@ -1381,7 +1381,7 @@ msgstr ""
 msgid "Do not send customers' personal details to the AI provider"
 msgstr ""
 
-#: admin/class-admin-page.php:1774
+#: admin/class-admin-page.php:1791
 msgid "Documentation"
 msgstr ""
 
@@ -2135,7 +2135,7 @@ msgstr ""
 msgid "Invalid IP address or CIDR format."
 msgstr ""
 
-#: admin/class-admin-page.php:1553
+#: admin/class-admin-page.php:1570
 msgid "Invalid IP."
 msgstr ""
 
@@ -2241,7 +2241,7 @@ msgstr ""
 msgid "Let it watch your real orders, then look at the Dashboard and the Fraud Review queue. If the orders it would have held are the ones you would have held, switch it on. If it is flagging your regulars, lower the strictness first. That switch is on every MightyShield page."
 msgstr ""
 
-#: admin/class-admin-page.php:1759 assets/js/mshield-admin.js:43
+#: admin/class-admin-page.php:1776 assets/js/mshield-admin.js:43
 msgid "Light"
 msgstr ""
 
@@ -2290,7 +2290,7 @@ msgstr ""
 msgid "Login is off by default."
 msgstr ""
 
-#: admin/class-admin-page.php:2008 admin/views/dashboard.php:159 admin/views/documentation.php:218 admin/views/documentation.php:516
+#: admin/class-admin-page.php:2025 admin/views/dashboard.php:159 admin/views/documentation.php:218 admin/views/documentation.php:516
 msgid "Logs"
 msgstr ""
 
@@ -2310,7 +2310,7 @@ msgstr ""
 msgid "Looks up whether anything is actually listening for email at that domain. A domain that cannot receive mail is not a real customer. This is the one check that asks something outside your server during a checkout — your own DNS resolver — which is why it is off until you switch it on."
 msgstr ""
 
-#: admin/class-admin-page.php:1557 assets/js/mshield-admin.js:200
+#: admin/class-admin-page.php:1574 assets/js/mshield-admin.js:200
 msgid "Lookup failed. Please try again."
 msgstr ""
 
@@ -2394,7 +2394,7 @@ msgstr ""
 msgid "Medium"
 msgstr ""
 
-#: admin/class-admin-page.php:199 admin/class-admin-page.php:200 admin/class-admin-page.php:1768 admin/class-dashboard-widget.php:63
+#: admin/class-admin-page.php:199 admin/class-admin-page.php:200 admin/class-admin-page.php:1785 admin/class-dashboard-widget.php:63
 #: admin/class-order-panel.php:87 admin/views/documentation.php:231 includes/class-privacy.php:156 includes/class-privacy.php:173
 msgid "MightyShield"
 msgstr ""
@@ -2424,11 +2424,11 @@ msgstr ""
 msgid "MightyShield installs in Observe mode. It rates every order and records what it would have done, without doing it. Your existing checks carry on working exactly as before. When you are ready, turn enforcement on with the three way switch on the <a href=\"%s\">Dashboard</a>."
 msgstr ""
 
-#: admin/class-admin-page.php:1959
+#: admin/class-admin-page.php:1976
 msgid "MightyShield is actively protecting your store."
 msgstr ""
 
-#: admin/class-admin-page.php:1961
+#: admin/class-admin-page.php:1978
 msgid "MightyShield is not checking any orders."
 msgstr ""
 
@@ -2508,8 +2508,9 @@ msgstr ""
 msgid "MightyShield's bot challenge (%1$s) is rejecting all tokens because of a configuration error: %2$s.\n\nTo avoid blocking legitimate checkouts, the challenge is temporarily failing open (allowing orders) until this is fixed.\n\nCheck the Site Key and Secret Key under MightyShield > Shielding > Bot Challenge.\n\nThis alert is sent at most once per day."
 msgstr ""
 
-#: admin/class-admin-page.php:223 admin/class-admin-page.php:1497 admin/class-order-panel.php:1193 admin/class-setup-wizard.php:185
-#: includes/class-ai-client.php:669 protection/class-captcha.php:1347 protection/class-captcha.php:1405 protection/class-smarty-address-verifier.php:123
+#: admin/class-admin-page.php:223 admin/class-admin-page.php:1497 admin/class-admin-page.php:1514 admin/class-order-panel.php:1193
+#: admin/class-setup-wizard.php:185 includes/class-ai-client.php:669 protection/class-captcha.php:1347 protection/class-captcha.php:1405
+#: protection/class-smarty-address-verifier.php:123
 msgid "MightyShield:"
 msgstr ""
 
@@ -2877,11 +2878,11 @@ msgstr ""
 msgid "Now observing. Orders are rated and recorded, but the rating is not acted on."
 msgstr ""
 
-#: admin/class-admin-page.php:1922
+#: admin/class-admin-page.php:1939
 msgid "Observing"
 msgstr ""
 
-#: admin/class-admin-page.php:1923
+#: admin/class-admin-page.php:1940
 msgid "Observing. Orders are rated and recorded, but not acted on"
 msgstr ""
 
@@ -3141,11 +3142,11 @@ msgstr ""
 msgid "Past 7 days"
 msgstr ""
 
-#: includes/class-ai-capture.php:450
+#: includes/class-ai-capture.php:456
 msgid "PayPal did not capture the authorization. Check the order notes."
 msgstr ""
 
-#: admin/class-admin-page.php:2006 admin/views/documentation.php:216 admin/views/documentation.php:484 includes/class-signals.php:1228
+#: admin/class-admin-page.php:2023 admin/views/documentation.php:216 admin/views/documentation.php:484 includes/class-signals.php:1228
 msgid "Payment"
 msgstr ""
 
@@ -3441,7 +3442,7 @@ msgstr ""
 msgid "Repeated payment failures"
 msgstr ""
 
-#: protection/class-outcomes.php:473
+#: protection/class-outcomes.php:476
 msgid "Report as fraud (MightyShield)"
 msgstr ""
 
@@ -3525,7 +3526,7 @@ msgstr ""
 msgid "Same device order limit"
 msgstr ""
 
-#: admin/class-admin-page.php:1995 admin/views/documentation.php:213 admin/views/documentation.php:366 admin/views/setup/step-done.php:32
+#: admin/class-admin-page.php:2012 admin/views/documentation.php:213 admin/views/documentation.php:366 admin/views/setup/step-done.php:32
 msgid "Scoring"
 msgstr ""
 
@@ -3632,7 +3633,7 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: admin/class-admin-page.php:1888
+#: admin/class-admin-page.php:1905
 msgid "Settings saved."
 msgstr ""
 
@@ -3653,15 +3654,15 @@ msgstr ""
 msgid "Setup progress"
 msgstr ""
 
-#: admin/class-admin-page.php:2005 admin/views/documentation.php:215 admin/views/documentation.php:463
+#: admin/class-admin-page.php:2022 admin/views/documentation.php:215 admin/views/documentation.php:463
 msgid "Shielding"
 msgstr ""
 
-#: admin/class-admin-page.php:1974
+#: admin/class-admin-page.php:1991
 msgid "Shields are down"
 msgstr ""
 
-#: admin/class-admin-page.php:1973
+#: admin/class-admin-page.php:1990
 msgid "Shields are up"
 msgstr ""
 
@@ -3758,7 +3759,7 @@ msgstr ""
 msgid "Source"
 msgstr ""
 
-#: admin/class-admin-page.php:1770
+#: admin/class-admin-page.php:1787
 msgid "Spam and fraud protection for WooCommerce"
 msgstr ""
 
@@ -3798,11 +3799,11 @@ msgstr ""
 msgid "Stripe Radar, or your processor's own fraud scoring, called this payment elevated or highest risk."
 msgstr ""
 
-#: includes/class-ai-capture.php:437
+#: includes/class-ai-capture.php:443
 msgid "Stripe did not capture the authorization. Check the order notes."
 msgstr ""
 
-#: includes/class-ai-capture.php:426 includes/class-ai-capture.php:534
+#: includes/class-ai-capture.php:432 includes/class-ai-capture.php:540
 msgid "Stripe order handler unavailable."
 msgstr ""
 
@@ -3825,7 +3826,7 @@ msgid_plural "Switching to %1$s will replace %2$d trust costs you have changed, 
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-admin-page.php:1759 admin/views/whitelist.php:125 assets/js/mshield-admin.js:43
+#: admin/class-admin-page.php:1776 admin/views/whitelist.php:125 assets/js/mshield-admin.js:43
 msgid "System"
 msgstr ""
 
@@ -3857,7 +3858,7 @@ msgstr ""
 msgid "Temporary blocks are separate and do not appear here. They are applied automatically when something trips a hard check, last an hour by default (Temporary block length, on the Scoring tab), and clear themselves."
 msgstr ""
 
-#: admin/class-admin-page.php:1644 admin/views/ai.php:126 admin/views/documentation.php:415 admin/views/documentation.php:449
+#: admin/class-admin-page.php:1661 admin/views/ai.php:126 admin/views/documentation.php:415 admin/views/documentation.php:449
 msgid "Test Connection"
 msgstr ""
 
@@ -4190,7 +4191,7 @@ msgstr ""
 msgid "The page's scripts never ran. A few people block scripts; most automated checkouts do too."
 msgstr ""
 
-#: includes/class-ai-capture.php:398 includes/class-ai-capture.php:507
+#: includes/class-ai-capture.php:404 includes/class-ai-capture.php:513
 msgid "The payment gateway for this order is not available."
 msgstr ""
 
@@ -4206,7 +4207,7 @@ msgstr ""
 msgid "The postal service does not recognise it. Checked against USPS records, US addresses only."
 msgstr ""
 
-#: includes/class-ai-capture.php:555
+#: includes/class-ai-capture.php:561
 msgid "The processor did not confirm the authorization was cancelled."
 msgstr ""
 
@@ -4361,7 +4362,7 @@ msgstr ""
 msgid "This email has ordered repeatedly, under variations"
 msgstr ""
 
-#: includes/class-ai-capture.php:405
+#: includes/class-ai-capture.php:411
 msgid "This gateway does not support capturing."
 msgstr ""
 
@@ -4393,7 +4394,7 @@ msgstr ""
 msgid "This provider has no way to ask for it on a single order. Orders that would have been asked for 3-D Secure go through as normal."
 msgstr ""
 
-#: admin/class-admin-page.php:2175
+#: admin/class-admin-page.php:2192
 msgid "This store uses the block checkout, which is built on the Store API, and the Store API Firewall is set to Allowlist. That combination refuses the cart and the checkout for everyone who is not on your allowlist, so no customer can buy. Set the firewall to Blocklist, or turn it off."
 msgstr ""
 
@@ -4478,7 +4479,7 @@ msgstr ""
 msgid "Trust rating %1$d of 100: %2$s"
 msgstr ""
 
-#: admin/class-admin-page.php:1960
+#: admin/class-admin-page.php:1977
 msgid "Trust ratings are being recorded, not enforced."
 msgstr ""
 
@@ -4534,7 +4535,7 @@ msgstr ""
 msgid "Unexpected OpenAI response shape"
 msgstr ""
 
-#: admin/class-admin-page.php:1592
+#: admin/class-admin-page.php:1609
 msgid "Unknown service."
 msgstr ""
 
@@ -4618,7 +4619,7 @@ msgstr ""
 msgid "View all logs →"
 msgstr ""
 
-#: includes/class-ai-capture.php:571
+#: includes/class-ai-capture.php:577
 msgid "Voiding is not supported for this gateway."
 msgstr ""
 
@@ -4814,6 +4815,11 @@ msgstr ""
 msgid "Within days"
 msgstr ""
 
+#. translators: %s: the installed WooCommerce Stripe Gateway version
+#: admin/class-admin-page.php:1517
+msgid "WooCommerce Stripe Gateway %s is too old for MightyShield to read disputes, card checks and declined payments from Stripe. Those need 9.8.0 or newer and are skipped until you update."
+msgstr ""
+
 #: includes/class-backfill.php:127
 msgid "WooCommerce is not available."
 msgstr ""
@@ -4882,11 +4888,11 @@ msgstr ""
 msgid "Your OpenAI API key."
 msgstr ""
 
-#: firewall/class-ip-blocklist.php:94
+#: firewall/class-ip-blocklist.php:99
 msgid "Your access has been restricted. Please contact support."
 msgstr ""
 
-#: admin/class-admin-page.php:2174 admin/class-dashboard-widget.php:136
+#: admin/class-admin-page.php:2191 admin/class-dashboard-widget.php:136
 msgid "Your checkout is closed to customers."
 msgstr ""
 

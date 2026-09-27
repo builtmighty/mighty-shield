@@ -1503,6 +1503,23 @@ class admin_page {
 
         }
 
+        // A live condition rather than a recorded failure, so no dismissal.
+        // The hook MightyShield reads disputes, card checks and declines from
+        // was added in Stripe Gateway 9.8.0; on anything older it never fires
+        // and those features quietly do nothing, which for a fraud tool is
+        // the worst way to fail.
+        if( defined( 'WC_STRIPE_VERSION' ) && version_compare( WC_STRIPE_VERSION, '9.8.0', '<' ) ) {
+            printf(
+                '<div class="mshield-banner is-danger ms-degraded"><div><strong>%s</strong> %s</div></div>',
+                esc_html__( 'MightyShield:', 'mighty-shield' ),
+                esc_html( sprintf(
+                    /* translators: %s: the installed WooCommerce Stripe Gateway version */
+                    __( 'WooCommerce Stripe Gateway %s is too old for MightyShield to read disputes, card checks and declined payments from Stripe. Those need 9.8.0 or newer and are skipped until you update.', 'mighty-shield' ),
+                    WC_STRIPE_VERSION
+                ) )
+            );
+        }
+
     }
 
     public static function radios( $name, $options, $current, $disabled = [] ) {

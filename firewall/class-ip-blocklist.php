@@ -82,8 +82,13 @@ class ip_blocklist {
         // exactly the thing a merchant reading the report wants to see.
         risk_context::add( 'ip_blocklisted', 'IP is on the blocklist' );
 
+        // is_string(), not isset(): this hook runs before WooCommerce has
+        // cleaned the posted fields, and sanitize_email() is the one core
+        // sanitizer that is not array-safe -- it calls strlen() first, which
+        // on PHP 8 throws for `billing_email[]=x`. A refusal must not become a
+        // 500 the blocked visitor can trigger at will.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
-        if( \MightyShield\Includes\exempt::suppresses_action( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
+        if( \MightyShield\Includes\exempt::suppresses_action( isset( $_POST['billing_email'] ) && is_string( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
 
         db::log_event( $ip, 'classic_checkout', 'blocked', 'Blocklisted IP' );
         // Deliberately NOT gated on response::may_refuse(). Every other legacy

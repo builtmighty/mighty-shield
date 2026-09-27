@@ -529,7 +529,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 }
 .mshield-app .mshield-section h2 { margin-top:0; font-size:16px; font-weight:650; color:var(--fg); }
 .mshield-app .mshield-section .description,
-.mshield-app .mshield-section p.description { color:var(--fg-2); }
+.mshield-app .mshield-section p.description { font-size:12px; color:var(--fg-2); }
 
 .mshield-app .mshield-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:18px; }
 .mshield-app .mshield-stat { background:var(--surface); border:1px solid var(--line); padding:16px 17px; border-radius:12px; box-shadow:var(--shadow); }

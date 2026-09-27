@@ -422,7 +422,10 @@ class outcomes {
             'limit'         => 200,
             'status'        => [ 'wc-processing' ],
             'date_modified' => '<' . ( time() - self::SETTLED_AFTER ),
-            'orderby'       => 'date_modified',
+            // 'modified', not 'date_modified': both stores accept 'modified',
+            // but the posts store hands 'date_modified' to WP_Query, which
+            // drops it and silently sorts by creation date instead.
+            'orderby'       => 'modified',
             'order'         => 'ASC',
             'meta_query'    => [ [ 'key' => '_mshield_outcome', 'compare' => 'NOT EXISTS' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- a daily batch of 200, not a request
         ] );

@@ -113,6 +113,10 @@ Check **WooCommerce > MightyShield > Dashboard** for blocked request counts and 
 
 Smarty verifies US billing addresses against USPS data to catch fake, non-existent, and undeliverable addresses. It requires a free API key from smarty.com. If the API is unavailable or out of tokens, MightyShield automatically falls back to ZIP/State mismatch detection.
 
+= Which Stripe plugin version do I need? =
+
+Rating, holding and refusing orders work with any payment method. Reading Stripe's own results back — disputes, the billing-address and security-code checks on a card, and declined payments — uses a hook that WooCommerce Stripe Gateway added in 9.8.0. On an older Stripe plugin those three quietly do nothing, and MightyShield says so on its own screens until you update.
+
 = What does the honeypot do? =
 
 The honeypot adds an invisible field to the checkout form. Real customers never see or fill it, but automated bots do. It is one of very few checks set to decide an order on its own, because a person using your site cannot trip it: the field is off-screen, hidden from screen readers and out of tab order. A filled trap field refuses the checkout and temporarily bars the address.
@@ -229,6 +233,10 @@ Fixes three network checks that had never worked and removes a blocking request 
 * Fixed: a hold after payment triggered by the card check arrived after the payment had already gone through and never actually held the order.
 * Fixed: on the classic checkout, a card tester working one cart through many cards counted as one decline. Each attempt now counts.
 * Fixed: a chargeback could be erased by a reviewer confirming the same order as fraud; the stale Clean verdict that led them there is now cleared when a chargeback arrives.
+* Fixed: a checkout request that sent the email field as a list instead of text crashed the request on PHP 8 rather than being refused, which a blocked visitor could trigger on purpose.
+* Fixed: on Stripe, holding a zero-total order (a free trial, a saved card) sent a capture instruction Stripe rejects for that kind of payment, so the checkout MightyShield had decided to hold failed instead.
+* Fixed: on a store keeping orders in the posts table, the nightly pass that credits settled orders worked through them in creation order rather than oldest-settled first.
+* Changed: the Stripe plugin version that dispute import, card checks and decline signals need is now stated, and MightyShield says so on its own screens when the installed one is older.
 * Fixed: an order a bank-transfer or cheque customer had not yet paid for was offered Approve in the review queue, and Approve marked it paid.
 * Fixed: the card fingerprint never accrued a paid order, so a returning card could never vouch for anyone.
 * Changed: an ordinary decline costs a card a third of what a fraud-shaped one does, each decline counts once however often the processor repeats it, and subscription renewals do not count at all.

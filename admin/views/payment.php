@@ -146,7 +146,7 @@ $supported = gateways::supported_report();
                         <?php if( $row['card_signals'] ) : ?>
                             <span class="mshield-pill is-ok"><span class="dot"></span><?php esc_html_e( 'Available', 'mighty-shield' ); ?></span>
                             <span class="mshield-hint">
-                                <?php esc_html_e( 'Billing address and security code results are read after payment. This needs webhooks set up in your provider\'s dashboard. Without them the results never arrive and the checks are simply skipped.', 'mighty-shield' ); ?>
+                                <?php esc_html_e( 'Billing address and security code results are read after payment. This needs webhooks set up in your provider\'s dashboard. Without them the results never arrive and the checks are simply skipped. On Stripe it also needs WooCommerce Stripe Gateway 9.8.0 or newer.', 'mighty-shield' ); ?>
                             </span>
                         <?php else : ?>
                             <span class="mshield-pill is-muted"><span class="dot"></span><?php esc_html_e( 'Not available', 'mighty-shield' ); ?></span>
