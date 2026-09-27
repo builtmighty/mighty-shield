@@ -188,6 +188,7 @@ MightyShield answers WordPress's personal data export and erase requests from **
 == Upgrade Notice ==
 
 = 2.3.0 =
+* Changed: the Risk levels table on the Shielding tab is colour coded from Trusted to Banned, and changing what a level does now rewrites the description, what happens to the money, and whether the order reaches your processor, instead of leaving the old action's words on screen.
 Fixes three network checks that had never worked and removes a blocking request from every checkout. Adds billing-vs-delivery, country and phone checks, richer allow and block lists, low-rating alerts, and a pass that rates your existing orders so a new install starts out knowing your customers. If you want the network checks back, set a free MaxMind licence key under WooCommerce > Settings > Integrations.
 
 == Changelog ==

@@ -21,6 +21,7 @@ use MightyShield\Includes\settings;
 use MightyShield\Includes\db;
 use MightyShield\Includes\actions;
 use MightyShield\Includes\response;
+use MightyShield\Includes\trust_badge;
 
 $level_rows = db::get_risk_level_stats( 30 );
 
@@ -33,6 +34,47 @@ foreach( $level_rows as $row ) {
     if( $row['outcome'] !== '' ) {
         $by_level[ $b ]['outcomes'][ $row['outcome'] ] = (int) $row['total'];
     }
+}
+
+/* What every action does, for the script behind the Action stepper.
+   The stepper changes the name on screen; without this the sentence under
+   it, what happens to the money, and the "Reaches processor" pill all went
+   on describing the action that was SAVED -- so the moment a merchant
+   stepped to another action they were reading a contradiction.
+
+   Built here rather than assembled in JavaScript so every string stays a
+   PHP string with its translator comment, and so the script only ever sets
+   text and a class. */
+$mshield_action_detail = [];
+
+foreach( actions::keys() as $mshield_act ) {
+
+    $mshield_fb   = actions::fallback( $mshield_act );
+    $mshield_note = '';
+
+    if( $mshield_fb !== '' && ! actions::is_available( $mshield_act ) ) {
+        $mshield_note = sprintf(
+            /* translators: %s: name of the fallback action. */
+            __( 'No active payment method can do this. These orders will be handled as "%s" instead.', 'mighty-shield' ),
+            actions::label( $mshield_fb )
+        );
+    } elseif( $mshield_fb !== '' ) {
+        $mshield_note = sprintf(
+            /* translators: %s: name of the fallback action. */
+            __( 'Payment methods that cannot do this fall back to "%s".', 'mighty-shield' ),
+            actions::label( $mshield_fb )
+        );
+    }
+
+    $mshield_action_detail[ $mshield_act ] = [
+        'desc'     => actions::desc( $mshield_act ),
+        'money'    => actions::money( $mshield_act ),
+        'gateway'  => actions::contacts_gateway( $mshield_act ),
+        'fallback' => $mshield_note,
+        'allowed'  => __( 'Allowed', 'mighty-shield' ),
+        'blocked'  => __( 'Blocked', 'mighty-shield' ),
+    ];
+
 }
 ?>
 
@@ -79,11 +121,17 @@ foreach( $level_rows as $row ) {
                 $stat         = $by_level[ $key ] ?? null;
                 $configurable = in_array( $key, risk_levels::CONFIGURABLE, true );
                 $current      = risk_levels::action( $key );
-                $fallback     = actions::fallback( $current );
                 ?>
 
-                <tr>
+                <?php /* The row carries its own rung of the ladder: a coloured
+                         edge, a tint and a dot, through the same s-<level>
+                         ramp the trust scale, the rating column and the order
+                         panel's dial already use. The NAME is not coloured --
+                         the lime and amber inks are below 4.5:1 at this size,
+                         and the dot says the same thing for nothing. */ ?>
+                <tr class="mshield-levelrow <?php echo esc_attr( trust_badge::level_class( $key ) ); ?>">
                     <td>
+                        <span class="ms-leveldot" aria-hidden="true"></span>
                         <span class="mshield-sig-name"><?php echo esc_html( risk_levels::label( $key ) ); ?></span>
                         <span class="mshield-tip" tabindex="0" role="note"
                               aria-label="<?php echo esc_attr( risk_levels::description( $key ) ); ?>"
@@ -147,10 +195,14 @@ foreach( $level_rows as $row ) {
                             $at    = array_search( $current, $ckeys, true );
                             if( $at === false ) $at = 0;
                             ?>
-                            <?php /* Same control as Scoring's Force level, minus the
-                                     colour coding -- an action is a choice, not a
-                                     severity, so there is no ramp to follow. */ ?>
-                            <div class="mshield-stepper is-plain" role="group"
+                            <?php /* Same control as Scoring's Force level, and coloured
+                                     on the same principle: an action IS a severity here,
+                                     running from "No action" through the holds to
+                                     "Reject", so the value carries the colour of what it
+                                     does. data-details tells the script to rewrite the
+                                     sentence, the money and the processor pill below as
+                                     the value steps. */ ?>
+                            <div class="mshield-stepper" role="group" data-details
                                  aria-label="<?php echo esc_attr( sprintf(
                                      /* translators: %s: risk level name. */
                                      __( 'Action for %s', 'mighty-shield' ),
@@ -194,43 +246,24 @@ foreach( $level_rows as $row ) {
                                 </span>
                             <?php endif; ?>
 
-                            <span class="mshield-hint">
-                                <?php echo esc_html( actions::desc( $current ) ); ?>
-                            </span>
+                            <?php /* Everything from here down describes the action showing
+                                     in the stepper above, and the script rewrites it as
+                                     that value steps. It used to be rendered from the
+                                     SAVED action and left behind. */ ?>
+                            <?php $mshield_now = $mshield_action_detail[ $current ] ?? []; ?>
+                            <div class="ms-action-detail" data-action-detail>
 
-                            <?php /* What happens to the money, which is the difference that
-                                     actually matters between the three holds -- actions::CATALOG
-                                     has carried this field all along and its own docblock says it
-                                     is "displayed". It was not: actions::money() had no callers,
-                                     so the one control on this page that decides whether a card is
-                                     charged, merely authorized, or left alone said nothing about
-                                     which. */ ?>
-                            <?php $mshield_money = actions::money( $current ); ?>
-                            <?php if( $mshield_money !== '' ) : ?>
-                                <span class="mshield-hint">
-                                    <strong><?php esc_html_e( 'The money:', 'mighty-shield' ); ?></strong>
-                                    <?php echo esc_html( $mshield_money ); ?>
-                                </span>
-                            <?php endif; ?>
+                                <span class="mshield-hint" data-detail-desc><?php echo esc_html( $mshield_now['desc'] ?? '' ); ?></span>
 
-                            <?php if( $fallback !== '' && ! actions::is_available( $current ) ) : ?>
-                                <span class="mshield-hint">
-                                    <strong><?php esc_html_e( 'No active payment method can do this.', 'mighty-shield' ); ?></strong>
-                                    <?php printf(
-                                        /* translators: %s: name of the fallback action. */
-                                        esc_html__( 'These orders will be handled as "%s" instead.', 'mighty-shield' ),
-                                        esc_html( actions::label( $fallback ) )
-                                    ); ?>
-                                </span>
-                            <?php elseif( $fallback !== '' ) : ?>
-                                <span class="mshield-hint">
-                                    <?php printf(
-                                        /* translators: %s: name of the fallback action. */
-                                        esc_html__( 'Payment methods that cannot do this fall back to "%s".', 'mighty-shield' ),
-                                        esc_html( actions::label( $fallback ) )
-                                    ); ?>
-                                </span>
-                            <?php endif; ?>
+                                <?php /* What happens to the money is the difference that
+                                         actually matters between the three holds, and it is
+                                         a fact the plugin reports rather than a thing to
+                                         set, so it reads as a readout. */ ?>
+                                <span class="mshield-readout" data-detail-money<?php echo ( $mshield_now['money'] ?? '' ) === '' ? ' hidden' : ''; ?>><?php echo esc_html( $mshield_now['money'] ?? '' ); ?></span>
+
+                                <span class="mshield-hint" data-detail-fallback<?php echo ( $mshield_now['fallback'] ?? '' ) === '' ? ' hidden' : ''; ?>><?php echo esc_html( $mshield_now['fallback'] ?? '' ); ?></span>
+
+                            </div>
                         <?php endif; ?>
                     </td>
 
@@ -238,12 +271,16 @@ foreach( $level_rows as $row ) {
                     <td>
                         <?php /* Coloured by what happens to the order, not by whether
                                  that is good news: green means it goes through to the
-                                 processor, red means it is stopped before it gets there. */ ?>
-                        <?php if( actions::contacts_gateway( $current ) ) : ?>
-                            <span class="mshield-pill is-ok"><span class="dot"></span><?php esc_html_e( 'Allowed', 'mighty-shield' ); ?></span>
-                        <?php else : ?>
-                            <span class="mshield-pill is-danger"><span class="dot"></span><?php esc_html_e( 'Blocked', 'mighty-shield' ); ?></span>
-                        <?php endif; ?>
+                                 processor, red means it is stopped before it gets there.
+                                 Rewritten by the script with the stepper above, because
+                                 the answer is a property of the action. */ ?>
+                        <span data-detail-gateway>
+                            <?php if( actions::contacts_gateway( $current ) ) : ?>
+                                <span class="mshield-pill is-ok"><span class="dot"></span><?php esc_html_e( 'Allowed', 'mighty-shield' ); ?></span>
+                            <?php else : ?>
+                                <span class="mshield-pill is-danger"><span class="dot"></span><?php esc_html_e( 'Blocked', 'mighty-shield' ); ?></span>
+                            <?php endif; ?>
+                        </span>
                     </td>
 
                     <td>
@@ -283,6 +320,10 @@ foreach( $level_rows as $row ) {
             </tbody>
         </table>
         </div>
+
+        <?php /* One island for the page rather than a copy of the catalogue on
+                 every row. Same pattern as the Dashboard chart's data block. */ ?>
+        <script type="application/json" id="mshield-action-detail"><?php echo wp_json_encode( $mshield_action_detail ); ?></script>
 
         <?php
         /* What enforcing would have done to orders you have already taken.

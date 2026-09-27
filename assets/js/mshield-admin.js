@@ -391,6 +391,55 @@
      * drift; the choices come from a data attribute, so the order is whatever
      * the server said it was.
      */
+    // What every action does, written into the page by the Shielding tab. The
+    // stepper changes a name; without this the sentence under it, the money
+    // and the "Reaches processor" pill went on describing the SAVED action,
+    // so stepping to another one left the merchant reading a contradiction.
+    var actionDetail = null;
+
+    function actionDetails() {
+        if ( actionDetail !== null ) return actionDetail;
+        actionDetail = {};
+        var el = document.getElementById( 'mshield-action-detail' );
+        if ( el ) { try { actionDetail = JSON.parse( el.textContent ) || {}; } catch ( e ) {} }
+        return actionDetail;
+    }
+
+    // Text and one class only: nothing from the island is ever parsed as HTML.
+    function updateDetail( box, key ) {
+
+        var row = box.closest ? box.closest( 'tr' ) : null;
+        if ( ! row ) return;
+
+        var d = actionDetails()[ key ];
+        if ( ! d ) return;
+
+        function put( sel, text ) {
+            var el = row.querySelector( sel );
+            if ( ! el ) return;
+            el.textContent = text || '';
+            el.hidden = ! text;
+        }
+
+        // The description always has something to say, so it is never hidden.
+        var desc = row.querySelector( '[data-detail-desc]' );
+        if ( desc ) desc.textContent = d.desc || '';
+
+        put( '[data-detail-money]', d.money );
+        put( '[data-detail-fallback]', d.fallback );
+
+        var pill = row.querySelector( '[data-detail-gateway] .mshield-pill' );
+        if ( pill ) {
+            pill.className = 'mshield-pill ' + ( d.gateway ? 'is-ok' : 'is-danger' );
+            pill.innerHTML = '';
+            var dot = document.createElement( 'span' );
+            dot.className = 'dot';
+            pill.appendChild( dot );
+            pill.appendChild( document.createTextNode( d.gateway ? d.allowed : d.blocked ) );
+        }
+
+    }
+
     function initSteppers() {
 
         document.querySelectorAll( '.mshield-stepper' ).forEach( function( box ) {
@@ -419,6 +468,8 @@
                 value.className = 'ms-value s-' + key;
                 down.disabled = ( i === 0 );
                 up.disabled   = ( i === keys.length - 1 );
+                // Steppers that describe what they choose say so as they step.
+                if ( box.hasAttribute( 'data-details' ) ) updateDetail( box, key );
             }
 
             function step( by ) {

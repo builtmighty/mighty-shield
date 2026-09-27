@@ -22,6 +22,9 @@
     --ok:#00a32a; --warn:#dba617; --danger:#d63638; --flag:#8c5ce6;
     --ink-danger:#c22b2d; --ink-warn:#96700a; --ink-flag:#6f43cc; --ink-ok:#0a7c26;
     --ink-orange:#c2570f; --ink-lime:#4a9c1f;
+    /* The same hues as the inks, as a wash a row can carry. */
+    --tint-ok:rgba(0,163,42,.055); --tint-lime:rgba(74,156,31,.06); --tint-warn:rgba(219,166,23,.075);
+    --tint-orange:rgba(194,87,15,.06); --tint-danger:rgba(214,54,56,.05);
 
     --sans:'Public Sans',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -38,6 +41,8 @@
     --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 44px rgba(0,0,0,.55);
     --ink-danger:#ff8f91; --ink-warn:#f0c34b; --ink-flag:#b69dff; --ink-ok:#57d97f;
     --ink-orange:#ff9d5c; --ink-lime:#a8e063;
+    --tint-ok:rgba(87,217,127,.07); --tint-lime:rgba(168,224,99,.07); --tint-warn:rgba(240,195,75,.08);
+    --tint-orange:rgba(255,157,92,.07); --tint-danger:rgba(255,143,145,.07);
 }
 
 /* "System" theme: no explicit choice, so follow the OS. Same dark tokens as
@@ -51,6 +56,8 @@
         --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 44px rgba(0,0,0,.55);
         --ink-danger:#ff8f91; --ink-warn:#f0c34b; --ink-flag:#b69dff; --ink-ok:#57d97f;
         --ink-orange:#ff9d5c; --ink-lime:#a8e063;
+        --tint-ok:rgba(87,217,127,.07); --tint-lime:rgba(168,224,99,.07); --tint-warn:rgba(240,195,75,.08);
+        --tint-orange:rgba(255,157,92,.07); --tint-danger:rgba(255,143,145,.07);
     }
 }
 
@@ -1261,3 +1268,56 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 @media screen and (max-width:900px) {
     .mshield-app .mshield-work { grid-template-columns:1fr; }
 }
+
+/* ---------- Shielding: the risk-level ladder ---------- */
+/* Six rows from Trusted to Banned, and which rung a row is on is the whole
+   point of the table. The edge, the tint and the dot carry it; the level's
+   NAME stays --fg, because the lime and amber inks are below 4.5:1 at this
+   size and the dot says the same thing for free. */
+.mshield-app .mshield-levelrow > td:first-child { border-left:3px solid var(--line); }
+.mshield-app .mshield-levelrow .ms-leveldot {
+    display:inline-block; width:8px; height:8px; border-radius:50%;
+    background:var(--fg-3); margin-right:8px; vertical-align:middle;
+}
+
+.mshield-app .mshield-levelrow.s-trusted  > td { background:var(--tint-ok); }
+.mshield-app .mshield-levelrow.s-low      > td { background:var(--tint-lime); }
+.mshield-app .mshield-levelrow.s-elevated > td { background:var(--tint-warn); }
+.mshield-app .mshield-levelrow.s-high     > td { background:var(--tint-orange); }
+.mshield-app .mshield-levelrow.s-rejected > td,
+.mshield-app .mshield-levelrow.s-banned   > td { background:var(--tint-danger); }
+
+.mshield-app .mshield-levelrow.s-trusted  > td:first-child { border-left-color:var(--ink-ok); }
+.mshield-app .mshield-levelrow.s-low      > td:first-child { border-left-color:var(--ink-lime); }
+.mshield-app .mshield-levelrow.s-elevated > td:first-child { border-left-color:var(--ink-warn); }
+.mshield-app .mshield-levelrow.s-high     > td:first-child { border-left-color:var(--ink-orange); }
+.mshield-app .mshield-levelrow.s-rejected > td:first-child,
+.mshield-app .mshield-levelrow.s-banned   > td:first-child { border-left-color:var(--ink-danger); }
+
+.mshield-app .mshield-levelrow.s-trusted  .ms-leveldot { background:var(--ink-ok); }
+.mshield-app .mshield-levelrow.s-low      .ms-leveldot { background:var(--ink-lime); }
+.mshield-app .mshield-levelrow.s-elevated .ms-leveldot { background:var(--ink-warn); }
+.mshield-app .mshield-levelrow.s-high     .ms-leveldot { background:var(--ink-orange); }
+.mshield-app .mshield-levelrow.s-rejected .ms-leveldot,
+.mshield-app .mshield-levelrow.s-banned   .ms-leveldot { background:var(--ink-danger); }
+
+/* A control must never look disabled because its row is tinted, so every
+   field in a tinted row sits on the surface colour the rest of the app uses. */
+.mshield-app .mshield-levelrow input[type="number"],
+.mshield-app .mshield-levelrow .mshield-stepper,
+.mshield-app .mshield-levelrow .mshield-readout { background:var(--surface); }
+.mshield-app .mshield-levelrow .mshield-stepper .ms-step { background:transparent; }
+
+/* The Action value is a severity too: nothing done, through the holds, to
+   refused. The stepper already writes s-<action> on every step. */
+.mshield-app .mshield-stepper .ms-value.s-flag { color:var(--ink-lime); }
+.mshield-app .mshield-stepper .ms-value.s-verify_3ds { color:var(--ink-warn); }
+.mshield-app .mshield-stepper .ms-value.s-hold_unpaid,
+.mshield-app .mshield-stepper .ms-value.s-hold_authorized,
+.mshield-app .mshield-stepper .ms-value.s-hold_paid { color:var(--ink-orange); }
+.mshield-app .mshield-stepper .ms-value.s-reject { color:var(--ink-danger); }
+
+/* The action's own description, the money and the fallback note, stacked
+   under the control they describe. */
+.mshield-app .ms-action-detail { display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin-top:7px; }
+.mshield-app .ms-action-detail .mshield-hint { margin:0; }

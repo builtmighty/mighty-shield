@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MightyShield 2.3.0\n"
 "Report-Msgid-Bugs-To: https://builtmighty.com\n"
-"POT-Creation-Date: 2026-09-27 18:36+0000\n"
+"POT-Creation-Date: 2026-09-27 18:46+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -30,7 +30,7 @@ msgid "%1$d payments failed in the last %2$d minutes, far above normal. For the 
 msgstr ""
 
 #. translators: 1: count that turned out fine, 2: count that turned out bad.
-#: admin/views/blocking.php:270
+#: admin/views/blocking.php:307
 msgid "%1$d turned out fine, %2$d turned out bad"
 msgstr ""
 
@@ -78,7 +78,7 @@ msgid "%d IP addresses added to the blocklist."
 msgstr ""
 
 #. translators: %d: number of checks with unsaved changes.
-#: assets/js/mshield-admin.js:562
+#: assets/js/mshield-admin.js:613
 msgid "%d check changed"
 msgid_plural "%d checks changed"
 msgstr[0] ""
@@ -161,7 +161,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of orders.
-#: admin/views/blocking.php:260
+#: admin/views/blocking.php:297
 msgid "%s orders"
 msgstr ""
 
@@ -222,7 +222,7 @@ msgstr ""
 msgid "90 days"
 msgstr ""
 
-#: admin/views/blocking.php:469
+#: admin/views/blocking.php:510
 msgid "A challenge from Cloudflare or Google, shown to visitors so software can be told apart from people. It guards checkout and, below, the other places spam arrives."
 msgstr ""
 
@@ -282,7 +282,7 @@ msgstr ""
 msgid "A run of declines from one connection or one mailbox — the clearest sign of cards being tried until one works."
 msgstr ""
 
-#: admin/views/blocking.php:461
+#: admin/views/blocking.php:502
 msgid "A run of failures from different networks with none passing means the keys are the likelier fault, so it stopped refusing people there. One success puts it back."
 msgstr ""
 
@@ -364,7 +364,7 @@ msgstr ""
 msgid "About half the checks look at the visit rather than the order: whether a hidden trap field was filled in, how fast the form was completed, what the browser reported, how many orders that address placed in the previous quarter hour. None of that is kept, and re running it now would measure your own browser sitting in the admin."
 msgstr ""
 
-#: admin/views/blocking.php:100 admin/views/blocking.php:101
+#: admin/views/blocking.php:148 admin/views/blocking.php:149
 msgid "Above the Low threshold"
 msgstr ""
 
@@ -399,12 +399,12 @@ msgstr[1] ""
 msgid "Acted on it"
 msgstr ""
 
-#: admin/views/blocking.php:69 admin/views/documentation.php:324 admin/views/logs.php:164
+#: admin/views/blocking.php:111 admin/views/documentation.php:324 admin/views/logs.php:164
 msgid "Action"
 msgstr ""
 
 #. translators: %s: risk level name.
-#: admin/views/blocking.php:156
+#: admin/views/blocking.php:208
 msgid "Action for %s"
 msgstr ""
 
@@ -440,7 +440,7 @@ msgstr ""
 msgid "Add to blocklist"
 msgstr ""
 
-#: admin/views/blocking.php:590
+#: admin/views/blocking.php:631
 msgid "Add your own line to the end of every refusal"
 msgstr ""
 
@@ -566,7 +566,7 @@ msgstr ""
 msgid "All time"
 msgstr ""
 
-#: admin/views/blocking.php:243
+#: admin/views/blocking.php:74 admin/views/blocking.php:279
 msgid "Allowed"
 msgstr ""
 
@@ -622,7 +622,7 @@ msgstr ""
 msgid "An optional second opinion. After the checks have scored an order, a language model is shown everything MightyShield already knows about it and asked for its own rating out of 100."
 msgstr ""
 
-#: admin/views/blocking.php:55
+#: admin/views/blocking.php:97
 msgid "An order falls to the most severe risk level whose threshold its rating is at or below, and that level decides what happens to it."
 msgstr ""
 
@@ -741,7 +741,7 @@ msgstr ""
 msgid "Authorize, then hold"
 msgstr ""
 
-#: admin/views/blocking.php:559
+#: admin/views/blocking.php:600
 msgid "Automated card testing depends on getting a fast, consistent answer. Refusing slowly, with a message that varies and reads like an ordinary bank decline, means an attacker cannot tell what tripped or time their way around it."
 msgstr ""
 
@@ -774,7 +774,7 @@ msgid "Bans the next order outright, whatever it scores."
 msgstr ""
 
 #. translators: %s: number of orders.
-#: admin/views/blocking.php:358
+#: admin/views/blocking.php:399
 msgid "Based on the most recent %s rated orders."
 msgstr ""
 
@@ -790,7 +790,7 @@ msgstr ""
 msgid "Behavior."
 msgstr ""
 
-#: admin/views/blocking.php:563
+#: admin/views/blocking.php:604
 msgid "Between"
 msgstr ""
 
@@ -818,7 +818,7 @@ msgstr ""
 msgid "Block IP permanently"
 msgstr ""
 
-#: admin/views/blocking.php:379
+#: admin/views/blocking.php:420
 msgid "Block Store API"
 msgstr ""
 
@@ -830,7 +830,7 @@ msgstr ""
 msgid "Block by"
 msgstr ""
 
-#: admin/views/blocking.php:399
+#: admin/views/blocking.php:440
 msgid "Block checkout"
 msgstr ""
 
@@ -863,12 +863,12 @@ msgstr ""
 msgid "Block this order? The reserved payment is released and the address is blocked. If the processor cannot confirm the release, the order stays on hold."
 msgstr ""
 
-#: admin/views/blocking.php:393
+#: admin/views/blocking.php:434
 msgid "Block/One-page checkout: allow shoppers, block only blocklisted IPs"
 msgstr ""
 
-#: admin/class-dashboard-widget.php:206 admin/views/blocking.php:245 admin/views/dashboard.php:94 admin/views/dashboard.php:205
-#: admin/views/logs.php:57 admin/views/logs.php:110 assets/js/mshield-admin.js:347
+#: admin/class-dashboard-widget.php:206 admin/views/blocking.php:75 admin/views/blocking.php:281 admin/views/dashboard.php:94
+#: admin/views/dashboard.php:205 admin/views/logs.php:57 admin/views/logs.php:110 assets/js/mshield-admin.js:347
 msgid "Blocked"
 msgstr ""
 
@@ -900,7 +900,7 @@ msgstr ""
 msgid "Blocklist mode."
 msgstr ""
 
-#: admin/views/blocking.php:423 admin/views/setup/step-done.php:38
+#: admin/views/blocking.php:464 admin/views/setup/step-done.php:38
 msgid "Bot challenge"
 msgstr ""
 
@@ -1047,7 +1047,7 @@ msgstr ""
 msgid "Charged as normal, once verified"
 msgstr ""
 
-#: admin/views/blocking.php:330
+#: admin/views/blocking.php:371
 msgid "Charged back, or you marked them fraud"
 msgstr ""
 
@@ -1143,7 +1143,7 @@ msgstr ""
 msgid "City"
 msgstr ""
 
-#: admin/views/blocking.php:392
+#: admin/views/blocking.php:433
 msgid "Classic checkout: block all non-allowlisted IPs"
 msgstr ""
 
@@ -1171,7 +1171,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: admin/views/blocking.php:478 admin/views/setup/step-challenge.php:53 admin/views/setup/step-done.php:44
+#: admin/views/blocking.php:519 admin/views/setup/step-challenge.php:53 admin/views/setup/step-done.php:44
 msgid "Cloudflare Turnstile"
 msgstr ""
 
@@ -1191,7 +1191,7 @@ msgstr ""
 msgid "Comma-separated. Leave blank to use the site admin address."
 msgstr ""
 
-#: admin/views/blocking.php:519
+#: admin/views/blocking.php:560
 msgid "Comments"
 msgstr ""
 
@@ -1203,7 +1203,7 @@ msgstr ""
 msgid "Completed"
 msgstr ""
 
-#: admin/views/blocking.php:334
+#: admin/views/blocking.php:375
 msgid "Completed normally — real customers you would have lost"
 msgstr ""
 
@@ -1215,7 +1215,7 @@ msgstr ""
 msgid "Continue &rarr;"
 msgstr ""
 
-#: admin/views/blocking.php:375
+#: admin/views/blocking.php:416
 msgid "Controls access to the WooCommerce Store API cart and checkout endpoints (/wc/store/v1/…). Choose the mode that matches your checkout."
 msgstr ""
 
@@ -1274,7 +1274,7 @@ msgstr ""
 msgid "Credentials were sent as %s. Use Test connection on the Scoring tab to find the form this server can actually deliver."
 msgstr ""
 
-#: admin/views/blocking.php:459
+#: admin/views/blocking.php:500
 msgid "Currently letting everybody through on:"
 msgstr ""
 
@@ -1330,7 +1330,7 @@ msgstr ""
 msgid "Degraded"
 msgstr ""
 
-#: admin/views/blocking.php:556
+#: admin/views/blocking.php:597
 msgid "Delay refused checkouts by a random amount"
 msgstr ""
 
@@ -1458,7 +1458,7 @@ msgstr ""
 msgid "Enable AI review"
 msgstr ""
 
-#: admin/views/blocking.php:384
+#: admin/views/blocking.php:425
 msgid "Enable Store API access control."
 msgstr ""
 
@@ -1679,7 +1679,7 @@ msgstr ""
 msgid "Fires with %1$s on %2$s orders: one fact counted twice."
 msgstr ""
 
-#: admin/views/blocking.php:389
+#: admin/views/blocking.php:430
 msgid "Firewall mode"
 msgstr ""
 
@@ -1700,7 +1700,7 @@ msgstr ""
 msgid "Fix this: block only the addresses MightyShield has judged, and let everyone else through"
 msgstr ""
 
-#: admin/views/blocking.php:121
+#: admin/views/blocking.php:169
 msgid "Fixed. This level is defined by what it does."
 msgstr ""
 
@@ -1747,7 +1747,7 @@ msgid "For a store under attack, or one selling things worth stealing. Expect to
 msgstr ""
 
 #: admin/views/documentation.php:463
-msgid "For each level: the rating at or below which it applies, what it does, and whether the order still reaches your processor. The last column shows how orders at that level actually turned out, which is what tells you whether a threshold is right."
+msgid "For each level: the rating at or below which it applies, what it does, and whether the order still reaches your processor. Each row is coloured by how severe its level is, and changing the action rewrites what the row says about it, including what happens to the money. The last column shows how orders at that level actually turned out, which is what tells you whether a threshold is right."
 msgstr ""
 
 #: admin/views/documentation.php:247
@@ -1784,11 +1784,11 @@ msgstr ""
 msgid "Fraud checks now run on the block-based checkout as well as the classic one. Previously they only ran on classic, so stores using the newer checkout were unprotected. Each check still does exactly what you have it set to do."
 msgstr ""
 
-#: admin/views/blocking.php:496
+#: admin/views/blocking.php:537
 msgid "From the Cloudflare dashboard, under Turnstile."
 msgstr ""
 
-#: admin/views/blocking.php:499
+#: admin/views/blocking.php:540
 msgid "From the Google reCAPTCHA admin console. Must be a v3 key."
 msgstr ""
 
@@ -1840,7 +1840,7 @@ msgstr ""
 msgid "Google reCAPTCHA"
 msgstr ""
 
-#: admin/views/blocking.php:479 admin/views/setup/step-challenge.php:54
+#: admin/views/blocking.php:520 admin/views/setup/step-challenge.php:54
 msgid "Google reCAPTCHA v3"
 msgstr ""
 
@@ -2041,7 +2041,7 @@ msgstr ""
 msgid "How the order turned out is remembered against everyone connected to it, and counts towards the next one. A checkout that was refused is remembered too, so somebody turned away does not arrive at their next attempt looking like a stranger."
 msgstr ""
 
-#: admin/views/blocking.php:325
+#: admin/views/blocking.php:366
 msgid "How they turned out"
 msgstr ""
 
@@ -2110,7 +2110,7 @@ msgstr ""
 msgid "If a level is set to ask for 3-D Secure and the customer pays with a method that cannot, that order is flagged instead. If a level is set to authorize and hold and the method cannot reserve money, the order is held before payment instead. Nothing is skipped; something less is done, and the order note says which."
 msgstr ""
 
-#: admin/views/blocking.php:301 admin/views/dashboard.php:126
+#: admin/views/blocking.php:342 admin/views/dashboard.php:126
 msgid "If you enforced these thresholds"
 msgstr ""
 
@@ -2139,7 +2139,7 @@ msgid "In Observing nothing is refused or held because of what MightyShield work
 msgstr ""
 
 #. translators: 1: number refused, 2: number unconfirmed, 3: number of days.
-#: admin/views/blocking.php:445
+#: admin/views/blocking.php:486
 msgid "In the last %3$d days it turned away %1$d visitors, and %2$d more could not be confirmed either way."
 msgstr ""
 
@@ -2216,7 +2216,7 @@ msgstr ""
 msgid "Last 24 hours"
 msgstr ""
 
-#: admin/views/blocking.php:71 admin/views/logs.php:105
+#: admin/views/blocking.php:113 admin/views/logs.php:105
 msgid "Last 30 days"
 msgstr ""
 
@@ -2285,7 +2285,7 @@ msgstr ""
 msgid "Log retention"
 msgstr ""
 
-#: admin/views/blocking.php:516
+#: admin/views/blocking.php:557
 msgid "Login"
 msgstr ""
 
@@ -2313,7 +2313,7 @@ msgstr ""
 msgid "Lookup failed. Please try again."
 msgstr ""
 
-#: admin/views/blocking.php:518
+#: admin/views/blocking.php:559
 msgid "Lost password"
 msgstr ""
 
@@ -2607,7 +2607,7 @@ msgstr ""
 msgid "Name does not appear in the email address"
 msgstr ""
 
-#: admin/views/blocking.php:595
+#: admin/views/blocking.php:636
 msgid "Need help with this order? Call us on &lt;a href=&quot;tel:5551234567&quot;&gt;(555) 123-4567&lt;/a&gt;."
 msgstr ""
 
@@ -2648,7 +2648,7 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
-#: admin/views/blocking.php:175
+#: admin/views/blocking.php:227
 msgid "Next action"
 msgstr ""
 
@@ -2685,8 +2685,9 @@ msgstr ""
 msgid "No action"
 msgstr ""
 
-#: admin/views/blocking.php:218
-msgid "No active payment method can do this."
+#. translators: %s: name of the fallback action.
+#: admin/views/blocking.php:58
+msgid "No active payment method can do this. These orders will be handled as \"%s\" instead."
 msgstr ""
 
 #: assets/js/mshield-admin.js:128
@@ -2721,7 +2722,7 @@ msgstr ""
 msgid "No order is reviewed until an API key is saved. Every other check is still running."
 msgstr ""
 
-#: admin/views/blocking.php:342
+#: admin/views/blocking.php:383
 msgid "No outcome recorded yet"
 msgstr ""
 
@@ -2770,16 +2771,16 @@ msgid "Not available"
 msgstr ""
 
 #. translators: %s: number of orders rated so far.
-#: admin/views/blocking.php:310
+#: admin/views/blocking.php:351
 msgid "Not enough rated orders yet to say anything useful — there are %s, and this needs at least 20. Leave MightyShield observing and come back; a forecast built on a handful of orders is a number pretending to be an answer."
 msgstr ""
 
 #. translators: %s: comma-separated action names.
-#: admin/views/blocking.php:191
+#: admin/views/blocking.php:243
 msgid "Not offered here, because no active payment method can do it: %s."
 msgstr ""
 
-#: admin/views/blocking.php:437
+#: admin/views/blocking.php:478
 msgid "Not running."
 msgstr ""
 
@@ -2815,7 +2816,7 @@ msgstr ""
 msgid "Nothing has been blocked yet."
 msgstr ""
 
-#: admin/views/blocking.php:454
+#: admin/views/blocking.php:495
 msgid "Nothing has been turned away, which usually means the widget is not reaching your forms rather than that nobody has tried. Check the Logs tab, filtered to Needs attention."
 msgstr ""
 
@@ -2899,7 +2900,7 @@ msgstr ""
 msgid "Of the last 30 days of orders, re-rated against the thresholds on Shielding."
 msgstr ""
 
-#: admin/views/blocking.php:477 admin/views/documentation.php:406 admin/views/documentation.php:412 admin/views/documentation.php:416
+#: admin/views/blocking.php:518 admin/views/documentation.php:406 admin/views/documentation.php:412 admin/views/documentation.php:416
 #: admin/views/documentation.php:445 admin/views/setup/step-challenge.php:52
 msgid "Off"
 msgstr ""
@@ -2921,7 +2922,7 @@ msgstr ""
 msgid "On <a href=\"%s\">Shielding</a>, raise the Rejected threshold so more orders are refused outright, and set Elevated to something firmer than 3-D Secure if your processor cannot do it."
 msgstr ""
 
-#: admin/views/blocking.php:395
+#: admin/views/blocking.php:436
 msgid "On a block checkout the firewall steps aside for the cart and checkout in either mode."
 msgstr ""
 
@@ -3122,7 +3123,7 @@ msgstr ""
 msgid "Orders reported as fraud"
 msgstr ""
 
-#: admin/views/blocking.php:324
+#: admin/views/blocking.php:365
 msgid "Orders that would be refused"
 msgstr ""
 
@@ -3171,7 +3172,7 @@ msgid "Payment methods"
 msgstr ""
 
 #. translators: %s: name of the fallback action.
-#: admin/views/blocking.php:229
+#: admin/views/blocking.php:64
 msgid "Payment methods that cannot do this fall back to \"%s\"."
 msgstr ""
 
@@ -3227,7 +3228,7 @@ msgstr ""
 msgid "Previous"
 msgstr ""
 
-#: admin/views/blocking.php:162
+#: admin/views/blocking.php:214
 msgid "Previous action"
 msgstr ""
 
@@ -3251,7 +3252,7 @@ msgstr ""
 msgid "Protection state"
 msgstr ""
 
-#: admin/views/ai.php:70 admin/views/blocking.php:474 admin/views/setup/step-challenge.php:48
+#: admin/views/ai.php:70 admin/views/blocking.php:515 admin/views/setup/step-challenge.php:48
 msgid "Provider"
 msgstr ""
 
@@ -3325,11 +3326,11 @@ msgstr ""
 msgid "Rating your past orders: %1$s of %2$s done. This continues in the background, so you can leave this page."
 msgstr ""
 
-#: admin/views/blocking.php:104 admin/views/blocking.php:105
+#: admin/views/blocking.php:152 admin/views/blocking.php:153
 msgid "Reachable only from a signal, never from a rating"
 msgstr ""
 
-#: admin/views/blocking.php:70
+#: admin/views/blocking.php:112
 msgid "Reaches processor"
 msgstr ""
 
@@ -3362,11 +3363,11 @@ msgstr ""
 msgid "Refunded"
 msgstr ""
 
-#: admin/views/blocking.php:338
+#: admin/views/blocking.php:379
 msgid "Refunded, which is usually ordinary retail rather than fraud"
 msgstr ""
 
-#: admin/views/blocking.php:547
+#: admin/views/blocking.php:588
 msgid "Refusals"
 msgstr ""
 
@@ -3390,7 +3391,7 @@ msgstr ""
 msgid "Refuses those endpoints to everyone who is not on your allowlist. Right for a store using the classic checkout, where customers never touch them. On a store whose checkout page uses the Checkout block, this mode steps aside for the cart and checkout endpoints, because that checkout is built on them; the rating protects them instead, and the mode still governs every other Store API route."
 msgstr ""
 
-#: admin/views/blocking.php:517
+#: admin/views/blocking.php:558
 msgid "Registration"
 msgstr ""
 
@@ -3482,11 +3483,11 @@ msgstr ""
 msgid "Reviewing"
 msgstr ""
 
-#: admin/views/blocking.php:62 admin/views/documentation.php:255
+#: admin/views/blocking.php:104 admin/views/documentation.php:255
 msgid "Risk Level"
 msgstr ""
 
-#: admin/views/blocking.php:52
+#: admin/views/blocking.php:94
 msgid "Risk levels"
 msgstr ""
 
@@ -3514,11 +3515,11 @@ msgstr ""
 msgid "Run setup"
 msgstr ""
 
-#: admin/views/blocking.php:404
+#: admin/views/blocking.php:445
 msgid "Run the fraud checks on the block-based checkout too."
 msgstr ""
 
-#: admin/views/blocking.php:441
+#: admin/views/blocking.php:482
 msgid "Running."
 msgstr ""
 
@@ -3530,7 +3531,7 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: assets/js/mshield-admin.js:656
+#: assets/js/mshield-admin.js:707
 msgid "Save first"
 msgstr ""
 
@@ -3572,7 +3573,7 @@ msgstr ""
 msgid "Search IP, email, or reason"
 msgstr ""
 
-#: admin/views/blocking.php:504 admin/views/setup/step-challenge.php:75
+#: admin/views/blocking.php:545 admin/views/setup/step-challenge.php:75
 msgid "Secret key"
 msgstr ""
 
@@ -3683,7 +3684,7 @@ msgstr ""
 msgid "Signing in is off by default, and it is worth leaving that way until you have seen the rest working. If a challenge ever fails to load on that form, everybody is locked out of the site including you."
 msgstr ""
 
-#: admin/views/blocking.php:491 admin/views/setup/step-challenge.php:64
+#: admin/views/blocking.php:532 admin/views/setup/step-challenge.php:64
 msgid "Site key"
 msgstr ""
 
@@ -3699,7 +3700,7 @@ msgstr ""
 msgid "Skip this step to leave them alone."
 msgstr ""
 
-#: admin/views/blocking.php:551
+#: admin/views/blocking.php:592
 msgid "Slow down refusals"
 msgstr ""
 
@@ -3771,7 +3772,7 @@ msgstr ""
 msgid "Stopped. Everything rated so far is kept."
 msgstr ""
 
-#: admin/views/blocking.php:373 admin/views/documentation.php:469
+#: admin/views/blocking.php:414 admin/views/documentation.php:469
 msgid "Store API firewall"
 msgstr ""
 
@@ -3812,7 +3813,7 @@ msgid "Switching a check off stops it contributing anything at all. Prefer lower
 msgstr ""
 
 #. translators: 1: the profile's name, 2: how many trust costs the merchant changed by hand.
-#: assets/js/mshield-admin.js:620
+#: assets/js/mshield-admin.js:671
 msgid "Switching to %1$s will replace %2$d trust cost you have changed, and switch every check back on. Continue?"
 msgid_plural "Switching to %1$s will replace %2$d trust costs you have changed, and switch every check back on. Continue?"
 msgstr[0] ""
@@ -3850,7 +3851,7 @@ msgstr ""
 msgid "Test connection"
 msgstr ""
 
-#: assets/js/mshield-admin.js:667
+#: assets/js/mshield-admin.js:718
 msgid "Testing…"
 msgstr ""
 
@@ -4138,10 +4139,6 @@ msgstr ""
 msgid "The money."
 msgstr ""
 
-#: admin/views/blocking.php:211
-msgid "The money:"
-msgstr ""
-
 #: includes/class-signals.php:982
 msgid "The number belongs to a service that hands out disposable numbers rather than to a carrier, so it cannot be used to reach anyone later."
 msgstr ""
@@ -4292,7 +4289,7 @@ msgstr ""
 msgid "The table is divided into six groups, by what a check is actually looking at. The grouping is there so you can reason about a whole category at once — if your customers keep tripping the Network checks, that is a different problem from tripping the Identity ones."
 msgstr ""
 
-#: assets/js/mshield-admin.js:681 assets/js/mshield-admin.js:694
+#: assets/js/mshield-admin.js:732 assets/js/mshield-admin.js:745
 msgid "The test could not be run. Reload the page and try again."
 msgstr ""
 
@@ -4331,11 +4328,6 @@ msgstr[1] ""
 #. translators: %s: comma-separated list of check names.
 #: admin/class-order-panel.php:300
 msgid "These checks cannot be replayed: %s."
-msgstr ""
-
-#. translators: %s: name of the fallback action.
-#: admin/views/blocking.php:221
-msgid "These orders will be handled as \"%s\" instead."
 msgstr ""
 
 #: admin/views/documentation.php:432
@@ -4442,7 +4434,7 @@ msgstr ""
 msgid "Total events"
 msgstr ""
 
-#: admin/views/blocking.php:63
+#: admin/views/blocking.php:105
 msgid "Trust at or below"
 msgstr ""
 
@@ -4644,7 +4636,7 @@ msgstr ""
 msgid "What Observing still does"
 msgstr ""
 
-#: admin/views/blocking.php:580
+#: admin/views/blocking.php:621
 msgid "What a refused customer reads"
 msgstr ""
 
@@ -4720,7 +4712,7 @@ msgstr ""
 msgid "When an order turns out well or badly, that verdict is applied to everything connected to it. The next order from any of them starts with that history behind it. This is what catches someone who changes their email and tries again, because they rarely change everything at once."
 msgstr ""
 
-#: admin/views/blocking.php:512
+#: admin/views/blocking.php:553
 msgid "Where it applies (always on)"
 msgstr ""
 
@@ -4805,7 +4797,7 @@ msgstr ""
 msgid "WordPress user."
 msgstr ""
 
-#: admin/views/blocking.php:350
+#: admin/views/blocking.php:391
 msgid "Worked out by re-rating the orders you have already taken against the thresholds above. Orders stopped by a check that decides on its own — a filled trap field, a browser announcing itself as software — are counted as refused whatever you set, because no threshold can overrule those."
 msgstr ""
 
@@ -4825,7 +4817,7 @@ msgstr ""
 msgid "You do not have permission to set up MightyShield."
 msgstr ""
 
-#: assets/js/mshield-admin.js:611
+#: assets/js/mshield-admin.js:662
 msgid "You have unsaved changes below. Switching the profile discards them. Continue?"
 msgstr ""
 
@@ -4956,7 +4948,7 @@ msgstr ""
 msgid "an AI review that rated an order badly, an address-verification or AI service that has stopped responding, a bot challenge that has started refusing everybody, or a wave of failed payments that looks like card testing. Service and challenge notices are sent at most once a day."
 msgstr ""
 
-#: admin/views/blocking.php:569
+#: admin/views/blocking.php:610
 msgid "and"
 msgstr ""
 
@@ -4997,7 +4989,7 @@ msgstr ""
 msgid "last 24h"
 msgstr ""
 
-#: admin/views/blocking.php:573
+#: admin/views/blocking.php:614
 msgid "milliseconds"
 msgstr ""
 
@@ -5053,7 +5045,7 @@ msgstr ""
 msgid "runs the checks on the block based checkout as well as the classic one. Leave it on. Every check now works the same on both, including the ones that need something from the browser, such as the checkout timer, the device check, the hidden decoy field and the bot challenge, so the same order is judged the same way whichever checkout your store uses."
 msgstr ""
 
-#: admin/views/ai.php:85 admin/views/ai.php:99 admin/views/ai.php:120 admin/views/blocking.php:507
+#: admin/views/ai.php:85 admin/views/ai.php:99 admin/views/ai.php:120 admin/views/blocking.php:548
 #: admin/views/scoring.php:446 admin/views/setup/step-challenge.php:67 admin/views/setup/step-challenge.php:78
 msgid "saved, leave blank to keep"
 msgstr ""
