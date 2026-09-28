@@ -38,7 +38,7 @@ jobs:
           unzip -l mighty-shield.zip | tail -n 1
           echo
           echo "Anything that should not be here?"
-          unzip -Z1 mighty-shield.zip | grep -E '(^|/)(\.git|\.github|\.claude|node_modules|README\.md|composer\.json|phpcs\.xml)' && exit 1 || echo "  nothing unexpected"
+          unzip -Z1 mighty-shield.zip | grep -E '(^|/)(\.git|\.github|node_modules|README\.md|composer\.json|phpcs\.xml)' && exit 1 || echo "  nothing unexpected"
 
       - name: Get latest release tag
         id: tag

@@ -33,7 +33,7 @@ $domain = 'mighty-shield';
 $out    = "$root/languages/$domain.pot";
 
 // Directories that hold nothing a translator should see.
-$skip = [ '.git', '.github', '.claude', 'bin', 'vendor', 'node_modules', 'languages', 'tests', 'updates' ];
+$skip = [ '.git', '.github', 'bin', 'vendor', 'node_modules', 'languages', 'tests', 'updates' ];
 
 // name => [ singular index, plural index or null, context index or null, domain index ]
 $FUNCS = [

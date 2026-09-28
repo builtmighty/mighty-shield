@@ -14,7 +14,6 @@
 
 # Tooling and editor state
 bin
-.claude
 .editorconfig
 .vscode
 .idea

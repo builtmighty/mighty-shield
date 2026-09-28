@@ -29,5 +29,4 @@
 # Keep development-only files out of the release archive built by
 # .github/workflows/build-release.yml.
 /.github        export-ignore
-/.claude        export-ignore
 /.gitattributes export-ignore
