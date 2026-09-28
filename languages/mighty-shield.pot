@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MightyShield 3.0.0\n"
 "Report-Msgid-Bugs-To: https://builtmighty.com\n"
-"POT-Creation-Date: 2026-09-28 18:22+0000\n"
+"POT-Creation-Date: 2026-09-28 19:03+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -91,6 +91,13 @@ msgstr ""
 #: admin/class-admin-page.php:994
 msgid "%d IP addresses added to the blocklist."
 msgstr ""
+
+#. translators: %d: number of settings changed but not yet saved.
+#: assets/js/mshield-admin.js:805
+msgid "%d change"
+msgid_plural "%d changes"
+msgstr[0] ""
+msgstr[1] ""
 
 #. translators: %d: number of checks with unsaved changes.
 #: assets/js/mshield-admin.js:613
@@ -352,7 +359,7 @@ msgstr ""
 msgid "AI Credentials"
 msgstr ""
 
-#: admin/class-admin-page.php:2084 admin/views/ai.php:48 admin/views/documentation.php:209 admin/views/documentation.php:439
+#: admin/class-admin-page.php:2114 admin/views/ai.php:48 admin/views/documentation.php:209 admin/views/documentation.php:439
 #: admin/views/setup/step-done.php:112
 msgid "AI Review"
 msgstr ""
@@ -395,7 +402,7 @@ msgstr ""
 msgid "Above the Low threshold"
 msgstr ""
 
-#: admin/class-admin-page.php:2092 admin/views/documentation.php:212 admin/views/documentation.php:493
+#: admin/class-admin-page.php:2122 admin/views/documentation.php:212 admin/views/documentation.php:493
 msgid "Access"
 msgstr ""
 
@@ -439,11 +446,11 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: admin/class-admin-page.php:2016 admin/views/blocking.php:487 admin/views/payment.php:73
+#: admin/class-admin-page.php:2046 admin/views/blocking.php:487 admin/views/payment.php:73
 msgid "Active"
 msgstr ""
 
-#: admin/class-admin-page.php:2017
+#: admin/class-admin-page.php:2047
 msgid "Active. Orders are blocked and held by their rating"
 msgstr ""
 
@@ -1050,7 +1057,7 @@ msgstr ""
 msgid "Change"
 msgstr ""
 
-#: admin/class-admin-page.php:2262
+#: admin/class-admin-page.php:2292
 msgid "Change it on Shielding"
 msgstr ""
 
@@ -1337,11 +1344,11 @@ msgstr ""
 msgid "Daily limit"
 msgstr ""
 
-#: admin/class-admin-page.php:1839 assets/js/mshield-admin.js:43
+#: admin/class-admin-page.php:1869 assets/js/mshield-admin.js:43
 msgid "Dark"
 msgstr ""
 
-#: admin/class-admin-page.php:2079 admin/views/documentation.php:206 admin/views/documentation.php:340
+#: admin/class-admin-page.php:2109 admin/views/documentation.php:206 admin/views/documentation.php:340
 msgid "Dashboard"
 msgstr ""
 
@@ -1397,7 +1404,7 @@ msgstr ""
 msgid "Different emails per hour"
 msgstr ""
 
-#: admin/class-admin-page.php:2001
+#: admin/class-admin-page.php:2031
 msgid "Disabled"
 msgstr ""
 
@@ -1405,7 +1412,7 @@ msgstr ""
 msgid "Disabled, Observing or Active. There is no switch on it, because changing that belongs on the screen that explains what the three mean."
 msgstr ""
 
-#: admin/class-admin-page.php:2002
+#: admin/class-admin-page.php:2032
 msgid "Disabled. No orders are checked"
 msgstr ""
 
@@ -1425,7 +1432,7 @@ msgstr ""
 msgid "Do not send customers' personal details to the AI provider"
 msgstr ""
 
-#: admin/class-admin-page.php:1857
+#: admin/class-admin-page.php:1887
 msgid "Documentation"
 msgstr ""
 
@@ -2284,7 +2291,7 @@ msgstr ""
 msgid "Let it watch your real orders, then look at the Dashboard and the Fraud Review queue. If the orders it would have held are the ones you would have held, switch it on. If it is flagging your regulars, lower the strictness first. That switch is on every MightyShield page."
 msgstr ""
 
-#: admin/class-admin-page.php:1839 assets/js/mshield-admin.js:43
+#: admin/class-admin-page.php:1869 assets/js/mshield-admin.js:43
 msgid "Light"
 msgstr ""
 
@@ -2320,7 +2327,7 @@ msgstr ""
 msgid "Login"
 msgstr ""
 
-#: admin/class-admin-page.php:2093 admin/views/dashboard.php:259 admin/views/documentation.php:213 admin/views/documentation.php:513
+#: admin/class-admin-page.php:2123 admin/views/dashboard.php:259 admin/views/documentation.php:213 admin/views/documentation.php:513
 msgid "Logs"
 msgstr ""
 
@@ -2424,7 +2431,7 @@ msgstr ""
 msgid "Medium"
 msgstr ""
 
-#: admin/class-admin-page.php:200 admin/class-admin-page.php:201 admin/class-admin-page.php:1851 admin/class-dashboard-widget.php:63
+#: admin/class-admin-page.php:200 admin/class-admin-page.php:201 admin/class-admin-page.php:1881 admin/class-dashboard-widget.php:63
 #: admin/class-order-panel.php:109 includes/class-privacy.php:156 includes/class-privacy.php:173
 msgid "MightyShield"
 msgstr ""
@@ -2454,11 +2461,11 @@ msgstr ""
 msgid "MightyShield installs in Observe mode. It rates every order and records what it would have done, without doing it. Your existing checks carry on working exactly as before. When you are ready, turn enforcement on with the three way switch on the <a href=\"%s\">Dashboard</a>."
 msgstr ""
 
-#: admin/class-admin-page.php:2044
+#: admin/class-admin-page.php:2074
 msgid "MightyShield is actively protecting your store."
 msgstr ""
 
-#: admin/class-admin-page.php:2046
+#: admin/class-admin-page.php:2076
 msgid "MightyShield is not checking any orders."
 msgstr ""
 
@@ -2923,11 +2930,11 @@ msgstr ""
 msgid "Now observing. Orders are rated and recorded, but the rating is not acted on."
 msgstr ""
 
-#: admin/class-admin-page.php:2007
+#: admin/class-admin-page.php:2037
 msgid "Observing"
 msgstr ""
 
-#: admin/class-admin-page.php:2008
+#: admin/class-admin-page.php:2038
 msgid "Observing. Orders are rated and recorded, but not acted on"
 msgstr ""
 
@@ -3202,7 +3209,7 @@ msgstr ""
 msgid "PayPal did not capture the authorization. Check the order notes."
 msgstr ""
 
-#: admin/class-admin-page.php:2091 admin/views/documentation.php:211 admin/views/documentation.php:481 includes/class-signals.php:1228
+#: admin/class-admin-page.php:2121 admin/views/documentation.php:211 admin/views/documentation.php:481 includes/class-signals.php:1228
 msgid "Payment"
 msgstr ""
 
@@ -3574,7 +3581,7 @@ msgstr ""
 msgid "Same device order limit"
 msgstr ""
 
-#: admin/views/scoring.php:494
+#: admin/class-admin-page.php:1709
 msgid "Save"
 msgstr ""
 
@@ -3582,7 +3589,7 @@ msgstr ""
 msgid "Save first"
 msgstr ""
 
-#: admin/class-admin-page.php:2080 admin/views/documentation.php:208 admin/views/documentation.php:364 admin/views/setup/step-done.php:32
+#: admin/class-admin-page.php:2110 admin/views/documentation.php:208 admin/views/documentation.php:364 admin/views/setup/step-done.php:32
 msgid "Scoring"
 msgstr ""
 
@@ -3673,7 +3680,7 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: admin/class-admin-page.php:1973
+#: admin/class-admin-page.php:2003
 msgid "Settings saved."
 msgstr ""
 
@@ -3694,15 +3701,15 @@ msgstr ""
 msgid "Setup progress"
 msgstr ""
 
-#: admin/class-admin-page.php:2090 admin/views/dashboard.php:153 admin/views/documentation.php:210 admin/views/documentation.php:460
+#: admin/class-admin-page.php:2120 admin/views/dashboard.php:153 admin/views/documentation.php:210 admin/views/documentation.php:460
 msgid "Shielding"
 msgstr ""
 
-#: admin/class-admin-page.php:2059
+#: admin/class-admin-page.php:2089
 msgid "Shields are down"
 msgstr ""
 
-#: admin/class-admin-page.php:2058
+#: admin/class-admin-page.php:2088
 msgid "Shields are up"
 msgstr ""
 
@@ -3795,7 +3802,7 @@ msgstr ""
 msgid "Source"
 msgstr ""
 
-#: admin/class-admin-page.php:1853
+#: admin/class-admin-page.php:1883
 msgid "Spam and fraud protection for WooCommerce"
 msgstr ""
 
@@ -3866,7 +3873,7 @@ msgid_plural "Switching to %1$s will replace %2$d trust costs you have changed, 
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-admin-page.php:1839 admin/views/whitelist.php:122 assets/js/mshield-admin.js:43
+#: admin/class-admin-page.php:1869 admin/views/whitelist.php:122 assets/js/mshield-admin.js:43
 msgid "System"
 msgstr ""
 
@@ -3898,7 +3905,7 @@ msgstr ""
 msgid "Test Challenge"
 msgstr ""
 
-#: admin/class-admin-page.php:1703 admin/views/ai.php:131 admin/views/documentation.php:413 admin/views/documentation.php:447
+#: admin/class-admin-page.php:1733 admin/views/ai.php:131 admin/views/documentation.php:413 admin/views/documentation.php:447
 msgid "Test connection"
 msgstr ""
 
@@ -4429,7 +4436,7 @@ msgstr ""
 msgid "This provider has no way to ask for it on a single order. Orders that would have been asked for 3-D Secure go through as normal."
 msgstr ""
 
-#: admin/class-admin-page.php:2260
+#: admin/class-admin-page.php:2290
 msgid "This store uses the block checkout, which is built on the Store API, and the Store API firewall is set to Allowlist. That combination refuses the cart and the checkout for everyone who is not on your allowlist, so no customer can buy. Set the firewall to Blocklist, or turn it off."
 msgstr ""
 
@@ -4511,7 +4518,7 @@ msgstr ""
 msgid "Trust rating %1$d of 100: %2$s"
 msgstr ""
 
-#: admin/class-admin-page.php:2045
+#: admin/class-admin-page.php:2075
 msgid "Trust ratings are being recorded, not enforced."
 msgstr ""
 
@@ -4884,7 +4891,7 @@ msgstr ""
 msgid "Your access has been restricted. Please contact support."
 msgstr ""
 
-#: admin/class-admin-page.php:2259 admin/class-dashboard-widget.php:136
+#: admin/class-admin-page.php:2289 admin/class-dashboard-widget.php:136
 msgid "Your checkout is closed to customers."
 msgstr ""
 

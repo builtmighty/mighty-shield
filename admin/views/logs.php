@@ -451,7 +451,7 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
                     </td>
                 </tr>
             </table>
-            <?php submit_button(); ?>
+            <?php \MightyShield\Admin\admin_page::save_bar(); ?>
         </form>
     </div>
 

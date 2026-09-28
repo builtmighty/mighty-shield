@@ -763,6 +763,64 @@
 
     }
 
+    /* ---------- Save bars ---------- */
+    // Every settings tab ends with the same bar, so every settings tab gets
+    // the same behaviour: it pins itself to the foot of the window and says
+    // how much is unsaved. Scoring counts changed CHECKS, which says more
+    // than a field count on a page of 56 rows, so it keeps its own counter.
+    function initSaveBars() {
+
+        document.querySelectorAll( '.mshield-savebar' ).forEach( function( bar ) {
+
+            var form = bar.closest ? bar.closest( 'form' ) : null;
+            if ( ! form || form.id === 'mshield-checks-form' ) return;
+
+            var note = bar.querySelector( '[data-savebar-note]' );
+
+            // Against the values the page was served with, not a snapshot:
+            // defaultValue and defaultChecked are exactly that, so a field
+            // typed back to what it was stops counting.
+            function changed() {
+                var n = 0;
+                form.querySelectorAll( 'input, select, textarea' ).forEach( function( el ) {
+                    if ( el.disabled || el.type === 'submit' || el.type === 'button' ) return;
+                    if ( el.type === 'checkbox' || el.type === 'radio' ) {
+                        if ( el.checked !== el.defaultChecked ) n++;
+                    } else if ( el.tagName === 'SELECT' ) {
+                        var def = Array.prototype.filter.call( el.options, function( o ) { return o.defaultSelected; } )[ 0 ];
+                        if ( def ? el.value !== def.value : el.selectedIndex !== 0 ) n++;
+                    } else if ( el.value !== el.defaultValue ) {
+                        n++;
+                    }
+                } );
+                return n;
+            }
+
+            function sync() {
+                var n = changed();
+                bar.classList.toggle( 'is-dirty', n > 0 );
+                if ( note ) {
+                    note.textContent = n > 0
+                        /* translators: %d: number of settings changed but not yet saved. */
+                        ? sprintf( _n( '%d change', '%d changes', n, 'mighty-shield' ), n )
+                        : '';
+                }
+            }
+
+            form.addEventListener( 'input', sync );
+            form.addEventListener( 'change', sync );
+            // A stepper writes to a hidden input, which fires nothing of its
+            // own, so the click is the signal.
+            form.addEventListener( 'click', function( e ) {
+                if ( e.target.closest && e.target.closest( '.ms-step' ) ) sync();
+            } );
+
+            sync();
+
+        } );
+
+    }
+
     /* ---------- Log filters ---------- */
     // A changed select applies itself; the Filter button stays for the search
     // box and for a browser without script.
@@ -801,6 +859,6 @@
         setTimeout( poll, 5000 );
     }
 
-    ready( function() { initTheme(); initDrawer(); initBulk(); initRadios(); initSteppers(); initChart(); initOrderPanel(); initChecks(); initScoringProfile(); initTestConnection(); initLogFilters(); initBackfill(); } );
+    ready( function() { initTheme(); initDrawer(); initBulk(); initRadios(); initSteppers(); initChart(); initOrderPanel(); initChecks(); initScoringProfile(); initTestConnection(); initSaveBars(); initLogFilters(); initBackfill(); } );
 
 } )();

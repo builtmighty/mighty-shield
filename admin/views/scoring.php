@@ -486,12 +486,8 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
 
     </div>
 
-    <?php /* The save bar: static at the foot of the form, and pinned to the
-             bottom of the window by the script once something has changed. */ ?>
-    <div class="mshield-savebar" id="mshield-savebar">
-        <span class="ms-savebar-note" data-savebar-note aria-live="polite"></span>
-        <span class="mshield-spacer"></span>
-        <button type="submit" class="mshield-btn is-primary"><?php esc_html_e( 'Save', 'mighty-shield' ); ?></button>
-    </div>
+    <?php /* Static at the foot of the form, and pinned to the bottom of the
+             window by the script once something has changed. */ ?>
+    <?php admin_page::save_bar(); ?>
 
 </form>

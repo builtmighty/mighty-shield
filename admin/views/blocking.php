@@ -682,7 +682,7 @@ foreach( actions::keys() as $mshield_act ) {
     </div>
 
     <?php /* Outside the last section, so the Save is not trapped inside that
-             card. Matches Scoring and AI. */ ?>
-    <?php submit_button(); ?>
+             card. The same bar every settings tab ends with. */ ?>
+    <?php \MightyShield\Admin\admin_page::save_bar(); ?>
 
 </form>

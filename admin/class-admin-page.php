@@ -1682,6 +1682,36 @@ class admin_page {
     }
 
     /**
+     * The Save control that ends every settings form.
+     *
+     * One helper so the four settings tabs cannot drift again. Scoring grew
+     * its own sticky bar and the other three were still rendering WordPress's
+     * submit_button(), so the same act -- saving a tab -- looked like two
+     * different things depending on which tab you were on.
+     *
+     * Not submit_button(): that prints core's own markup and a "Save Changes"
+     * label, and no amount of CSS over the top makes it the app's button. The
+     * button carries no name; options.php keys on the option_page field and
+     * the nonce that settings_fields() writes, never on the submit.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $label  Overrides the button's text.
+     */
+    public static function save_bar( $label = '' ) {
+
+        printf(
+            '<div class="mshield-savebar" id="mshield-savebar">'
+                . '<span class="ms-savebar-note" data-savebar-note aria-live="polite"></span>'
+                . '<span class="mshield-spacer"></span>'
+                . '<button type="submit" class="mshield-btn is-primary">%s</button>'
+            . '</div>',
+            esc_html( $label !== '' ? $label : __( 'Save', 'mighty-shield' ) )
+        );
+
+    }
+
+    /**
      * The Test connection control, rendered the same way on every tab.
      *
      * A button is an action, not a setting, so it is called directly from a

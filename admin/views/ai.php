@@ -214,7 +214,7 @@ $model_select = function( $key ) {
         </table>
     </div>
 
-    <?php submit_button(); ?>
+    <?php admin_page::save_bar(); ?>
 </form>
 
 <script>
