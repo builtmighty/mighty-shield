@@ -109,7 +109,7 @@ $mshield_scoring_url = admin_url( 'admin.php?page=mighty-shield&tab=scoring' );
     <div class="mshield-work">
 
         <div class="mshield-card mshield-workcard">
-            <h2 class="mshield-card-title"><?php esc_html_e( 'Waiting for You', 'mighty-shield' ); ?></h2>
+            <h2 class="mshield-card-title"><?php esc_html_e( 'Review Ready', 'mighty-shield' ); ?></h2>
             <?php if( $mshield_waiting > 0 ) : ?>
                 <div class="ms-work-big">
                     <span class="n"><?php echo esc_html( number_format_i18n( $mshield_waiting ) ); ?></span>
@@ -155,7 +155,7 @@ $mshield_scoring_url = admin_url( 'admin.php?page=mighty-shield&tab=scoring' );
         </div>
 
         <div class="mshield-card mshield-workcard">
-            <h2 class="mshield-card-title"><?php esc_html_e( 'What your orders say', 'mighty-shield' ); ?></h2>
+            <h2 class="mshield-card-title"><?php esc_html_e( 'Order Assessment', 'mighty-shield' ); ?></h2>
             <?php if( ! $mshield_fp && ! $mshield_ov ) : ?>
                 <p class="mshield-empty"><?php esc_html_e( 'Nothing yet.', 'mighty-shield' ); ?></p>
             <?php else : ?>

@@ -1277,6 +1277,123 @@ class captcha {
     }
 
     /**
+     * Ask the provider whether it accepts this store's secret key.
+     *
+     * Deliberately NOT judge(). That method returns on an empty token before
+     * it reaches the network, and it records a degraded state and starts a
+     * daily email when the secret is refused -- right for live traffic,
+     * wrong for a button somebody pressed on purpose to find out.
+     *
+     * Both providers verify server-to-server, and their error codes separate
+     * the two failures cleanly. Sending a token that cannot be genuine and
+     * reading which complaint comes back is the whole test: a complaint about
+     * the RESPONSE means the secret was accepted and the token was refused,
+     * which is exactly what a working configuration does with a fake token.
+     *
+     * The SITE key cannot be tested from here. It is only ever used in the
+     * browser and siteverify ignores it, so this proves the secret and says
+     * so rather than implying both.
+     *
+     * @since   3.0.0
+     *
+     * @return  array   [ ok, message, tried ]
+     */
+    public static function ping() {
+
+        $result   = [ 'ok' => false, 'message' => '', 'tried' => [] ];
+        $provider = settings::get( 'mshield_captcha_provider' );
+
+        if( $provider !== 'turnstile' && $provider !== 'recaptcha_v3' ) {
+            $result['message'] = __( 'No provider is selected, so nothing is being challenged.', 'mighty-shield' );
+            return $result;
+        }
+
+        $secret = (string) settings::get( 'mshield_captcha_secret_key' );
+        $site   = (string) settings::get( 'mshield_captcha_site_key' );
+
+        if( $secret === '' ) {
+            $result['message'] = __( 'No secret key is saved. Enter it and save the page first: this tests what is stored, not what is typed.', 'mighty-shield' );
+            return $result;
+        }
+
+        $endpoint = $provider === 'turnstile' ? self::TURNSTILE_VERIFY : self::RECAPTCHA_VERIFY;
+        $name     = $provider === 'turnstile' ? 'Cloudflare Turnstile' : 'Google reCAPTCHA';
+
+        $response = wp_remote_post( $endpoint, [
+            'timeout' => 5,
+            'body'    => [ 'secret' => $secret, 'response' => 'mshield-connection-test' ],
+        ] );
+
+        if( is_wp_error( $response ) ) {
+            $result['tried'][ $provider ] = $response->get_error_message();
+            $result['message'] = sprintf(
+                /* translators: 1: provider name, 2: the transport error. */
+                __( '%1$s could not be reached from this server: %2$s', 'mighty-shield' ),
+                $name,
+                $response->get_error_message()
+            );
+            return $result;
+        }
+
+        $code = (int) wp_remote_retrieve_response_code( $response );
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+        $result['tried'][ $provider ] = 'HTTP ' . $code;
+
+        if( ! is_array( $body ) ) {
+            $result['message'] = sprintf(
+                /* translators: 1: provider name, 2: HTTP status code. */
+                __( '%1$s answered HTTP %2$d, but not in the shape its API documents.', 'mighty-shield' ),
+                $name,
+                $code
+            );
+            return $result;
+        }
+
+        $codes = ! empty( $body['error-codes'] ) ? array_map( 'sanitize_text_field', (array) $body['error-codes'] ) : [];
+
+        if( $codes ) $result['tried'][ $provider ] .= ' — ' . implode( ', ', $codes );
+
+        if( array_intersect( $codes, [ 'invalid-input-secret', 'missing-input-secret', 'bad-request' ] ) ) {
+            $result['message'] = sprintf(
+                /* translators: 1: provider name, 2: the provider's own error codes. */
+                __( '%1$s refused the secret key (%2$s). Check it against the one in your %1$s dashboard, and save the page before testing again.', 'mighty-shield' ),
+                $name,
+                implode( ', ', $codes )
+            );
+            return $result;
+        }
+
+        if( \in_array( 'internal-error', $codes, true ) ) {
+            $result['message'] = sprintf(
+                /* translators: %s: provider name. */
+                __( '%s reported a problem on its own side. Nothing is wrong with your keys; try again shortly.', 'mighty-shield' ),
+                $name
+            );
+            return $result;
+        }
+
+        // Anything else means the secret got through and the made-up token was
+        // refused, which is the working configuration.
+        $result['ok'] = true;
+
+        $result['message'] = $site === ''
+            ? sprintf(
+                /* translators: %s: provider name. */
+                __( '%s accepted the secret key. No site key is saved yet, and the challenge cannot appear on a form without one.', 'mighty-shield' ),
+                $name
+            )
+            : sprintf(
+                /* translators: %s: provider name. */
+                __( '%s accepted the secret key. The site key is used in the browser, so it is not covered by this test.', 'mighty-shield' ),
+                $name
+            );
+
+        return $result;
+
+    }
+
+    /**
      * Forget the degraded state entirely.
      *
      * The throttle goes with the option. Recovery used to delete the flag alone

@@ -313,7 +313,17 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
                                            __( 'Trust cost for %s', 'mighty-shield' ),
                                            signals::label( $key )
                                        ) ); ?>" />
-                                <span class="mshield-hint" data-check-earns<?php echo $weight < 0 ? '' : ' hidden'; ?>><?php esc_html_e( 'earns trust back', 'mighty-shield' ); ?></span>
+                                <?php /* What the number does, in the number's own words. The
+                                         script keeps this in step as the value is typed. */ ?>
+                                <span class="mshield-hint" data-check-effect><?php
+                                    if( $weight < 0 ) {
+                                        esc_html_e( 'earns trust back', 'mighty-shield' );
+                                    } elseif( (float) $weight === 0.0 ) {
+                                        esc_html_e( 'no rating', 'mighty-shield' );
+                                    } else {
+                                        esc_html_e( 'loses trust', 'mighty-shield' );
+                                    }
+                                ?></span>
                             </span>
 
                             <span class="ms-cell ms-cell-floor" role="cell">

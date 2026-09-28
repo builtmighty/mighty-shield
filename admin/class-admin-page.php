@@ -1635,8 +1635,20 @@ class admin_page {
 
         // Allowlisted, not dispatched from the request. An unknown service must
         // perform no call at all rather than falling through to a default one.
-        if( ! \in_array( $service, [ 'smarty', 'ai' ], true ) ) {
+        if( ! \in_array( $service, [ 'smarty', 'ai', 'captcha' ], true ) ) {
             wp_send_json_error( [ 'message' => __( 'Unknown service.', 'mighty-shield' ) ], 400 );
+        }
+
+        if( $service === 'captcha' ) {
+
+            $result = \MightyShield\Protection\captcha::ping();
+
+            wp_send_json_success( [
+                'ok'      => (bool) $result['ok'],
+                'message' => $result['message'],
+                'tried'   => $result['tried'],
+            ] );
+
         }
 
         if( $service === 'smarty' ) {
@@ -1682,13 +1694,13 @@ class admin_page {
      * @param   string  $service    'smarty' or 'ai'.
      * @param   string  $note       One line under the button, usually the cost.
      */
-    public static function test_button( $service, $note = '' ) {
+    public static function test_button( $service, $note = '', $label = '' ) {
 
         printf(
             '<p><button type="button" class="mshield-btn mshield-test" data-service="%s">%s</button>'
             . '<span class="mshield-test-result" aria-live="polite"></span></p>',
             esc_attr( $service ),
-            esc_html__( 'Test connection', 'mighty-shield' )
+            esc_html( $label !== '' ? $label : __( 'Test connection', 'mighty-shield' ) )
         );
 
         if( $note !== '' ) printf( '<p class="description">%s</p>', esc_html( $note ) );

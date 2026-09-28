@@ -342,10 +342,10 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <ul>
             <li><strong><?php esc_html_e( 'The protection switch.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Three positions, and the control sits at the top of every MightyShield page. Disabled means no orders are checked at all. Observing means orders are rated and recorded but nothing is refused or held because of the rating. Active means the rating decides what happens.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'The chart.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Blocked, rate limited and flagged events over 24 hours, 7 days or 30 days. Hovering gives you the numbers for any single point.', 'mighty-shield' ); ?></li>
-            <li><strong><?php esc_html_e( 'Waiting for you.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'How many orders are held or flagged and not yet decided, with the way into the Fraud Review queue.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Review Ready.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'How many orders are held or flagged and not yet decided, with the way into the Fraud Review queue.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Enforcement Audit.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The last 30 days of orders re-rated against the thresholds on Shielding: how many would have been refused, how many of those were fraud, and how many were real customers. The full breakdown is on Shielding, next to the thresholds.', 'mighty-shield' ); ?></li>
-            <li><strong><?php esc_html_e( 'What your orders say.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Checks that keep firing on orders you approved, and pairs that fire together, each with a link to that check on Scoring.', 'mighty-shield' ); ?></li>
-            <li><strong><?php esc_html_e( 'Top blocked addresses.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The busiest offenders of the past week, with where they are and a link to their log entries.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Order Assessment.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Checks that keep firing on orders you approved, and pairs that fire together, each with a link to that check on Scoring.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Top Blocked Addresses.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The busiest offenders of the past week, with where they are and a link to their log entries.', 'mighty-shield' ); ?></li>
         </ul>
         <div class="callout">
             <span class="callout-label"><?php esc_html_e( 'What Observing still does', 'mighty-shield' ); ?></span>

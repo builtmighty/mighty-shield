@@ -622,8 +622,18 @@
             if ( ! row ) return;
             changed[ row.getAttribute( 'data-key' ) ] = true;
             if ( t.hasAttribute( 'data-check-cost' ) ) {
-                var earns = row.querySelector( '[data-check-earns]' );
-                if ( earns ) earns.hidden = ! ( parseFloat( t.value ) < 0 );
+                // Say what the number does, in step with the number. An empty
+                // or half-typed box ("-") reads as nothing set rather than
+                // flickering through a wrong answer.
+                var effect = row.querySelector( '[data-check-effect]' );
+                if ( effect ) {
+                    var n = parseFloat( t.value );
+                    effect.textContent = isNaN( n )
+                        ? __( 'no rating', 'mighty-shield' )
+                        : ( n < 0 ? __( 'earns trust back', 'mighty-shield' )
+                                  : ( n === 0 ? __( 'no rating', 'mighty-shield' )
+                                              : __( 'loses trust', 'mighty-shield' ) ) );
+                }
             }
             if ( t.hasAttribute( 'data-check-on' ) ) {
                 row.classList.toggle( 'is-off', ! t.checked );

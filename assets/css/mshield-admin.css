@@ -498,6 +498,11 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-app span.mshield-hint,
 .mshield-app p.mshield-hint { font-size:11px; color:var(--fg-3); }
 .mshield-app span.mshield-hint { display:block; margin-top:5px; }
+/* An author display declaration beats the browser's own [hidden] rule, and
+   the hint above is one. Without this, every element the views hide with the
+   attribute -- the money line and the fallback note on Shielding -- showed
+   anyway. */
+.mshield-app [hidden] { display:none !important; }
 .mshield-setup-blurbs .mshield-hint { margin:0 0 7px; line-height:1.5; }
 
 .mshield-app .mshield-setup-summary { width:100%; }
@@ -1321,3 +1326,10 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
    under the control they describe. */
 .mshield-app .ms-action-detail { display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin-top:7px; }
 .mshield-app .ms-action-detail .mshield-hint { margin:0; }
+
+/* A number the plugin is stating rather than asking for: same box, muted, and
+   it does not invite a cursor. */
+.mshield-app input.mshield-readonly {
+    color:var(--fg-2); background:var(--surface-2); cursor:default;
+}
+.mshield-app input.mshield-readonly:focus { border-color:var(--line); box-shadow:none; }

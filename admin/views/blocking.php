@@ -102,7 +102,7 @@ foreach( actions::keys() as $mshield_act ) {
             <thead>
                 <tr>
                     <th><?php esc_html_e( 'Risk Level', 'mighty-shield' ); ?></th>
-                    <th style="width:110px;"><?php esc_html_e( 'Trust at or below', 'mighty-shield' ); ?></th>
+                    <th style="width:110px;"><?php esc_html_e( 'Trust Below', 'mighty-shield' ); ?></th>
                     <?php /* No AI column any more. Which levels go to review is an
                              AI-review setting, so it lives on the AI Review tab as one
                              "Send to review" control -- five pills in a row rather than
@@ -144,9 +144,14 @@ foreach( actions::keys() as $mshield_act ) {
                                    name="mshield_level_<?php echo esc_attr( $key ); ?>_threshold"
                                    value="<?php echo esc_attr( (int) $threshold ); ?>" />
                         <?php elseif( $key === risk_levels::TRUSTED ) : ?>
-                            <span class="mshield-hint" role="img"
-                                  aria-label="<?php esc_attr_e( 'Above the Low threshold', 'mighty-shield' ); ?>"
-                                  title="<?php esc_attr_e( 'Above the Low threshold', 'mighty-shield' ); ?>">+</span>
+                            <?php /* Deliberately unnamed. Trusted has no stored threshold --
+                                     it is whatever sits above Low -- so a named field inside
+                                     this form would have options.php write a setting that
+                                     does not exist on every save. readonly keeps it
+                                     uneditable; no name keeps it out of the post entirely. */ ?>
+                            <input type="number" value="100" readonly class="mshield-readonly"
+                                   aria-label="<?php esc_attr_e( 'Above the Low threshold', 'mighty-shield' ); ?>"
+                                   title="<?php esc_attr_e( 'Above the Low threshold', 'mighty-shield' ); ?>" />
                         <?php else : ?>
                             <span class="mshield-hint" role="img"
                                   aria-label="<?php esc_attr_e( 'Reachable only from a signal, never from a rating', 'mighty-shield' ); ?>"
@@ -546,6 +551,17 @@ foreach( actions::keys() as $mshield_act ) {
                 <td>
                     <input type="password" name="mshield_captcha_secret_key" class="regular-text" value="" autocomplete="off"
                            placeholder="<?php echo settings::get( 'mshield_captcha_secret_key' ) !== '' ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>" />
+                </td>
+            </tr>
+
+            <tr class="mshield-cap-keys"<?php echo $cap_provider === 'off' ? ' style="display:none;"' : ''; ?>>
+                <th scope="row"><?php esc_html_e( 'Test Challenge', 'mighty-shield' ); ?></th>
+                <td>
+                    <?php \MightyShield\Admin\admin_page::test_button(
+                        'captcha',
+                        __( 'Asks your provider whether it accepts the saved secret key. Save first.', 'mighty-shield' ),
+                        __( 'Test Challenge', 'mighty-shield' )
+                    ); ?>
                 </td>
             </tr>
 
