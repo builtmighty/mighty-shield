@@ -34,7 +34,7 @@
  * separately, as unknown.
  *
  * @package MightyShield
- * @since   2.3.0
+ * @since   3.0.0
  */
 namespace MightyShield\Includes;
 
@@ -50,7 +50,7 @@ class forecast {
      * than enough to see the shape of a store's traffic and still runs in
      * milliseconds.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const MAX_ROWS = 5000;
 
@@ -61,14 +61,14 @@ class forecast {
      * wrong size, changed their mind -- and counting them as fraud would make
      * every threshold look better than it is. Reported on its own.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const BAD = [ 'chargeback', 'denied' ];
 
     /**
      * Work out what enforcing would have done.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int         $days       How far back to look.
      * @param   array|null  $thresholds level => trust rating. Null uses what
@@ -137,7 +137,7 @@ class forecast {
     /**
      * The level a stored rating would land in under a given set of thresholds.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $row
      * @param   array   $thresholds
@@ -169,7 +169,7 @@ class forecast {
     /**
      * How an order turned out, in the three words this report uses.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $outcome
      * @return  string  bad | refunded | good | unknown
@@ -194,7 +194,7 @@ class forecast {
      * so mixing those in would forecast from numbers that were never the
      * whole picture.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $days
      * @return  array
@@ -234,7 +234,7 @@ class forecast {
      * showing it would be worse than showing nothing -- somebody would
      * enforce on it.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $f  From run().
      * @return  string  Empty when there is nothing worth saying.

@@ -32,7 +32,7 @@ Three screens, and only three, decide how an order is treated:
 |---|---|
 | **Scoring** | Every check: on or off, what it costs, whether it can force a level on its own, and its own configuration. Grouped into Identity, Network, Behavior, Order, Payment and History. |
 | **AI Review** | Provider, keys, spend cap, redaction — and **Send to review**, which picks the risk levels worth a second opinion. |
-| **Shielding** | What a score means. Six risk levels, each with a threshold and an action. Plus the Store API firewall, the bot challenge and refusal behaviour. |
+| **Shielding** | What a score means. Six risk levels, each with a threshold and an action. Plus the Store API Firewall, the bot challenge and refusal behaviour. |
 
 Dashboard, Payment, Access and Logs report or list; they do not tune scoring or blocking.
 
@@ -40,7 +40,7 @@ Dashboard, Payment, Access and Logs report or list; they do not tune scoring or 
 
 **Scoring**
 - Trust rating from 1–100 across 56 checks, each with a cost you control and a "how often it fired on your traffic" column to tune against
-- Scoring profiles (Balanced / Cautious / Strict) that set every cost at once, with Custom appearing on its own the moment you change a row
+- Scoring Profiles (Balanced / Cautious / Strict) that set every cost at once, with Custom appearing on its own the moment you change a row
 - Identity — disposable and role email addresses, domains that cannot receive mail, fake-looking addresses, ZIP/state mismatches, USPS verification via Smarty, drop-address velocity
 - Network — IP blocklist, temporary blocks, datacenter and VPN detection, geolocation mismatch
 - Behavior — invisible honeypot, HMAC-signed checkout timer, device fingerprinting, automated-browser detection, Cloudflare Turnstile or Google reCAPTCHA v3
@@ -66,7 +66,7 @@ Dashboard, Payment, Access and Logs report or list; they do not tune scoring or 
 - Send only the levels you choose; optionally redact customer details so names and addresses never leave your site
 
 **Firewall and access**
-- Store API firewall with allowlist and blocklist modes, auto-detected against which checkout your store actually uses
+- Store API Firewall with allowlist and blocklist modes, auto-detected against which checkout your store actually uses
 - Allowlist by IP/CIDR, WordPress user, role or email — allowlisted entities bypass every check
 - Persistent IP blocklist with CIDR support and one-click blocking from the logs
 

@@ -149,7 +149,7 @@ class settings {
         // Send the shape of the customer's details to the AI provider rather
         // than the details themselves.
         //
-        // ON by default since 2.3.0. It shipped off, on the reasoning that it
+        // ON by default since 3.0.0. It shipped off, on the reasoning that it
         // costs some accuracy and the choice belongs to the store. Both halves
         // of that are still true, but they are the wrong way round for a
         // default: the store is opting somebody ELSE's name, street, email,
@@ -176,7 +176,7 @@ class settings {
         'mshield_ai_velocity_days'          => 30,
         // 0 means "learn it from this store's own completed orders", which
         // is what the Scoring tab's label and the readme have promised since
-        // 2.3.0 -- but the field shipped as 500.00, so the learned figure was
+        // 3.0.0 -- but the field shipped as 500.00, so the learned figure was
         // computed nightly and never once read. 500.00 still stands in until
         // there are enough orders to learn from; see order_signals.
         'mshield_ai_high_value_amount'      => '0',
@@ -234,11 +234,11 @@ class settings {
      *
      * One switch for every alert -- a badly rated AI review, a service that
      * has stopped answering, a bot challenge refusing everybody, a wave of
-     * declines -- which is what the setup wizard says it is. Until 2.3.0 only
+     * declines -- which is what the setup wizard says it is. Until 3.0.0 only
      * the AI verdict email honoured it and the service alerts went to the
      * site administrator address regardless of what was set.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  bool
      */

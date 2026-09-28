@@ -294,7 +294,7 @@ class email_domain_blocker {
          * The full disposable-domain list, after the built-in and
          * merchant-configured lists are merged.
          *
-         * @since   2.3.0
+         * @since   3.0.0
          *
          * @param   string[]    $domains    Lowercase domain names.
          */
@@ -307,7 +307,7 @@ class email_domain_blocker {
         $domains = apply_filters_deprecated(
             'mighty_shield_blocked_email_domains',
             [ $domains ],
-            '2.3.0',
+            '3.0.0',
             'mshield_blocked_email_domains'
         );
 

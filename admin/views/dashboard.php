@@ -109,7 +109,7 @@ $mshield_scoring_url = admin_url( 'admin.php?page=mighty-shield&tab=scoring' );
     <div class="mshield-work">
 
         <div class="mshield-card mshield-workcard">
-            <h2 class="mshield-card-title"><?php esc_html_e( 'Waiting for you', 'mighty-shield' ); ?></h2>
+            <h2 class="mshield-card-title"><?php esc_html_e( 'Waiting for You', 'mighty-shield' ); ?></h2>
             <?php if( $mshield_waiting > 0 ) : ?>
                 <div class="ms-work-big">
                     <span class="n"><?php echo esc_html( number_format_i18n( $mshield_waiting ) ); ?></span>
@@ -123,7 +123,7 @@ $mshield_scoring_url = admin_url( 'admin.php?page=mighty-shield&tab=scoring' );
         </div>
 
         <div class="mshield-card mshield-workcard">
-            <h2 class="mshield-card-title"><?php esc_html_e( 'If you enforced these thresholds', 'mighty-shield' ); ?></h2>
+            <h2 class="mshield-card-title"><?php esc_html_e( 'Enforcement Audit', 'mighty-shield' ); ?></h2>
             <?php if( '' === $mshield_say ) : ?>
                 <p class="mshield-empty">
                     <?php
@@ -222,7 +222,7 @@ $mshield_scoring_url = admin_url( 'admin.php?page=mighty-shield&tab=scoring' );
     <div class="mshield-card is-flush">
         <div class="mshield-card-head">
             <div>
-                <h2 class="mshield-card-title"><?php esc_html_e( 'Top blocked addresses', 'mighty-shield' ); ?></h2>
+                <h2 class="mshield-card-title"><?php esc_html_e( 'Top Blocked Addresses', 'mighty-shield' ); ?></h2>
                 <div class="mshield-card-sub"><?php esc_html_e( 'Past 7 days', 'mighty-shield' ); ?></div>
             </div>
             <span class="mshield-spacer"></span>

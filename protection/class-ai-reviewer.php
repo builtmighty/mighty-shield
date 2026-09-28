@@ -570,7 +570,7 @@ class ai_reviewer {
     /**
      * One fenced line of customer-typed data for the prompt.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $name
      * @param   string  $value
@@ -585,7 +585,7 @@ class ai_reviewer {
     /**
      * Flatten customer text to a single bounded line with no tag delimiters.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $value
      * @return  string
@@ -647,7 +647,7 @@ class ai_reviewer {
 
         foreach( $rows as $type => $row ) {
 
-            // Paid orders, since 2.3.0 -- the count no longer moves when an
+            // Paid orders, since 3.0.0 -- the count no longer moves when an
             // order is merely created. Ten declined cards through one mailbox
             // used to read here as "ten previous orders, all without
             // incident", the strongest possible nudge towards "safe".

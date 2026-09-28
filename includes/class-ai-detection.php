@@ -35,7 +35,7 @@ class ai_detection {
      * Changing this changes every address hash, which is why schema 10
      * re-hashes the graph in place: see entities::maybe_rehash_addresses().
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     private const ADDRESS_TOKENS = [
         // Suffixes.

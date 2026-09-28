@@ -29,19 +29,19 @@ class ip_whitelist {
      * they are answerable from the request itself, and each has its own
      * dedicated is_*_whitelisted() method.
      *
-     * The rest arrived in 2.3.0 and are about the ORDER. They cannot be
+     * The rest arrived in 3.0.0 and are about the ORDER. They cannot be
      * answered from a request alone -- there is no "current postcode" -- so
      * they are matched together by matches_fields() against the order in
      * hand, which is why they have no methods of their own.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const TYPES = [ 'ip', 'user', 'email', 'role', 'phone', 'name', 'postcode', 'city', 'country' ];
 
     /**
      * The order-field types, and which normalised field each one reads.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const FIELD_TYPES = [
         'phone'    => 'phone',
@@ -59,7 +59,7 @@ class ip_whitelist {
      * phone number added as "(212) 555-0147" and removed as "212 555 0147"
      * were two different strings and the remove silently did nothing.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $type
      * @param   mixed   $value
@@ -161,7 +161,7 @@ class ip_whitelist {
      * allowlisted for a trade customer should match whichever box they put
      * it in.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      * @return  bool
@@ -193,7 +193,7 @@ class ip_whitelist {
      * Split from matches_order() so the checkout path, which has posted data
      * rather than an order, can ask the same question.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $fields     type => raw value.
      * @return  bool

@@ -43,7 +43,7 @@ class outcomes {
      * How long an order sits in Processing before it counts as settled, in
      * seconds. Fourteen days: the common card-refund window.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const SETTLED_AFTER = 1209600;
 
@@ -289,7 +289,7 @@ class outcomes {
      * The weight the outcome currently on an order was recorded with, when a
      * caller chose one; null means "whatever OUTCOME_WEIGHTS says".
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      * @return  float|null
@@ -342,7 +342,7 @@ class outcomes {
      * never fires the first. count_paid() marks the order, so whichever
      * arrives first counts and the rest add nothing.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $order_id
      */
@@ -406,7 +406,7 @@ class outcomes {
      * settled as surely as a completed one. Daily, a batch at a time; an
      * order stops matching the moment it has an outcome, so this converges.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public static function credit_settled_orders() {
 

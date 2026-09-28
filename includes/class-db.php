@@ -38,7 +38,7 @@ class db {
      * and the point of introducing this was to stop the cache expiring in step
      * with the log. See cleanup().
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const IP_DATA_TTL_DAYS = 90;
 
@@ -1222,7 +1222,7 @@ class db {
      * Rows inside a daylight-saving change within the window land an hour
      * off; that is the cost of a chart that works on every host.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  string  e.g. '-04:00'
      */
@@ -1381,7 +1381,7 @@ class db {
      * Rows that DID resolve are left alone: an ASN answer does not go stale in
      * the week between database refreshes.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  int     Rows dropped.
      */
@@ -1405,7 +1405,7 @@ class db {
      * Below this a percentile is just "the biggest of a handful", which moves
      * every time anybody buys anything. Better to say nothing.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const HIGH_VALUE_MIN_ORDERS = 40;
 
@@ -1428,7 +1428,7 @@ class db {
      * fraudulent ones, so including them would teach the store that fraud is
      * normal.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  float   The figure written, or 0.0 when there was nothing to learn.
      */
@@ -1601,7 +1601,7 @@ class db {
      * Batched and select-then-delete for the same reason prune_entities() is:
      * a multi-table DELETE cannot take a LIMIT.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     private static function prune_risk() {
 
@@ -1652,7 +1652,7 @@ class db {
      *
      * This ran nowhere until 2.2.0. The two entity tables were among the ones
      * the daily cleanup did not touch — mshield_risk was the other, and was not
-     * pruned until 2.3.0, so the claim this sentence used to make was wrong
+     * pruned until 3.0.0, so the claim this sentence used to make was wrong
      * when it was written. They grow on every checkout — this
      * store had 6,072 identities and 19,579 links with no upper bound. Now that
      * refused checkouts are recorded too, every throwaway address a bot invents

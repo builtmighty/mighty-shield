@@ -73,13 +73,13 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
 
 <div class="mshield-section">
 
-    <h2><?php esc_html_e( 'Scoring profile', 'mighty-shield' ); ?></h2>
+    <h2><?php esc_html_e( 'Scoring Profile', 'mighty-shield' ); ?></h2>
 
     <?php /* The same sliding switch the hero uses for protection state,
              widened to four text labels. The knob carries the colour of what
              the profile does, borrowed from the risk levels. */ ?>
     <div class="mshield-tri is-full at-<?php echo esc_attr( $mshield_now ); ?>"
-         role="radiogroup" aria-label="<?php esc_attr_e( 'Scoring profile', 'mighty-shield' ); ?>">
+         role="radiogroup" aria-label="<?php esc_attr_e( 'Scoring Profile', 'mighty-shield' ); ?>">
 
         <span class="ms-knob" aria-hidden="true"></span>
 
@@ -128,7 +128,7 @@ $mshield_dirty = scoring_profiles::hand_tuned_count();
 
 <div class="mshield-section">
 
-    <h2><?php esc_html_e( 'Trust rating', 'mighty-shield' ); ?></h2>
+    <h2><?php esc_html_e( 'Trust Rating', 'mighty-shield' ); ?></h2>
 
     <p class="description">
         <?php esc_html_e( 'Every order is rated from 1 to 100.', 'mighty-shield' ); ?>

@@ -11,7 +11,7 @@
  *
  * What it replaced, and why
  * -------------------------
- * Until 2.3.0 this asked ip-api.com over HTTPS on every uncached address. Two
+ * Until 3.0.0 this asked ip-api.com over HTTPS on every uncached address. Two
  * things were wrong with that, and each one alone was fatal:
  *
  *   1. It never worked. TLS is a paid feature there, and the free endpoint
@@ -57,7 +57,7 @@ class ip_data {
      * GeoLite2-Country for its own purposes; it has no interest in ASN, so
      * this one is on us.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const ASN_EDITION = 'GeoLite2-ASN';
 
@@ -65,7 +65,7 @@ class ip_data {
      * How often to re-download the ASN database. MaxMind republish weekly, so
      * anything shorter is bandwidth spent to learn nothing.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const ASN_TTL_DAYS = 7;
 
@@ -80,7 +80,7 @@ class ip_data {
      * as the CLIENT address means ip_utils could not see past the edge, which
      * is a configuration problem rather than evidence about the shopper.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const HOSTING_PATTERNS = [
         'amazon', 'aws', 'google cloud', 'microsoft azure', 'azure',
@@ -165,7 +165,7 @@ class ip_data {
      * stops re-resolving the same address on every request, and the tri-state
      * below keeps "we do not know" distinct from "no".
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $ip     IP address.
      * @return  array|null       Normalized data, or null when the IP is unusable.
@@ -214,7 +214,7 @@ class ip_data {
      * $fallback, which WooCommerce itself documents as "can be slower"; this
      * runs on checkout.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $ip
      * @return  string  Uppercase ISO country code, or '' when unknown.
@@ -234,7 +234,7 @@ class ip_data {
     /**
      * Autonomous system for an address, from our GeoLite2-ASN copy.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $ip
      * @return  array|null  [ 'org' => string, 'asname' => string ], or null.
@@ -286,7 +286,7 @@ class ip_data {
     /**
      * Whether an ASN organisation name reads as a hosting provider.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $org
      * @return  bool
@@ -303,7 +303,7 @@ class ip_data {
          * Additional hosting-provider substrings, matched against the
          * lowercased ASN organisation name.
          *
-         * @since   2.3.0
+         * @since   3.0.0
          *
          * @param   string[]    $extra  Lowercase substrings. Default empty.
          * @param   string      $org    The organisation name being tested.
@@ -326,7 +326,7 @@ class ip_data {
      * it uses, so the file is not guessable over HTTP on a misconfigured host.
      * Falls back to our own stored prefix when WooCommerce has none yet.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  string
      */
@@ -358,7 +358,7 @@ class ip_data {
      * Read straight from the option rather than by constructing the
      * integration class, which is only loaded on the settings screen.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $key
      * @return  string
@@ -379,7 +379,7 @@ class ip_data {
      * Used by the admin to explain a quiet signal rather than let a merchant
      * conclude their traffic is clean when nothing is actually being checked.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  array   [ 'country' => bool, 'asn' => bool, 'key' => bool ]
      */
@@ -402,7 +402,7 @@ class ip_data {
      * Hooked to the daily cleanup cron. Cheap to call: it is one filemtime in
      * the common case.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  true|\WP_Error|null  Null when there is nothing to do.
      */
@@ -440,7 +440,7 @@ class ip_data {
      * Modelled on WC_Integration_MaxMind_Database_Service::download_database(),
      * which is hardcoded to the Country edition and so cannot be reused.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $license_key
      * @return  true|\WP_Error

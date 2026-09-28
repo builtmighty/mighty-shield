@@ -246,7 +246,7 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
     $mshield_bf_run = 'running' === $mshield_bf['status'];
     ?>
     <div class="mshield-card" id="mshield-backfill"<?php echo $mshield_bf_run ? ' data-running="1"' : ''; ?>>
-        <h2 class="mshield-card-title"><?php esc_html_e( 'Rate past orders', 'mighty-shield' ); ?></h2>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Rate Past Orders', 'mighty-shield' ); ?></h2>
 
         <?php if( $mshield_bf_run ) : ?>
 
@@ -300,7 +300,7 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
                         <option value="0"><?php esc_html_e( 'Everything', 'mighty-shield' ); ?></option>
                     </select>
                 </label>
-                <button type="submit" name="mshield_backfill_start" value="1" class="mshield-btn"><?php esc_html_e( 'Rate past orders', 'mighty-shield' ); ?></button>
+                <button type="submit" name="mshield_backfill_start" value="1" class="mshield-btn"><?php esc_html_e( 'Rate Past Orders', 'mighty-shield' ); ?></button>
             </form>
 
         <?php endif; ?>
@@ -309,7 +309,7 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
     <!-- Chargeback import -->
     <?php $mshield_dis = get_transient( \MightyShield\Includes\dispute_import::preview_key() ); ?>
     <div class="mshield-card">
-        <h2 class="mshield-card-title"><?php esc_html_e( 'Import chargebacks', 'mighty-shield' ); ?></h2>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Import Chargebacks', 'mighty-shield' ); ?></h2>
 
         <?php if( is_array( $mshield_dis ) ) : ?>
 
@@ -408,7 +408,7 @@ $export_url = wp_nonce_url( add_query_arg( array_filter( [
              group -- registering an option to a group with no field submitting it
              makes options.php write null over it on every save of that group. */ ?>
     <div class="mshield-card" id="mshield-log-settings">
-        <h2 class="mshield-card-title"><?php esc_html_e( 'Alerts and logs', 'mighty-shield' ); ?></h2>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Alerts and Logs', 'mighty-shield' ); ?></h2>
         <form method="post" action="options.php">
             <?php settings_fields( 'mshield_logs' ); ?>
             <table class="form-table" role="presentation">

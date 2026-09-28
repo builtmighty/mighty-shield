@@ -58,7 +58,7 @@ $current_ip = ip_utils::get_client_ip();
         <p class="mshield-empty"><?php esc_html_e( 'Nothing has been blocked yet.', 'mighty-shield' ); ?></p>
     <?php else : ?>
         <?php
-        // A blocklist row has held a type since 2.3.0; rows written before
+        // A blocklist row has held a type since 3.0.0; rows written before
         // that have only an 'ip' key. normalize_entry() reads both shapes, so
         // this table does not need to know which it is looking at.
         $mshield_type_labels = [

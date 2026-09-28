@@ -199,12 +199,12 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <div class="nav-title"><?php esc_html_e( 'Getting started', 'mighty-shield' ); ?></div>
         <a href="#overview"><?php esc_html_e( 'Overview', 'mighty-shield' ); ?></a>
         <a href="#lifecycle"><?php esc_html_e( 'How an order is judged', 'mighty-shield' ); ?></a>
-        <a href="#quick-start"><?php esc_html_e( 'Quick start', 'mighty-shield' ); ?></a>
+        <a href="#quick-start"><?php esc_html_e( 'Quick Start', 'mighty-shield' ); ?></a>
         <a href="#actions"><?php esc_html_e( 'What MightyShield can do', 'mighty-shield' ); ?></a>
 
         <div class="nav-title"><?php esc_html_e( 'Screens', 'mighty-shield' ); ?></div>
         <a href="#dashboard"><?php esc_html_e( 'Dashboard', 'mighty-shield' ); ?></a>
-        <a href="#widget"><?php esc_html_e( 'Dashboard widget', 'mighty-shield' ); ?></a>
+        <a href="#widget"><?php esc_html_e( 'Dashboard Widget', 'mighty-shield' ); ?></a>
         <a href="#scoring"><?php esc_html_e( 'Scoring', 'mighty-shield' ); ?></a>
         <a href="#ai"><?php esc_html_e( 'AI Review', 'mighty-shield' ); ?></a>
         <a href="#blocking"><?php esc_html_e( 'Shielding', 'mighty-shield' ); ?></a>
@@ -213,17 +213,17 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <a href="#logs"><?php esc_html_e( 'Logs', 'mighty-shield' ); ?></a>
 
         <div class="nav-title"><?php esc_html_e( 'Working orders', 'mighty-shield' ); ?></div>
-        <a href="#order-panel"><?php esc_html_e( 'On an order', 'mighty-shield' ); ?></a>
+        <a href="#order-panel"><?php esc_html_e( 'On an Order', 'mighty-shield' ); ?></a>
         <a href="#review-queue"><?php esc_html_e( 'Fraud Review', 'mighty-shield' ); ?></a>
         <a href="#memory"><?php esc_html_e( 'How it learns', 'mighty-shield' ); ?></a>
 
         <div class="nav-title"><?php esc_html_e( 'Help', 'mighty-shield' ); ?></div>
-        <a href="#situations"><?php esc_html_e( 'Common situations', 'mighty-shield' ); ?></a>
+        <a href="#situations"><?php esc_html_e( 'Common Situations', 'mighty-shield' ); ?></a>
     </aside>
 
     <main class="mshield-docs-main">
 
-        <h2 class="mshield-docs-title"><?php esc_html_e( 'The manual', 'mighty-shield' ); ?></h2>
+        <h2 class="mshield-docs-title"><?php esc_html_e( 'The Manual', 'mighty-shield' ); ?></h2>
         <p class="lede"><?php esc_html_e( 'MightyShield works 24/7 to keep bots, card testers, scammers, fraudsters, and the people running stolen cards from making more work for you, so that you can get on with selling instead of cleaning up after them. It is built to be fine-tuned to your customers rather than somebody else\'s, and everything below explains how to do that by specifying what each setting does and when to reach for it.', 'mighty-shield' ); ?></p>
 
         <h2 id="overview"><?php esc_html_e( 'Overview', 'mighty-shield' ); ?></h2>
@@ -294,7 +294,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <p><?php esc_html_e( 'An order starts at 100 and spends trust as checks notice things. But an order with nothing known about the customer is capped at 94, which is Low. The top of the scale has to be earned by a clean run of past orders, because knowing nothing about someone is not the same as trusting them.', 'mighty-shield' ); ?></p>
         </div>
 
-        <h2 id="quick-start"><?php esc_html_e( 'Quick start', 'mighty-shield' ); ?></h2>
+        <h2 id="quick-start"><?php esc_html_e( 'Quick Start', 'mighty-shield' ); ?></h2>
 
         <p>
             <?php
@@ -343,7 +343,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <li><strong><?php esc_html_e( 'The protection switch.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Three positions, and the control sits at the top of every MightyShield page. Disabled means no orders are checked at all. Observing means orders are rated and recorded but nothing is refused or held because of the rating. Active means the rating decides what happens.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'The chart.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Blocked, rate limited and flagged events over 24 hours, 7 days or 30 days. Hovering gives you the numbers for any single point.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Waiting for you.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'How many orders are held or flagged and not yet decided, with the way into the Fraud Review queue.', 'mighty-shield' ); ?></li>
-            <li><strong><?php esc_html_e( 'If you enforced these thresholds.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The last 30 days of orders re-rated against the thresholds on Shielding: how many would have been refused, how many of those were fraud, and how many were real customers. The full breakdown is on Shielding, next to the thresholds.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Enforcement Audit.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The last 30 days of orders re-rated against the thresholds on Shielding: how many would have been refused, how many of those were fraud, and how many were real customers. The full breakdown is on Shielding, next to the thresholds.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'What your orders say.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Checks that keep firing on orders you approved, and pairs that fire together, each with a link to that check on Scoring.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Top blocked addresses.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The busiest offenders of the past week, with where they are and a link to their log entries.', 'mighty-shield' ); ?></li>
         </ul>
@@ -352,7 +352,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <p><?php esc_html_e( 'In Observing nothing is refused or held because of what MightyShield worked out. An order that trips the hidden trap field is rated Rejected, recorded as such, and still goes through — that is the point, so you can see what enforcing would have done before it does it. What still acts are your own lists: an address on your blocklist is refused, and the Store API firewall keeps whichever mode you set, because those are instructions you gave, not ratings.', 'mighty-shield' ); ?></p>
         </div>
 
-        <h2 id="widget"><?php esc_html_e( 'Dashboard widget', 'mighty-shield' ); ?></h2>
+        <h2 id="widget"><?php esc_html_e( 'Dashboard Widget', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'A summary on the main WordPress dashboard, so the state of your protection is the first thing you see when you log in. It reports and does not change anything.', 'mighty-shield' ); ?></p>
         <ul>
             <li><strong><?php esc_html_e( 'The status stripe.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Disabled, Observing or Active. There is no switch on it, because changing that belongs on the screen that explains what the three mean.', 'mighty-shield' ); ?></li>
@@ -364,7 +364,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <h2 id="scoring"><?php esc_html_e( 'Scoring', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'Every check in one table, with what it costs and how often it has actually fired on your traffic. This is where you tune MightyShield to your own customers.', 'mighty-shield' ); ?></p>
 
-        <h3><?php esc_html_e( 'Scoring profiles', 'mighty-shield' ); ?></h3>
+        <h3><?php esc_html_e( 'Scoring Profiles', 'mighty-shield' ); ?></h3>
         <p><?php esc_html_e( 'If you would rather not judge every check one at a time, pick a profile at the top of the tab and it sets every trust cost at once. You can still change any individual row afterwards.', 'mighty-shield' ); ?></p>
         <ul>
             <li><strong><?php esc_html_e( 'Balanced.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'What most stores should use, and what MightyShield ships with. Catches the obvious attacks and leaves ordinary customers alone.', 'mighty-shield' ); ?></li>
@@ -385,7 +385,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <li><strong><?php esc_html_e( 'History.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'What you already know about the people behind the order, from the orders they placed before this one. The only group that can give trust back as well as take it.', 'mighty-shield' ); ?></li>
         </ul>
 
-        <h3><?php esc_html_e( 'Reading the grid', 'mighty-shield' ); ?></h3>
+        <h3><?php esc_html_e( 'Reading the Grid', 'mighty-shield' ); ?></h3>
         <ul>
             <li><strong><?php esc_html_e( 'On or off.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Switching a check off stops it contributing anything at all. Prefer lowering its cost first, so it still counts for something.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Trust cost.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'How much of the 100 an order loses when this check notices something. A check that is only partly sure costs proportionally less, which is what lets several small concerns add up without any one of them taking over.', 'mighty-shield' ); ?></li>
@@ -466,7 +466,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <li><strong><?php esc_html_e( 'Add your own line to the end of every refusal.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The three refusal messages are shown above the box so you can see what a refused customer reads. They are deliberately vague, and that vagueness is what stops an attacker learning anything from them. The cost is paid by the occasional real customer who gets caught by mistake and has no idea who to talk to. Put your phone number or your support address here and it is added to the end of every refusal, whatever caused it. Links work, so the number can be tapped on a phone. Leave it empty and nothing changes.', 'mighty-shield' ); ?></li>
         </ul>
 
-        <h3><?php esc_html_e( 'Store API firewall', 'mighty-shield' ); ?></h3>
+        <h3><?php esc_html_e( 'Store API Firewall', 'mighty-shield' ); ?></h3>
         <p><?php esc_html_e( 'This controls access to the WooCommerce cart and checkout endpoints, and it is the one setting here that can close your shop if it is set wrongly.', 'mighty-shield' ); ?></p>
         <ul>
             <li><strong><?php esc_html_e( 'Allowlist mode.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Refuses those endpoints to everyone who is not on your allowlist. Right for a store using the classic checkout, where customers never touch them. On a store whose checkout page uses the Checkout block, this mode steps aside for the cart and checkout endpoints, because that checkout is built on them; the rating protects them instead, and the mode still governs every other Store API route.', 'mighty-shield' ); ?></li>
@@ -520,7 +520,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <li><strong><?php esc_html_e( 'Export.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Downloads the current filtered view as a spreadsheet file.', 'mighty-shield' ); ?></li>
         </ul>
 
-        <h2 id="order-panel"><?php esc_html_e( 'On an order', 'mighty-shield' ); ?></h2>
+        <h2 id="order-panel"><?php esc_html_e( 'On an Order', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'Open any order and MightyShield is in the right hand column, above the fold. Everything it knows about that order is there, and everything you can do about it.', 'mighty-shield' ); ?></p>
         <ul>
             <li><strong><?php esc_html_e( 'The rating.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The dial at the top is the same 1 to 100 scale as the Scoring tab, coloured to match. Underneath are the checks that actually tripped, worst first, with what each one cost.', 'mighty-shield' ); ?></li>
@@ -569,7 +569,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <p><?php esc_html_e( 'One thing does outrank your verdict, and it should: a chargeback. If you release an order and the bank later takes the money back, that is recorded against everyone connected to it, exactly as it would be on any other order. Your judgement stands until reality contradicts it.', 'mighty-shield' ); ?></p>
         </div>
 
-        <h2 id="situations"><?php esc_html_e( 'Common situations', 'mighty-shield' ); ?></h2>
+        <h2 id="situations"><?php esc_html_e( 'Common Situations', 'mighty-shield' ); ?></h2>
 
         <h3><?php esc_html_e( 'A real customer was blocked', 'mighty-shield' ); ?></h3>
         <p><?php printf( wp_kses_post( __( 'Find them in the <a href="%1$s">Logs</a> and read the reason. Allowlist their address from the detail panel if it was a one off. If the same check is catching several real customers, open <a href="%2$s">Scoring</a>, find that check, and either lower its cost or switch it off. If a threshold is the problem, raise it on <a href="%3$s">Shielding</a>.', 'mighty-shield' ) ), esc_url( $logs_url ), esc_url( $scoring_url ), esc_url( $blocking_url ) ); ?></p>

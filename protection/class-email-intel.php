@@ -67,7 +67,7 @@ class email_intel {
      * resolver hiccup marked gmail.com undeliverable for every customer until
      * it expired.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const DNS_NEGATIVE_CACHE = HOUR_IN_SECONDS;
 

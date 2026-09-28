@@ -655,7 +655,7 @@ class admin_page {
      */
     public static function refusal_note_tags() {
 
-        // The list moved to response in 2.3.0, which is where the note is
+        // The list moved to response in 3.0.0, which is where the note is
         // actually rendered. Kept as a passthrough so anything already calling
         // it by this name keeps working, and so the save-time sanitizer and
         // the render-time one can never drift apart.
@@ -686,7 +686,7 @@ class admin_page {
      * Back to the log the merchant was reading, with its filters and page,
      * when that is where they came from; otherwise the list they changed.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $tab    The Access tab alias to fall back to.
      * @return  string  URL.
@@ -780,7 +780,7 @@ class admin_page {
             $value = sanitize_text_field( isset( $_POST['mshield_block_new_ip'] ) ? wp_unslash( $_POST['mshield_block_new_ip'] ) : '' );
             $label = sanitize_text_field( isset( $_POST['mshield_block_new_ip_label'] ) ? wp_unslash( $_POST['mshield_block_new_ip_label'] ) : '' );
 
-            // The form gained a type selector in 2.3.0. Absent means the
+            // The form gained a type selector in 3.0.0. Absent means the
             // request came from somewhere that predates it, and 'ip' is what
             // that somewhere could have meant.
             $type = isset( $_POST['mshield_block_new_type'] )
@@ -823,7 +823,7 @@ class admin_page {
 
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_block_remove_ip'] ) );
 
-                // The type arrived alongside from 2.3.0. A link rendered by an
+                // The type arrived alongside from 3.0.0. A link rendered by an
                 // older page, or a bookmark, carries only the value -- and for
                 // those 'ip' is the right answer, because that is all the list
                 // could hold when the link was made.
@@ -1140,7 +1140,7 @@ class admin_page {
      * delete it. This keeps it in the system temp directory, which is not
      * web-served, and the caller deletes it as soon as it has been read.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $field  The file input's name.
      * @return  string|\WP_Error  Path to the moved file.
@@ -1341,7 +1341,7 @@ class admin_page {
     public static function enqueue_app_assets() {
 
         // Design-system fonts (Public Sans + JetBrains Mono), served from this
-        // plugin. These came from fonts.googleapis.com until 2.3.0, which the
+        // plugin. These came from fonts.googleapis.com until 3.0.0, which the
         // plugin directory does not allow -- assets ship with the plugin -- and
         // which also meant every admin page load handed the merchant's IP to a
         // third party to render a screen.
@@ -1360,7 +1360,7 @@ class admin_page {
 
         // The script translates its own strings through wp.i18n, so a language
         // pack from WordPress.org reaches them the same way it reaches the PHP.
-        // Until 2.3.0 the strings were handed over in a wp_localize_script map,
+        // Until 3.0.0 the strings were handed over in a wp_localize_script map,
         // and a dozen of them -- the chart titles, the tooltip legend, the
         // theme labels, the profile-switch confirmation -- were never in it.
         wp_enqueue_script( 'mshield-admin', MSHIELD_URI . 'assets/js/mshield-admin.js', [ 'wp-i18n' ], $js_ver, [ 'in_footer' => true ] );
@@ -1699,7 +1699,7 @@ class admin_page {
      * AJAX: the state of the past-orders rating run, for the Logs card to
      * keep its counter moving without a reload.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public function ajax_backfill_state() {
 
@@ -2093,7 +2093,7 @@ class admin_page {
      * submission are read here, so a High above Elevated is pulled back to
      * one below it and the ladder always reads rejected < high < elevated < low.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $level
      * @param   mixed   $value

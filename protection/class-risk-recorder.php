@@ -248,7 +248,7 @@ class risk_recorder {
      * Put the identity history into the context before the AI reviewer reads
      * it. Classic path: the identities come from the posted fields.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array       $data
      * @param   \WP_Error   $errors
@@ -269,7 +269,7 @@ class risk_recorder {
     /**
      * The same, from the draft order on the Store API path.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order           $order
      * @param   \WP_REST_Request    $request
@@ -317,7 +317,7 @@ class risk_recorder {
      * mailbox with the chargeback -- are what refuse the next attempt; the
      * address block only has to make the immediate retry expensive.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const BAN_BLOCK_SECONDS = DAY_IN_SECONDS;
 
@@ -330,7 +330,7 @@ class risk_recorder {
      * tomorrow.
      *
      * @since   1.9.0
-     * @since   2.3.0 A day-long temporary block rather than a permanent entry.
+     * @since   3.0.0 A day-long temporary block rather than a permanent entry.
      */
     private function persist_ban() {
 
@@ -361,7 +361,7 @@ class risk_recorder {
      *
      * This used to be the one place on the classic checkout path that made an
      * outbound HTTP request, and it did so with a five-second timeout against
-     * an endpoint that answered 403 every time. Since 2.3.0 it is a local
+     * an endpoint that answered 403 every time. Since 3.0.0 it is a local
      * MaxMind database read. See includes/class-ip-data.php.
      *
      * @since   1.9.0

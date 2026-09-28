@@ -28,7 +28,7 @@ class signals {
     /**
      * Signal group keys, in display order.
      *
-     * Keys only since 2.3.0. The labels moved to groups(), because a const
+     * Keys only since 3.0.0. The labels moved to groups(), because a const
      * cannot hold a __() call and these are column headings on the Scoring
      * tab. Anything that renders should call groups(); this is for code that
      * only needs the order or the set.
@@ -47,7 +47,7 @@ class signals {
      *         'none' means the signal only contributes weight.
      *
      * The label and the description used to live here too, and moved to
-     * strings() in 2.3.0: a const array cannot hold a __() call, so keeping
+     * strings() in 3.0.0: a const array cannot hold a __() call, so keeping
      * them here made every one of them permanently English. What is left is
      * the part that is not language, which is also the part the checkout path
      * reads — so the hot path still touches a const and nothing else.
@@ -247,7 +247,7 @@ class signals {
             'weight' => 25.0,
             'floor'  => 'none',
         ],
-        // ip_proxy was removed in 2.3.0. It is not a judgement about VPNs
+        // ip_proxy was removed in 3.0.0. It is not a judgement about VPNs
         // changing — it is that there was never anything behind it.
         //
         // The data came from ip-api.com over HTTPS, which that service answers
@@ -712,7 +712,7 @@ class signals {
      * Nothing calls this. It exists to be read by tooling, and to fail
      * loudly in review if somebody adds a field and forgets its string.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @codeCoverageIgnore
      */
@@ -773,7 +773,7 @@ class signals {
      * cannot see. settings_strings() above exists to make them visible to it;
      * nothing calls it.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $field
      * @return  array
@@ -899,7 +899,7 @@ class signals {
      * Built once per request. CATALOG keeps the part that is not language:
      * the group, the weight and the floor.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  array   key => [ 'label' => string, 'desc' => string ]
      */
@@ -1214,7 +1214,7 @@ class signals {
      * Replaces the GROUPS const for anything that renders. GROUP_KEYS below
      * is still the const, for code that only needs the order.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  array   group key => label
      */

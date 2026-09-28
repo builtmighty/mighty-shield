@@ -217,7 +217,7 @@ class response {
      * would mean a merchant pasting a list, seeing it work on one checkout,
      * and never learning it silently vanished on the other.
      *
-     * Lives here rather than on the admin page, which owned it until 2.3.0.
+     * Lives here rather than on the admin page, which owned it until 3.0.0.
      * The list is a fact about the two renderers, and with_note() -- the thing
      * that actually renders -- runs on the front end, where admin classes are
      * not loaded. Naming it across that boundary was a fatal error waiting for
@@ -663,7 +663,7 @@ class response {
      * no separate figure to set; the thresholds already say what "bad" means
      * on this store.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      * @param   array       $verdict    From risk_context::evaluate().
@@ -882,7 +882,7 @@ class response {
      * least one signal that actually cost trust: more than 5 points, which is
      * the ceiling the catalogue keeps its informational signals under.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  bool
      */
@@ -905,7 +905,7 @@ class response {
      * -- which is shorter than it takes most people to read an email. A
      * released order gets a week.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   bool        $cancel
      * @param   \WC_Order   $order

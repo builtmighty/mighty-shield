@@ -42,14 +42,14 @@ class captcha {
      * script that has learned to omit the token does it on every request.
      * Three in the window separates the two with room to spare.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     private const UNANSWERED_ALLOWANCE = 3;
 
     /**
      * The window those answers are counted over, in seconds.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     private const UNANSWERED_WINDOW = 600;
 
@@ -567,7 +567,7 @@ class captcha {
     /**
      * The key under which a surface's "this really does render" note lives.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $surface
      * @return  string
@@ -584,7 +584,7 @@ class captcha {
      * Refreshed at most once a day per surface, so a busy form is not a write
      * per page view.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $surface
      */
@@ -607,7 +607,7 @@ class captcha {
      * fail-OPEN direction, and therefore the right way for this to break. The
      * next visitor who loads the form re-arms it.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $surface
      * @return  bool
@@ -707,7 +707,7 @@ class captcha {
      * moment, which would silently disable exactly the counting this relies
      * on. Allowlisted addresses are never rationed.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  bool
      */
@@ -900,7 +900,7 @@ class captcha {
      * enough that switching the surface off and removing the widget stops
      * mattering within a week.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const RENDERS_TTL = WEEK_IN_SECONDS;
 
@@ -1225,7 +1225,7 @@ class captcha {
                AND reason LIKE %s
              GROUP BY reason",
             (int) $days,
-            '%' . $wpdb->esc_like( 'Bot challenge' ) . '%'
+            '%' . $wpdb->esc_like( 'Bot Challenge' ) . '%'
         ), ARRAY_A );
 
         $refused = 0;
@@ -1378,7 +1378,7 @@ class captcha {
      * Detected by function, not by plugin slug, so a renamed or forked copy is
      * still caught.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public function render_conflict_notice() {
 

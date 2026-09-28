@@ -51,7 +51,7 @@ class risk_context {
      * nuisance -- and past one, a good history hands back at most
      * CREDIT_CAP_UNDER_ANOMALY. See trust().
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const ANOMALY_WEIGHT = 15.0;
     const CREDIT_CAP_UNDER_ANOMALY = 15.0;
@@ -71,7 +71,7 @@ class risk_context {
      * full 40 points of that regular's history set against ten declined
      * cards -- the account-takeover shape the cap exists to catch.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const CAP_EXEMPT = [ 'first_order', 'account_new', 'entity_trusted', 'entity_linked_bad', 'entity_denied', 'entity_chargeback' ];
 
@@ -102,7 +102,7 @@ class risk_context {
     /**
      * Signal keys present when the AI answered.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     private static $ai_saw = [];
 

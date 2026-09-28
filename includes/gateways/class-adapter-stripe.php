@@ -91,7 +91,7 @@ class adapter_stripe implements gateway_adapter {
     /**
      * Read card details off the response the gateway just processed.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   object      $response   A Charge, or a PaymentIntent whose
      *                                  latest charge carries the details.
@@ -124,7 +124,7 @@ class adapter_stripe implements gateway_adapter {
     /**
      * Decline codes and outcome reasons that mean the card itself is bad.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const FRAUD_DECLINES = [ 'stolen_card', 'lost_card', 'fraudulent', 'pickup_card', 'restricted_card', 'security_violation', 'highest_risk_level', 'elevated_risk_level', 'rule' ];
 
@@ -133,7 +133,7 @@ class adapter_stripe implements gateway_adapter {
      *
      * A third of a refusal: nine of them, not three, to reach BAD_REPUTATION.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const PLAIN_DECLINE_WEIGHT = 3.0;
 
@@ -200,7 +200,7 @@ class adapter_stripe implements gateway_adapter {
     /**
      * The charge object inside whatever Stripe answered with.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   object  $response
      * @return  object|null
@@ -223,7 +223,7 @@ class adapter_stripe implements gateway_adapter {
     /**
      * Resolve the order a charge paid for.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   object  $charge
      * @return  \WC_Order|null
@@ -250,7 +250,7 @@ class adapter_stripe implements gateway_adapter {
     /**
      * Hand a charge's card details to card_signals, once per charge.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      * @param   object      $charge

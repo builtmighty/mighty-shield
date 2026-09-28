@@ -41,7 +41,7 @@
  * meaningless.
  *
  * @package MightyShield
- * @since   2.3.0
+ * @since   3.0.0
  */
 namespace MightyShield\Includes;
 
@@ -53,7 +53,7 @@ class privacy {
      * Rows per page. WordPress calls these repeatedly until done is true, so
      * this only has to be small enough not to time out.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const PER_PAGE = 100;
 
@@ -65,14 +65,14 @@ class privacy {
      * searched by anything but itself, so the export cannot find them by an
      * email address and does not claim to.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const EMAIL_TYPES = [ 'email', 'email_root' ];
 
     /**
      * Register.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public static function register() {
 
@@ -94,7 +94,7 @@ class privacy {
     /**
      * Fraud metadata WooCommerce should anonymise with the order.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $meta   key => type (ip, text, email …).
      * @return  array
@@ -112,7 +112,7 @@ class privacy {
     /**
      * Anonymise the log rows an order left behind.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      */
@@ -145,7 +145,7 @@ class privacy {
     }
 
     /**
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $exporters
      * @return  array
@@ -162,7 +162,7 @@ class privacy {
     }
 
     /**
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $erasers
      * @return  array
@@ -184,7 +184,7 @@ class privacy {
      * Page 1 reports the identity graph, which is a fixed handful of rows.
      * Every page including the first reports a slice of the log, which is not.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $email
      * @param   int     $page
@@ -215,7 +215,7 @@ class privacy {
     /**
      * The identity graph, as one group per type that actually has a row.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $email
      * @return  array
@@ -290,7 +290,7 @@ class privacy {
     /**
      * One log row.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $row
      * @return  array
@@ -335,7 +335,7 @@ class privacy {
 
         if( $row['trust'] !== null && $row['trust'] !== '' ) {
             $data[] = [
-                'name'  => __( 'Trust rating', 'mighty-shield' ),
+                'name'  => __( 'Trust Rating', 'mighty-shield' ),
                 'value' => $row['trust'],
             ];
         }
@@ -353,7 +353,7 @@ class privacy {
     /**
      * Erase what can be erased, and say plainly what cannot.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $email
      * @param   int     $page
@@ -413,7 +413,7 @@ class privacy {
     /**
      * Whether the identity graph holds anything for this address.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $email
      * @return  bool
@@ -441,7 +441,7 @@ class privacy {
      * the bare address anywhere in the blob would also hit a URL that happened
      * to contain it.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string      $email
      * @param   int         $page
@@ -487,7 +487,7 @@ class privacy {
     /**
      * Suggested text for the site's privacy policy.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public static function add_policy_content() {
 

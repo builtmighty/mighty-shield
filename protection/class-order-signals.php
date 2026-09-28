@@ -437,7 +437,7 @@ class order_signals {
     /**
      * The high-value threshold until the store has taught us its own.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const HIGH_VALUE_FALLBACK = 500.0;
 
@@ -460,7 +460,7 @@ class order_signals {
      * looks large afterwards. The 95th percentile is where "unusual for this
      * store" genuinely sits and a single outlier cannot move it.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  float   Typed, learned, or the fallback -- never 0.
      */
@@ -486,7 +486,7 @@ class order_signals {
      * this store", and moves as the store does. This one is a line somebody
      * drew, and a line that moved on its own would not be one.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $f
      * @return  string|null
@@ -510,7 +510,7 @@ class order_signals {
      * billing address in a blocked country with delivery somewhere allowed is
      * a different question, and one address_bill_ship_mismatch already asks.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $f
      * @return  string|null
@@ -522,7 +522,7 @@ class order_signals {
      * woocommerce_checkout_process, because an address is knowable before any
      * of this. Everything else needs the order, so it is checked here.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $f
      * @return  string|null
@@ -547,7 +547,7 @@ class order_signals {
     /**
      * Country the merchant still sells to but wants looked at.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $f
      * @return  string|null
@@ -572,7 +572,7 @@ class order_signals {
      * into a field asking for codes should do nothing, not match a country
      * beginning "Un".
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $option
      * @return  string[]
@@ -614,7 +614,7 @@ class order_signals {
      * or the country to disagree as well means a genuine second address, not
      * a second spelling of the first one.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $f
      * @return  string|null
@@ -633,7 +633,7 @@ class order_signals {
      * legitimate business ever places from it. The merchant knows which
      * addresses are costing them.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $f
      * @return  string|null
@@ -728,7 +728,7 @@ class order_signals {
      * this is weak -- see the weight in the catalogue -- so every ambiguity
      * resolves to saying nothing.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $f
      * @return  string|null
@@ -755,7 +755,7 @@ class order_signals {
     /**
      * Phone number belongs to a virtual-line service.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $f
      * @return  string|null
@@ -785,7 +785,7 @@ class order_signals {
      *
      * Merchants can add their own on the Scoring tab.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const VOIP_AREA_CODES = [
         // Non-geographic "personal communications" NANP ranges.
@@ -804,7 +804,7 @@ class order_signals {
      * 0 or 1, which is what rules out most non-US numbers that happen to have
      * ten digits.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $phone
      * @return  string
@@ -837,7 +837,7 @@ class order_signals {
      * does not need to be complete to be useful; it needs to never be wrong,
      * because a wrong entry charges a real customer for living somewhere.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  array   area code => state codes.
      */
@@ -866,7 +866,7 @@ class order_signals {
      * deliberately absent: they belong to VOIP_AREA_CODES, where being
      * non-geographic is the point rather than a gap.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const AREA_CODES = [
         'AL' => [ '205', '251', '256', '334', '938' ],
@@ -931,12 +931,12 @@ class order_signals {
      * IP location vs shipping address mismatch.
      *
      * Reads the IP cache only, and risk_recorder warms it at the start of
-     * checkout. Since 2.3.0 that warming is a local database read rather than
+     * checkout. Since 3.0.0 that warming is a local database read rather than
      * an HTTP call, so a miss here means the merchant has no MaxMind database
      * installed at all — in which case the signal stays quiet rather than
      * guessing.
      *
-     * Country only. This compared region as well until 2.3.0, back when the
+     * Country only. This compared region as well until 3.0.0, back when the
      * data came from ip-api. WooCommerce's GeoLite2-Country database resolves
      * to a country and no further, and region was the noisier half anyway: a
      * shopper on a phone routes through whichever city their carrier terminates

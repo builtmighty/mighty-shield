@@ -4,7 +4,7 @@ Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.3.0
+Stable tag: 3.0.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -93,7 +93,7 @@ Your site is behind a reverse proxy or a load balancer on the same machine, so e
 
 Yes, and identically. Every check runs on both checkouts, including the ones that need something from the browser — the checkout timer, the device check, the hidden trap field and the bot challenge — so the same order is judged the same way whichever checkout your store uses.
 
-MightyShield detects which checkout you use. The Store API firewall's Allowlist mode, which closes the cart and checkout endpoints to everyone not on your allowlist, steps aside on a store whose checkout is the block one, because that checkout is built on those endpoints; the rating protects them instead, and the mode still governs every other Store API route. There is no setting that closes your checkout.
+MightyShield detects which checkout you use. The Store API Firewall's Allowlist mode, which closes the cart and checkout endpoints to everyone not on your allowlist, steps aside on a store whose checkout is the block one, because that checkout is built on those endpoints; the rating protects them instead, and the mode still governs every other Store API route. There is no setting that closes your checkout.
 
 = In what order does everything happen? =
 
@@ -187,17 +187,17 @@ MightyShield answers WordPress's personal data export and erase requests from **
 
 == Upgrade Notice ==
 
-= 2.3.0 =
-* Changed: the Risk levels table on the Shielding tab is colour coded from Trusted to Banned, and changing what a level does now rewrites the description, what happens to the money, and whether the order reaches your processor, instead of leaving the old action's words on screen.
+= 3.0.0 =
+* Changed: the Risk Levels table on the Shielding tab is colour coded from Trusted to Banned, and changing what a level does now rewrites the description, what happens to the money, and whether the order reaches your processor, instead of leaving the old action's words on screen.
 Fixes three network checks that had never worked and removes a blocking request from every checkout. Adds billing-vs-delivery, country and phone checks, richer allow and block lists, low-rating alerts, and a pass that rates your existing orders so a new install starts out knowing your customers. If you want the network checks back, set a free MaxMind licence key under WooCommerce > Settings > Integrations.
 
 == Changelog ==
 
-= 2.3.0 =
+= 3.0.0 =
 * Changed: every check on the Scoring tab is on one grid, with its cost, force level and how often it fires in the row and its extra settings folded under a caret. Find a check by name, or show only the ones costing you customers, firing together, or switched off. Save pins itself to the window once something has changed and says how many checks changed.
 * Changed: the Dashboard leads with the chart, then what is waiting for you, what enforcing would do, and what your orders say about the weights.
 * Changed: the admin reads as one product: sentence case throughout, one heading style, one helper-text style, one empty state, one save button, and the manual on the same palette and fonts as the tabs, in dark mode too.
-* Changed: alerts live on the Logs tab, under Alerts and logs, since they govern every email the plugin sends.
+* Changed: alerts live on the Logs tab, under Alerts and Logs, since they govern every email the plugin sends.
 * Fixed: the order edit screen turned dark behind WooCommerce's white boxes for anyone whose computer prefers dark mode.
 * Fixed: exporting the log ignored the filters on screen.
 * Fixed: an unpaid held order read "Taken in full" in the review queue, and approving it offered Approve again forever.

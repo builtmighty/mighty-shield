@@ -37,7 +37,7 @@ class account_guard {
      * How long after an account change an order from that account is noted,
      * in seconds. Seventy-two hours.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const ACCOUNT_CHANGE_WINDOW = 259200;
 
@@ -146,7 +146,7 @@ class account_guard {
      * counting in bump(), where eviction would silently disable the detection
      * and so deliberately does not use them.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $type       Counter name, for the transient key.
      * @param   string  $endpoint   Log endpoint.
@@ -203,7 +203,7 @@ class account_guard {
     /**
      * Something about an account changed: note when.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $user_id
      */
@@ -219,14 +219,14 @@ class account_guard {
     /**
      * The customer's stored addresses, read before the address form saves.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     private static $addresses_before = null;
 
     /**
      * Remember the addresses on file before WooCommerce overwrites them.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public function snapshot_addresses() {
 
@@ -249,7 +249,7 @@ class account_guard {
     /**
      * An address form was saved: stamp the account only if the address moved.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $user_id
      * @param   string  $type       billing | shipping
@@ -291,7 +291,7 @@ class account_guard {
      * saving a first name at checkout -- so only the two changes that matter
      * to a takeover count: the email address and the password.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int             $user_id
      * @param   \WP_User|null   $old
@@ -319,7 +319,7 @@ class account_guard {
     /**
      * A password was reset through the lost-password flow.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WP_User    $user
      */

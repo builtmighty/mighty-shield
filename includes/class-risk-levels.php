@@ -291,7 +291,7 @@ class risk_levels {
      * What an AI verdict that is allowed to raise the rating may raise it to:
      * from Rejected into High, from High into Elevated, one step and no more.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   float   $trust
      * @return  float
@@ -436,13 +436,13 @@ class risk_levels {
      * What each risk level is called, and what it means.
      *
      * Separate from LADDER because a const array cannot hold a __() call, and
-     * these lived in one until 2.3.0 — which made every one of them
+     * these lived in one until 3.0.0 — which made every one of them
      * permanently English however the rest of the admin was translated.
      *
      * LADDER keeps everything that is not language, which is also everything
      * the checkout path reads.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  array
      */
@@ -520,7 +520,7 @@ class risk_levels {
     /**
      * One line saying what this risk level means, for the admin.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $level
      * @return  string
@@ -541,7 +541,7 @@ class risk_levels {
      * working when the strings moved out of it — and would not have been
      * translated even while it did.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  array
      */

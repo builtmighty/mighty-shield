@@ -83,7 +83,7 @@ class ip_utils {
      * choosing with one header. The fallback is for orders rated before the
      * meta existed, where the header is all there is.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      * @return  string
@@ -113,7 +113,7 @@ class ip_utils {
      * IPv6 this way (a /48, coarser still); this is the same idea for the
      * short-lived counters. The log keeps the exact address.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $ip
      * @return  string

@@ -146,7 +146,7 @@ class api_firewall {
          * — see the note on PROTECTED_PATTERNS for why it is not there by
          * default, and check what talks to your store before adding it.
          *
-         * @since 2.3.0
+         * @since 3.0.0
          *
          * @param string[] $patterns Array of preg patterns.
          * @param string   $route    The route being dispatched.

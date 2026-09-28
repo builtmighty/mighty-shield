@@ -181,7 +181,7 @@ class checkout_timing {
      * Empty when there is no session to bind to, so a token issued in that
      * state still verifies rather than costing a real shopper trust.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  string
      */

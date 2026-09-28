@@ -137,13 +137,13 @@ class actions {
      * What each action is called, what it does, and what it does to the money.
      *
      * Separate from CATALOG because a const array cannot hold a __() call, and
-     * these lived in one until 2.3.0 — which made every one of them
+     * these lived in one until 3.0.0 — which made every one of them
      * permanently English however the rest of the admin was translated.
      *
      * CATALOG keeps everything that is not language, which is also everything
      * the checkout path reads.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  array
      */

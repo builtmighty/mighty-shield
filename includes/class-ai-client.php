@@ -48,7 +48,7 @@ class ai_client {
      * is no longer here is still shown and kept, so an upgrade never silently
      * moves a store onto a different model.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const MODELS = [
         'anthropic' => [
@@ -77,7 +77,7 @@ class ai_client {
      * Models to offer for a provider, with the stored choice kept even when
      * it is not on the list.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $provider   anthropic, openai or gemini.
      * @return  array   id => label.

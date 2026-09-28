@@ -45,7 +45,7 @@ $model_select = function( $key ) {
     <?php settings_fields( 'mshield_ai' ); ?>
 
     <div class="mshield-section">
-        <h2><?php esc_html_e( 'AI review', 'mighty-shield' ); ?></h2>
+        <h2><?php esc_html_e( 'AI Review', 'mighty-shield' ); ?></h2>
         <p class="description"><?php esc_html_e( 'Uses an AI model to review orders that look legitimate to the rule-based layers. It targets stolen-card orders shipped to real, deliverable addresses, where every attribute passes on its own and only the pattern across them is suspicious.', 'mighty-shield' ); ?></p>
         <table class="form-table">
             <tr>
@@ -63,7 +63,7 @@ $model_select = function( $key ) {
     </div>
 
     <div class="mshield-section">
-        <h2><?php esc_html_e( 'AI credentials', 'mighty-shield' ); ?></h2>
+        <h2><?php esc_html_e( 'AI Credentials', 'mighty-shield' ); ?></h2>
         <p class="description"><?php esc_html_e( 'Choose a provider and enter its connection details.', 'mighty-shield' ); ?></p>
         <table class="form-table">
             <tr>

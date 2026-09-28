@@ -64,7 +64,7 @@ class rescore {
         'high_value',
         'ip_geo_mismatch',
         'ip_datacenter',
-        // Added in 2.3.0. Every one reads a field stored on the order, so
+        // Added in 3.0.0. Every one reads a field stored on the order, so
         // unlike the bot, timing and device layers these genuinely do
         // reproduce -- a re-rate reaches the same answer the checkout did.
         'address_reshipper',
@@ -229,13 +229,13 @@ class rescore {
     /**
      * The network signals for one address, from the cache only.
      *
-     * Called at validation as well as at record time since 2.3.0: the record
+     * Called at validation as well as at record time since 3.0.0: the record
      * call at order-processed runs after the AI review (90) and the refusal
      * (99), so the model never saw the network and a data-centre address
      * could not contribute to a refusal. risk_context::add() is
      * first-write-wins, so the second call costs nothing.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $ip
      */
@@ -256,7 +256,7 @@ class rescore {
             );
         }
 
-        // ip_proxy used to be emitted here. It was retired in 2.3.0 along with
+        // ip_proxy used to be emitted here. It was retired in 3.0.0 along with
         // the ip-api.com dependency: MaxMind's Anonymous IP database is a paid
         // product and there is no free source for proxy, VPN or Tor status, so
         // there is nothing to read. See includes/class-ip-data.php.

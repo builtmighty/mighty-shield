@@ -3,7 +3,7 @@
  * Plugin Name:       MightyShield
  * Plugin URI:        https://builtmighty.com
  * Description:       Scores every WooCommerce order against 56 fraud checks, optionally reviews it with an AI model, and then acts once — hold, challenge, refuse, or let through.
- * Version:           2.3.0
+ * Version:           3.0.0
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Requires Plugins:  woocommerce
@@ -48,7 +48,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '2.3.0' );
+define( 'MSHIELD_VERSION', '3.0.0' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -341,12 +341,12 @@ function maybe_upgrade() {
 
     }
 
-    // 2.3.0: the high-value threshold is learned from the store's own orders
+    // 3.0.0: the high-value threshold is learned from the store's own orders
     // when the field is 0, and 0 is what the field now ships as. A store still
     // holding exactly the old shipped default never chose 500.00 -- it was the
     // only value the field ever had -- so it moves; any other figure is the
     // merchant's and stays.
-    if( version_compare( $installed, '2.3.0', '<' ) ) {
+    if( version_compare( $installed, '3.0.0', '<' ) ) {
         $high = get_option( 'mshield_ai_high_value_amount', false );
         if( $high === false || (string) $high === '500.00' || (string) $high === '500' ) {
             update_option( 'mshield_ai_high_value_amount', '0' );
@@ -489,7 +489,7 @@ function deactivation() {
  * Hooked to init, and not a moment sooner: since WordPress 6.7 a text domain
  * loaded before init is a _doing_it_wrong.
  *
- * @since   2.3.0
+ * @since   3.0.0
  */
 function load_textdomain() {
     load_plugin_textdomain( 'mighty-shield', false, dirname( plugin_basename( MSHIELD_FILE ) ) . '/languages' );
@@ -751,7 +751,7 @@ function load() {
 /**
  * Updates are WordPress.org's job.
  *
- * Until 2.3.0 this file ended by wiring up Plugin Update Checker against the
+ * Until 3.0.0 this file ended by wiring up Plugin Update Checker against the
  * GitHub repository, which fetched release metadata on a schedule and could
  * install a ZIP from there. That is a direct conflict with plugin directory
  * guideline 8 -- a plugin hosted on WordPress.org may not serve its own
@@ -760,5 +760,5 @@ function load() {
  *
  * Nothing replaces it. WordPress updates a directory-hosted plugin itself.
  *
- * @since   2.3.0
+ * @since   3.0.0
  */

@@ -52,7 +52,7 @@ class order_panel {
      * money on this order. One fixed sentence used to promise a cancellation
      * on the branch where an unconfirmed release leaves the order on hold.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      * @return  string  Translated, unescaped.
@@ -735,7 +735,7 @@ class order_panel {
      * the orders Approve exists for. The hold meta and the paid date both
      * record that the charge happened; an authorization is money reserved.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      * @return  bool

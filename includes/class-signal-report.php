@@ -29,7 +29,7 @@
  * rate computed from four orders is not a rate.
  *
  * @package MightyShield
- * @since   2.3.0
+ * @since   3.0.0
  */
 namespace MightyShield\Includes;
 
@@ -41,14 +41,14 @@ class signal_report {
      * Ratings to read. Same ceiling as get_signal_stats(), for the same
      * reason: the JSON has to be decoded per row in PHP.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const MAX_ROWS = 2000;
 
     /**
      * Orders a signal must have fired on before its outcome rate is reported.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const MIN_FIRED = 10;
 
@@ -58,7 +58,7 @@ class signal_report {
      * Not 1.0. A check that is wrong 19 times out of 20 is still wrong, and
      * waiting for perfection would mean never saying anything.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const FALSE_POSITIVE_RATE = 0.95;
 
@@ -70,21 +70,21 @@ class signal_report {
      * well, in both directions -- which is not a correlation, it is the same
      * fact arriving twice.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const OVERLAP = 0.8;
 
     /**
      * Orders a pair must share before the overlap is believable.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const MIN_PAIR = 8;
 
     /**
      * Read the ratings once and build both reports.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $days
      * @return  array
@@ -158,7 +158,7 @@ class signal_report {
     /**
      * Signals that keep firing on orders which turned out fine.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $report From analyse().
      * @return  array   key => [ fired, good, bad, known, rate ]
@@ -205,7 +205,7 @@ class signal_report {
     /**
      * Pairs of signals that are measuring the same thing.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $report From analyse().
      * @return  array   list of [ a, b, together, overlap, cost ]
@@ -251,7 +251,7 @@ class signal_report {
     /**
      * The signal keys on one stored rating.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $json
      * @return  string[]
@@ -279,7 +279,7 @@ class signal_report {
     /**
      * How an order turned out.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $outcome
      * @return  string

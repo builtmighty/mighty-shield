@@ -104,7 +104,7 @@ class gateways {
      * Kept out of SUPPORTED because a const cannot hold a __() call, and this
      * is a sentence a merchant reads.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $brand  Key in SUPPORTED.
      * @return  string          Empty when there is nothing to say.

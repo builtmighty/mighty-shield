@@ -204,7 +204,7 @@ class store_api {
      * consults this. A request that is not a REST request at all (a harness
      * calling the hook directly) counts as placing.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   mixed   $request
      * @return  bool
@@ -228,7 +228,7 @@ class store_api {
      * had already looked up. In practice that meant never, because a
      * first-time attacker is exactly the case they exist for.
      *
-     * Since 2.3.0 the resolution behind this is a local MaxMind database read
+     * Since 3.0.0 the resolution behind this is a local MaxMind database read
      * rather than an HTTP call, so "warming" now costs microseconds and cannot
      * fail slowly. The separation is kept anyway: the scoring pass reading only
      * the cache is what guarantees it stays that way.

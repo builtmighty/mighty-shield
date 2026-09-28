@@ -463,12 +463,12 @@ class device_fingerprint {
      * seen the payload. Empty until then, and empty for a request that sent
      * nothing usable.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     private static $signature = '';
 
     /**
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  string
      */

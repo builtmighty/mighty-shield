@@ -26,7 +26,7 @@ class failed_payment_tracker {
      * in ten minutes is doing enough business to notice one signal's worth of
      * caution; a shop that does not has a script on it.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const ATTACK_THRESHOLD = 25;
     const ATTACK_WINDOW    = 600;
@@ -64,7 +64,7 @@ class failed_payment_tracker {
     /**
      * Charge this checkout for the declines that came before it.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public function assess_checkout( $data = null ) {
 
@@ -115,7 +115,7 @@ class failed_payment_tracker {
      * disarmed the breaker and then re-armed it -- and re-sent the "once an
      * hour" email -- on the next decline.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  bool
      */
@@ -128,7 +128,7 @@ class failed_payment_tracker {
     /**
      * A failed order is being paid for again on the classic checkout.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $order_id
      */

@@ -55,7 +55,7 @@ class smarty_address_verifier {
     /**
      * The store-wide back-off after a failed call, and how long it lasts.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const BACKOFF_KEY     = 'mshield_smarty_backoff';
     const BACKOFF_SECONDS = 2 * MINUTE_IN_SECONDS;

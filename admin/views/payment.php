@@ -98,7 +98,7 @@ $supported = gateways::supported_report();
 
 <div class="mshield-section">
 
-    <h2><?php esc_html_e( 'Payment methods', 'mighty-shield' ); ?></h2>
+    <h2><?php esc_html_e( 'Payment Methods', 'mighty-shield' ); ?></h2>
 
     <p class="description">
         <?php esc_html_e( 'Everything on the Scoring and Shielding tabs works the same on every payment method, because it is judged before the payment is taken. The two things below depend on what the payment provider itself is willing to tell us, so they vary.', 'mighty-shield' ); ?>

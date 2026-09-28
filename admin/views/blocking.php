@@ -91,7 +91,7 @@ foreach( actions::keys() as $mshield_act ) {
 
     <div class="mshield-section">
 
-        <h2><?php esc_html_e( 'Risk levels', 'mighty-shield' ); ?></h2>
+        <h2><?php esc_html_e( 'Risk Levels', 'mighty-shield' ); ?></h2>
 
         <p class="description">
             <?php esc_html_e( 'An order falls to the most severe risk level whose threshold its rating is at or below, and that level decides what happens to it.', 'mighty-shield' ); ?>
@@ -339,7 +339,7 @@ foreach( actions::keys() as $mshield_act ) {
         <div class="mshield-card" style="margin-top:18px;">
 
             <h2 class="mshield-card-title">
-                <?php esc_html_e( 'If you enforced these thresholds', 'mighty-shield' ); ?>
+                <?php esc_html_e( 'Enforcement Audit', 'mighty-shield' ); ?>
             </h2>
 
             <?php if( '' === $mshield_say ) : ?>
@@ -411,7 +411,7 @@ foreach( actions::keys() as $mshield_act ) {
 
     <div class="mshield-section">
 
-        <h2><?php esc_html_e( 'Store API firewall', 'mighty-shield' ); ?></h2>
+        <h2><?php esc_html_e( 'Store API Firewall', 'mighty-shield' ); ?></h2>
 
         <p class="description"><?php esc_html_e( 'Controls access to the WooCommerce Store API cart and checkout endpoints (/wc/store/v1/…). Choose the mode that matches your checkout.', 'mighty-shield' ); ?></p>
 
@@ -461,7 +461,7 @@ foreach( actions::keys() as $mshield_act ) {
 
     <div class="mshield-section">
 
-        <h2><?php esc_html_e( 'Bot challenge', 'mighty-shield' ); ?></h2>
+        <h2><?php esc_html_e( 'Bot Challenge', 'mighty-shield' ); ?></h2>
 
         <?php
         /* What it has actually been doing. The plugin recommends this control

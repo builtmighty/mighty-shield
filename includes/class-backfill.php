@@ -35,7 +35,7 @@
  * never cancel it, email anybody, or put it on hold.
  *
  * @package MightyShield
- * @since   2.3.0
+ * @since   3.0.0
  */
 namespace MightyShield\Includes;
 
@@ -47,14 +47,14 @@ class backfill {
      * The Action Scheduler hook, and the WP-Cron one when Action Scheduler is
      * not available.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const HOOK = 'mshield_backfill_batch';
 
     /**
      * Where the run keeps its place.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const STATE = 'mshield_backfill';
 
@@ -65,21 +65,21 @@ class backfill {
      * address_velocity's fifty lookups per order on a shared host with a
      * thirty-second limit.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const BATCH = 20;
 
     /**
      * How far back to go, in days. 0 means everything.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const DEFAULT_DAYS = 365;
 
     /**
      * Register the batch handler.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public static function register() {
 
@@ -99,7 +99,7 @@ class backfill {
     /**
      * Re-queue a run that is marked running but has no batch scheduled.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public static function resume_if_stranded() {
 
@@ -116,7 +116,7 @@ class backfill {
     /**
      * Begin, or restart, a backfill.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $days   How far back to reach. 0 for everything.
      * @return  array|\WP_Error The starting state.
@@ -169,7 +169,7 @@ class backfill {
     /**
      * Stop a run in progress, keeping what it has already done.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public static function cancel() {
 
@@ -193,7 +193,7 @@ class backfill {
     /**
      * The current state, in a known shape.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  array
      */
@@ -220,7 +220,7 @@ class backfill {
     /**
      * Rate one batch, then queue the next.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public static function run_batch() {
 
@@ -309,7 +309,7 @@ class backfill {
     /**
      * Queue the next batch.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     private static function schedule() {
 
@@ -335,7 +335,7 @@ class backfill {
     /**
      * How many orders are in scope.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $days
      * @return  int
@@ -357,7 +357,7 @@ class backfill {
     /**
      * The next batch of order ids.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $state
      * @return  int[]
@@ -399,7 +399,7 @@ class backfill {
      * Both bounds go in one key because wc_get_orders takes a range there;
      * assigning date_created twice would keep only the second.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $days
      * @param   int     $ceiling    Unix timestamp the run started at.

@@ -29,7 +29,7 @@
  * that stops a re-imported file counting the same chargeback twice.
  *
  * @package MightyShield
- * @since   2.3.0
+ * @since   3.0.0
  */
 namespace MightyShield\Includes;
 
@@ -41,21 +41,21 @@ class dispute_import {
      * Rows to read. A dispute report is small by nature -- a store with more
      * than this many chargebacks in one export has a different problem.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const MAX_ROWS = 2000;
 
     /**
      * Rows to sample when working out which column holds the reference.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const SAMPLE = 60;
 
     /**
      * How long an uploaded report waits for the merchant to confirm.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const PREVIEW_TTL = 15 * MINUTE_IN_SECONDS;
 
@@ -66,7 +66,7 @@ class dispute_import {
      * cancelled, by another who happened to open the tab in the same quarter
      * of an hour.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @return  string
      */
@@ -84,7 +84,7 @@ class dispute_import {
      * used to leave a CSV of customer disputes on disk indefinitely. Hooked
      * to the daily cleanup.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     public static function sweep_temp() {
 
@@ -105,7 +105,7 @@ class dispute_import {
     /**
      * Read a CSV and work out which column identifies an order.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $path   A readable CSV.
      * @return  array|\WP_Error [ header, rows, column, matched, total, examples ]
@@ -168,7 +168,7 @@ class dispute_import {
     /**
      * Record a chargeback against every order the chosen column finds.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $path
      * @param   int     $column Index into each row.
@@ -223,7 +223,7 @@ class dispute_import {
      *      plugin never scored is not one it should be learning from, and an
      *      amount of 1043 will not have one.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $value
      * @return  \WC_Order|null
@@ -255,7 +255,7 @@ class dispute_import {
     /**
      * The order carrying a given processor transaction id.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $txn
      * @return  \WC_Order|null
@@ -286,7 +286,7 @@ class dispute_import {
     /**
      * Read the file into a header and rows.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $path
      * @return  array|\WP_Error

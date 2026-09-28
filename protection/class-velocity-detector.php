@@ -197,7 +197,7 @@ class velocity_detector {
      * this uses the graph's -- an address must not be recoverable from a
      * counter row.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $email
      */
@@ -214,7 +214,7 @@ class velocity_detector {
     /**
      * Emit when one identity has ordered too often, whatever it called itself.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $email
      * @return  bool    True when the signal was emitted.
@@ -249,7 +249,7 @@ class velocity_detector {
     /**
      * The counter key for an address's identity.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $email
      * @return  string  '' when there is nothing usable.

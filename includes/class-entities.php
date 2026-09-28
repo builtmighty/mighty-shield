@@ -134,7 +134,7 @@ class entities {
      * weeks away from taking back. A regular has been around for a while by
      * definition; a tester has not.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const TRUST_MIN_AGE = 1209600;
 
@@ -593,7 +593,7 @@ class entities {
      * away.
      *
      * @since   1.9.0
-     * @since   2.3.0 $seen_at, so a back-catalogue pass records when the order
+     * @since   3.0.0 $seen_at, so a back-catalogue pass records when the order
      *                was placed rather than when it was rated; order_count no
      *                longer moves here.
      *
@@ -680,7 +680,7 @@ class entities {
      * marker so the second and third of those hooks, and any later re-rate,
      * add nothing.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order|int   $order
      * @return  bool    Whether this call counted anything.
@@ -735,7 +735,7 @@ class entities {
      * takes payment on delivery or by transfer and confirms it by moving the
      * order along rather than through a gateway.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      * @return  bool
@@ -763,7 +763,7 @@ class entities {
     /**
      * Payment methods where Processing does not mean paid.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const OFFLINE_METHODS = [ 'cod', 'cheque', 'bacs' ];
 
@@ -1078,7 +1078,7 @@ class entities {
      * of the work. Identities with no order behind them -- a refusal's --
      * cannot be re-derived and are left as they are.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   bool    $force  Run regardless of request type (tests, tooling).
      */
@@ -1105,7 +1105,7 @@ class entities {
     /**
      * One batch of the re-hash. Returns how many identities it looked at.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $limit
      * @return  int
@@ -1158,7 +1158,7 @@ class entities {
     /**
      * Give an identity a new hash, merging into whichever row already has it.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   int     $id     The identity to move.
      * @param   string  $hash   Its new hash.
@@ -1256,7 +1256,7 @@ class entities {
      * ordering to their own house again -- are left out, as is the order being
      * rated and any refusal recorded without an order.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $address_hash   entities::hash( 'address', ... ).
      * @param   int     $since          Unix timestamp; links older than this are ignored.

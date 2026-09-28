@@ -141,7 +141,7 @@ class exempt {
      * Call this where an action is about to be taken, never at the top of a
      * method that scores.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string    $email     Billing email, where one is available.
      * @param   int|null  $user_id   Explicit user ID (e.g. order customer).
@@ -174,7 +174,7 @@ class exempt {
      * So: the order's own IP and its own user, both of which are facts about
      * the order rather than claims made by whoever is looking at it.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      * @return  bool
@@ -215,12 +215,12 @@ class exempt {
      * and one forged header made every order allowlisted at dispatch. The
      * recorder stores the address ip_utils resolved (the TCP peer, or a
      * trusted proxy's word for it) on the order at rating time; that is what
-     * the allowlist is asked about. Orders rated before 2.3.0 carry no such
+     * the allowlist is asked about. Orders rated before 3.0.0 carry no such
      * meta, and for those the enforcement boundary does not consult the
      * allowlist by IP at all: a wrong "yes" here switches enforcement off,
      * a wrong "no" costs one allowlisted shopper a review.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   \WC_Order   $order
      * @return  string      An IP, or '' when nothing trustworthy is known.

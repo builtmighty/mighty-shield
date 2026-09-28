@@ -36,7 +36,7 @@ class ip_blocklist {
      * is for, and a role blocklist is a way for a store to lock its own staff
      * out by accident.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      */
     const TYPES = [ 'ip', 'email', 'phone', 'name', 'postcode', 'city', 'country' ];
 
@@ -172,7 +172,7 @@ class ip_blocklist {
 
             $entry = self::normalize_entry( $entry );
 
-            // Since 2.3.0 the list also holds emails, phones and addresses.
+            // Since 3.0.0 the list also holds emails, phones and addresses.
             // Those are matched against an ORDER by matches_fields(); here
             // there is only an address, and reading $entry['ip'] on one of
             // them would have been an undefined key on every checkout.
@@ -221,7 +221,7 @@ class ip_blocklist {
      * user management is for, and blocking a role is a way to lock a store's
      * own staff out of it by accident.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $type   ip, email, phone, name, postcode, city, country.
      * @param   string  $value
@@ -258,7 +258,7 @@ class ip_blocklist {
         ];
 
         // Mirror into the legacy key so anything still reading $entry['ip']
-        // — the admin table, and any row written before 2.3.0 — keeps working.
+        // — the admin table, and any row written before 3.0.0 — keeps working.
         if( $type === 'ip' ) $new['ip'] = $value;
 
         $blocklist[] = $new;
@@ -270,11 +270,11 @@ class ip_blocklist {
     /**
      * Put a stored row into the typed shape.
      *
-     * Every row written before 2.3.0 has an 'ip' key and no 'type'. Read
+     * Every row written before 3.0.0 has an 'ip' key and no 'type'. Read
      * rather than migrated, the same way ip_whitelist handles its own legacy
      * rows: a migration that runs once can be interrupted, and this cannot.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   mixed   $entry
      * @return  array
@@ -307,7 +307,7 @@ class ip_blocklist {
      * this only emits a signal, and whether to act on it is settled once, at
      * the dispatch boundary, by exempt.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   array   $fields     Normalised order fields from order_signals.
      * @return  string|null
@@ -370,7 +370,7 @@ class ip_blocklist {
     /**
      * Remove a typed entry.
      *
-     * @since   2.3.0
+     * @since   3.0.0
      *
      * @param   string  $type
      * @param   string  $value

@@ -35,7 +35,7 @@ $mshield_rows = [
         'where' => 'scoring',
     ],
     [
-        'label' => __( 'Bot challenge', 'mighty-shield' ),
+        'label' => __( 'Bot Challenge', 'mighty-shield' ),
         'value' => $mshield_ready
             ? sprintf(
                 /* translators: %s: provider name. */
@@ -109,7 +109,7 @@ setup_wizard::form_open( 'done' );
             <a href="<?php echo esc_url( admin_url( 'admin.php?page=mighty-shield&tab=scoring' ) ); ?>"><?php esc_html_e( 'Scoring tab', 'mighty-shield' ); ?></a>
         </li>
         <li>
-            <strong><?php esc_html_e( 'AI review', 'mighty-shield' ); ?></strong>
+            <strong><?php esc_html_e( 'AI Review', 'mighty-shield' ); ?></strong>
             &mdash; <?php esc_html_e( 'asks a language model for a second opinion on the orders you are least sure about.', 'mighty-shield' ); ?>
             <a href="<?php echo esc_url( admin_url( 'admin.php?page=mighty-shield&tab=ai' ) ); ?>"><?php esc_html_e( 'AI tab', 'mighty-shield' ); ?></a>
         </li>

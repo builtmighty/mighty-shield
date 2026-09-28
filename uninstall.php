@@ -21,7 +21,7 @@ global $wpdb;
  * worth of tables behind -- including mshield_entities, which holds hashed
  * customer identities, and the salt that makes them readable.
  *
- * @since   2.3.0
+ * @since   3.0.0
  */
 function mshield_uninstall_site() {
 
