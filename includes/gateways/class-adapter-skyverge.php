@@ -23,6 +23,8 @@
  */
 namespace MightyShield\Includes\Gateways;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Protection\card_signals;
 
 class adapter_skyverge implements gateway_adapter {

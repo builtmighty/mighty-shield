@@ -2,18 +2,18 @@
 Contributors: tylerjohnsondesign
 Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
-Requires at least: 6.0
+Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.2.0
+Stable tag: 3.0.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-WooCommerce firewall for protecting against card spammer orders. Blocks Store API abuse, rate limits checkout, and detects fraudulent patterns.
+Stops card testing and stolen-card orders. Scores every order, shows what enforcing would cost you, and can verify a card instead of refusing it.
 
 == Description ==
 
-MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 45 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
+MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 56 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
 
 Nothing is enforced until you say so. MightyShield installs in Observe mode: it rates every order and records what it would have done, so you can tune it against your own traffic before it touches a single sale.
 
@@ -21,15 +21,24 @@ Nothing is enforced until you say so. MightyShield installs in Observe mode: it 
 
 * Block non-whitelisted IPs from Store API cart and checkout endpoints
 * Auto-detect and whitelist server IP on activation
-* Whitelist by IP/CIDR, WordPress user, or email address — whitelisted entities bypass ALL checks (blocks and flags), with one-click whitelisting from the logs
+* Allowlist by IP/CIDR, WordPress user, role, email, phone, name, postcode, city or country, with one-click allowlisting from the logs. An allowlisted order is still rated and still recorded — the allowlist stops MightyShield acting on the rating, so your tuning report and review queue keep telling you the truth
 * Trust rating out of 100 — every check contributes a cost you control, so several small concerns add up instead of one check deciding alone
-* Six risk levels, each with a threshold and an action you choose: no action, flag, 3-D Secure, three kinds of hold, or refuse outright
+* Six risk levels. Four have a threshold and an action you choose — no action, flag, 3-D Secure, or one of three kinds of hold — and the two at the bottom always refuse
+* 3-D Secure as a graded response — ask the bank to verify the cardholder instead of refusing. A real customer taps a prompt and the sale completes; somebody using a stolen card cannot, and liability for a dispute moves to the card issuer
 * Per-IP checkout rate limiting (configurable, default 20/hour)
 * Velocity detection — flags IPs using multiple emails or rapid-fire orders
 * Temporary IP blocking after repeated failed payments
 * Disposable email domain blocking (160+ built-in domains plus custom list)
 * Suspicious order amount detection
 * Score-based fake address detection
+* Billing and delivery address comparison — the classic stolen-card shape, weighted so gifts and work deliveries are not punished for it
+* Country lists — bar where you do not sell, and mark where you want a closer look
+* Phone checks — a US area code from the wrong state, and virtual-line numbers nobody can be reached on
+* "Large order" judged against your own takings rather than a figure picked out of the air, plus an optional hard ceiling
+* Allow and block lists that match on phone, name, postcode, city, country and email as well as IP address
+* An alert when an order rates where your settings would hold it, sent even in Observe mode, at most one an hour
+* A background pass that rates your existing orders, so a fresh install starts out recognising your regulars
+* A forecast of what enforcing would do to orders you have already taken, including how many real customers it would have turned away
 * Smarty USPS address verification for US billing addresses with automatic ZIP/State fallback
 * ZIP/State mismatch detection — catches US orders where the ZIP prefix doesn't match the state
 * Honeypot hidden field — invisible bot trap
@@ -58,15 +67,33 @@ Once enforced, no single ordinary check turns anyone away by itself. Checks cont
 
 The Scoring tab shows how often each check fires on your own orders. Anything firing on most of them is describing your customers rather than your fraudsters, and should be turned down.
 
+= Will this cost me sales? =
+
+It is built so that it does not have to. Refusing an order is the last thing on a ladder, not the first, and there are two steps before it that cost you nothing.
+
+The first is 3-D Secure. Instead of turning a suspicious order away, MightyShield can ask the customer's bank to verify them — the prompt people are used to seeing from their banking app. A real cardholder passes it and the sale goes through as normal. Somebody using a stolen card cannot, and for the ones that do complete, liability for a chargeback moves to the card issuer. That is the point: the orders you are least sure about become the ones you are least exposed on. It needs a processor that supports it, and the Payment tab tells you whether yours does.
+
+The second is holding. An order can be authorised without being captured, or taken and held before fulfilment, so you look at it before anything ships rather than deciding at checkout on a number.
+
+And before any of that, Observe mode and the forecast on the Shielding tab tell you, in your own orders, how many real customers a given threshold would have turned away. You do not have to guess.
+
+= I allowlisted a customer's email address, but their order was still held. Why? =
+
+Because at checkout, an email address is something the shopper typed, not something they proved. If typing an allowlisted address were enough, anyone who learned one could opt out of every check. So an email entry exempts a customer only when they are signed in to the account that owns it. The same goes for the phone, name, postcode, city and country entries: they apply when you review a stored order, never at checkout. To exempt a guest, allowlist their IP address; to exempt a regular, allowlist their account or their role.
+
 = What IPs should I whitelist? =
 
 The server IP is auto-whitelisted on activation. You may also want to whitelist your CDN IPs, payment gateway callback IPs, or office IPs if they access the Store API directly.
+
+= Every event in my log shows 127.0.0.1 or my server's own address. Why? =
+
+Your site is behind a reverse proxy or a load balancer on the same machine, so every visitor reaches PHP from that address. Because the server's own address is allowlisted, nothing is being enforced. MightyShield does not trust X-Forwarded-For on its own, since a shopper can send that header themselves. Tell it which header your proxy sets by adding `define( 'MSHIELD_IP_HEADER', 'HTTP_X_REAL_IP' );` to wp-config.php; the header is read only from connections that arrive from a private or loopback address, or from a Cloudflare edge. Cloudflare's own CF-Connecting-IP header is recognised without any setting.
 
 = Does this work with block-based checkout? =
 
 Yes, and identically. Every check runs on both checkouts, including the ones that need something from the browser — the checkout timer, the device check, the hidden trap field and the bot challenge — so the same order is judged the same way whichever checkout your store uses.
 
-MightyShield detects which checkout you use and sets the Store API Firewall accordingly. The one combination that breaks a shop is the block checkout with the firewall in Allowlist mode, because that checkout is built on the very endpoints Allowlist mode closes. MightyShield warns you at the top of the Shielding tab and on your WordPress dashboard if it ever sees that pairing.
+MightyShield detects which checkout you use. The Store API Firewall's Allowlist mode, which closes the cart and checkout endpoints to everyone not on your allowlist, steps aside on a store whose checkout is the block one, because that checkout is built on those endpoints; the rating protects them instead, and the mode still governs every other Store API route. There is no setting that closes your checkout.
 
 = In what order does everything happen? =
 
@@ -86,13 +113,152 @@ Check **WooCommerce > MightyShield > Dashboard** for blocked request counts and 
 
 Smarty verifies US billing addresses against USPS data to catch fake, non-existent, and undeliverable addresses. It requires a free API key from smarty.com. If the API is unavailable or out of tokens, MightyShield automatically falls back to ZIP/State mismatch detection.
 
+= Which Stripe plugin version do I need? =
+
+Rating, holding and refusing orders work with any payment method. Reading Stripe's own results back — disputes, the billing-address and security-code checks on a card, and declined payments — uses a hook that WooCommerce Stripe Gateway added in 9.8.0. On an older Stripe plugin those three quietly do nothing, and MightyShield says so on its own screens until you update.
+
 = What does the honeypot do? =
 
 The honeypot adds an invisible field to the checkout form. Real customers never see or fill it, but automated bots do. It is one of very few checks set to decide an order on its own, because a person using your site cannot trip it: the field is off-screen, hidden from screen readers and out of tab order. A filled trap field refuses the checkout and temporarily bars the address.
 
+= Can I use MightyShield in my own language? =
+
+Yes. Everything it shows a merchant or a shopper is translatable, the admin screens' scripts included. Once the plugin is on WordPress.org, translations come from translate.wordpress.org as language packs and install themselves; that is also where to contribute one. A translation of your own goes in wp-content/languages/plugins/ as mighty-shield-LOCALE.mo, or in the plugin's own languages folder, and is picked up on the next page load.
+
+== Installation ==
+
+1. Install and activate MightyShield. WooCommerce must already be active.
+2. The setup wizard opens on activation. It takes about two minutes and covers scoring strictness, the bot challenge, alerts, and whether to enforce.
+3. Leave it in **Observe** mode to begin with. MightyShield rates every order and records what it would have done, without turning anyone away.
+4. After a week of your own traffic, open **WooCommerce > MightyShield > Scoring**. Any check firing on most of your orders is describing your customers rather than your fraudsters — turn it down.
+5. When the ratings look right, set the protection control on the Dashboard to **Active**.
+
+Optional, and worth doing:
+
+* **Network checks.** Set a free MaxMind licence key under **WooCommerce > Settings > Integrations > MaxMind Geolocation**. MightyShield reads that database to tell a home connection from a data centre and to compare where an order was placed with where it ships. Without a key those two checks stay quiet.
+* **Bot challenge.** Add a Cloudflare Turnstile or Google reCAPTCHA key on the Shielding tab.
+* **Address verification.** Add a free Smarty key on the Scoring tab to check US addresses against USPS records.
+* **AI review.** Add an Anthropic, OpenAI or Google key on the AI Review tab, and choose which risk levels are worth spending a call on.
+
+== External services ==
+
+MightyShield works without any of these. Each one is listed with what it sends, when, and who runs it. Everything below fails open: if a service is unavailable, MightyShield loses that evidence and the sale goes through.
+
+**MaxMind GeoLite2** (download.maxmind.com) — used to tell a hosting provider from a home connection, and to compare the country an order was placed from with the country it ships to. MightyShield downloads the GeoLite2 ASN database once a week using the licence key you set in WooCommerce's own MaxMind Geolocation integration, and reads it on your own server. Your licence key is sent to MaxMind to authorise the download. **No customer data, and no IP address, is ever sent to MaxMind.** Nothing happens at all unless you have set a licence key.
+Terms: https://www.maxmind.com/en/site-terms-and-conditions | Privacy: https://www.maxmind.com/en/privacy-policy | EULA: https://www.maxmind.com/en/geolite2/eula
+
+**Smarty (US Street Address API)** (us-street.api.smarty.com) — verifies that a US billing address exists and is deliverable. Off by default. When you enable it and add a key, the customer's street, city, state and postcode are sent to Smarty at checkout, along with your credentials.
+Terms: https://www.smarty.com/legal/terms-of-service | Privacy: https://www.smarty.com/legal/privacy-policy
+
+**Cloudflare Turnstile** (challenges.cloudflare.com) — bot challenge. Off by default. When enabled, the challenge widget is loaded from Cloudflare in the customer's browser, and MightyShield sends Cloudflare the challenge token, your secret key and the customer's IP address to verify it.
+Terms: https://www.cloudflare.com/website-terms/ | Privacy: https://www.cloudflare.com/privacypolicy/
+
+**Google reCAPTCHA v3** (www.google.com/recaptcha) — the alternative bot challenge. Off by default. Same shape as Turnstile: the widget loads from Google, and the token, your secret key and the customer's IP address are sent to Google to verify.
+Terms: https://policies.google.com/terms | Privacy: https://policies.google.com/privacy
+
+**disposable-email-domains (GitHub)** (raw.githubusercontent.com) — a public, community-maintained list of throwaway email providers. **On by default.** Once a day MightyShield downloads the list from raw.githubusercontent.com. This is a download only — nothing about your store or your customers is sent. Turn it off on the Scoring tab and MightyShield falls back to its built-in list.
+Terms: https://docs.github.com/site-policy/github-terms/github-terms-of-service | Privacy: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+
+**AI review — Anthropic (api.anthropic.com), OpenAI (api.openai.com) or Google (generativelanguage.googleapis.com)** — a second opinion on orders at the risk levels you choose. Off by default, and it does nothing until you add a key for one provider. When it runs, MightyShield sends that provider the order: billing and shipping address, email, phone, IP address, order value, line items, payment method, which checks fired, and a count of previous orders for that customer. "Redact personal details" on the AI Review tab masks names, streets, email addresses, phone numbers and IP addresses before they are sent, and it is **on by default**.
+Anthropic — Terms: https://www.anthropic.com/legal/commercial-terms | Privacy: https://www.anthropic.com/legal/privacy
+OpenAI — Terms: https://openai.com/policies/terms-of-use | Privacy: https://openai.com/policies/privacy-policy
+Google — Terms: https://ai.google.dev/gemini-api/terms | Privacy: https://policies.google.com/privacy
+
+== Privacy ==
+
+MightyShield stores the following on your own server, and sends none of it anywhere except as described above.
+
+* **Identities are stored hashed, never in the clear.** Email addresses, phone numbers, delivery addresses, device signatures, network blocks and card fingerprints are salted and hashed with a key unique to your site, so MightyShield can recognise a returning customer without holding their details. The salt is deleted when the plugin is uninstalled, which makes the hashes permanently unreadable.
+* **Logs** hold IP addresses, user agents and billing email addresses for blocked and flagged events. Kept 30 days by default; configurable on the Logs tab.
+* **IP lookups** cache the country and network of each checkout's IP address, keyed by the address, so the network checks do not repeat a lookup. Kept 90 days after the address was last seen.
+* **Order ratings** hold the score, the level, which checks fired, and the address the order was placed from. Kept as long as the order exists. When you remove personal data from an order in WooCommerce, MightyShield anonymises its copy of the address and the AI's reasons and the order's log entries along with it.
+* **Uninstalling removes all of it** — every table, every setting, and the hashing salt. Order notes and the fraud metadata attached to an order are deliberately left alone, because they are part of your own record of what happened.
+
+MightyShield answers WordPress's personal data export and erase requests from **Tools > Export Personal Data** and **Tools > Erase Personal Data**. The export includes what MightyShield holds about the person: their log entries and a summary of their hashed identities. The erase request removes their log entries and reports the hashed identities as retained, with the reason: they contain no readable data, and they are what stops somebody refused for fraud from coming straight back under a new name.
+
 == Screenshots ==
 
+1. The Dashboard — protection state, recent ratings, and what MightyShield has been doing.
+2. The Scoring tab — every check, what it costs, and how often it has fired on your own orders.
+3. Shielding — the six risk levels, their thresholds, and what each one does.
+4. AI Review — provider, model, spend cap, and which levels are worth a call.
+5. An order's rating, on the order screen.
+6. The review queue.
+
+== Upgrade Notice ==
+
+= 3.0.0 =
+* Changed: the Risk Levels table on the Shielding tab is colour coded from Trusted to Banned, and changing what a level does now rewrites the description, what happens to the money, and whether the order reaches your processor, instead of leaving the old action's words on screen.
+Fixes three network checks that had never worked and removes a blocking request from every checkout. Adds billing-vs-delivery, country and phone checks, richer allow and block lists, low-rating alerts, and a pass that rates your existing orders so a new install starts out knowing your customers. If you want the network checks back, set a free MaxMind licence key under WooCommerce > Settings > Integrations.
+
 == Changelog ==
+
+= 3.0.0 =
+* Changed: every check on the Scoring tab is on one grid, with its cost, force level and how often it fires in the row and its extra settings folded under a caret. Find a check by name, or show only the ones costing you customers, firing together, or switched off. Save pins itself to the window once something has changed and says how many checks changed.
+* Changed: the Dashboard leads with the chart, then what is waiting for you, what enforcing would do, and what your orders say about the weights.
+* Changed: the admin reads as one product: sentence case throughout, one heading style, one helper-text style, one empty state, one save button, and the manual on the same palette and fonts as the tabs, in dark mode too.
+* Changed: alerts live on the Logs tab, under Alerts and Logs, since they govern every email the plugin sends.
+* Fixed: the order edit screen turned dark behind WooCommerce's white boxes for anyone whose computer prefers dark mode.
+* Fixed: exporting the log ignored the filters on screen.
+* Fixed: an unpaid held order read "Taken in full" in the review queue, and approving it offered Approve again forever.
+* Fixed: the Fraud Review page did not exist while protection was off, and the dashboard widget linked to it anyway.
+* Fixed: every control can be reached and seen from the keyboard, and text on buttons meets contrast in dark mode.
+* New: MightyShield now tells you what enforcing would actually do. Observe mode always recorded what it would have done; now the Shielding tab turns that into the answer you are really after — how many of your recent orders these thresholds would have refused, how many of those turned out to be fraud, and how many were real customers you would have lost. No other fraud plugin shows you the second number, and it is the one that makes a threshold a decision rather than a guess.
+* New: MightyShield reports what your own orders say about your weights — which checks keep firing on orders that turned out fine, and which pairs are firing on the same orders and so charging one fact twice. On the Dashboard, and on each check on the Scoring tab.
+* New: import chargebacks from a CSV. MightyShield learns from disputes automatically on Stripe and could never see them on any other processor, so the strongest signal there is never reached the scoring. Export your dispute report, upload it, and check which column it matched before anything is recorded.
+* New: velocity now also counts one email identity across variations of it — dots, plus-tags and alias domains all point at one inbox, so rotating addresses no longer resets the counter.
+* New: a list of parcel-forwarding addresses you want flagged. It ships empty on purpose: a bundled list of "known" forwarders is a list of real warehouses, and one wrong entry refuses every order a legitimate business places from it.
+* New: billing and delivery addresses are compared. The most common fraud check there is, and it was missing. Weighted low on purpose — gifts, work addresses and parcel lockers all look like this, and the Scoring tab will tell you how often it fires on your own orders.
+* New: country lists. Bar the countries you do not sell to, and mark others as worth a closer look. Both start empty; MightyShield ships no opinion about anywhere.
+* New: phone checks. A US area code from a different state, and numbers from virtual-line services that cannot be used to reach anyone.
+* New: a first-order check, deliberately almost weightless. Every store wants new customers; this exists so the rating can tell "new" apart from "known good", not to charge people for arriving.
+* New: a hard order-total ceiling, off by default.
+* Changed: "large order" now means large **for your store**. It was a fixed 500.00, which never fired on a store selling candles and fired on every order at a store selling sofas. MightyShield now works it out from your own completed orders and keeps it current. Set your own figure and yours is used instead.
+* New: allow and block lists match on phone, name, postcode, city and country, not just IP addresses — and the block list on email too. Letting one trade customer through, or barring one repeat offender, no longer needs their IP address.
+* New: email me when an order rates badly enough to be held. Part of the one notification switch, sent whatever MightyShield did about it, including nothing in Observe mode, which is when it is most useful. At most one an hour, and it says how many others there were.
+* New: rate your past orders. A new install knows none of your customers, so nobody earns trust and no previous chargeback counts for anything until months of orders have gone by. This fills that in from the orders you already have, in the background, without touching a single one of them. It runs automatically when you finish setup, and is on the Logs tab afterwards.
+* Fixed: the three network checks — data centre, VPN/proxy, and location mismatch — had never fired on any install. They were fed by ip-api.com over an encrypted connection, which that service refuses unless you pay, so every lookup failed. This also means every checkout was making a request that could take up to five seconds and was always going to fail. Both are gone.
+* Changed: network intelligence now comes from a MaxMind database on your own server, using the free licence key WooCommerce already asks for under Settings > Integrations. Nothing about your customers is sent anywhere, and there is no longer any network request on the checkout path — unless you switch on the optional email-domain DNS check on the Scoring tab, which asks your own server's resolver whether the domain can receive mail. Without a key, the two remaining network checks stay quiet rather than guessing.
+* Removed: the VPN/proxy check. There is no free source for it — the data is a paid MaxMind product — and a check that cannot fire should not sit on the Scoring tab with a weight you can tune. It is better to be one check shorter and honest about it.
+* Changed: the location-mismatch check now compares countries only. It used to compare region as well, which was the noisier half: a shopper on a phone routes through whichever city their carrier terminates in, regularly a different state from the one they live in.
+* Changed: fonts are now served from the plugin instead of Google Fonts, so opening a MightyShield screen no longer tells Google anything about you.
+* Changed: MightyShield now updates through WordPress.org like any other plugin.
+* New: MightyShield answers WordPress's personal data export and erase requests.
+* Fixed: every checkout by a signed-in customer counted as an account change, so returning customers were charged as though their password had just been changed. Only a real change of email or password counts now.
+* Fixed: approving an order that had been held after payment was undone in the same click, leaving a paid order on hold that nothing could ship. A reviewer's Approve now sticks, and so does a status you change by hand; only the payment processor's own transitions are still caught.
+* Fixed: the device identity was declared and never recorded, so the one identity that survives a fraudster rotating everything else was empty on every store.
+* Changed: a customer's order count is now the orders they have paid for. A run of declined cards through one mailbox used to read as a string of orders "without incident".
+* Changed: a chargeback, a Fraud verdict or a run of refusals on a shared network, street address or device no longer refuses the next stranger who shares it. It counts as history, at half weight, and the reason says so.
+* Changed: an order rated Banned puts its address under a day-long temporary block rather than on the permanent blocklist, which on a mobile carrier or an office had been locking out everyone behind one address.
+* Fixed: on the block checkout, a shopper editing a field after a declined payment was scored again on every edit, and could be refused, with a refusal recorded against their own identities each time.
+* Fixed: the network checks, the reviewer's Block and the log attributed an order to whatever address a shopper put in a request header. They now use the address MightyShield resolved.
+* Fixed: the Logs tab and the dashboard chart showed times in UTC labelled as your store's time.
+* Fixed: amount settings on a store that uses a comma as its decimal separator were read wrongly.
+* Fixed: street names in non-Latin scripts were reduced to their house number, so unrelated neighbours shared one address identity.
+* Fixed: on a host with a persistent object cache, uninstalling and reinstalling could leave the plugin running without its tables.
+* Fixed: rating your past orders made every old order at an address look like last month's for thirty days.
+* Fixed: with protection set to Disabled, every payment confirmation and the nightly maintenance job failed outright.
+* Fixed: a good history could offset the card-testing signals — repeated declines, order and email velocity, the rate limit — in full. A regular's history now counts for at most a little against those, as it already did against every other real signal.
+* Fixed: a card a reviewer had marked as fraud, or one declined repeatedly, was ignored when it came back on a fresh email and address. Its history is now read and acted on.
+* Fixed: a hold after payment triggered by the card check arrived after the payment had already gone through and never actually held the order.
+* Fixed: on the classic checkout, a card tester working one cart through many cards counted as one decline. Each attempt now counts.
+* Fixed: a chargeback could be erased by a reviewer confirming the same order as fraud; the stale Clean verdict that led them there is now cleared when a chargeback arrives.
+* Fixed: a checkout request that sent the email field as a list instead of text crashed the request on PHP 8 rather than being refused, which a blocked visitor could trigger on purpose.
+* Fixed: on Stripe, holding a zero-total order (a free trial, a saved card) sent a capture instruction Stripe rejects for that kind of payment, so the checkout MightyShield had decided to hold failed instead.
+* Fixed: on a store keeping orders in the posts table, the nightly pass that credits settled orders worked through them in creation order rather than oldest-settled first.
+* Changed: the Stripe plugin version that dispute import, card checks and decline signals need is now stated, and MightyShield says so on its own screens when the installed one is older.
+* Fixed: an order a bank-transfer or cheque customer had not yet paid for was offered Approve in the review queue, and Approve marked it paid.
+* Fixed: the card fingerprint never accrued a paid order, so a returning card could never vouch for anyone.
+* Changed: an ordinary decline costs a card a third of what a fraud-shaped one does, each decline counts once however often the processor repeats it, and subscription renewals do not count at all.
+* Changed: the store-wide card-testing signal is a small nudge, as its description always said, rather than a level change on its own; and declines on orders the checkout never saw, such as renewals, no longer feed it.
+* Changed: the per-address decline, rate-limit and temporary-block counters treat an IPv6 /64 as one address.
+* Changed: rating an order rejected outright when both its delivery address was busy and it differed from the billing address. Those two facts about one parcel are now charged once, so a first gift to a dorm or office is held and looked at rather than refused.
+* Fixed: WooCommerce's own "Remove personal data" left MightyShield's copy of the address, the AI's reasons and the order's log entries in place.
+* Fixed: the setup walkthrough, when opened again, landed on its last page and restarted the back-catalogue rating from scratch.
+* Fixed: risk-level thresholds typed out of order made a level unreachable; they are now kept in order on save.
+* Fixed: the checkout timer's token could be reused within a session; it is spent on first use.
+* Fixed: the "Email me" switch on the AI tab now says what it governs, and the recipient list is no longer hidden while other alerts still use it.
+* Fixed: several copy corrections — the check count, the Banned row, the failed-payments description, the block-checkout firewall note, and the privacy-policy text, which said details were sent to MaxMind. They never are.
 
 = 2.2.0 =
 * Changed: everything now happens in one order, and it is the order you would expect. An order is scored, then reviewed by AI if you use it, then acted on, then created. Before this, half the scoring ran after the order already existed, which is after the last moment anything can be refused — so the decision to turn a checkout away was made on half the evidence, and the other half could only change what happened to an order that had already gone through.
@@ -100,7 +266,7 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 * Changed: the Blocking tab is now called Shielding.
 * New: Reject is offered as an action on any risk level, so you can refuse an order outright before it is created rather than holding it afterwards.
 * New: what your payment processor says about the card — whether the billing address matched, whether the security code matched, whether it was prepaid, its own fraud rating, and where the card was issued — are five checks on the Scoring tab with costs you control. They used to be a single checkbox that held an order when two of them failed, with no way to see what it weighed or to disagree with part of it. The defaults do exactly what that checkbox did.
-* New: Send to Review on the AI Review tab. Pick the risk levels worth a second opinion. Rejected can now be one of them: the review happens before the refusal, so a model can rescue an order the checks were too harsh on. Orders stopped by a single decisive check are never sent, because the model cannot overturn those and the call would be wasted.
+* New: Send to review on the AI Review tab. Pick the risk levels worth a second opinion. Rejected can now be one of them: the review happens before the refusal, so a model can rescue an order the checks were too harsh on. Orders stopped by a single decisive check are never sent, because the model cannot overturn those and the call would be wasted.
 * New: a checkout that MightyShield refuses is now remembered. Every record it kept required an order to exist, so it only ever learned from the orders it let through — somebody refused fifty times arrived at the fifty-first looking like a stranger.
 * Fixed: an order you released from Fraud Review could never afterwards record a chargeback, a refund, or anything else. That is exactly the population where being wrong matters most — the orders MightyShield flagged and you overruled — and it was also the only population the tuning report exists to measure. Your judgement still stands; a chargeback now updates the record anyway.
 * Fixed: a card was recorded but never read. A fraudster reusing a card behind a fresh email and a fresh address scored as a stranger while that card's chargeback sat in the table.
@@ -111,7 +277,7 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 * Fixed: on the block checkout, order velocity was never counted at all, so two of the velocity checks could not fire on it.
 * Fixed: a mismatched timezone temporarily barred the address it came from. That is a VPN, a traveller or an expat far more often than a bot, and the setting that caused it shipped switched on.
 * Fixed: the manual quoted five limits that had been relaxed in 2.1.1 and never updated, so it advertised thresholds five times tighter than the ones actually in use.
-* Fixed: the Risk Levels and Scoring tables were sized by their columns rather than by the panel holding them, leaving a gap down the right-hand side.
+* Fixed: the Risk levels and Scoring tables were sized by their columns rather than by the panel holding them, leaving a gap down the right-hand side.
 
 = 2.1.1 =
 * Fixed: choosing "Disabled" for protection broke every WordPress admin page, and the only way back to the setting was the admin page it had just broken. Recovering needed database access.
@@ -132,7 +298,7 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 * Fixed: eight settings that decide whether a check refuses an order or merely notes it had no screen at all, and three of them were set to refuse. They now sit beside the check they govern on the Scoring tab.
 * Fixed: several screens described behaviour the plugin no longer had, including the Blocking tab telling you front-end checks did not work on the block checkout.
 * Fixed: typing a currency symbol into an amount, like "$500", stored it as zero. A high-value threshold of zero treats every order as high value, and nothing said so. Amounts and scores now accept what people actually type and are kept inside sensible bounds.
-* New: the Bot Challenge panel now tells you what the challenge has been doing, instead of only what it is set to. How many visitors it turned away, how many it could not judge either way, and whether it has stopped refusing anyone on a form because the keys look wrong.
+* New: the Bot challenge panel now tells you what the challenge has been doing, instead of only what it is set to. How many visitors it turned away, how many it could not judge either way, and whether it has stopped refusing anyone on a form because the keys look wrong.
 * New: the action for each risk level now says what happens to the customer's money, which is the real difference between the three kinds of hold.
 * Fixed: an order held by the block checkout showed a vague reason in Fraud Review where the identical order from the classic checkout showed a clear one.
 * Fixed: three of the four ways a shopper gets temporarily blocked left nothing in the Logs, so there was no way to find out why somebody could not check out.
@@ -175,7 +341,7 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 * New: if the challenge refuses a run of visitors without a single one passing, MightyShield now treats that as its own fault rather than an attack, stops refusing people, and emails you. One success puts it straight back to normal. A broken key should cost you a warning, not every customer.
 * Fixed: Smarty address verification returned HTTP 401 on every call because credentials were sent in a form Smarty does not accept. Address verification works again.
 * Smarty and AI errors now tell you what actually went wrong. Rejected credentials, an exhausted subscription, a rate limit and an outage are four different problems needing four different responses, and they used to arrive as the same bare status code with advice that was wrong for three of them.
-* New: a Test Connection button for Smarty and for AI. It makes one real call using your saved credentials and tells you what came back. For Smarty it also works out which way this particular server can send credentials, and keeps it.
+* New: a Test connection button for Smarty and for AI. It makes one real call using your saved credentials and tells you what came back. For Smarty it also works out which way this particular server can send credentials, and keeps it.
 * New: Smarty and AI warnings can be dismissed once you have dealt with them. If the problem is still there, the next failed call brings the warning straight back.
 * Fixed: a warning about rejected credentials disappeared the moment you cleared the credentials it was warning about, which read as though the problem had been fixed.
 * Fixed: a Smarty or AI warning could stay on screen for several minutes after the service had recovered.
@@ -193,7 +359,7 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 * Fixed: the Fraud Review queue could time out and fail to load on stores with only a few dozen orders.
 * Fixed: AI review was rejected by the provider on every request and silently stopped reviewing orders. Failed reviews now report what the provider actually objected to instead of only a status code.
 * Fixed: reCAPTCHA v3 could never succeed on the block-based checkout, which would have refused every order the moment it was switched on.
-* New: MightyShield now warns you when the Store API Firewall is set in a way that closes a block-based checkout to your customers. That combination previously took a store offline with nothing anywhere to say why.
+* New: MightyShield now warns you when the Store API firewall is set in a way that closes a block-based checkout to your customers. That combination previously took a store offline with nothing anywhere to say why.
 * Rewrote the built-in documentation against the plugin as it actually is. It now covers every setting, including twelve that were not documented at all, and a Payment section explaining why the same risk level can do different things on different orders.
 
 = 1.9.0 =
@@ -243,7 +409,7 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 = 1.8.0 =
 * Added AI Fraud Detection: optionally send orders to an AI model (Anthropic Claude, OpenAI, or Google Gemini) for a 1–10 fraud rating; low-rated orders are held On hold for review with a per-order Approve/Deny panel, an optional authorize-only hold on supported gateways, and admin email alerts. Off by default.
 * Added block-based (Store API) checkout support: the server-side fraud checks — disposable email, order amount, address validation, ZIP/State, velocity, and rate limiting — now run on the block Checkout via the Store API, blocking or flagging per each layer's existing settings.
-* Added a Firewall Mode setting: "Classic checkout" (block all non-whitelisted IPs from the Store API, as before) or "Block/One-page checkout" (allow real shoppers, block only blocklisted IPs) so block-checkout stores are not locked out.
+* Added a Firewall mode setting: "Classic checkout" (block all non-whitelisted IPs from the Store API, as before) or "Block/One-page checkout" (allow real shoppers, block only blocklisted IPs) so block-checkout stores are not locked out.
 * Added front-end checks to the block Checkout: checkout timing, device fingerprinting, and Google reCAPTCHA v3 now ride along with the Store API request and are verified server-side, honoring each layer's block / flag / notify action.
 * Removed Test Mode (added in 1.7.0): the admin-bar force-trip toggle has been retired. Its per-user settings and log entries are cleaned up automatically on upgrade.
 * Note: on block checkout the honeypot and Cloudflare Turnstile are not evaluated — both require a rendered field/widget that the React Checkout block does not provide. Use reCAPTCHA v3 for a bot challenge on block checkout, or classic/one-page checkout for the full set.
@@ -259,7 +425,7 @@ The honeypot adds an invisible field to the checkout form. Real customers never 
 * Added a "Get IP" button in the Logs event drawer that fetches and stores IP data on demand without a page reload; cached data loads automatically on future views.
 * Log cleanup now also drops cached IP data for IPs no longer present in the log.
 * Made the events trend chart interactive: hover tooltips, and switchable 24-hour / 7-day / 30-day ranges (defaults to 30 days).
-* Fixed IPv6 display: no longer overlaps the bar in Top Blocked IPs or the Endpoint column in the logs; capitalized the "Top Blocked IPs" heading.
+* Fixed IPv6 display: no longer overlaps the bar in Top blocked IPs or the Endpoint column in the logs; capitalized the "Top blocked IPs" heading.
 
 = 1.5.0 =
 * Redesigned the admin interface: a modern card-based layout, a plugin header, and a light/dark theme toggle saved per user.

@@ -14,7 +14,7 @@ wp plugin install https://github.com/builtmighty/mighty-shield/releases/latest/d
 
 Five steps, in this order, on both the classic and the block checkout:
 
-1. **Scored.** Forty-five checks run. Each one that notices something costs the order trust on a 1–100 rating, weighted by how sure it is. Nothing decides anything yet.
+1. **Scored.** Fifty-six checks run. Each one that notices something costs the order trust on a 1–100 rating, weighted by how sure it is. Nothing decides anything yet.
 2. **Reviewed.** If AI review is on and the rating landed on a level you selected, a model is shown everything MightyShield already knows and returns its own rating.
 3. **Decided.** The final rating picks a risk level; that level's action is carried out. A refusal happens here — before an order exists and before your payment processor is contacted, which is the whole point.
 4. **Created.** The order is placed.
@@ -31,16 +31,16 @@ Three screens, and only three, decide how an order is treated:
 | Screen | What it sets |
 |---|---|
 | **Scoring** | Every check: on or off, what it costs, whether it can force a level on its own, and its own configuration. Grouped into Identity, Network, Behavior, Order, Payment and History. |
-| **AI Review** | Provider, keys, spend cap, redaction — and **Send to Review**, which picks the risk levels worth a second opinion. |
-| **Shielding** | What a score means. Six risk levels, each with a threshold and an action. Plus the Store API firewall, the bot challenge and refusal behaviour. |
+| **AI Review** | Provider, keys, spend cap, redaction — and **Send to review**, which picks the risk levels worth a second opinion. |
+| **Shielding** | What a score means. Six risk levels, each with a threshold and an action. Plus the Store API Firewall, the bot challenge and refusal behaviour. |
 
 Dashboard, Payment, Access and Logs report or list; they do not tune scoring or blocking.
 
 ## Features
 
 **Scoring**
-- Trust rating from 1–100 across 45 checks, each with a cost you control and a "how often it fired on your traffic" column to tune against
-- Scoring profiles (Balanced / Cautious / Strict) that set every cost at once, with Custom appearing on its own the moment you change a row
+- Trust rating from 1–100 across 56 checks, each with a cost you control and a "how often it fired on your traffic" column to tune against
+- Scoring Profiles (Balanced / Cautious / Strict) that set every cost at once, with Custom appearing on its own the moment you change a row
 - Identity — disposable and role email addresses, domains that cannot receive mail, fake-looking addresses, ZIP/state mismatches, USPS verification via Smarty, drop-address velocity
 - Network — IP blocklist, temporary blocks, datacenter and VPN detection, geolocation mismatch
 - Behavior — invisible honeypot, HMAC-signed checkout timer, device fingerprinting, automated-browser detection, Cloudflare Turnstile or Google reCAPTCHA v3
@@ -61,12 +61,12 @@ Dashboard, Payment, Access and Logs report or list; they do not tune scoring or 
 - Daily cleanup of logs, rate limits, IP cache and stale customer history
 
 **AI review (optional)**
-- Anthropic, OpenAI or Google, with per-provider model names, a hard daily spend cap and a Test Connection that makes one real request
+- Anthropic, OpenAI or Google, with per-provider model names, a hard daily spend cap and a Test connection that makes one real request
 - Runs before the order is created, so its verdict can still prevent a sale
 - Send only the levels you choose; optionally redact customer details so names and addresses never leave your site
 
 **Firewall and access**
-- Store API firewall with allowlist and blocklist modes, auto-detected against which checkout your store actually uses
+- Store API Firewall with allowlist and blocklist modes, auto-detected against which checkout your store actually uses
 - Allowlist by IP/CIDR, WordPress user, role or email — allowlisted entities bypass every check
 - Persistent IP blocklist with CIDR support and one-click blocking from the logs
 
@@ -79,7 +79,7 @@ Dashboard, Payment, Access and Logs report or list; they do not tune scoring or 
 
 ## Requirements
 
-- WordPress 6.0+
+- WordPress 6.5+
 - PHP 8.1+
 - WooCommerce 8.0+
 - HPOS compatible
@@ -91,6 +91,16 @@ Dashboard, Payment, Access and Logs report or list; they do not tune scoring or 
 3. Leave it in **Observe** mode. It rates and records; it enforces nothing
 4. After a week or two, check **Shielding** for how orders landed at each level and how they turned out, and **Scoring** for how often each check fired
 5. Turn down anything firing on ordinary customers, adjust the thresholds, then set the switch on the **Dashboard** to Active
+
+## Translating
+
+Every string, including the admin script's, goes through WordPress's translation functions under the `mighty-shield` text domain. The template is `languages/mighty-shield.pot`. Regenerate it after changing any string:
+
+```bash
+php bin/make-pot.php .
+```
+
+The generator tokenises the PHP and scans the JavaScript, reports any translation call it could not extract, and refuses to write a template that lost strings. A finished translation goes in `languages/` as `mighty-shield-LOCALE.mo` (plus `mighty-shield-LOCALE-mshield-admin.json` for the admin script), or in `wp-content/languages/plugins/`. Once the plugin is on WordPress.org, language packs from translate.wordpress.org take over and nothing needs shipping.
 
 ## License
 

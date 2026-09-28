@@ -1,16 +1,33 @@
 <?php
-/*
-Plugin Name: MightyShield
-Plugin URI: https://builtmighty.com
-Description: WooCommerce firewall for protecting against card spammer orders.
-Version: 2.2.0
-Author: Built Mighty
-Author URI: https://builtmighty.com
-Copyright: Built Mighty
-Text Domain: mighty-shield
-Requires Plugins: woocommerce
-Copyright © 2026 Built Mighty. All Rights Reserved.
-*/
+/**
+ * Plugin Name:       MightyShield
+ * Plugin URI:        https://builtmighty.com
+ * Description:       Scores every WooCommerce order against 56 fraud checks, optionally reviews it with an AI model, and then acts once — hold, challenge, refuse, or let through.
+ * Version:           3.0.0
+ * Requires at least: 6.5
+ * Requires PHP:      8.1
+ * Requires Plugins:  woocommerce
+ * WC requires at least: 8.0
+ * WC tested up to:   11.1
+ * Author:            Built Mighty
+ * Author URI:        https://builtmighty.com
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain:       mighty-shield
+ * Domain Path:       /languages
+ *
+ * MightyShield is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 2 of the License, or (at your option)
+ * any later version.
+ *
+ * MightyShield is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * @package MightyShield
+ */
 
 /**
  * Namespace.
@@ -31,7 +48,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '2.2.0' );
+define( 'MSHIELD_VERSION', '3.0.0' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -50,7 +67,19 @@ defined( 'MSHIELD_FILE' ) || define( 'MSHIELD_FILE', __FILE__ );
 add_action( 'before_woocommerce_init', function() {
 
     if( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', MSHIELD_FILE, true );
+
+        // Cart and Checkout blocks. The work behind this has been done since
+        // 1.8.0 -- protection/class-store-api.php runs every check on the Store
+        // API path, the collector rides along as extension data, and
+        // risk_recorder refuses through a RouteException -- but the declaration
+        // itself was never made, so WooCommerce listed MightyShield as
+        // incompatible on the Cart & Checkout Blocks screen. A merchant reading
+        // that screen would reasonably have concluded the block checkout was
+        // unprotected, which was the opposite of true.
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', MSHIELD_FILE, true );
+
     }
 
 } );
@@ -140,11 +169,33 @@ function activation() {
           || ( false !== get_option( 'mshield_db_version', false ) )
           || ( false !== get_option( 'mshield_ip_whitelist', false ) );
 
-    // Create database tables and stamp the schema version, so a fresh install
-    // does not re-run dbDelta on its first load.
     require_once MSHIELD_PATH . 'includes/class-db.php';
-    \MightyShield\Includes\db::create_tables();
-    update_option( 'mshield_db_version', \MightyShield\Includes\db::SCHEMA_VERSION, true );
+
+    if( $prior ) {
+        // A store with history: converge the schema the same way an update
+        // does, running whatever migrations its stored version still needs.
+        // Stamping the version here instead -- which is what this did -- let a
+        // deactivate, upload, reactivate update skip every one of them.
+        \MightyShield\Includes\db::maybe_upgrade_schema();
+
+        // ...unless the history is a ghost. An uninstall on a host with a
+        // persistent object cache used to leave the version options cached
+        // after the tables were dropped, so a reinstall looked like an
+        // upgrade with nothing to do and ran on no tables at all. The options
+        // say "prior"; the database gets the last word.
+        global $wpdb;
+        $risk_table = $wpdb->prefix . 'mshield_risk';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        if( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $risk_table ) ) !== $risk_table ) {
+            \MightyShield\Includes\db::create_tables();
+            update_option( 'mshield_db_version', \MightyShield\Includes\db::SCHEMA_VERSION, true );
+        }
+    } else {
+        // A fresh install has nothing to migrate: create the tables and stamp
+        // the schema current, so the first load does not re-run dbDelta.
+        \MightyShield\Includes\db::create_tables();
+        update_option( 'mshield_db_version', \MightyShield\Includes\db::SCHEMA_VERSION, true );
+    }
 
     // Ensure whitelist option exists with autoload enabled.
     if( false === get_option( 'mshield_ip_whitelist' ) ) {
@@ -217,6 +268,7 @@ function maybe_redirect_to_setup() {
     // redirect. Hijacking that would drag somebody out of a batch of updates.
     // The flag is spent regardless, so they are not ambushed a page later; the
     // wizard stays reachable from the notice and the plugin action link.
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
     if( isset( $_GET['activate-multi'] ) ) return;
 
     // The wizard screen is registered inside load(), which needs WooCommerce.
@@ -263,6 +315,7 @@ function maybe_upgrade() {
         delete_metadata( 'user', 0, 'mshield_test_simulate', '', true );
 
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->delete( $wpdb->prefix . 'mshield_log', [ 'endpoint' => 'test_mode' ], [ '%s' ] );
 
     }
@@ -286,6 +339,26 @@ function maybe_upgrade() {
             update_option( 'mshield_store_api_enabled_notice', 1, false );
         }
 
+    }
+
+    // 3.0.0: the high-value threshold is learned from the store's own orders
+    // when the field is 0, and 0 is what the field now ships as. A store still
+    // holding exactly the old shipped default never chose 500.00 -- it was the
+    // only value the field ever had -- so it moves; any other figure is the
+    // merchant's and stays.
+    if( version_compare( $installed, '3.0.0', '<' ) ) {
+        $high = get_option( 'mshield_ai_high_value_amount', false );
+        if( $high === false || (string) $high === '500.00' || (string) $high === '500' ) {
+            update_option( 'mshield_ai_high_value_amount', '0' );
+        }
+
+        // The block-checkout answer is recomputed on the next request rather
+        // than trusted across an upgrade, as its docblock always promised.
+        delete_option( 'mshield_block_checkout' );
+
+        // The low-rating alert no longer has its own figure; it follows the
+        // notification switch and the High threshold.
+        delete_option( 'mshield_alert_below_trust' );
     }
 
     // 2.1.1: relax the shared-IP thresholds, but only where the store is still
@@ -364,6 +437,7 @@ function maybe_upgrade() {
         // be read again and expire on their own, but they are cheap to clear
         // and confusing to find.
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->query(
             "DELETE FROM {$wpdb->options}
               WHERE option_name LIKE '_transient_mshield_emails_%'
@@ -389,6 +463,13 @@ function deactivation() {
     // Clear scheduled cron events.
     wp_clear_scheduled_hook( 'mshield_daily_cleanup' );
 
+    // And a back-catalogue rating in progress, which would otherwise keep
+    // firing at a plugin that is no longer loaded.
+    wp_clear_scheduled_hook( 'mshield_backfill_batch' );
+    if( function_exists( 'as_unschedule_all_actions' ) ) {
+        as_unschedule_all_actions( 'mshield_backfill_batch' );
+    }
+
 }
 
 /**
@@ -396,6 +477,24 @@ function deactivation() {
  *
  * @since   1.0.0
  */
+/**
+ * Load the plugin's own translations.
+ *
+ * Language packs from WordPress.org load themselves from
+ * wp-content/languages/plugins/ and need no help. This makes the plugin's own
+ * /languages folder count as well, so a store can carry a translation before
+ * one exists upstream -- and so the admin script's JSON translations have a
+ * path to be looked up on.
+ *
+ * Hooked to init, and not a moment sooner: since WordPress 6.7 a text domain
+ * loaded before init is a _doing_it_wrong.
+ *
+ * @since   3.0.0
+ */
+function load_textdomain() {
+    load_plugin_textdomain( 'mighty-shield', false, dirname( plugin_basename( MSHIELD_FILE ) ) . '/languages' );
+}
+
 add_action( 'plugins_loaded', '\MightyShield\load' );
 function load() {
 
@@ -427,11 +526,22 @@ function load() {
     require_once MSHIELD_PATH . 'includes/class-response.php';
     require_once MSHIELD_PATH . 'includes/class-ai-detection.php';
     require_once MSHIELD_PATH . 'includes/class-entities.php';
+    // outcomes lives under protection/ but is needed on every request:
+    // on_paid(), credit_settled_orders() and hold_after_payment's neighbours
+    // are hooked below unconditionally, and with protection set to Disabled
+    // the file was only loaded for the admin -- so every payment confirmation
+    // on a Disabled store fatalled inside WP_Hook on an unknown class.
+    require_once MSHIELD_PATH . 'protection/class-outcomes.php';
     require_once MSHIELD_PATH . 'includes/class-api-error.php';
     require_once MSHIELD_PATH . 'includes/class-ai-client.php';
     require_once MSHIELD_PATH . 'includes/class-ai-capture.php';
     require_once MSHIELD_PATH . 'includes/class-trust-badge.php';
     require_once MSHIELD_PATH . 'includes/class-rescore.php';
+    require_once MSHIELD_PATH . 'includes/class-privacy.php';
+    require_once MSHIELD_PATH . 'includes/class-backfill.php';
+    require_once MSHIELD_PATH . 'includes/class-forecast.php';
+    require_once MSHIELD_PATH . 'includes/class-signal-report.php';
+    require_once MSHIELD_PATH . 'includes/class-dispute-import.php';
     require_once MSHIELD_PATH . 'admin/class-admin-page.php';
     require_once MSHIELD_PATH . 'admin/class-log-viewer.php';
     require_once MSHIELD_PATH . 'admin/class-order-panel.php';
@@ -439,6 +549,27 @@ function load() {
     require_once MSHIELD_PATH . 'admin/class-dashboard-widget.php';
     require_once MSHIELD_PATH . 'admin/class-fraud-review.php';
     require_once MSHIELD_PATH . 'admin/class-setup-wizard.php';
+
+    // A site this plugin was never activated on. Network activation runs the
+    // activation hook for the main site only, so a subsite arrives here with
+    // no version, no allowlist and no onboarding state -- and maybe_upgrade()
+    // below would read the missing version as 1.0.0 and walk ten seconds of
+    // history through every migration. Give it the start a fresh install
+    // gets. The test is the same three options activation() uses to tell a
+    // fresh store from one with history.
+    if( false === get_option( 'mshield_version' )
+        && false === get_option( 'mshield_db_version' )
+        && false === get_option( 'mshield_ip_whitelist' ) ) {
+        add_option( 'mshield_version', MSHIELD_VERSION, '', 'no' );
+        add_option( 'mshield_onboarding', 'pending', '', 'yes' );
+    }
+
+    // The allowlist, seeded with the server's own addresses as activation
+    // would have. One autoloaded option read; a no-op everywhere else.
+    if( ! is_array( get_option( 'mshield_ip_whitelist', false ) ) ) {
+        update_option( 'mshield_ip_whitelist', [], 'yes' );
+        \MightyShield\Firewall\ip_whitelist::auto_detect_server_ip();
+    }
 
     // Converge the schema before anything reads or writes a table.
     \MightyShield\Includes\db::maybe_upgrade_schema();
@@ -452,6 +583,88 @@ function load() {
     // blocking disabled was firing the event into no listener and letting the
     // log table grow without bound.
     add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\db', 'cleanup' ] );
+
+    // And make sure the event exists. Activation schedules it, but activation
+    // runs once, for one site: a subsite of a network-activated install never
+    // saw it, and a site whose cron table was rebuilt lost it. wp_next_scheduled()
+    // reads an option that is already loaded, so this costs nothing.
+    if( ! wp_next_scheduled( 'mshield_daily_cleanup' ) ) {
+        wp_schedule_event( time(), 'daily', 'mshield_daily_cleanup' );
+    }
+
+    // Orders that settled in Processing without anyone clicking Complete earn
+    // their credit here, a batch a day.
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Protection\outcomes', 'credit_settled_orders' ] );
+
+    // Translations, from the plugin's own folder. See load_textdomain().
+    add_action( 'init', '\MightyShield\load_textdomain', 0 );
+
+    // The address re-hash a schema-10 update arms. Runs on admin, cron and
+    // WP-CLI requests only, a few batches at a time, and disarms itself.
+    add_action( 'init', [ '\MightyShield\Includes\entities', 'maybe_rehash_addresses' ], 20 );
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\entities', 'maybe_rehash_addresses' ] );
+
+    // Hold-after-payment, for every request. The gateway confirms payment
+    // wherever it confirms it -- in the checkout request, in a webhook, on the
+    // return from a 3-D Secure redirect -- and the hold has to be waiting in
+    // all of them. It reads the order's own meta, so it is a no-op on any
+    // order that was not held.
+    // Three arguments: the status hooks pass the transition, whose 'manual'
+    // flag is how the hold tells a human's status change from the gateway's.
+    add_action( 'woocommerce_payment_complete', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999, 3 );
+    add_action( 'woocommerce_order_status_processing', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999, 3 );
+    add_action( 'woocommerce_order_status_completed', [ '\MightyShield\Includes\response', 'hold_after_payment' ], 999, 3 );
+
+    // A paid order is what earns an identity its history. The recorder links
+    // an order at checkout but no longer counts it; the count arrives with the
+    // money, on whichever of these confirms it first, and once only.
+    add_action( 'woocommerce_payment_complete', [ '\MightyShield\Protection\outcomes', 'on_paid' ], 20 );
+    add_action( 'woocommerce_order_status_processing', [ '\MightyShield\Protection\outcomes', 'on_paid' ], 20 );
+    add_action( 'woocommerce_order_status_completed', [ '\MightyShield\Protection\outcomes', 'on_paid' ], 20 );
+
+    // The dispute CSV a merchant uploaded and then walked away from.
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\dispute_import', 'sweep_temp' ] );
+
+    // The cached "is the checkout the block one" answer, recomputed when the
+    // merchant points WooCommerce at a different checkout page. Saving the
+    // page already refreshes it; reassigning the page never fired that hook.
+    add_action( 'update_option_woocommerce_checkout_page_id', function() {
+        \MightyShield\Admin\admin_page::uses_block_checkout( true );
+    } );
+
+    // An order a reviewer released for payment waits in Pending until the
+    // customer pays; WooCommerce would cancel it after the stock-hold window.
+    add_filter( 'woocommerce_cancel_unpaid_order', [ '\MightyShield\Includes\response', 'keep_released_order' ], 10, 2 );
+
+    // Keep the MaxMind ASN database current. Registered beside the cleanup for
+    // the same reason it is: the cron event is scheduled unconditionally at
+    // activation, and the network signals are not something a merchant turns
+    // off, so there is no feature guard to hide this behind.
+    //
+    // Cheap to call. It is one option read and one filemtime unless the
+    // database is actually stale, and it does nothing at all on a store that
+    // has never set a MaxMind licence key.
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\ip_data', 'maybe_update_asn_database' ] );
+
+    // Re-learn what a large order looks like on this store. Daily is often
+    // enough for a figure derived from a year of orders, and it must not be
+    // done on a checkout request: it is two aggregate queries over the whole
+    // order table.
+    add_action( 'mshield_daily_cleanup', [ '\MightyShield\Includes\db', 'learn_high_value' ] );
+
+    // Personal data export and erasure.
+    //
+    // Above the mshield_enabled guard, and it has to stay there. Switching
+    // protection off stops MightyShield WRITING anything; it does not delete
+    // what a store already holds, and a store still has to be able to answer a
+    // request about it. A privacy obligation is not a feature to toggle.
+    \MightyShield\Includes\privacy::register();
+
+    // The back-catalogue rating pass. Above the mshield_enabled guard for the
+    // same reason as privacy: a run already in progress must finish, or
+    // resume, whether or not protection is switched on. It takes no action on
+    // any order — see includes/class-backfill.php.
+    \MightyShield\Includes\backfill::register();
 
     // Always load admin page so settings are accessible.
     if( is_admin() ) {
@@ -536,16 +749,16 @@ function load() {
 }
 
 /**
- * Plugin Updates.
+ * Updates are WordPress.org's job.
  *
- * @since   1.0.0
+ * Until 3.0.0 this file ended by wiring up Plugin Update Checker against the
+ * GitHub repository, which fetched release metadata on a schedule and could
+ * install a ZIP from there. That is a direct conflict with plugin directory
+ * guideline 8 -- a plugin hosted on WordPress.org may not serve its own
+ * updates or install code from anywhere else -- so both it and the vendored
+ * updates/ library are gone.
+ *
+ * Nothing replaces it. WordPress updates a directory-hosted plugin itself.
+ *
+ * @since   3.0.0
  */
-require_once MSHIELD_PATH . 'updates/plugin-update-checker.php';
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
-$mshield_updates = PucFactory::buildUpdateChecker(
-    'https://github.com/builtmighty/mighty-shield',
-    __FILE__,
-    'mighty-shield'
-);
-$mshield_updates->setBranch( 'main' );
-$mshield_updates->getVcsApi()->enableReleaseAssets();

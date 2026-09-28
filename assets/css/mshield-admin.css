@@ -14,7 +14,7 @@
    of a full plugin page. Stating the tokens twice is how they would drift. */
 .mshield-app, .mshield-scope {
     --bg:#f0f0f1; --surface:#ffffff; --surface-2:#f6f7f8;
-    --fg:#1d2327; --fg-2:#50575e; --fg-3:#8c9196;
+    --fg:#1d2327; --fg-2:#50575e; --fg-3:#6b7178; --on-brand:#ffffff;
     --line:#e2e4e7; --line-2:#eff0f2;
     --brand:#3858e9; --brand-soft:#eef1fe;
     --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.05);
@@ -22,19 +22,27 @@
     --ok:#00a32a; --warn:#dba617; --danger:#d63638; --flag:#8c5ce6;
     --ink-danger:#c22b2d; --ink-warn:#96700a; --ink-flag:#6f43cc; --ink-ok:#0a7c26;
     --ink-orange:#c2570f; --ink-lime:#4a9c1f;
+    /* The same hues as the inks, as a wash a row can carry. */
+    --tint-ok:rgba(0,163,42,.055); --tint-lime:rgba(74,156,31,.06); --tint-warn:rgba(219,166,23,.075);
+    --tint-orange:rgba(194,87,15,.06); --tint-danger:rgba(214,54,56,.05);
 
-    font-family:'Public Sans',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --sans:'Public Sans',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+    font-family:var(--sans);
     color:var(--fg);
 }
 
 .mshield-app[data-theme="dark"], .mshield-scope[data-theme="dark"] {
     --bg:#0e1116; --surface:#161a20; --surface-2:#1d222a;
-    --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#6f7987;
+    --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#8a94a1; --on-brand:#0e1116;
     --line:#272e38; --line-2:#212831;
     --brand:#7d95ff; --brand-soft:#1a2140;
     --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 44px rgba(0,0,0,.55);
     --ink-danger:#ff8f91; --ink-warn:#f0c34b; --ink-flag:#b69dff; --ink-ok:#57d97f;
     --ink-orange:#ff9d5c; --ink-lime:#a8e063;
+    --tint-ok:rgba(87,217,127,.07); --tint-lime:rgba(168,224,99,.07); --tint-warn:rgba(240,195,75,.08);
+    --tint-orange:rgba(255,157,92,.07); --tint-danger:rgba(255,143,145,.07);
 }
 
 /* "System" theme: no explicit choice, so follow the OS. Same dark tokens as
@@ -42,12 +50,14 @@
 @media (prefers-color-scheme: dark) {
     .mshield-app[data-theme="system"], .mshield-scope[data-theme="system"] {
         --bg:#0e1116; --surface:#161a20; --surface-2:#1d222a;
-        --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#6f7987;
+        --fg:#e8ecf2; --fg-2:#9aa5b1; --fg-3:#8a94a1; --on-brand:#0e1116;
         --line:#272e38; --line-2:#212831;
         --brand:#7d95ff; --brand-soft:#1a2140;
         --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 44px rgba(0,0,0,.55);
         --ink-danger:#ff8f91; --ink-warn:#f0c34b; --ink-flag:#b69dff; --ink-ok:#57d97f;
         --ink-orange:#ff9d5c; --ink-lime:#a8e063;
+        --tint-ok:rgba(87,217,127,.07); --tint-lime:rgba(168,224,99,.07); --tint-warn:rgba(240,195,75,.08);
+        --tint-orange:rgba(255,157,92,.07); --tint-danger:rgba(255,143,145,.07);
     }
 }
 
@@ -59,6 +69,8 @@
     background:var(--bg);
     animation:ms-in .3s cubic-bezier(.22,1,.36,1);
 }
+/* The manual is a menu and a reading column; both use the whole width. */
+.mshield-app.is-tab-documentation { max-width:none; }
 
 /* Dark mode: repaint the surrounding WordPress admin chrome so there is no
    light gutter around the themed plugin area. */
@@ -76,7 +88,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     body.mshield-theme-system #wpbody-content { background:#0e1116 !important; }
     body.mshield-theme-system #wpfooter { color:#6f7987; }
 }
-.mshield-mono { font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+.mshield-mono { font-family:var(--mono); }
 
 @keyframes ms-in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
 @keyframes ms-drawer { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:none} }
@@ -92,7 +104,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-title-row { display:flex; align-items:center; gap:9px; }
 .mshield-tagline { font-size:13px; color:var(--fg-2); margin-top:2px; }
 .mshield-version {
-    font-family:'JetBrains Mono',monospace; font-size:11px; padding:2px 7px; border-radius:20px;
+    font-family:var(--mono); font-size:11px; padding:2px 7px; border-radius:20px;
     background:var(--surface-2); border:1px solid var(--line); color:var(--fg-3);
 }
 .mshield-spacer { flex:1; }
@@ -104,8 +116,8 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     font-size:13px; font-weight:500; box-shadow:var(--shadow); text-decoration:none; line-height:1.2;
 }
 .mshield-btn:hover { background:var(--surface-2); color:var(--fg); }
-.mshield-btn.is-primary { border-color:transparent; background:var(--brand); color:#fff; font-weight:600; }
-.mshield-btn.is-primary:hover { filter:brightness(1.08); background:var(--brand); color:#fff; }
+.mshield-btn.is-primary { border-color:transparent; background:var(--brand); color:var(--on-brand); font-weight:600; }
+.mshield-btn.is-primary:hover { filter:brightness(1.08); background:var(--brand); color:var(--on-brand); }
 .mshield-btn.is-danger { border-color:transparent; background:var(--danger); color:#fff; font-weight:600; }
 .mshield-btn.is-small { padding:6px 11px; font-size:12.5px; }
 
@@ -123,9 +135,9 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 }
 .mshield-navcard:hover { color:var(--fg); border-color:var(--brand); }
 .mshield-navcard.is-active {
-    background:var(--brand); color:#fff; border-color:transparent; box-shadow:0 4px 14px rgba(56,88,233,.26);
+    background:var(--brand); color:var(--on-brand); border-color:transparent; box-shadow:0 4px 14px rgba(56,88,233,.26);
 }
-.mshield-navcard.is-active:hover { color:#fff; }
+.mshield-navcard.is-active:hover { color:var(--on-brand); }
 
 /* ---------- Cards ---------- */
 .mshield-card {
@@ -134,7 +146,11 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 }
 .mshield-card.is-flush { padding:0; overflow:hidden; }
 .mshield-card-head { display:flex; align-items:center; gap:12px; padding:15px 18px; border-bottom:1px solid var(--line-2); }
-.mshield-card-title { font-size:15px; font-weight:650; }
+/* One heading style: the section h2 and the card title are the same thing. */
+.mshield-app .mshield-card-title { font-size:16px; font-weight:650; margin:0 0 6px; padding:0; color:var(--fg); }
+.mshield-app .mshield-card-head .mshield-card-title { margin:0; }
+.mshield-app .mshield-card-link { font-size:13px; font-weight:600; color:var(--brand); text-decoration:none; }
+.mshield-app .mshield-card-link:hover { text-decoration:underline; }
 .mshield-card-sub { font-size:12.5px; color:var(--fg-2); margin-top:2px; }
 .mshield-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
 .mshield-stack { display:flex; flex-direction:column; gap:18px; }
@@ -156,7 +172,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-hero.is-observing .ms-accent { background:var(--warn); }
 .mshield-hero.is-observing .ms-ico    { background:rgba(219,166,23,.14); color:var(--ink-warn); }
 .mshield-hero-title { font-size:15.5px; font-weight:650; }
-.mshield-hero-meta { font-size:12.5px; color:var(--fg-2); margin-top:3px; font-family:'JetBrains Mono',monospace; }
+.mshield-hero-meta { font-size:12.5px; color:var(--fg-2); margin-top:3px; font-family:var(--mono); }
 
 /* The hero sits between the nav and the page on every tab now, rather than
    being the first item of the Dashboard's stack, so it carries its own spacing
@@ -305,7 +321,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-statcard .ms-big .n { font-size:30px; font-weight:700; letter-spacing:-.03em; }
 .mshield-statcard .ms-big .u { font-size:12px; color:var(--fg-3); }
 .mshield-statcard .ms-row { display:flex; justify-content:space-between; font-size:12.5px; color:var(--fg-2); padding:7px 0; border-top:1px solid var(--line-2); }
-.mshield-statcard .ms-row .v { font-family:'JetBrains Mono',monospace; color:var(--fg); }
+.mshield-statcard .ms-row .v { font-family:var(--mono); color:var(--fg); }
 
 /* ---------- Chart ---------- */
 .mshield-chart { width:100%; height:auto; display:block; overflow:visible; }
@@ -319,13 +335,13 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     color:var(--fg-2); font-size:12.5px; font-weight:600; cursor:pointer;
 }
 .mshield-range-btn:hover { border-color:var(--brand); color:var(--fg); }
-.mshield-range-btn.is-active { background:var(--brand); border-color:transparent; color:#fff; }
+.mshield-range-btn.is-active { background:var(--brand); border-color:transparent; color:var(--on-brand); }
 .mshield-charttip {
     position:absolute; top:8px; left:0; pointer-events:none; z-index:3;
     background:var(--fg); color:var(--surface); border-radius:8px; padding:8px 10px; font-size:12px;
     box-shadow:var(--shadow-lg); min-width:132px; transition:opacity .1s ease;
 }
-.mshield-charttip .t-label { font-family:'JetBrains Mono',monospace; font-size:11px; opacity:.7; margin-bottom:4px; }
+.mshield-charttip .t-label { font-family:var(--mono); font-size:11px; opacity:.7; margin-bottom:4px; }
 .mshield-charttip .t-row { display:flex; align-items:center; gap:6px; line-height:1.7; }
 .mshield-charttip .t-row i { width:8px; height:8px; border-radius:2px; display:inline-block; }
 .mshield-charttip .t-row b { margin-left:auto; font-variant-numeric:tabular-nums; }
@@ -342,7 +358,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-iprow .loc .org { color:var(--fg-3); }
 .mshield-iprow .bar { flex:0 0 150px; height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; }
 .mshield-iprow .bar > span { display:block; height:100%; background:var(--danger); border-radius:3px; }
-.mshield-iprow .count { font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:600; width:56px; text-align:right; flex:none; }
+.mshield-iprow .count { font-family:var(--mono); font-size:13.5px; font-weight:600; width:56px; text-align:right; flex:none; }
 .mshield-iprow .ip-logs { font-size:12.5px; color:var(--brand); font-weight:600; flex:none; }
 @media screen and (max-width:600px) { .mshield-iprow .bar { display:none; } }
 
@@ -355,7 +371,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     color:var(--fg); font-size:13px; outline:none;
 }
 .mshield-search .mshield-input { width:100%; padding-left:33px; }
-.mshield-input:focus, .mshield-select:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(56,88,233,.14); }
+.mshield-input:focus, .mshield-select:focus { border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft); }
 
 .mshield-loglist { overflow-x:auto; }
 
@@ -479,6 +495,9 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-setup-ladder { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 20px; }
 
 .mshield-setup-blurbs { margin:13px 0 18px; }
+.mshield-app span.mshield-hint,
+.mshield-app p.mshield-hint { font-size:11px; color:var(--fg-3); }
+.mshield-app span.mshield-hint { display:block; margin-top:5px; }
 .mshield-setup-blurbs .mshield-hint { margin:0 0 7px; line-height:1.5; }
 
 .mshield-app .mshield-setup-summary { width:100%; }
@@ -517,7 +536,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-kv { display:grid; grid-template-columns:104px 1fr; gap:9px 14px; font-size:13px; }
 .mshield-kv .k { color:var(--fg-2); }
 .mshield-eyebrow { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--fg-3); margin-bottom:8px; }
-.mshield-raw { margin:0; padding:12px; border-radius:9px; background:var(--surface-2); border:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-size:11.5px; line-height:1.65; color:var(--fg-2); overflow:auto; white-space:pre-wrap; word-break:break-word; }
+.mshield-raw { margin:0; padding:12px; border-radius:9px; background:var(--surface-2); border:1px solid var(--line); font-family:var(--mono); font-size:11.5px; line-height:1.65; color:var(--fg-2); overflow:auto; white-space:pre-wrap; word-break:break-word; }
 .mshield-hidden { display:none; }
 
 /* ================================================================
@@ -528,21 +547,22 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     padding:18px 20px; margin-bottom:18px; box-shadow:var(--shadow); color:var(--fg);
 }
 .mshield-app .mshield-section h2 { margin-top:0; font-size:16px; font-weight:650; color:var(--fg); }
-.mshield-app .mshield-section .description,
-.mshield-app .mshield-section p.description { color:var(--fg-2); }
-
-.mshield-app .mshield-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:18px; }
-.mshield-app .mshield-stat { background:var(--surface); border:1px solid var(--line); padding:16px 17px; border-radius:12px; box-shadow:var(--shadow); }
-.mshield-app .mshield-stat h3 { margin:0 0 5px; font-size:12.5px; font-weight:600; color:var(--fg-2); }
-.mshield-app .mshield-stat .number { font-size:30px; font-weight:700; letter-spacing:-.03em; color:var(--fg); }
-.mshield-app .mshield-stat .number.blocked { color:var(--ink-danger); }
-.mshield-app .mshield-stat .number.limited { color:var(--ink-warn); }
-.mshield-app .mshield-stat .number.flagged { color:var(--ink-flag); }
+/* Helper text: one sentence under a control or a card title. Hints (11px)
+   are for footnotes. */
+.mshield-app .description,
+.mshield-app p.description { font-size:12px; color:var(--fg-2); }
+.mshield-app .mshield-card > p.description,
+.mshield-app .mshield-card > form > p.description { margin:0 0 12px; }
+/* One empty state: a sentence where the content would have been. */
+.mshield-app .mshield-empty { margin:0; padding:4px 0; font-size:13px; color:var(--fg-2); }
+/* The Settings API save button, dressed as the app's primary button. */
+.mshield-app p.submit { margin:18px 0 0; padding:0; }
+.mshield-app p.submit .button-primary { padding:8px 13px; border-radius:7px; font-size:13px; font-weight:600; line-height:1.2; height:auto; min-height:0; }
 
 .mshield-app .mshield-table { width:100%; border-collapse:collapse; }
 .mshield-app .mshield-table th, .mshield-app .mshield-table td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line-2); color:var(--fg); }
 .mshield-app .mshield-table th { background:var(--surface-2); font-weight:600; color:var(--fg-2); }
-.mshield-app .mshield-table code { background:var(--surface-2); border-radius:4px; padding:2px 6px; font-family:'JetBrains Mono',monospace; }
+.mshield-app .mshield-table code { background:var(--surface-2); border-radius:4px; padding:2px 6px; font-family:var(--mono); }
 
 /* Enable checkboxes in settings views become toggle switches.
  *
@@ -590,7 +610,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-radio.is-disabled:hover { border-color:var(--line); color:var(--fg-2); }
 .mshield-radio.is-checked,
 .mshield-radio:has(input:checked) {
-    background:var(--brand); border-color:transparent; color:#fff; box-shadow:0 2px 8px rgba(56,88,233,.24);
+    background:var(--brand); border-color:transparent; color:var(--on-brand); box-shadow:0 2px 8px rgba(56,88,233,.24);
 }
 
 /* Form controls inside settings views. */
@@ -607,14 +627,17 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-app input[type="number"]:focus,
 .mshield-app input[type="password"]:focus,
 .mshield-app textarea:focus,
-.mshield-app select:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(56,88,233,.14); }
+.mshield-app select:focus { border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft); }
 
 .mshield-app .button {
     border-radius:7px; border:1px solid var(--line); background:var(--surface); color:var(--fg);
     box-shadow:var(--shadow); height:auto; padding:6px 13px;
 }
-.mshield-app .button-primary { border-color:transparent; background:var(--brand); color:#fff; text-shadow:none; }
+.mshield-app .button-primary { border-color:transparent; background:var(--brand); color:var(--on-brand); text-shadow:none; }
 .mshield-app .button-primary:hover { filter:brightness(1.08); background:var(--brand); }
+.mshield-app .button:hover { background:var(--surface-2); color:var(--fg); border-color:var(--line); }
+.mshield-app .button-primary:hover { color:var(--on-brand); }
+.mshield-app .button.button-small { padding:4px 10px; font-size:12px; }
 
 /* WordPress notices inside the app keep their own colors but round off. */
 .mshield-app .notice, .mshield-app div.error, .mshield-app div.updated { border-radius:8px; }
@@ -631,7 +654,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 
 .mshield-app .mshield-table .mshield-sig-name { font-weight:650; color:var(--fg); }
 .mshield-app .mshield-table .mshield-sig-key {
-    font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:var(--fg-3);
+    font-family:var(--mono); font-size:11px; color:var(--fg-3);
     background:transparent; padding:0;
 }
 
@@ -696,7 +719,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     text-align:center;
 }
 .mshield-scale .ms-range {
-    display:block; font-family:'JetBrains Mono',ui-monospace,monospace;
+    display:block; font-family:var(--mono);
     font-size:11px; color:var(--fg-3); margin-top:5px;
 }
 .mshield-scale .ms-name { display:block; font-size:12.5px; font-weight:650; margin-top:3px; }
@@ -758,16 +781,12 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
    pill can never disagree with the rating shown everywhere else. */
 .mshield-level-pills { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
 
-/* Full width: the row divides evenly between the levels.
-   Author's own rule, kept in the spelling it was given in. display:none rather
-   than an off-screen input is a deliberate call -- a display:none input takes
-   no keyboard focus, so the focus-visible style further down cannot fire and
-   these are reachable by pointer only. :checked still drives the sibling
-   selectors either way, because display:none hides an element without removing
-   it from the DOM. */
-.mshield-level-pills > input,
+/* The checkbox is off-screen, not display:none: a display:none input takes
+   no keyboard focus, so the pills were reachable by pointer only. Same pattern
+   as .mshield-radio input; :checked still drives the sibling selectors. */
 .mshield-level-pills > label input {
-    display: none;
+    position:absolute !important; opacity:0 !important; width:1px !important; height:1px !important;
+    margin:0 !important; padding:0 !important; pointer-events:none; appearance:none !important; -webkit-appearance:none !important;
 }
 
 .mshield-level-pills > label,
@@ -927,7 +946,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 .mshield-orderbox .ms-reasons .ms-detail { min-width:0; }
 .mshield-orderbox .ms-reasons .ms-why { color:var(--fg-2); display:block; }
 .mshield-orderbox .ms-reasons .ms-cost {
-    flex:none; font-family:'JetBrains Mono',ui-monospace,monospace;
+    flex:none; font-family:var(--mono);
     font-size:11.5px; font-weight:600; color:var(--fg-3);
 }
 .mshield-orderbox .ms-reasons .ms-tune {
@@ -1008,7 +1027,7 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
     display:inline-flex; align-items:baseline; gap:6px; white-space:nowrap;
 }
 .mshield-rating .ms-score {
-    font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-family:var(--mono);
     font-size:14px; font-weight:700; color:currentColor; line-height:1;
 }
 .mshield-rating .ms-name { font-size:11.5px; font-weight:600; color:currentColor; opacity:.9; }
@@ -1043,11 +1062,11 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 /* The head row must not take the hover tint — it is not a row you can act on. */
 .mshield-queuerow.is-head:hover { background:var(--surface); }
 
-.mshield-queuerow .ms-ordernum { font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:700; text-decoration:none; }
+.mshield-queuerow .ms-ordernum { font-family:var(--mono); font-weight:700; text-decoration:none; }
 .mshield-queuerow .ms-name { display:block; font-weight:600; }
 .mshield-queuerow .ms-name + .mshield-hint { margin-top:1px; }
 .mshield-queuerow .ms-money { color:var(--fg-2); }
-.mshield-queuerow .ms-total { font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; }
+.mshield-queuerow .ms-total { font-family:var(--mono); font-weight:600; }
 .mshield-queuerow .ms-age { color:var(--fg-3); font-size:12.5px; }
 
 /* Right-aligned so the buttons line up down the page however many a row has —
@@ -1108,3 +1127,197 @@ body.mshield-theme-dark #wpfooter { color:#6f7987; }
 }
 .mshield-dashwidget .ms-conflict strong { display:block; color:var(--ink-danger); margin-bottom:2px; }
 .mshield-dashwidget .ms-conflict a { font-weight:600; white-space:nowrap; }
+
+/* ---------- Focus and motion ---------- */
+/* One visible ring for everything a keyboard can land on. The checkbox
+   toggles strip core's box-shadow ring, so the outline is what remains. */
+.mshield-app .mshield-btn:focus-visible,
+.mshield-app .mshield-navcard:focus-visible,
+.mshield-app .mshield-range-btn:focus-visible,
+.mshield-app .mshield-radio:has(input:focus-visible),
+.mshield-app .ms-choice:focus-visible,
+.mshield-app .mshield-logrow.is-clickable:focus-visible,
+.mshield-app .mshield-back a:focus-visible,
+.mshield-app .button:focus-visible,
+.mshield-app a:focus-visible,
+.mshield-app input[type="checkbox"]:focus-visible,
+.mshield-app select:focus-visible,
+.mshield-app textarea:focus-visible,
+.mshield-app input[type="file"]:focus-visible {
+    outline:2px solid var(--brand); outline-offset:2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mshield-app, .mshield-app *, .mshield-app *::before, .mshield-app *::after,
+    .mshield-drawer, .mshield-drawer *, .mshield-drawer-overlay {
+        animation:none !important; transition:none !important;
+    }
+}
+
+/* ---------- Readouts ---------- */
+/* A number the plugin is telling you, next to a control you can change:
+   flat, monospaced, no border, so it never reads as a control. */
+.mshield-app .mshield-readout {
+    display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:6px;
+    background:var(--surface-2); font-family:var(--mono); font-size:12px; color:var(--fg); white-space:nowrap;
+}
+.mshield-app .mshield-readout.is-warn { color:var(--ink-warn); }
+.mshield-app .mshield-readout.is-danger { color:var(--ink-danger); }
+.mshield-app .mshield-readout.is-ok { color:var(--ink-ok); }
+
+/* An active filter that has no visible control of its own. */
+.mshield-app .mshield-chip {
+    display:inline-flex; align-items:center; gap:6px; padding:5px 6px 5px 11px; border-radius:999px;
+    background:var(--brand-soft); color:var(--fg); font-family:var(--mono); font-size:12px;
+}
+.mshield-app .mshield-chip a { color:var(--fg-2); text-decoration:none; font-size:15px; line-height:1; padding:0 4px; border-radius:50%; }
+.mshield-app .mshield-chip a:hover { color:var(--fg); background:var(--surface); }
+
+/* ---------- Scoring: every check on one grid ---------- */
+/* One row per check: on, name, cost, force level, how often it fires, and a
+   caret only when there is more to set. Every score is visible at once. */
+.mshield-app .mshield-checks-tools { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 16px; }
+.mshield-app .mshield-checks-tools .mshield-input { width:240px; max-width:100%; }
+.mshield-app .mshield-checks-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.mshield-app .mshield-chipbtn {
+    padding:4px 10px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
+    color:var(--fg-2); font-size:12px; font-weight:600; cursor:pointer; line-height:1.3;
+}
+.mshield-app .mshield-chipbtn:hover { border-color:var(--brand); color:var(--fg); }
+.mshield-app .mshield-chipbtn.is-on { background:var(--brand); border-color:transparent; color:var(--on-brand); }
+.mshield-app .mshield-chipbtn:focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
+
+.mshield-app .mshield-checkgroup { padding:14px 16px 6px; }
+.mshield-app .mshield-checkgroup > h2 { margin-bottom:6px; }
+.mshield-app .mshield-checkgroup.is-hidden { display:none; }
+.mshield-app .mshield-checkgrid { display:flex; flex-direction:column; }
+.mshield-app .mshield-checkrow {
+    display:grid; grid-template-columns:44px minmax(0,1fr) 110px 190px 90px 30px;
+    align-items:center; column-gap:12px; padding:9px 4px; border-top:1px solid var(--line-2);
+}
+.mshield-app .mshield-checkrow.is-head {
+    border-top:0; padding-top:2px; padding-bottom:6px;
+    font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--fg-3);
+}
+.mshield-app .mshield-checkrow.is-hidden { display:none; }
+.mshield-app .mshield-checkrow.is-off .mshield-sig-name { color:var(--fg-2); }
+.mshield-app .mshield-checkrow.is-changed { background:var(--brand-soft); border-radius:8px; }
+.mshield-app .mshield-checkrow.is-flash { animation:mshield-flash 2.6s ease-out 1; }
+.mshield-app .mshield-checkrow .ms-cell { min-width:0; }
+.mshield-app .mshield-checkrow .ms-cell-name { display:flex; flex-direction:column; gap:2px; }
+.mshield-app .mshield-checkrow .ms-name-line { display:flex; align-items:center; gap:6px; }
+.mshield-app .mshield-checkrow .mshield-sig-name { font-weight:650; color:var(--fg); }
+.mshield-app .mshield-checkrow .ms-cell-name .mshield-hint { margin:0; }
+.mshield-app .mshield-checkrow .ms-cell-cost { display:flex; flex-direction:column; gap:2px; }
+.mshield-app .mshield-checkrow .ms-cell-cost input[type="number"] { width:78px; }
+.mshield-app .mshield-checkrow .ms-cell-cost .mshield-hint { margin:0; }
+.mshield-app .mshield-checkrow .ms-noisy { color:var(--ink-danger); font-weight:700; margin-left:2px; }
+.mshield-app .mshield-checkrow .ms-caret {
+    display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; padding:0;
+    border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--fg-2); cursor:pointer;
+}
+.mshield-app .mshield-checkrow .ms-caret:hover { border-color:var(--brand); color:var(--fg); }
+.mshield-app .mshield-checkrow .ms-caret[aria-expanded="true"] svg { transform:rotate(180deg); }
+.mshield-app .mshield-checkrow .ms-row-more { grid-column:2 / -1; margin:6px 0 2px; }
+.mshield-app .mshield-checkrow .ms-row-more > summary { font-size:12px; font-weight:600; color:var(--fg-2); cursor:pointer; }
+/* With script the caret opens it, so the summary line is noise. */
+.mshield-app .mshield-checks.is-js .ms-row-more > summary { display:none; }
+.mshield-app .mshield-checkrow .ms-row-more .mshield-sig-config { margin-top:6px; }
+
+.mshield-app .mshield-savebar {
+    display:flex; align-items:center; gap:12px; margin-top:6px; padding:12px 16px;
+    background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
+}
+.mshield-app .mshield-savebar.is-dirty { position:sticky; bottom:12px; z-index:5; box-shadow:var(--shadow-lg); border-color:var(--brand); }
+.mshield-app .mshield-savebar .ms-savebar-note { font-size:13px; color:var(--fg-2); }
+
+@media screen and (max-width:900px) {
+    .mshield-app .mshield-checkrow { grid-template-columns:36px minmax(0,1fr) 30px; row-gap:8px; }
+    .mshield-app .mshield-checkrow.is-head { display:none; }
+    .mshield-app .mshield-checkrow .ms-cell-cost,
+    .mshield-app .mshield-checkrow .ms-cell-floor,
+    .mshield-app .mshield-checkrow .ms-cell-rate { grid-column:2 / 3; }
+    .mshield-app .mshield-checkrow .ms-cell-more { grid-column:3; grid-row:1; }
+}
+
+/* ---------- Dashboard: the work row ---------- */
+.mshield-app .mshield-chart-head { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:10px; }
+.mshield-app .mshield-legend i.is-blocked { background:var(--danger); }
+.mshield-app .mshield-legend i.is-rate { background:var(--warn); }
+.mshield-app .mshield-legend i.is-flag { background:var(--flag); }
+.mshield-app .mshield-work { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; }
+.mshield-app .mshield-workcard { display:flex; flex-direction:column; gap:10px; }
+.mshield-app .mshield-workcard .mshield-card-title { margin:0; }
+.mshield-app .mshield-workcard .mshield-card-link { align-self:flex-start; margin-top:auto; }
+.mshield-app .mshield-workcard .mshield-btn { align-self:flex-start; margin-top:auto; }
+.mshield-app .mshield-workcard > p.description { margin:0; }
+.mshield-app .ms-work-big { display:flex; align-items:baseline; gap:8px; }
+.mshield-app .ms-work-big .n { font-size:30px; font-weight:700; letter-spacing:-.03em; font-family:var(--mono); }
+.mshield-app .ms-work-big .u { font-size:12.5px; color:var(--fg-2); }
+.mshield-app .ms-work-figures { display:flex; gap:18px; flex-wrap:wrap; }
+.mshield-app .ms-work-figure { display:flex; flex-direction:column; }
+.mshield-app .ms-work-figure .n { font-size:22px; font-weight:700; letter-spacing:-.02em; font-family:var(--mono); }
+.mshield-app .ms-work-figure .u { font-size:11.5px; color:var(--fg-2); }
+.mshield-app .ms-work-figure.is-bad .n { color:var(--ink-danger); }
+.mshield-app .ms-work-figure.is-lost .n { color:var(--ink-warn); }
+.mshield-app .ms-work-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+.mshield-app .ms-work-list li { display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:13px; color:var(--fg-2); }
+.mshield-app .ms-work-list li strong { color:var(--fg); font-weight:600; }
+.mshield-app .ms-work-list .mshield-card-link { flex:none; margin:0; }
+.mshield-app .mshield-empty.is-padded { padding:14px 18px; }
+@media screen and (max-width:900px) {
+    .mshield-app .mshield-work { grid-template-columns:1fr; }
+}
+
+/* ---------- Shielding: the risk-level ladder ---------- */
+/* Six rows from Trusted to Banned, and which rung a row is on is the whole
+   point of the table. The edge, the tint and the dot carry it; the level's
+   NAME stays --fg, because the lime and amber inks are below 4.5:1 at this
+   size and the dot says the same thing for free. */
+.mshield-app .mshield-levelrow > td:first-child { border-left:3px solid var(--line); }
+.mshield-app .mshield-levelrow .ms-leveldot {
+    display:inline-block; width:8px; height:8px; border-radius:50%;
+    background:var(--fg-3); margin-right:8px; vertical-align:middle;
+}
+
+.mshield-app .mshield-levelrow.s-trusted  > td { background:var(--tint-ok); }
+.mshield-app .mshield-levelrow.s-low      > td { background:var(--tint-lime); }
+.mshield-app .mshield-levelrow.s-elevated > td { background:var(--tint-warn); }
+.mshield-app .mshield-levelrow.s-high     > td { background:var(--tint-orange); }
+.mshield-app .mshield-levelrow.s-rejected > td,
+.mshield-app .mshield-levelrow.s-banned   > td { background:var(--tint-danger); }
+
+.mshield-app .mshield-levelrow.s-trusted  > td:first-child { border-left-color:var(--ink-ok); }
+.mshield-app .mshield-levelrow.s-low      > td:first-child { border-left-color:var(--ink-lime); }
+.mshield-app .mshield-levelrow.s-elevated > td:first-child { border-left-color:var(--ink-warn); }
+.mshield-app .mshield-levelrow.s-high     > td:first-child { border-left-color:var(--ink-orange); }
+.mshield-app .mshield-levelrow.s-rejected > td:first-child,
+.mshield-app .mshield-levelrow.s-banned   > td:first-child { border-left-color:var(--ink-danger); }
+
+.mshield-app .mshield-levelrow.s-trusted  .ms-leveldot { background:var(--ink-ok); }
+.mshield-app .mshield-levelrow.s-low      .ms-leveldot { background:var(--ink-lime); }
+.mshield-app .mshield-levelrow.s-elevated .ms-leveldot { background:var(--ink-warn); }
+.mshield-app .mshield-levelrow.s-high     .ms-leveldot { background:var(--ink-orange); }
+.mshield-app .mshield-levelrow.s-rejected .ms-leveldot,
+.mshield-app .mshield-levelrow.s-banned   .ms-leveldot { background:var(--ink-danger); }
+
+/* A control must never look disabled because its row is tinted, so every
+   field in a tinted row sits on the surface colour the rest of the app uses. */
+.mshield-app .mshield-levelrow input[type="number"],
+.mshield-app .mshield-levelrow .mshield-stepper,
+.mshield-app .mshield-levelrow .mshield-readout { background:var(--surface); }
+.mshield-app .mshield-levelrow .mshield-stepper .ms-step { background:transparent; }
+
+/* The Action value is a severity too: nothing done, through the holds, to
+   refused. The stepper already writes s-<action> on every step. */
+.mshield-app .mshield-stepper .ms-value.s-flag { color:var(--ink-lime); }
+.mshield-app .mshield-stepper .ms-value.s-verify_3ds { color:var(--ink-warn); }
+.mshield-app .mshield-stepper .ms-value.s-hold_unpaid,
+.mshield-app .mshield-stepper .ms-value.s-hold_authorized,
+.mshield-app .mshield-stepper .ms-value.s-hold_paid { color:var(--ink-orange); }
+.mshield-app .mshield-stepper .ms-value.s-reject { color:var(--ink-danger); }
+
+/* The action's own description, the money and the fallback note, stacked
+   under the control they describe. */
+.mshield-app .ms-action-detail { display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin-top:7px; }
+.mshield-app .ms-action-detail .mshield-hint { margin:0; }

@@ -10,6 +10,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
@@ -50,6 +52,14 @@ class smarty_address_verifier {
      *
      * @param   string  $error_message  The API error that triggered fallback.
      */
+    /**
+     * The store-wide back-off after a failed call, and how long it lasts.
+     *
+     * @since   3.0.0
+     */
+    const BACKOFF_KEY     = 'mshield_smarty_backoff';
+    const BACKOFF_SECONDS = 2 * MINUTE_IN_SECONDS;
+
     private static function alert_degraded( $error_message ) {
 
         // Persist the latest degraded state for the admin notice.
@@ -62,17 +72,26 @@ class smarty_address_verifier {
         if( get_transient( 'mshield_smarty_alerted' ) ) return;
         set_transient( 'mshield_smarty_alerted', 1, DAY_IN_SECONDS );
 
-        $admin_email = get_option( 'admin_email' );
-        $subject     = '[MightyShield] Address verification is degraded';
+        // The addresses the merchant asked alerts to go to, and only if they
+        // asked for alerts at all. This went to the site administrator address
+        // unconditionally, which is not what the setup wizard promised.
+        if( ! settings::alerts_enabled() ) return;
+
+        $admin_email = settings::notification_recipients();
+        $subject     = __( '[MightyShield] Address verification is degraded', 'mighty-shield' );
         $message     = sprintf(
-            "MightyShield's Smarty address verification is currently unavailable and has fallen back to a basic ZIP/State check.\n\n" .
-            "Reason: %s\n\n" .
-            "Full USPS address verification is NOT running until this is resolved. Common causes:\n" .
-            "- Smarty subscription/quota exhausted (HTTP 402)\n" .
-            "- Invalid or expired auth-id / auth-token (HTTP 401/403)\n" .
-            "- Network/API outage\n\n" .
-            "Check your Smarty account at https://www.smarty.com/account and the MightyShield > Fraud Checks settings.\n\n" .
-            "This alert is sent at most once per day.",
+            /* translators: %s: the error Smarty returned. */
+            __(
+                "MightyShield's Smarty address verification is currently unavailable and has fallen back to a basic ZIP/State check.\n\n" .
+                "Reason: %s\n\n" .
+                "Full USPS address verification is NOT running until this is resolved. Common causes:\n" .
+                "- Smarty subscription/quota exhausted (HTTP 402)\n" .
+                "- Invalid or expired auth-id / auth-token (HTTP 401/403)\n" .
+                "- Network/API outage\n\n" .
+                "Check your Smarty account at https://www.smarty.com/account and the MightyShield > Scoring settings.\n\n" .
+                "This alert is sent at most once per day.",
+                'mighty-shield'
+            ),
             $error_message
         );
 
@@ -88,6 +107,9 @@ class smarty_address_verifier {
     public function render_degraded_notice() {
 
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
+
+        // Switched off is not degraded. Left on with a token cleared still is.
+        if( settings::get( 'mshield_smarty_enabled' ) !== 'yes' ) return;
 
         $degraded = get_option( 'mshield_smarty_degraded' );
         if( empty( $degraded ) || empty( $degraded['time'] ) ) return;
@@ -107,6 +129,7 @@ class smarty_address_verifier {
                 __( 'Address verification (Smarty) is degraded and is falling back to a basic ZIP and state check. Full USPS verification is NOT running. Last error: %s', 'mighty-shield' ),
                 $degraded['message']
             ) ),
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
             \MightyShield\Admin\admin_page::dismiss_url( 'mshield_smarty_degraded' ),
             esc_html__( 'Dismiss', 'mighty-shield' )
         );
@@ -122,8 +145,6 @@ class smarty_address_verifier {
      * @param   object   $errors WP_Error object, unused — this layer does not refuse.
      */
     public function assess_checkout( $data, $errors ) {
-
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
         $reason = self::assess( $data );
         if( $reason === null ) return;
@@ -213,6 +234,17 @@ class smarty_address_verifier {
 
         }
 
+        // A service that just failed is not asked again for a couple of
+        // minutes, whatever the address. The per-address back-off below is
+        // still kept, but it never protected the NEXT checkout: every
+        // checkout carries a different address, so during an outage every one
+        // of them waited out the full connection timeout before falling back,
+        // and a card-testing run made the store fire one dead call and one
+        // alert per attempt.
+        if( get_transient( self::BACKOFF_KEY ) ) {
+            return self::fallback_zip_state( $state, $zipcode );
+        }
+
         $response = self::call_smarty_api( $street, $city, $state, $zipcode );
 
         // API failure — fall back to ZIP/state check.
@@ -226,6 +258,7 @@ class smarty_address_verifier {
 
             // Cache API error briefly to avoid hammering a failing API.
             set_transient( $cache_key, 'api_error', MINUTE_IN_SECONDS );
+            set_transient( self::BACKOFF_KEY, time(), self::BACKOFF_SECONDS );
 
             return self::fallback_zip_state( $state, $zipcode );
 
@@ -375,7 +408,7 @@ class smarty_address_verifier {
 
                 $message .= ' ' . sprintf(
                     /* translators: %s: the transport in use, e.g. "HTTP Basic". */
-                    __( 'Credentials were sent as %s. Use Test Connection on the Scoring tab to find the form this server can actually deliver.', 'mighty-shield' ),
+                    __( 'Credentials were sent as %s. Use Test connection on the Scoring tab to find the form this server can actually deliver.', 'mighty-shield' ),
                     self::auth_mode() === 'query' ? __( 'query parameters', 'mighty-shield' ) : __( 'HTTP Basic', 'mighty-shield' )
                 );
 
@@ -423,7 +456,7 @@ class smarty_address_verifier {
      *
      * Basic keeps that intent and is the default. It is not documented on the US
      * Street page though, and some hosts and WAFs strip outbound Authorization
-     * headers, so which one works is a per-server question. Test Connection
+     * headers, so which one works is a per-server question. Test connection
      * answers it by trying both and storing the winner.
      *
      * Split out from call_smarty_api() so the test can drive either transport

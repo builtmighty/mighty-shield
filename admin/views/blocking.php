@@ -21,6 +21,7 @@ use MightyShield\Includes\settings;
 use MightyShield\Includes\db;
 use MightyShield\Includes\actions;
 use MightyShield\Includes\response;
+use MightyShield\Includes\trust_badge;
 
 $level_rows = db::get_risk_level_stats( 30 );
 
@@ -33,6 +34,47 @@ foreach( $level_rows as $row ) {
     if( $row['outcome'] !== '' ) {
         $by_level[ $b ]['outcomes'][ $row['outcome'] ] = (int) $row['total'];
     }
+}
+
+/* What every action does, for the script behind the Action stepper.
+   The stepper changes the name on screen; without this the sentence under
+   it, what happens to the money, and the "Reaches processor" pill all went
+   on describing the action that was SAVED -- so the moment a merchant
+   stepped to another action they were reading a contradiction.
+
+   Built here rather than assembled in JavaScript so every string stays a
+   PHP string with its translator comment, and so the script only ever sets
+   text and a class. */
+$mshield_action_detail = [];
+
+foreach( actions::keys() as $mshield_act ) {
+
+    $mshield_fb   = actions::fallback( $mshield_act );
+    $mshield_note = '';
+
+    if( $mshield_fb !== '' && ! actions::is_available( $mshield_act ) ) {
+        $mshield_note = sprintf(
+            /* translators: %s: name of the fallback action. */
+            __( 'No active payment method can do this. These orders will be handled as "%s" instead.', 'mighty-shield' ),
+            actions::label( $mshield_fb )
+        );
+    } elseif( $mshield_fb !== '' ) {
+        $mshield_note = sprintf(
+            /* translators: %s: name of the fallback action. */
+            __( 'Payment methods that cannot do this fall back to "%s".', 'mighty-shield' ),
+            actions::label( $mshield_fb )
+        );
+    }
+
+    $mshield_action_detail[ $mshield_act ] = [
+        'desc'     => actions::desc( $mshield_act ),
+        'money'    => actions::money( $mshield_act ),
+        'gateway'  => actions::contacts_gateway( $mshield_act ),
+        'fallback' => $mshield_note,
+        'allowed'  => __( 'Allowed', 'mighty-shield' ),
+        'blocked'  => __( 'Blocked', 'mighty-shield' ),
+    ];
+
 }
 ?>
 
@@ -52,11 +94,7 @@ foreach( $level_rows as $row ) {
         <h2><?php esc_html_e( 'Risk Levels', 'mighty-shield' ); ?></h2>
 
         <p class="description">
-            <?php esc_html_e( 'An order falls to the most severe risk level whose threshold its rating is at or below, and that level decides what happens to it. Rejected and Banned are fixed: they are refused before an order exists, so your payment processor is never contacted.', 'mighty-shield' ); ?>
-            <?php printf(
-                wp_kses_post( __( 'Some actions depend on your processor; which of yours can do what is on the <a href="%s">Payment</a> tab.', 'mighty-shield' ) ),
-                esc_url( admin_url( 'admin.php?page=mighty-shield&tab=payment' ) )
-            ); ?>
+            <?php esc_html_e( 'An order falls to the most severe risk level whose threshold its rating is at or below, and that level decides what happens to it.', 'mighty-shield' ); ?>
         </p>
 
         <div class="mshield-tablewrap">
@@ -67,7 +105,7 @@ foreach( $level_rows as $row ) {
                     <th style="width:110px;"><?php esc_html_e( 'Trust at or below', 'mighty-shield' ); ?></th>
                     <?php /* No AI column any more. Which levels go to review is an
                              AI-review setting, so it lives on the AI Review tab as one
-                             "Send to Review" control -- five pills in a row rather than
+                             "Send to review" control -- five pills in a row rather than
                              a checkbox per row here, and one page to look at when the
                              question is "what does the model see". */ ?>
                     <th style="width:230px;"><?php esc_html_e( 'Action', 'mighty-shield' ); ?></th>
@@ -83,15 +121,21 @@ foreach( $level_rows as $row ) {
                 $stat         = $by_level[ $key ] ?? null;
                 $configurable = in_array( $key, risk_levels::CONFIGURABLE, true );
                 $current      = risk_levels::action( $key );
-                $fallback     = actions::fallback( $current );
                 ?>
 
-                <tr>
+                <?php /* The row carries its own rung of the ladder: a coloured
+                         edge, a tint and a dot, through the same s-<level>
+                         ramp the trust scale, the rating column and the order
+                         panel's dial already use. The NAME is not coloured --
+                         the lime and amber inks are below 4.5:1 at this size,
+                         and the dot says the same thing for nothing. */ ?>
+                <tr class="mshield-levelrow <?php echo esc_attr( trust_badge::level_class( $key ) ); ?>">
                     <td>
-                        <span class="mshield-sig-name"><?php echo esc_html( $level['label'] ); ?></span>
+                        <span class="ms-leveldot" aria-hidden="true"></span>
+                        <span class="mshield-sig-name"><?php echo esc_html( risk_levels::label( $key ) ); ?></span>
                         <span class="mshield-tip" tabindex="0" role="note"
-                              aria-label="<?php echo esc_attr( $level['description'] ); ?>"
-                              data-tip="<?php echo esc_attr( $level['description'] ); ?>">?</span>
+                              aria-label="<?php echo esc_attr( risk_levels::description( $key ) ); ?>"
+                              data-tip="<?php echo esc_attr( risk_levels::description( $key ) ); ?>">?</span>
                     </td>
 
                     <td>
@@ -151,14 +195,18 @@ foreach( $level_rows as $row ) {
                             $at    = array_search( $current, $ckeys, true );
                             if( $at === false ) $at = 0;
                             ?>
-                            <?php /* Same control as Scoring's Force level, minus the
-                                     colour coding -- an action is a choice, not a
-                                     severity, so there is no ramp to follow. */ ?>
-                            <div class="mshield-stepper is-plain" role="group"
+                            <?php /* Same control as Scoring's Force level, and coloured
+                                     on the same principle: an action IS a severity here,
+                                     running from "No action" through the holds to
+                                     "Reject", so the value carries the colour of what it
+                                     does. data-details tells the script to rewrite the
+                                     sentence, the money and the processor pill below as
+                                     the value steps. */ ?>
+                            <div class="mshield-stepper" role="group" data-details
                                  aria-label="<?php echo esc_attr( sprintf(
                                      /* translators: %s: risk level name. */
                                      __( 'Action for %s', 'mighty-shield' ),
-                                     $level['label']
+                                     risk_levels::label( $key )
                                  ) ); ?>"
                                  data-choices="<?php echo esc_attr( wp_json_encode( $choices ) ); ?>">
 
@@ -198,43 +246,24 @@ foreach( $level_rows as $row ) {
                                 </span>
                             <?php endif; ?>
 
-                            <span class="mshield-hint">
-                                <?php echo esc_html( actions::desc( $current ) ); ?>
-                            </span>
+                            <?php /* Everything from here down describes the action showing
+                                     in the stepper above, and the script rewrites it as
+                                     that value steps. It used to be rendered from the
+                                     SAVED action and left behind. */ ?>
+                            <?php $mshield_now = $mshield_action_detail[ $current ] ?? []; ?>
+                            <div class="ms-action-detail" data-action-detail>
 
-                            <?php /* What happens to the money, which is the difference that
-                                     actually matters between the three holds -- actions::CATALOG
-                                     has carried this field all along and its own docblock says it
-                                     is "displayed". It was not: actions::money() had no callers,
-                                     so the one control on this page that decides whether a card is
-                                     charged, merely authorized, or left alone said nothing about
-                                     which. */ ?>
-                            <?php $mshield_money = actions::money( $current ); ?>
-                            <?php if( $mshield_money !== '' ) : ?>
-                                <span class="mshield-hint">
-                                    <strong><?php esc_html_e( 'The money:', 'mighty-shield' ); ?></strong>
-                                    <?php echo esc_html( $mshield_money ); ?>
-                                </span>
-                            <?php endif; ?>
+                                <span class="mshield-hint" data-detail-desc><?php echo esc_html( $mshield_now['desc'] ?? '' ); ?></span>
 
-                            <?php if( $fallback !== '' && ! actions::is_available( $current ) ) : ?>
-                                <span class="mshield-hint">
-                                    <strong><?php esc_html_e( 'No active payment method can do this.', 'mighty-shield' ); ?></strong>
-                                    <?php printf(
-                                        /* translators: %s: name of the fallback action. */
-                                        esc_html__( 'These orders will be handled as "%s" instead.', 'mighty-shield' ),
-                                        esc_html( actions::label( $fallback ) )
-                                    ); ?>
-                                </span>
-                            <?php elseif( $fallback !== '' ) : ?>
-                                <span class="mshield-hint">
-                                    <?php printf(
-                                        /* translators: %s: name of the fallback action. */
-                                        esc_html__( 'Payment methods that cannot do this fall back to "%s".', 'mighty-shield' ),
-                                        esc_html( actions::label( $fallback ) )
-                                    ); ?>
-                                </span>
-                            <?php endif; ?>
+                                <?php /* What happens to the money is the difference that
+                                         actually matters between the three holds, and it is
+                                         a fact the plugin reports rather than a thing to
+                                         set, so it reads as a readout. */ ?>
+                                <span class="mshield-readout" data-detail-money<?php echo ( $mshield_now['money'] ?? '' ) === '' ? ' hidden' : ''; ?>><?php echo esc_html( $mshield_now['money'] ?? '' ); ?></span>
+
+                                <span class="mshield-hint" data-detail-fallback<?php echo ( $mshield_now['fallback'] ?? '' ) === '' ? ' hidden' : ''; ?>><?php echo esc_html( $mshield_now['fallback'] ?? '' ); ?></span>
+
+                            </div>
                         <?php endif; ?>
                     </td>
 
@@ -242,22 +271,26 @@ foreach( $level_rows as $row ) {
                     <td>
                         <?php /* Coloured by what happens to the order, not by whether
                                  that is good news: green means it goes through to the
-                                 processor, red means it is stopped before it gets there. */ ?>
-                        <?php if( actions::contacts_gateway( $current ) ) : ?>
-                            <span class="mshield-pill is-ok"><span class="dot"></span><?php esc_html_e( 'Allowed', 'mighty-shield' ); ?></span>
-                        <?php else : ?>
-                            <span class="mshield-pill is-danger"><span class="dot"></span><?php esc_html_e( 'Blocked', 'mighty-shield' ); ?></span>
-                        <?php endif; ?>
+                                 processor, red means it is stopped before it gets there.
+                                 Rewritten by the script with the stepper above, because
+                                 the answer is a property of the action. */ ?>
+                        <span data-detail-gateway>
+                            <?php if( actions::contacts_gateway( $current ) ) : ?>
+                                <span class="mshield-pill is-ok"><span class="dot"></span><?php esc_html_e( 'Allowed', 'mighty-shield' ); ?></span>
+                            <?php else : ?>
+                                <span class="mshield-pill is-danger"><span class="dot"></span><?php esc_html_e( 'Blocked', 'mighty-shield' ); ?></span>
+                            <?php endif; ?>
+                        </span>
                     </td>
 
                     <td>
                         <?php if( ! $stat ) : ?>
-                            <span class="mshield-pill">&mdash;</span>
+                            <span class="mshield-readout">&mdash;</span>
                         <?php else :
                             $approved = (int) ( $stat['outcomes']['approved'] ?? 0 );
                             $bad      = (int) ( $stat['outcomes']['chargeback'] ?? 0 ) + (int) ( $stat['outcomes']['denied'] ?? 0 );
                             ?>
-                            <span class="mshield-pill">
+                            <span class="mshield-readout">
                                 <?php
                                 printf(
                                     /* translators: %s: number of orders. */
@@ -272,8 +305,8 @@ foreach( $level_rows as $row ) {
                                     printf(
                                         /* translators: 1: count that turned out fine, 2: count that turned out bad. */
                                         esc_html__( '%1$d turned out fine, %2$d turned out bad', 'mighty-shield' ),
-                                        $approved,
-                                        $bad
+                                        (int) $approved,
+                                        (int) $bad
                                     );
                                     ?>
                                 </span>
@@ -288,9 +321,91 @@ foreach( $level_rows as $row ) {
         </table>
         </div>
 
-        <p class="description" style="margin-top:12px;">
-            <?php esc_html_e( 'Use the last column to tune. Plenty of High orders that you went on to approve means the threshold is too cautious and you are holding real customers. Orders that stayed in Low and later turned out bad means it is too generous.', 'mighty-shield' ); ?>
-        </p>
+        <?php /* One island for the page rather than a copy of the catalogue on
+                 every row. Same pattern as the Dashboard chart's data block. */ ?>
+        <script type="application/json" id="mshield-action-detail"><?php echo wp_json_encode( $mshield_action_detail ); ?></script>
+
+        <?php
+        /* What enforcing would have done to orders you have already taken.
+           Sits directly under the thresholds because it is the answer to the
+           question those thresholds raise, and a merchant should not have to
+           go to another screen to find out what a number they just typed
+           would cost them. */
+        $mshield_fc  = \MightyShield\Includes\forecast::run( 30 );
+        $mshield_say = \MightyShield\Includes\forecast::summary( $mshield_fc );
+        $mshield_ref = $mshield_fc['actions'][ actions::REJECT ] ?? null;
+        ?>
+
+        <div class="mshield-card" style="margin-top:18px;">
+
+            <h2 class="mshield-card-title">
+                <?php esc_html_e( 'Enforcement Audit', 'mighty-shield' ); ?>
+            </h2>
+
+            <?php if( '' === $mshield_say ) : ?>
+
+                <p class="description">
+                    <?php
+                    printf(
+                        /* translators: %s: number of orders rated so far. */
+                        esc_html__( 'Not enough rated orders yet to say anything useful — there are %s, and this needs at least 20. Leave MightyShield observing and come back; a forecast built on a handful of orders is a number pretending to be an answer.', 'mighty-shield' ),
+                        esc_html( number_format_i18n( (int) $mshield_fc['rated'] ) )
+                    );
+                    ?>
+                </p>
+
+            <?php else : ?>
+
+                <p class="description"><strong><?php echo esc_html( $mshield_say ); ?></strong></p>
+
+                <?php if( $mshield_ref && $mshield_ref['total'] > 0 ) : ?>
+                    <table class="mshield-table">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e( 'Orders that would be refused', 'mighty-shield' ); ?></th>
+                                <th style="width:150px;"><?php esc_html_e( 'How they turned out', 'mighty-shield' ); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><?php esc_html_e( 'Charged back, or you marked them fraud', 'mighty-shield' ); ?></td>
+                                <td><strong><?php echo esc_html( number_format_i18n( $mshield_ref['bad'] ) ); ?></strong></td>
+                            </tr>
+                            <tr>
+                                <td><?php esc_html_e( 'Completed normally — real customers you would have lost', 'mighty-shield' ); ?></td>
+                                <td><strong><?php echo esc_html( number_format_i18n( $mshield_ref['good'] ) ); ?></strong></td>
+                            </tr>
+                            <tr>
+                                <td><?php esc_html_e( 'Refunded, which is usually ordinary retail rather than fraud', 'mighty-shield' ); ?></td>
+                                <td><?php echo esc_html( number_format_i18n( $mshield_ref['refunded'] ) ); ?></td>
+                            </tr>
+                            <tr>
+                                <td><?php esc_html_e( 'No outcome recorded yet', 'mighty-shield' ); ?></td>
+                                <td><?php echo esc_html( number_format_i18n( $mshield_ref['unknown'] ) ); ?></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+
+                <p class="mshield-hint" style="margin-top:10px">
+                    <?php esc_html_e( 'Worked out by re-rating the orders you have already taken against the thresholds above. Orders stopped by a check that decides on its own — a filled trap field, a browser announcing itself as software — are counted as refused whatever you set, because no threshold can overrule those.', 'mighty-shield' ); ?>
+                </p>
+
+                <?php if( ! empty( $mshield_fc['capped'] ) ) : ?>
+                    <p class="mshield-hint">
+                        <?php
+                        printf(
+                            /* translators: %s: number of orders. */
+                            esc_html__( 'Based on the most recent %s rated orders.', 'mighty-shield' ),
+                            esc_html( number_format_i18n( \MightyShield\Includes\forecast::MAX_ROWS ) )
+                        );
+                        ?>
+                    </p>
+                <?php endif; ?>
+
+            <?php endif; ?>
+
+        </div>
 
     </div>
 
@@ -312,33 +427,22 @@ foreach( $level_rows as $row ) {
                 </td>
             </tr>
             <tr>
-                <th scope="row"><?php esc_html_e( 'Firewall Mode', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Firewall mode', 'mighty-shield' ); ?></th>
                 <td>
                     <?php \MightyShield\Admin\admin_page::radios( 'mshield_firewall_mode', [
                         'whitelist' => __( 'Classic checkout: block all non-allowlisted IPs', 'mighty-shield' ),
                         'blocklist' => __( 'Block/One-page checkout: allow shoppers, block only blocklisted IPs', 'mighty-shield' ),
                     ], settings::get( 'mshield_firewall_mode' ) ); ?>
-                    <p class="description"><?php esc_html_e( 'Use "Classic checkout" only if real customers never use the Store API (shortcode/classic checkout). If your store uses the block-based Checkout, choose the block/one-page option so real shoppers are not blocked.', 'mighty-shield' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'On a block checkout the firewall steps aside for the cart and checkout in either mode.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
-        </table>
-
-    </div>
-
-    <div class="mshield-section">
-
-        <h2><?php esc_html_e( 'Block Checkout Protection', 'mighty-shield' ); ?></h2>
-
-        <p class="description"><?php esc_html_e( 'Run the fraud checks on the block-based Checkout, which submits through the Store API. Every check works there, including the ones that need something from the browser: the checkout timer, the device check, the hidden decoy field and the bot challenge. The same order is judged the same way whichever checkout your store uses.', 'mighty-shield' ); ?></p>
-
-        <table class="form-table" role="presentation">
             <tr>
-                <th scope="row"><?php esc_html_e( 'Enable Store API checks', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Block checkout', 'mighty-shield' ); ?></th>
                 <td>
                     <label>
                         <input type="hidden" name="mshield_store_api_checks" value="no" />
                         <input type="checkbox" name="mshield_store_api_checks" value="yes" <?php checked( settings::get( 'mshield_store_api_checks' ), 'yes' ); ?> />
-                        <?php esc_html_e( 'Apply the server-side fraud checks to block-based (Store API) checkout.', 'mighty-shield' ); ?>
+                        <?php esc_html_e( 'Run the fraud checks on the block-based checkout too.', 'mighty-shield' ); ?>
                     </label>
                 </td>
             </tr>
@@ -371,12 +475,11 @@ foreach( $level_rows as $row ) {
             <div>
                 <?php if( ! $mshield_cap['ready'] ) : ?>
 
-                    <strong><?php esc_html_e( 'Not running.', 'mighty-shield' ); ?></strong>
-                    <?php esc_html_e( 'Pick a provider and save both keys below. Until then nothing is challenged and no order is affected.', 'mighty-shield' ); ?>
+                    <strong><?php esc_html_e( 'Inactive', 'mighty-shield' ); ?></strong>
 
                 <?php else : ?>
 
-                    <strong><?php esc_html_e( 'Running.', 'mighty-shield' ); ?></strong>
+                    <strong><?php esc_html_e( 'Active', 'mighty-shield' ); ?></strong>
                     <?php
                     printf(
                         /* translators: 1: number refused, 2: number unconfirmed, 3: number of days. */
@@ -416,9 +519,6 @@ foreach( $level_rows as $row ) {
                         'turnstile'    => __( 'Cloudflare Turnstile', 'mighty-shield' ),
                         'recaptcha_v3' => __( 'Google reCAPTCHA v3', 'mighty-shield' ),
                     ], $cap_provider ); ?>
-                    <p class="description">
-                        <?php esc_html_e( 'Nothing is challenged until a provider and both keys are set. A wrong key or a provider outage lets requests through rather than refusing everyone, and emails you once a day until it is fixed.', 'mighty-shield' ); ?>
-                    </p>
                 </td>
             </tr>
 
@@ -433,10 +533,10 @@ foreach( $level_rows as $row ) {
                 <td>
                     <input type="text" name="mshield_captcha_site_key" class="regular-text"
                            value="<?php echo esc_attr( settings::get( 'mshield_captcha_site_key' ) ); ?>" />
-                    <p class="description mshield-cap-p-turnstile"<?php echo $cap_hide( 'turnstile' ); ?>>
+                    <p class="description mshield-cap-p-turnstile"<?php echo $cap_hide( 'turnstile' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or a literal style attribute; see the closure above ?>>
                         <?php esc_html_e( 'From the Cloudflare dashboard, under Turnstile.', 'mighty-shield' ); ?>
                     </p>
-                    <p class="description mshield-cap-p-recaptcha_v3"<?php echo $cap_hide( 'recaptcha_v3' ); ?>>
+                    <p class="description mshield-cap-p-recaptcha_v3"<?php echo $cap_hide( 'recaptcha_v3' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or a literal style attribute; see the closure above ?>>
                         <?php esc_html_e( 'From the Google reCAPTCHA admin console. Must be a v3 key.', 'mighty-shield' ); ?>
                     </p>
                 </td>
@@ -445,12 +545,12 @@ foreach( $level_rows as $row ) {
                 <th scope="row"><?php esc_html_e( 'Secret key', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="password" name="mshield_captcha_secret_key" class="regular-text" value="" autocomplete="off"
-                           placeholder="<?php echo settings::get( 'mshield_captcha_secret_key' ) !== '' ? esc_attr__( 'saved. Leave blank to keep', 'mighty-shield' ) : ''; ?>" />
+                           placeholder="<?php echo settings::get( 'mshield_captcha_secret_key' ) !== '' ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>" />
                 </td>
             </tr>
 
             <tr>
-                <th scope="row"><?php esc_html_e( 'Where it applies', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Where it applies (always on)', 'mighty-shield' ); ?></th>
                 <td>
                     <?php
                     $cap_surfaces = [
@@ -467,13 +567,6 @@ foreach( $level_rows as $row ) {
                             <?php echo esc_html( $label ); ?>
                         </label>
                     <?php endforeach; ?>
-                    <p class="description">
-                        <?php esc_html_e( 'Checkout is always covered. A failed challenge refuses a login, registration or password reset; a comment is held for moderation instead, because losing a real reader\'s comment outright is worse than making them wait.', 'mighty-shield' ); ?>
-                    </p>
-                    <p class="description">
-                        <strong><?php esc_html_e( 'Login is off by default.', 'mighty-shield' ); ?></strong>
-                        <?php esc_html_e( 'A wrong key fails open, but a blocked script means no token at all, and that is refused, which on the login form locks everyone out. Allowlist your own address on the Access tab before turning it on.', 'mighty-shield' ); ?>
-                    </p>
                 </td>
             </tr>
 
@@ -504,7 +597,7 @@ foreach( $level_rows as $row ) {
                         <?php esc_html_e( 'Delay refused checkouts by a random amount', 'mighty-shield' ); ?>
                     </label>
                     <p class="description">
-                        <?php esc_html_e( 'Automated card testing depends on getting a fast, consistent answer. Refusing slowly, with a message that varies and reads like an ordinary bank decline, means an attacker cannot tell what tripped or time their way around it. Genuine customers are never refused, so this does not affect them.', 'mighty-shield' ); ?>
+                        <?php esc_html_e( 'Automated card testing depends on getting a fast, consistent answer. Refusing slowly, with a message that varies and reads like an ordinary bank decline, means an attacker cannot tell what tripped or time their way around it.', 'mighty-shield' ); ?>
                     </p>
                     <p>
                         <label>
@@ -527,10 +620,6 @@ foreach( $level_rows as $row ) {
             <tr>
                 <th scope="row"><?php esc_html_e( 'What a refused customer reads', 'mighty-shield' ); ?></th>
                 <td>
-                    <p class="description">
-                        <?php esc_html_e( 'MightyShield picks one of these at random each time, so nobody can submit the same order twice and learn anything from the difference in the answer. None of them says what tripped, on purpose. These cover refusals that come from the rating; an individual check that refuses on its own says something specific instead, because the customer usually needs to fix it, as with a mistyped postcode.', 'mighty-shield' ); ?>
-                    </p>
-
                     <ul class="mshield-examples">
                         <?php foreach( response::refusal_messages() as $mshield_example ) : ?>
                             <li><?php echo esc_html( $mshield_example ); ?></li>
@@ -547,30 +636,6 @@ foreach( $level_rows as $row ) {
                               placeholder="<?php esc_attr_e( 'Need help with this order? Call us on &lt;a href=&quot;tel:5551234567&quot;&gt;(555) 123-4567&lt;/a&gt;.', 'mighty-shield' ); ?>"><?php
                         echo esc_textarea( settings::get( 'mshield_refusal_note' ) );
                     ?></textarea>
-
-                    <p class="description">
-                        <?php esc_html_e( 'Being vague protects the store, but it leaves the occasional real customer with no idea who to talk to. This is where you give them a way through. It is added to the end of every refusal, whatever caused it.', 'mighty-shield' ); ?>
-                    </p>
-                    <p class="description">
-                        <?php
-                        // Each tag name is escaped on its own, then joined with
-                        // the markup. Escaping the joined string would escape
-                        // the separators along with it and print them.
-                        $mshield_tags = array_map(
-                            function( $mshield_tag ) { return '<code>&lt;' . esc_html( $mshield_tag ) . '&gt;</code>'; },
-                            array_keys( \MightyShield\Admin\admin_page::refusal_note_tags() )
-                        );
-
-                        printf(
-                            /* translators: %s: the list of permitted HTML tags. */
-                            esc_html__( 'Links work, so a phone number or an email address can be tapped. Bold and italic work too. In full: %s.', 'mighty-shield' ),
-                            implode( ', ', $mshield_tags )
-                        );
-                        ?>
-                    </p>
-                    <p class="mshield-hint">
-                        <?php esc_html_e( 'Leave it empty and refusals read exactly as they do above.', 'mighty-shield' ); ?>
-                    </p>
                 </td>
             </tr>
         </table>

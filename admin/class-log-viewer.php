@@ -9,6 +9,8 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\db;
 
 class log_viewer {
@@ -33,7 +35,7 @@ class log_viewer {
 
         if( ! isset( $_GET['mshield_export_logs'] ) ) return;
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
-        if( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], 'mshield_export_logs' ) ) return;
+        if( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_export_logs' ) ) return;
 
         // The same filters the screen is showing. The Export button sits inside
         // the filter bar, so narrowing to one address and exporting used to hand
@@ -56,7 +58,10 @@ class log_viewer {
         $output = fopen( 'php://output', 'w' );
 
         // Header row.
-        fputcsv( $output, [ 'ID', 'IP', 'Action', 'Endpoint', 'Reason', 'Date' ] );
+        // Every argument spelled out: PHP 8.4 deprecates leaning on the
+        // default escape character, and a deprecation printed into a CSV
+        // download is a corrupt download.
+        fputcsv( $output, [ 'ID', 'IP', 'Action', 'Endpoint', 'Reason', 'Date' ], ',', '"', '\\', "\n" );
 
         foreach( $logs as $log ) {
             fputcsv( $output, array_map( [ __CLASS__, 'defuse' ], [
@@ -66,7 +71,7 @@ class log_viewer {
                 $log->endpoint,
                 $log->reason,
                 $log->created_at,
-            ] ) );
+            ] ), ',', '"', '\\', "\n" );
         }
 
         fclose( $output );

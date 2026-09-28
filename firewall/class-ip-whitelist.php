@@ -9,6 +9,8 @@
  */
 namespace MightyShield\Firewall;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 
 class ip_whitelist {
@@ -19,6 +21,94 @@ class ip_whitelist {
      * @since   1.0.0
      */
     private const OPTION_KEY = 'mshield_ip_whitelist';
+
+    /**
+     * Every kind of thing that can be allowlisted.
+     *
+     * The first four are about the VISITOR and have been here since 1.4.0:
+     * they are answerable from the request itself, and each has its own
+     * dedicated is_*_whitelisted() method.
+     *
+     * The rest arrived in 3.0.0 and are about the ORDER. They cannot be
+     * answered from a request alone -- there is no "current postcode" -- so
+     * they are matched together by matches_fields() against the order in
+     * hand, which is why they have no methods of their own.
+     *
+     * @since   3.0.0
+     */
+    const TYPES = [ 'ip', 'user', 'email', 'role', 'phone', 'name', 'postcode', 'city', 'country' ];
+
+    /**
+     * The order-field types, and which normalised field each one reads.
+     *
+     * @since   3.0.0
+     */
+    const FIELD_TYPES = [
+        'phone'    => 'phone',
+        'name'     => 'name',
+        'postcode' => 'postcode',
+        'city'     => 'city',
+        'country'  => 'country',
+    ];
+
+    /**
+     * Put a value into the one shape this type is stored and compared in.
+     *
+     * Every read and every write goes through here, which is the point. The
+     * add and remove paths each used to carry their own copy of this, so a
+     * phone number added as "(212) 555-0147" and removed as "212 555 0147"
+     * were two different strings and the remove silently did nothing.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $type
+     * @param   mixed   $value
+     * @return  string  '' when there is nothing usable.
+     */
+    public static function normalize_value( $type, $value ) {
+
+        $value = trim( (string) $value );
+
+        switch( $type ) {
+
+            case 'email':
+                return strtolower( trim( sanitize_email( $value ) ) );
+
+            case 'user':
+                return (string) (int) $value;
+
+            case 'role':
+                return sanitize_key( $value );
+
+            case 'phone':
+                // Digits only, then the last ten. A merchant allowlisting
+                // their own trade customer should not have to know whether
+                // that customer types a country code.
+                $digits = preg_replace( '/[^0-9]/', '', $value );
+                return strlen( $digits ) > 10 ? substr( $digits, -10 ) : $digits;
+
+            case 'name':
+                // Case and inner spacing only. Deliberately NOT stripping
+                // punctuation: O'Brien and Obrien are different people to
+                // everyone except a regex, and this list grants trust.
+                return strtolower( preg_replace( '/\s+/', ' ', $value ) );
+
+            case 'postcode':
+                return strtoupper( preg_replace( '/[^A-Z0-9]/i', '', $value ) );
+
+            case 'city':
+                return strtolower( preg_replace( '/\s+/', ' ', $value ) );
+
+            case 'country':
+                $code = strtoupper( preg_replace( '/[^A-Z]/i', '', $value ) );
+                return strlen( $code ) === 2 ? $code : '';
+
+            default:
+                return sanitize_text_field( $value );
+
+        }
+
+    }
 
     /**
      * Check if an IP is whitelisted.
@@ -51,6 +141,88 @@ class ip_whitelist {
             if( $value === $ip ) {
                 return true;
             }
+
+        }
+
+        return false;
+
+    }
+
+    /**
+     * Whether any order-field allowlist entry matches this order.
+     *
+     * Deliberately one method for five types rather than five methods. These
+     * are all answered from the same order and read in the same breath, and
+     * the alternative is five passes over the allowlist to ask five questions
+     * about the same object.
+     *
+     * Tries the delivery address first and falls back to billing, the same
+     * way order_signals does, because the goods are what matter. A postcode
+     * allowlisted for a trade customer should match whichever box they put
+     * it in.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @return  bool
+     */
+    public static function matches_order( $order ) {
+
+        if( ! is_a( $order, 'WC_Order' ) ) return false;
+
+        $pick = function( $ship, $bill ) use ( $order ) {
+            $v = trim( (string) $order->{$ship}() );
+            return $v !== '' ? $v : trim( (string) $order->{$bill}() );
+        };
+
+        return self::matches_fields( [
+            'phone'    => (string) $order->get_billing_phone(),
+            'name'     => trim( $pick( 'get_shipping_first_name', 'get_billing_first_name' )
+                              . ' '
+                              . $pick( 'get_shipping_last_name', 'get_billing_last_name' ) ),
+            'postcode' => $pick( 'get_shipping_postcode', 'get_billing_postcode' ),
+            'city'     => $pick( 'get_shipping_city', 'get_billing_city' ),
+            'country'  => $pick( 'get_shipping_country', 'get_billing_country' ),
+        ] );
+
+    }
+
+    /**
+     * Whether any order-field entry matches this set of values.
+     *
+     * Split from matches_order() so the checkout path, which has posted data
+     * rather than an order, can ask the same question.
+     *
+     * @since   3.0.0
+     *
+     * @param   array   $fields     type => raw value.
+     * @return  bool
+     */
+    public static function matches_fields( $fields ) {
+
+        // Normalise once, not once per allowlist row.
+        $want = [];
+
+        foreach( self::FIELD_TYPES as $type => $key ) {
+
+            if( ! isset( $fields[ $key ] ) ) continue;
+
+            $value = self::normalize_value( $type, $fields[ $key ] );
+            if( $value !== '' ) $want[ $type ] = $value;
+
+        }
+
+        if( empty( $want ) ) return false;
+
+        foreach( self::get_whitelist() as $entry ) {
+
+            $type = $entry['type'] ?? '';
+
+            if( ! isset( $want[ $type ] ) ) continue;
+
+            // Stored already normalised by add_entry(), so this is an exact
+            // comparison of two values in the same shape.
+            if( (string) $entry['value'] === $want[ $type ] ) return true;
 
         }
 
@@ -145,19 +317,10 @@ class ip_whitelist {
      */
     public static function add_entry( $type, $value, $label = '', $system = false ) {
 
-        $type = in_array( $type, [ 'ip', 'user', 'email', 'role' ], true ) ? $type : '';
+        $type = in_array( $type, self::TYPES, true ) ? $type : '';
         if( $type === '' ) return false;
 
-        // Normalize the value per type.
-        if( $type === 'email' ) {
-            $value = strtolower( trim( sanitize_email( $value ) ) );
-        } elseif( $type === 'user' ) {
-            $value = (string) (int) $value;
-        } elseif( $type === 'role' ) {
-            $value = sanitize_key( $value );
-        } else {
-            $value = sanitize_text_field( $value );
-        }
+        $value = self::normalize_value( $type, $value );
 
         if( $value === '' || $value === '0' ) return false;
 
@@ -196,13 +359,9 @@ class ip_whitelist {
      */
     public static function remove_entry( $type, $value ) {
 
-        if( $type === 'email' ) {
-            $value = strtolower( trim( (string) $value ) );
-        } elseif( $type === 'user' ) {
-            $value = (string) (int) $value;
-        } elseif( $type === 'role' ) {
-            $value = sanitize_key( $value );
-        }
+        // Through the same normalizer that stored it, or a phone number typed
+        // back with different punctuation would not match the row it created.
+        $value = self::normalize_value( $type, $value );
 
         $filtered = [];
 
@@ -318,7 +477,7 @@ class ip_whitelist {
 
         // Method 1: SERVER_ADDR.
         if( ! empty( $_SERVER['SERVER_ADDR'] ) ) {
-            $server_ip = sanitize_text_field( $_SERVER['SERVER_ADDR'] );
+            $server_ip = sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) );
             if( filter_var( $server_ip, FILTER_VALIDATE_IP ) ) {
                 self::add_ip( $server_ip, 'Server IP (SERVER_ADDR)', true );
             }

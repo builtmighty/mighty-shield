@@ -20,6 +20,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class risk_levels {
 
     const TRUSTED  = 'trusted';
@@ -47,8 +49,6 @@ class risk_levels {
 
         self::TRUSTED => [
             'rank'             => 0,
-            'label'            => 'Trusted',
-            'description'      => 'Known-good, with a clean order history behind it.',
             'contacts_gateway' => true,
             'creates_order'    => true,
             'action'           => actions::NONE,
@@ -57,8 +57,6 @@ class risk_levels {
 
         self::LOW => [
             'rank'             => 1,
-            'label'            => 'Low',
-            'description'      => 'Nothing wrong, nothing vouching for it either. Where an unknown customer starts.',
             'contacts_gateway' => true,
             'creates_order'    => true,
             'action'           => actions::FLAG,
@@ -67,8 +65,6 @@ class risk_levels {
 
         self::ELEVATED => [
             'rank'             => 2,
-            'label'            => 'Elevated',
-            'description'      => 'Something is off, but nothing damning. Ambiguous enough to be worth a check.',
             'contacts_gateway' => true,
             'creates_order'    => true,
             'action'           => actions::VERIFY_3DS,
@@ -77,8 +73,6 @@ class risk_levels {
 
         self::HIGH => [
             'rank'             => 3,
-            'label'            => 'High',
-            'description'      => 'Likely fraud. Enough against it to be worth stopping before fulfilment.',
             'contacts_gateway' => true,
             'creates_order'    => true,
             'action'           => actions::HOLD_UNPAID,
@@ -87,8 +81,6 @@ class risk_levels {
 
         self::REJECTED => [
             'rank'             => 4,
-            'label'            => 'Rejected',
-            'description'      => 'Blatant. Refused at validation; no order is created.',
             'contacts_gateway' => false,
             'creates_order'    => false,
             'action'           => actions::REJECT,
@@ -97,8 +89,6 @@ class risk_levels {
 
         self::BANNED => [
             'rank'             => 5,
-            'label'            => 'Banned',
-            'description'      => 'Known-bad. Refused and persisted to the blocklist.',
             'contacts_gateway' => false,
             'creates_order'    => false,
             'action'           => actions::REJECT,
@@ -296,6 +286,36 @@ class risk_levels {
     }
 
     /**
+     * The highest trust one level less severe than this rating allows.
+     *
+     * What an AI verdict that is allowed to raise the rating may raise it to:
+     * from Rejected into High, from High into Elevated, one step and no more.
+     *
+     * @since   3.0.0
+     *
+     * @param   float   $trust
+     * @return  float
+     */
+    public static function one_level_up_ceiling( $trust ) {
+
+        $order = [ self::REJECTED, self::HIGH, self::ELEVATED, self::LOW, self::TRUSTED ];
+        $level = self::from_trust( $trust );
+        $at    = array_search( $level, $order, true );
+
+        // Already at the top, or unknown: no room to rise.
+        if( $at === false || ! isset( $order[ $at + 1 ] ) ) return (float) $trust;
+
+        $next = $order[ $at + 1 ];
+
+        // Trusted has no threshold of its own; its ceiling is the baseline, and
+        // risk_context still applies LOW_CEILING after this.
+        $ceiling = $next === self::TRUSTED ? self::BASELINE : self::threshold( $next );
+
+        return $ceiling === null ? (float) $trust : max( (float) $trust, (float) $ceiling );
+
+    }
+
+    /**
      * Resolve a trust rating to a risk level.
      *
      * Lower trust means a more severe risk level, so this compares with <=, not >=.
@@ -318,6 +338,14 @@ class risk_levels {
             if( $trust <= $threshold ) return $level;
 
         }
+
+        // Nothing matched, so the trust is above every configured threshold.
+        // That is Trusted only above LOW_CEILING: an unvouched order is capped
+        // at exactly that number by risk_context::trust(), and a merchant who
+        // lowers the Low threshold beneath it would otherwise turn every clean
+        // first-time order into Trusted -- the one outcome the ceiling exists
+        // to prevent. Below the ceiling the honest answer is Low.
+        if( $trust <= self::LOW_CEILING ) return self::LOW;
 
         return self::TRUSTED;
 
@@ -405,6 +433,75 @@ class risk_levels {
     }
 
     /**
+     * What each risk level is called, and what it means.
+     *
+     * Separate from LADDER because a const array cannot hold a __() call, and
+     * these lived in one until 3.0.0 — which made every one of them
+     * permanently English however the rest of the admin was translated.
+     *
+     * LADDER keeps everything that is not language, which is also everything
+     * the checkout path reads.
+     *
+     * @since   3.0.0
+     *
+     * @return  array
+     */
+    private static function strings() {
+
+        // Keyed by locale, not a plain memo.
+        //
+        // A plain static would freeze whichever language happened to be
+        // active at the first call and serve it for the rest of the request.
+        // That is wrong twice: a multilingual plugin can switch locale
+        // mid-request, and anything that reached one of these accessors
+        // before the textdomain loaded would pin the whole catalogue to
+        // English. Keying on the locale costs one function call and makes
+        // both cases correct.
+        static $strings = [];
+
+        $locale = function_exists( 'determine_locale' ) ? determine_locale() : '';
+
+        if( isset( $strings[ $locale ] ) ) return $strings[ $locale ];
+
+        $strings[ $locale ] = [
+
+            self::TRUSTED => [
+                'label'        => __( 'Trusted', 'mighty-shield' ),
+                'description'  => __( 'Known-good, with a clean order history behind it.', 'mighty-shield' ),
+            ],
+
+            self::LOW => [
+                'label'        => __( 'Low', 'mighty-shield' ),
+                'description'  => __( 'Nothing wrong, nothing vouching for it either. Where an unknown customer starts.', 'mighty-shield' ),
+            ],
+
+            self::ELEVATED => [
+                'label'        => __( 'Elevated', 'mighty-shield' ),
+                'description'  => __( 'Something is off, but nothing damning. Ambiguous enough to be worth a check.', 'mighty-shield' ),
+            ],
+
+            self::HIGH => [
+                'label'        => __( 'High', 'mighty-shield' ),
+                'description'  => __( 'Likely fraud. Enough against it to be worth stopping before fulfilment.', 'mighty-shield' ),
+            ],
+
+            self::REJECTED => [
+                'label'        => __( 'Rejected', 'mighty-shield' ),
+                'description'  => __( 'Blatant. Refused at validation; no order is created.', 'mighty-shield' ),
+            ],
+
+            self::BANNED => [
+                'label'        => __( 'Banned', 'mighty-shield' ),
+                'description'  => __( 'Known-bad. Refused and persisted to the blocklist.', 'mighty-shield' ),
+            ],
+
+        ];
+
+        return $strings[ $locale ];
+
+    }
+
+    /**
      * The human-readable label of a risk level.
      *
      * @since   1.9.0
@@ -414,7 +511,49 @@ class risk_levels {
      */
     public static function label( $level ) {
 
-        return isset( self::LADDER[ $level ] ) ? self::LADDER[ $level ]['label'] : $level;
+        $strings = self::strings();
+
+        return isset( $strings[ $level ]['label'] ) ? $strings[ $level ]['label'] : $level;
+
+    }
+
+    /**
+     * One line saying what this risk level means, for the admin.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $level
+     * @return  string
+     */
+    public static function description( $level ) {
+
+        $strings = self::strings();
+
+        return isset( $strings[ $level ]['description'] ) ? $strings[ $level ]['description'] : '';
+
+    }
+
+    /**
+     * Every risk level, least to most severe, as key => label.
+     *
+     * For the handful of screens that render the whole ladder. They used to
+     * iterate the LADDER const and read ['label'] off it, which stopped
+     * working when the strings moved out of it — and would not have been
+     * translated even while it did.
+     *
+     * @since   3.0.0
+     *
+     * @return  array
+     */
+    public static function all() {
+
+        $out = [];
+
+        foreach( array_keys( self::LADDER ) as $level ) {
+            $out[ $level ] = self::label( $level );
+        }
+
+        return $out;
 
     }
 

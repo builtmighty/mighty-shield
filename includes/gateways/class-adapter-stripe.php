@@ -15,6 +15,8 @@
  */
 namespace MightyShield\Includes\Gateways;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Protection\card_signals;
 
 class adapter_stripe implements gateway_adapter {
@@ -49,14 +51,23 @@ class adapter_stripe implements gateway_adapter {
 
         if( ! \in_array( $gateway, self::handles(), true ) ) return false;
 
-        if( $capability === '3ds' ) return true;
-
-        // Card signals come from the Stripe webhook stream, which WooPayments
-        // does not share — it has its own. Claiming support there would mean
-        // promising a signal that never arrives.
-        if( $capability === 'card_signals' ) {
+        // 3-D Secure is requested through the gateway's own intent filter, and
+        // only two of the three have one this adapter can reach. WooPayments'
+        // Create_And_Confirm_Intention exposes no payment_method_options
+        // setter (only its Update_Intention does), so there is nothing to ask
+        // for the challenge through -- and claiming otherwise wrote "3-D Secure
+        // was required" onto orders where it never was. resolve() falls back
+        // to the next honest action instead.
+        if( $capability === '3ds' ) {
             return \in_array( $gateway, [ 'stripe', 'stripe_cc' ], true );
         }
+
+        // Card signals arrive synchronously from the official gateway's
+        // process_response hook, with its webhook as the fallback. Payment
+        // Plugins' gateway (stripe_cc) shares neither hook, and WooPayments has
+        // its own stream this adapter does not read. Claiming support for
+        // either would promise a signal that never arrives.
+        if( $capability === 'card_signals' ) return $gateway === 'stripe';
 
         return false;
 
@@ -67,12 +78,42 @@ class adapter_stripe implements gateway_adapter {
      */
     public static function listen() {
 
+        // The synchronous path first. The gateway fires this in the checkout
+        // request itself, with the charge or intent it just processed and the
+        // order, so card details arrive whether or not webhooks were ever
+        // configured -- which on a great many stores they were not.
+        add_action( 'wc_gateway_stripe_process_response', [ __CLASS__, 'on_response' ], 10, 2 );
+
         add_action( 'wc_stripe_webhook_received', [ __CLASS__, 'on_webhook' ], 10, 3 );
 
     }
 
     /**
+     * Read card details off the response the gateway just processed.
+     *
+     * @since   3.0.0
+     *
+     * @param   object      $response   A Charge, or a PaymentIntent whose
+     *                                  latest charge carries the details.
+     * @param   \WC_Order   $order
+     */
+    public static function on_response( $response, $order ) {
+
+        if( ! $order instanceof \WC_Order || ! is_object( $response ) ) return;
+
+        $charge = self::charge_from( $response );
+        if( $charge ) self::ingest( $order, $charge );
+
+    }
+
+    /**
      * Read card details off a succeeded charge.
+     *
+     * The official gateway returns from its charge.succeeded handler for card
+     * payments BEFORE it records which order the event was for, so this action
+     * fires with a null order on exactly the payment type that carries card
+     * details. The order is therefore looked up here from the charge rather
+     * than trusted from the argument.
      *
      * @since   1.9.0
      *
@@ -80,16 +121,155 @@ class adapter_stripe implements gateway_adapter {
      * @param   object          $notification
      * @param   \WC_Order|null  $order
      */
+    /**
+     * Decline codes and outcome reasons that mean the card itself is bad.
+     *
+     * @since   3.0.0
+     */
+    const FRAUD_DECLINES = [ 'stolen_card', 'lost_card', 'fraudulent', 'pickup_card', 'restricted_card', 'security_violation', 'highest_risk_level', 'elevated_risk_level', 'rule' ];
+
+    /**
+     * What an ordinary decline costs the card's reputation.
+     *
+     * A third of a refusal: nine of them, not three, to reach BAD_REPUTATION.
+     *
+     * @since   3.0.0
+     */
+    const PLAIN_DECLINE_WEIGHT = 3.0;
+
     public static function on_webhook( $type, $notification, $order ) {
 
-        if( $type !== 'charge.succeeded' ) return;
-        if( ! $order instanceof \WC_Order ) return;
         if( empty( $notification->data->object ) ) return;
 
         $charge = $notification->data->object;
-        $card   = $charge->payment_method_details->card ?? null;
+
+        // A declined card is the one thing a card tester leaves behind. The
+        // card's own identity takes the refusal, so the next order that pays
+        // with it -- from a fresh email, a fresh address, a fresh IP -- meets
+        // the history the earlier attempts wrote.
+        //
+        // Weighed by what the issuer said. A card reported stolen or lost, or
+        // a charge Stripe's own risk engine blocked, is the full refusal. An
+        // ordinary decline -- wrong CVC, insufficient funds, expired card --
+        // is what an honest customer's card does three times in a bad month,
+        // and at the full weight three of them made a real card known-bad
+        // and held the order that finally succeeded. Those cost a third.
+        // Each charge counts once, whatever Stripe redelivers, and a
+        // subscription renewal retried off-session is not a checkout at all.
+        if( $type === 'charge.failed' ) {
+
+            $fp = (string) ( $charge->payment_method_details->card->fingerprint ?? '' );
+            if( $fp === '' || ! class_exists( '\MightyShield\Includes\entities' ) ) return;
+
+            $charge_id = (string) ( $charge->id ?? '' );
+            if( $charge_id !== '' ) {
+                $seen_key = 'mshield_chg_' . md5( $charge_id );
+                if( get_transient( $seen_key ) ) return;
+                set_transient( $seen_key, 1, WEEK_IN_SECONDS );
+            }
+
+            $renewal = $order instanceof \WC_Order ? $order : self::order_for( $charge );
+            if( $renewal instanceof \WC_Order && function_exists( 'wcs_order_contains_renewal' ) && wcs_order_contains_renewal( $renewal ) ) return;
+
+            $code   = (string) ( $charge->failure_code ?? '' );
+            $reason = (string) ( $charge->outcome->reason ?? '' );
+            $kind   = (string) ( $charge->outcome->type ?? '' );
+
+            $fraudulent = \in_array( $code, self::FRAUD_DECLINES, true )
+                       || \in_array( $reason, self::FRAUD_DECLINES, true )
+                       || $kind === 'blocked';
+
+            \MightyShield\Includes\entities::record_refusal(
+                [ 'card_fp' => \MightyShield\Includes\entities::normalize( 'card_fp', $fp ) ],
+                $fraudulent ? null : self::PLAIN_DECLINE_WEIGHT
+            );
+
+            return;
+
+        }
+
+        if( $type !== 'charge.succeeded' ) return;
+
+        if( ! $order instanceof \WC_Order ) $order = self::order_for( $charge );
+        if( ! $order instanceof \WC_Order ) return;
+
+        self::ingest( $order, $charge );
+
+    }
+
+    /**
+     * The charge object inside whatever Stripe answered with.
+     *
+     * @since   3.0.0
+     *
+     * @param   object  $response
+     * @return  object|null
+     */
+    private static function charge_from( $response ) {
+
+        if( ( $response->object ?? '' ) === 'charge' ) return $response;
+
+        // A PaymentIntent: the charge is the latest one on it, expanded, or the
+        // first entry of the charges list depending on API version.
+        if( is_object( $response->latest_charge ?? null ) ) return $response->latest_charge;
+
+        $list = $response->charges->data ?? null;
+        if( is_array( $list ) && isset( $list[0] ) && is_object( $list[0] ) ) return $list[0];
+
+        return null;
+
+    }
+
+    /**
+     * Resolve the order a charge paid for.
+     *
+     * @since   3.0.0
+     *
+     * @param   object  $charge
+     * @return  \WC_Order|null
+     */
+    private static function order_for( $charge ) {
+
+        if( ! class_exists( '\WC_Stripe_Helper' ) ) return null;
+
+        $order = null;
+
+        if( ! empty( $charge->id ) && method_exists( '\WC_Stripe_Helper', 'get_order_by_charge_id' ) ) {
+            $order = \WC_Stripe_Helper::get_order_by_charge_id( (string) $charge->id );
+        }
+
+        if( ! $order && ! empty( $charge->payment_intent ) && method_exists( '\WC_Stripe_Helper', 'get_order_by_intent_id' ) ) {
+            $intent = is_object( $charge->payment_intent ) ? ( $charge->payment_intent->id ?? '' ) : $charge->payment_intent;
+            if( $intent ) $order = \WC_Stripe_Helper::get_order_by_intent_id( (string) $intent );
+        }
+
+        return $order instanceof \WC_Order ? $order : null;
+
+    }
+
+    /**
+     * Hand a charge's card details to card_signals, once per charge.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @param   object      $charge
+     */
+    private static function ingest( $order, $charge ) {
+
+        $card = $charge->payment_method_details->card ?? null;
 
         if( ! $card ) return;
+
+        // The synchronous hook and the webhook both deliver the same charge,
+        // and re-rating twice would note the order twice.
+        $charge_id = (string) ( $charge->id ?? '' );
+
+        if( $charge_id !== '' ) {
+            if( (string) $order->get_meta( '_mshield_card_charge' ) === $charge_id ) return;
+            $order->update_meta_data( '_mshield_card_charge', $charge_id );
+            $order->save();
+        }
 
         $checks = $card->checks ?? null;
 
@@ -127,26 +307,36 @@ class adapter_stripe implements gateway_adapter {
         add_action( 'woocommerce_payment_complete', [ __CLASS__, 'teardown' ], 999 );
         add_action( 'shutdown', [ __CLASS__, 'teardown' ], 1 );
 
-        if( $gateway === 'woocommerce_payments' ) {
+        // Payment Plugins' gateway builds its intent through a different
+        // filter from the official one, with the arguments already shaped the
+        // way Stripe wants them. ai_capture uses the same hook for
+        // authorize-only, so the two stay in step.
+        if( $gateway === 'stripe_cc' ) {
 
-            return self::hook( 'wcpay_create_and_confirm_intent_request', function( $request, $payment_information = null ) {
+            return self::hook( 'wc_stripe_payment_intent_args', function( $args, $intent_order = null ) {
 
-                if( ! is_object( $request ) ) return $request;
+                if( ! self::is_target( $intent_order ) || ! is_array( $args ) ) return $args;
 
-                $target = ( is_object( $payment_information ) && method_exists( $payment_information, 'get_order' ) )
-                    ? $payment_information->get_order() : null;
-
-                if( ! self::is_target( $target ) ) return $request;
-
-                if( method_exists( $request, 'set_payment_method_options' ) ) {
-                    $request->set_payment_method_options( [ 'card' => [ 'request_three_d_secure' => 'any' ] ] );
+                if( ! isset( $args['payment_method_options'] ) || ! is_array( $args['payment_method_options'] ) ) {
+                    $args['payment_method_options'] = [];
                 }
 
-                return $request;
+                if( ! isset( $args['payment_method_options']['card'] ) || ! is_array( $args['payment_method_options']['card'] ) ) {
+                    $args['payment_method_options']['card'] = [];
+                }
+
+                $args['payment_method_options']['card']['request_three_d_secure'] = 'any';
+
+                return $args;
 
             }, 10, 2 );
 
         }
+
+        // No WooPayments branch: supports() answers false for it, so this is
+        // never reached for that gateway. The branch that used to be here
+        // guarded on a setter WooPayments' create-and-confirm request does not
+        // have, passed the request through untouched, and reported success.
 
         return self::hook( 'wc_stripe_generate_create_intent_request', function( $request, $intent_order = null ) {
 

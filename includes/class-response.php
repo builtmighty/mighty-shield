@@ -31,6 +31,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class response {
 
     /**
@@ -183,7 +185,62 @@ class response {
 
         if( $note === '' ) return $message;
 
+        // Sanitized again on the way out, not just on the way in.
+        //
+        // admin_page::sanitize_refusal_note() runs wp_kses() when the setting
+        // is saved, which is the real control. This is the second one, and it
+        // exists because the option can be written without ever passing
+        // through that form -- WP-CLI, a migration, an importer, another
+        // plugin -- and what lands here goes straight into a message shown to
+        // a shopper. Escaping at the point of output is the rule; sanitizing
+        // at the point of input is the optimisation.
+        //
+        // Deliberately the same tag list as the form, so a note that saved
+        // cleanly renders identically and a merchant never sees their own
+        // markup silently stripped.
+        $note = wp_kses( $note, self::refusal_note_tags() );
+
+        if( trim( $note ) === '' ) return $message;
+
         return $message . ' ' . $note;
+
+    }
+
+    /**
+     * What a merchant may put in the refusal note.
+     *
+     * Not wp_kses_post, and the difference matters. This note is shown to the
+     * customer by two different renderers: the classic checkout runs it
+     * through wc_kses_notice(), which is wp_kses_post, while the block
+     * checkout runs it through WooCommerce's own sanitizeHTML(), whose
+     * default allowlist is exactly the list below. Allowing anything wider
+     * would mean a merchant pasting a list, seeing it work on one checkout,
+     * and never learning it silently vanished on the other.
+     *
+     * Lives here rather than on the admin page, which owned it until 3.0.0.
+     * The list is a fact about the two renderers, and with_note() -- the thing
+     * that actually renders -- runs on the front end, where admin classes are
+     * not loaded. Naming it across that boundary was a fatal error waiting for
+     * the first store to set a note.
+     *
+     * @since   2.0.0
+     *
+     * @return  array   wp_kses allowed-HTML array.
+     */
+    public static function refusal_note_tags() {
+
+        $link = [ 'href' => true, 'title' => true, 'target' => true, 'rel' => true, 'name' => true, 'download' => true ];
+
+        return [
+            'a'      => $link,
+            'b'      => [],
+            'strong' => [],
+            'i'      => [],
+            'em'     => [],
+            'p'      => [],
+            'br'     => [],
+            'abbr'   => [ 'title' => true ],
+        ];
 
     }
 
@@ -207,7 +264,11 @@ class response {
         $min = (int) settings::get( 'mshield_tarpit_min_ms' );
         $max = (int) settings::get( 'mshield_tarpit_max_ms' );
 
-        if( $max <= 0 || $max < $min ) return;
+        // Typed the wrong way round is still a range, not a request for no
+        // delay at all.
+        if( $max < $min ) [ $min, $max ] = [ $max, $min ];
+
+        if( $max <= 0 ) return;
 
         usleep( random_int( max( 0, $min ), $max ) * 1000 );
 
@@ -559,17 +620,115 @@ class response {
 
         wp_mail(
             get_option( 'admin_email' ),
-            sprintf( '[MightyShield] %s on order #%d', $reason, $order->get_id() ),
             sprintf(
-                "MightyShield flagged an order.\n\nOrder: #%d\nReason: %s\nCustomer: %s (%s)\nIP: %s\n\nReview this order: %s",
+                /* translators: 1: why the order was flagged, 2: order number. */
+                __( '[MightyShield] %1$s on order #%2$d', 'mighty-shield' ),
+                $reason,
+                $order->get_id()
+            ),
+            sprintf(
+                /* translators: 1: order number, 2: why it was flagged, 3: customer name, 4: customer email, 5: IP address, 6: link to the order. */
+                __( "MightyShield flagged an order.\n\nOrder: #%1\$d\nReason: %2\$s\nCustomer: %3\$s (%4\$s)\nIP: %5\$s\n\nReview this order: %6\$s", 'mighty-shield' ),
                 $order->get_id(),
                 $reason,
                 $order->get_formatted_billing_full_name(),
                 $order->get_billing_email(),
-                $order->get_customer_ip_address(),
+                ip_utils::order_ip( $order ),
                 $order->get_edit_order_url()
             )
         );
+
+    }
+
+    /**
+     * Tell the merchant when an order rates badly enough to be worth their
+     * attention, whatever was done about it.
+     *
+     * Deliberately keyed on the RATING rather than on the action taken. The
+     * two answer different questions: an action says what MightyShield did,
+     * and in Observe mode the answer is "nothing" -- which is exactly the mode
+     * a merchant most needs telling, because they are trying to find out
+     * whether enforcement would be safe.
+     *
+     * Throttled per hour, not per order, and for a reason worth stating: a
+     * card-testing run is a hundred orders in ten minutes, each of them
+     * rating terribly. Mailing on every one turns the merchant's inbox into
+     * the attack's second payload, and buries the one message they needed
+     * under ninety-nine copies of it. The count since the last message is
+     * carried in the next one, so nothing is hidden -- only batched.
+     *
+     * Governed by the one notification switch, like every other alert, and
+     * keyed to the store's own High threshold: an order rated where it would
+     * be held or refused is one the merchant asked to hear about. There is
+     * no separate figure to set; the thresholds already say what "bad" means
+     * on this store.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @param   array       $verdict    From risk_context::evaluate().
+     */
+    public static function maybe_alert( $order, $verdict ) {
+
+        if( ! settings::alerts_enabled() ) return;
+
+        $threshold = (float) risk_levels::threshold( 'high' );
+
+        if( $threshold <= 0 ) return;
+
+        $trust = isset( $verdict['trust'] ) ? (float) $verdict['trust'] : 100.0;
+
+        if( $trust > $threshold ) return;
+
+        // Count every qualifying order, including the ones inside the quiet
+        // hour, so the next message can say how many there were.
+        $pending = (int) get_transient( 'mshield_alert_pending' ) + 1;
+
+        if( get_transient( 'mshield_alert_sent' ) ) {
+            set_transient( 'mshield_alert_pending', $pending, 2 * HOUR_IN_SECONDS );
+            return;
+        }
+
+        $others = $pending - 1;
+
+        $body = sprintf(
+            /* translators: 1: the order's trust rating, 2: the High threshold, 3: order number, 4: risk level, 5: what MightyShield did, 6: customer name, 7: customer email, 8: a note about other low-rated orders, or nothing, 9: link to the order. */
+            __( "An order rated %1\$s out of 100, at or below %2\$s, the point where your settings hold an order.\n\nOrder: #%3\$d\nRating: %1\$s (%4\$s)\nWhat MightyShield did: %5\$s\nCustomer: %6\$s (%7\$s)\n\n%8\$s\n\nReview this order: %9\$s", 'mighty-shield' ),
+            number_format( $trust, 0 ),
+            number_format( $threshold, 0 ),
+            $order->get_id(),
+            risk_levels::label( $verdict['risk_level'] ?? '' ),
+            self::is_enforcing() ? __( 'Acted on it', 'mighty-shield' ) : __( 'Nothing — MightyShield is in Observe mode', 'mighty-shield' ),
+            $order->get_formatted_billing_full_name(),
+            $order->get_billing_email(),
+            $others > 0
+                ? sprintf(
+                    /* translators: %d: number of additional low-rated orders. */
+                    _n(
+                        'There was also %d other order rated this low in the last hour.',
+                        'There were also %d other orders rated this low in the last hour.',
+                        $others,
+                        'mighty-shield'
+                    ),
+                    $others
+                )
+                : '',
+            $order->get_edit_order_url()
+        );
+
+        wp_mail(
+            settings::notification_recipients(),
+            sprintf(
+                /* translators: 1: trust rating, 2: order number. */
+                __( '[MightyShield] Order #%2$d rated %1$s/100', 'mighty-shield' ),
+                number_format( $trust, 0 ),
+                $order->get_id()
+            ),
+            $body
+        );
+
+        set_transient( 'mshield_alert_sent', 1, HOUR_IN_SECONDS );
+        delete_transient( 'mshield_alert_pending' );
 
     }
 
@@ -643,7 +802,23 @@ class response {
         $order->add_order_note( 'MightyShield: ' . __( 'Held for review after payment. The money has been taken but the order will not be fulfilled until you release it.', 'mighty-shield' ) . ( $reason !== '' ? ' ' . $reason : '' ) );
         $order->save();
 
-        add_action( 'woocommerce_payment_complete', [ __CLASS__, 'hold_after_payment' ], 999 );
+        // No add_action here. It used to register hold_after_payment() for
+        // this request only, which worked when the gateway confirmed payment
+        // inside the checkout request and silently did nothing when it did
+        // not: a Stripe webhook, a 3-D Secure return, a PayPal IPN all arrive
+        // in a later request where nothing was listening, so the order went to
+        // Processing and shipped with "held for review" written on it. The
+        // hook is registered at load, for every request, and reads the meta
+        // set above.
+        //
+        // Unless the payment has ALREADY been confirmed. The card verdict
+        // arrives from the processor after payment_complete() has fired the
+        // only hooks that hold, so waiting for a transition that has passed
+        // left the order in Processing with a note saying it was held. Hold
+        // it now; the function guards on status and on a reviewer's decision.
+        if( $order->is_paid() || $order->get_date_paid() ) {
+            self::hold_after_payment( $order->get_id() );
+        }
 
         db::log_event(
             ip_utils::get_client_ip(),
@@ -665,17 +840,86 @@ class response {
      *
      * @param   int     $order_id
      */
-    public static function hold_after_payment( $order_id ) {
+    public static function hold_after_payment( $order_id, $unused = null, $transition = null ) {
 
         $order = wc_get_order( $order_id );
         if( ! $order ) return;
 
         if( $order->get_meta( '_mshield_hold' ) !== 'paid' ) return;
+
+        // A reviewer has already decided. The panel's Approve moves the order
+        // to Processing and this hook fires inside that very transition; until
+        // it checked, the approval was reverted to On hold on the spot, the
+        // panel said "approved", the queue dropped the order, and nothing
+        // could ever ship it.
+        if( (string) $order->get_meta( '_mshield_review' ) !== '' ) return;
+
         if( $order->get_status() === 'on-hold' ) return;
 
-        $order->update_status( 'on-hold', __( 'MightyShield: held for review.', 'mighty-shield' ) );
+        // A status changed by hand is re-held too, and told why. For a
+        // moment this branch released the hold instead, reasoning that a
+        // person had looked at the order -- but WooCommerce marks a bulk
+        // edit, a REST update and a bookkeeper confirming a bank transfer as
+        // manual as well, and none of those is a review. The safe direction
+        // is to keep holding and point at the panel, where Approve releases
+        // the hold in one click and records the decision.
+        $manual = is_array( $transition ) && ! empty( $transition['manual'] );
+
+        $order->update_status( 'on-hold', $manual
+            ? __( 'MightyShield: held for review. This order was held after payment and has not been reviewed; approve it from the MightyShield panel on this order, or from the Fraud Review queue, to release it.', 'mighty-shield' )
+            : __( 'MightyShield: held for review.', 'mighty-shield' )
+        );
 
         delete_transient( 'mshield_ai_pending_count' );
+
+    }
+
+    /**
+     * Whether anything tripped that is worth a human's time.
+     *
+     * The informational signals -- first_order at 5 -- exist so the rating can
+     * tell "new" from "known good", not to summon a reviewer. A flag needs at
+     * least one signal that actually cost trust: more than 5 points, which is
+     * the ceiling the catalogue keeps its informational signals under.
+     *
+     * @since   3.0.0
+     *
+     * @return  bool
+     */
+    private static function signals_worth_a_look() {
+
+        foreach( risk_context::signals() as $signal ) {
+            if( (float) $signal['weight'] * (float) $signal['confidence'] > 5.0 ) return true;
+        }
+
+        return false;
+
+    }
+
+    /**
+     * Keep a released order out of WooCommerce's unpaid-order sweep.
+     *
+     * A reviewer who approves a detained order sends the customer a link to
+     * pay, and the order waits in Pending until they do. WooCommerce cancels
+     * unpaid Pending orders after the stock-hold window -- an hour by default
+     * -- which is shorter than it takes most people to read an email. A
+     * released order gets a week.
+     *
+     * @since   3.0.0
+     *
+     * @param   bool        $cancel
+     * @param   \WC_Order   $order
+     * @return  bool
+     */
+    public static function keep_released_order( $cancel, $order ) {
+
+        if( ! $cancel || ! is_a( $order, 'WC_Order' ) ) return $cancel;
+        if( $order->get_meta( '_mshield_detained' ) !== 'released' ) return $cancel;
+
+        $modified = $order->get_date_modified();
+        if( ! $modified ) return $cancel;
+
+        return ( time() - $modified->getTimestamp() ) > WEEK_IN_SECONDS;
 
     }
 
@@ -696,6 +940,20 @@ class response {
      */
     public static function dispatch( $order, $action, $reason = '' ) {
 
+        // The enforcement boundary. Scoring has already happened and the row is
+        // already written by the time anything gets here, so this is the single
+        // place an allowlist can be honoured without also erasing the verdict.
+        //
+        // It is repeated here rather than left to the callers because the
+        // post-payment path (card_signals) reaches dispatch() from a gateway
+        // webhook, on a request the shopper is not making -- so it cannot rely
+        // on the checkout-time check having run at all.
+        //
+        // Judged on the ORDER, not on whoever is making this request -- see
+        // suppresses_action_for_order() for why the two differ and why it
+        // matters here.
+        if( exempt::suppresses_action_for_order( $order ) ) return actions::NONE;
+
         $action = actions::resolve( $action, $order );
 
         switch( $action ) {
@@ -714,6 +972,13 @@ class response {
                 // Flagging still happens the moment anything at all trips.
                 if( empty( risk_context::signals() ) ) break;
 
+                // Nor is one that tripped only the near-weightless signals.
+                // first_order is worth 5 and fires on every new customer; a
+                // flag for it alone put every first order in the review queue,
+                // where the genuinely held ones then got lost. A signal has to
+                // have cost something for a human to be asked to look.
+                if( ! self::signals_worth_a_look() ) break;
+
                 self::flag( $order, 'risk_engine', $reason !== '' ? $reason : __( 'Flagged by the risk rating.', 'mighty-shield' ) );
                 break;
 
@@ -722,7 +987,20 @@ class response {
                 break;
 
             case actions::HOLD_AUTHORIZED:
-                self::hold_authorized( $order, $reason );
+                // Already reserved and held: nothing further to arrange.
+                if( $order->get_meta( '_mshield_hold' ) === 'authorized' ) break;
+                if( self::hold_authorized( $order, $reason ) ) break;
+
+                // The processor could not reserve without charging. The note
+                // hold_authorized() just wrote says the order was held before
+                // payment instead -- so hold it before payment instead. This
+                // used to return here with the order charged in full and on
+                // its way, and the note describing a hold that never happened.
+                if( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+                    self::detain_store_api( $order, $reason );
+                } else {
+                    self::detain_classic( $order, $reason );
+                }
                 break;
 
             case actions::HOLD_PAID:

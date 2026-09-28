@@ -23,6 +23,8 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\settings;
 use MightyShield\Includes\scoring_profiles;
 use MightyShield\Protection\challenge;
@@ -207,6 +209,12 @@ class setup_wizard {
 
         $saved = get_option( self::PROGRESS, '' );
 
+        // A finished walkthrough starts over from the beginning when it is
+        // opened again, as the manual promises. Resuming at 'done' put a
+        // merchant who came back to re-read the options on the Finish page,
+        // whose only button restarted the back-catalogue rating.
+        if( $saved === 'done' ) return self::STEPS[0];
+
         return \in_array( $saved, self::STEPS, true ) ? $saved : self::STEPS[0];
 
     }
@@ -288,7 +296,7 @@ class setup_wizard {
         if( isset( $_GET['mshield_setup_bail'] ) && isset( $_GET['_wpnonce'] ) ) {
 
             if( current_user_can( 'manage_woocommerce' )
-                && wp_verify_nonce( $_GET['_wpnonce'], 'mshield_setup_bail' ) ) {
+                && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_setup_bail' ) ) {
 
                 // Skipped, not done. Nothing is configured and nothing is
                 // nagged about afterwards -- walking away was a decision, and a
@@ -328,7 +336,35 @@ class setup_wizard {
             update_option( self::OPTION, 'done', false );
             update_option( self::PROGRESS, 'done', false );
 
-            set_transient( 'mshield_admin_notice', [ 'setup', __( 'Setup complete. You can change any of it from these tabs at any time.', 'mighty-shield' ), 'success' ], 30 );
+            // Rate the store's existing orders, so day one has hindsight.
+            //
+            // This is the answer to the cold start. Without it the identity
+            // graph is empty on a brand-new install: no returning customer
+            // earns trust, no previous chargeback counts against anybody, and
+            // it stays that way for however long it takes the store to
+            // accumulate a history through the plugin -- which is months on a
+            // quiet shop, and is exactly the period during which the merchant
+            // decides whether any of this works.
+            //
+            // Safe to fire and forget. It rates in the background, takes no
+            // action on any order, and start() returns a WP_Error rather than
+            // throwing if WooCommerce is somehow not there. Never over a run
+            // in progress: finishing the walkthrough a second time must not
+            // throw away an afternoon's rating and start from zero.
+            $mshield_state    = \MightyShield\Includes\backfill::state();
+            $mshield_backfill = $mshield_state['status'] === 'running'
+                ? $mshield_state
+                : \MightyShield\Includes\backfill::start();
+
+            $message = ( ! is_wp_error( $mshield_backfill ) && (int) $mshield_backfill['total'] > 0 )
+                ? sprintf(
+                    /* translators: %s: number of past orders. */
+                    __( 'Setup complete. MightyShield is rating your %s existing orders in the background so it starts out knowing your customers — you can carry on as normal. You can change any of this from these tabs at any time.', 'mighty-shield' ),
+                    number_format_i18n( (int) $mshield_backfill['total'] )
+                )
+                : __( 'Setup complete. You can change any of it from these tabs at any time.', 'mighty-shield' );
+
+            set_transient( 'mshield_admin_notice', [ 'setup', $message, 'success' ], 30 );
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=dashboard' ) );
             exit;
@@ -364,6 +400,7 @@ class setup_wizard {
 
             case 'protection':
 
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified by the caller before this runs
                 $state   = isset( $_POST['mshield_state'] ) ? sanitize_key( wp_unslash( $_POST['mshield_state'] ) ) : '';
                 $message = admin_page::apply_state( $state );
 
@@ -372,6 +409,7 @@ class setup_wizard {
                 // store using the block checkout that means no customer can
                 // check out at all. checkout_conflict() is the existing warning
                 // for it; this is the one place that offers the fix.
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified by the caller before this runs
                 if( isset( $_POST['mshield_fix_checkout'] ) && $_POST['mshield_fix_checkout'] === 'yes' ) {
                     settings::update( 'mshield_firewall_mode', 'blocklist' );
                 }
@@ -380,6 +418,7 @@ class setup_wizard {
 
             case 'scoring':
 
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified by the caller before this runs
                 $profile = isset( $_POST['mshield_profile'] ) ? sanitize_key( wp_unslash( $_POST['mshield_profile'] ) ) : '';
 
                 if( ! scoring_profiles::exists( $profile ) ) return '';
@@ -394,6 +433,7 @@ class setup_wizard {
 
             case 'challenge':
 
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified by the caller before this runs
                 $provider = isset( $_POST['mshield_captcha_provider'] ) ? sanitize_key( wp_unslash( $_POST['mshield_captcha_provider'] ) ) : 'off';
 
                 // Fails to off, never to a provider. A wrong value here would
@@ -406,6 +446,7 @@ class setup_wizard {
                 // secret. Walking forward past a masked field must not erase it.
                 foreach( [ 'mshield_captcha_site_key', 'mshield_captcha_secret_key' ] as $key ) {
 
+                    // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified by the caller before this runs
                     $value = isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '';
 
                     if( $value !== '' ) settings::update( $key, $value );
@@ -415,7 +456,8 @@ class setup_wizard {
                 // Driven off the canonical map, so a surface added later appears
                 // here without anybody remembering to come back.
                 foreach( challenge::SURFACES as $option ) {
-                    settings::update( $option, admin_page::sanitize_checkbox( $_POST[ $option ] ?? null ) );
+                    // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce is verified by the caller before this runs
+                    settings::update( $option, admin_page::sanitize_checkbox( isset( $_POST[ $option ] ) ? wp_unslash( $_POST[ $option ] ) : null ) );
                 }
 
                 return $provider === 'off'
@@ -424,7 +466,9 @@ class setup_wizard {
 
             case 'alerts':
 
-                settings::update( 'mshield_ai_notify_admin', admin_page::sanitize_checkbox( $_POST['mshield_ai_notify_admin'] ?? null ) );
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce is verified by the caller before this runs
+                settings::update( 'mshield_ai_notify_admin', admin_page::sanitize_checkbox( isset( $_POST['mshield_ai_notify_admin'] ) ? wp_unslash( $_POST['mshield_ai_notify_admin'] ) : null ) );
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce is verified by the caller before this runs
                 settings::update( 'mshield_ai_notify_emails', admin_page::sanitize_email_list( wp_unslash( $_POST['mshield_ai_notify_emails'] ?? '' ) ) );
 
                 return __( 'Notification settings saved.', 'mighty-shield' );

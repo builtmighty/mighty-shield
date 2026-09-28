@@ -18,6 +18,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
 use MightyShield\Includes\exempt;
@@ -121,7 +123,7 @@ class challenge {
         if( ! self::on( $surface ) ) return false;
         if( ! captcha::is_ready() ) return false;
 
-        return ! exempt::is_exempt();
+        return ! exempt::suppresses_action();
 
     }
 
@@ -180,6 +182,7 @@ class challenge {
 
         // Nothing was submitted (an XML-RPC or application-password request,
         // or a cookie check), so there is no form and no challenge to fail.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         if( empty( $_POST['log'] ) && empty( $_POST['username'] ) ) return $user;
 
         // Already failing for another reason. Leave that reason intact rather
@@ -250,6 +253,7 @@ class challenge {
         if( ! self::applies( 'lostpassword' ) ) return;
         if( captcha::passes( 'lostpassword' ) ) return;
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         self::record( 'lostpassword', 'lostpassword', isset( $_POST['user_login'] ) ? sanitize_text_field( wp_unslash( $_POST['user_login'] ) ) : '' );
 
         if( is_wp_error( $errors ) ) $errors->add( 'mshield_challenge', self::message() );

@@ -12,6 +12,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class ai_client {
 
     /**
@@ -36,6 +38,63 @@ class ai_client {
      * @since   1.8.0
      */
     const MAX_TOKENS = 1024;
+
+    /**
+     * The models offered per provider, id => label, default first.
+     *
+     * One list to update when a provider retires a model, which they do
+     * (Google retired the whole Gemini 1.5 series in September 2025 and a
+     * merchant on the old default got a 404 on every review). A saved id that
+     * is no longer here is still shown and kept, so an upgrade never silently
+     * moves a store onto a different model.
+     *
+     * @since   3.0.0
+     */
+    const MODELS = [
+        'anthropic' => [
+            'claude-haiku-4-5' => 'Claude Haiku 4.5 (recommended)',
+            'claude-sonnet-5'  => 'Claude Sonnet 5',
+            'claude-opus-5'    => 'Claude Opus 5',
+        ],
+        'openai' => [
+            'gpt-4o-mini'  => 'GPT-4o mini (recommended)',
+            'gpt-4.1-nano' => 'GPT-4.1 nano',
+            'gpt-4.1-mini' => 'GPT-4.1 mini',
+            'gpt-4.1'      => 'GPT-4.1',
+            'gpt-5-nano'   => 'GPT-5 nano',
+            'gpt-5-mini'   => 'GPT-5 mini',
+            'gpt-5'        => 'GPT-5',
+        ],
+        'gemini' => [
+            'gemini-2.5-flash'      => 'Gemini 2.5 Flash (recommended)',
+            'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash-Lite',
+            'gemini-2.5-pro'        => 'Gemini 2.5 Pro',
+            'gemini-2.0-flash'      => 'Gemini 2.0 Flash',
+        ],
+    ];
+
+    /**
+     * Models to offer for a provider, with the stored choice kept even when
+     * it is not on the list.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $provider   anthropic, openai or gemini.
+     * @return  array   id => label.
+     */
+    public static function models( $provider ) {
+
+        $list  = self::MODELS[ $provider ] ?? [];
+        $saved = trim( (string) settings::get( 'mshield_ai_' . $provider . '_model' ) );
+
+        if( $saved !== '' && ! isset( $list[ $saved ] ) ) {
+            /* translators: %s: a model id the merchant typed in before the list existed */
+            $list = [ $saved => sprintf( __( '%s (custom)', 'mighty-shield' ), $saved ) ] + $list;
+        }
+
+        return $list;
+
+    }
 
     /**
      * The verdict schema every provider is held to.
@@ -149,7 +208,7 @@ class ai_client {
     public static function review( $prompt ) {
 
         if( ! self::within_budget() ) {
-            return new \WP_Error( 'mshield_ai_capped', 'Daily AI review limit reached' );
+            return new \WP_Error( 'mshield_ai_capped', __( 'Daily AI review limit reached', 'mighty-shield' ) );
         }
 
         $provider = settings::get( 'mshield_ai_provider' );
@@ -193,7 +252,7 @@ class ai_client {
      * Deliberately the same call review() makes, minimal prompt aside. A ping
      * that skipped the tool definition and the strict schema would pass while
      * real reviews returned HTTP 400 -- which is exactly the failure this store
-     * hit, and exactly what a Test Connection button is for.
+     * hit, and exactly what a Test connection button is for.
      *
      * It does not count against the daily budget and does not record a degraded
      * state: the merchant is standing at the screen watching the result, so
@@ -261,10 +320,15 @@ class ai_client {
         $cap = (int) settings::get( 'mshield_ai_daily_cap' );
         if( $cap <= 0 ) return true;
 
-        $key   = 'mshield_ai_calls_' . gmdate( 'Ymd' );
-        $count = (int) get_transient( $key );
+        // One atomic increment in the rate-limit table, not a transient read
+        // followed by a write: two checkouts arriving together each read the
+        // same count and the cap overshot by however many were in flight,
+        // and a persistent object cache could drop the transient outright.
+        // The window is a rolling day, which is what "daily" has to mean
+        // when nothing resets it at midnight anyway.
+        $count = (int) db::increment_rate_limit( md5( 'ai|calls' ), 'ai_calls', DAY_IN_SECONDS );
 
-        if( $count >= $cap ) {
+        if( $count > $cap ) {
 
             // Log once per day rather than on every blocked call.
             if( ! get_transient( 'mshield_ai_cap_logged' ) ) {
@@ -284,9 +348,6 @@ class ai_client {
 
         }
 
-        // Two days, so a call late in the day cannot expire the counter early.
-        set_transient( $key, $count + 1, 2 * DAY_IN_SECONDS );
-
         return true;
 
     }
@@ -300,7 +361,8 @@ class ai_client {
      */
     public static function calls_today() {
 
-        return (int) get_transient( 'mshield_ai_calls_' . gmdate( 'Ymd' ) );
+        // The rolling-day counter within_budget() increments.
+        return (int) db::check_rate_limit( md5( 'ai|calls' ), 'ai_calls' );
 
     }
 
@@ -319,17 +381,21 @@ class ai_client {
     public static function validate( $verdict ) {
 
         if( ! is_array( $verdict ) ) {
-            return new \WP_Error( 'mshield_ai_shape', 'AI returned no usable verdict' );
+            return new \WP_Error( 'mshield_ai_shape', __( 'AI returned no usable verdict', 'mighty-shield' ) );
         }
 
         foreach( [ 'trust', 'verdict' ] as $field ) {
             if( ! isset( $verdict[ $field ] ) ) {
-                return new \WP_Error( 'mshield_ai_shape', 'AI verdict is missing the "' . $field . '" field' );
+                return new \WP_Error( 'mshield_ai_shape', sprintf(
+                    /* translators: %s: the name of the missing field. */
+                    __( 'AI verdict is missing the "%s" field', 'mighty-shield' ),
+                    $field
+                ) );
             }
         }
 
         if( ! \in_array( $verdict['verdict'], [ 'allow', 'review', 'deny' ], true ) ) {
-            return new \WP_Error( 'mshield_ai_shape', 'AI returned an unrecognised verdict' );
+            return new \WP_Error( 'mshield_ai_shape', __( 'AI returned an unrecognised verdict', 'mighty-shield' ) );
         }
 
         // Clamped rather than rejected: a model that answers 0 or 105 has still
@@ -364,7 +430,7 @@ class ai_client {
     private static function call_anthropic( $prompt ) {
 
         $key = settings::get( 'mshield_ai_anthropic_key' );
-        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', 'No Anthropic API key configured' );
+        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', __( 'No Anthropic API key configured', 'mighty-shield' ) );
 
         $response = self::post( 'https://api.anthropic.com/v1/messages', [
             'x-api-key'         => $key,
@@ -399,7 +465,7 @@ class ai_client {
 
         }
 
-        return new \WP_Error( 'mshield_ai_shape', 'Anthropic returned no verdict' );
+        return new \WP_Error( 'mshield_ai_shape', __( 'Anthropic returned no verdict', 'mighty-shield' ) );
 
     }
 
@@ -414,7 +480,7 @@ class ai_client {
     private static function call_openai( $prompt ) {
 
         $key = settings::get( 'mshield_ai_openai_key' );
-        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', 'No OpenAI API key configured' );
+        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', __( 'No OpenAI API key configured', 'mighty-shield' ) );
 
         $headers = [
             'Authorization' => 'Bearer ' . $key,
@@ -428,7 +494,9 @@ class ai_client {
 
         $response = self::post( 'https://api.openai.com/v1/chat/completions', $headers, [
             'model'           => settings::get( 'mshield_ai_openai_model' ),
-            'max_tokens'      => self::MAX_TOKENS,
+            // max_completion_tokens, not max_tokens: the newer models reject
+            // the old name outright, and every current one accepts the new.
+            'max_completion_tokens' => self::MAX_TOKENS,
             'response_format' => [
                 'type'        => 'json_schema',
                 'json_schema' => [
@@ -445,14 +513,14 @@ class ai_client {
         $content = $response['choices'][0]['message']['content'] ?? null;
 
         if( ! is_string( $content ) ) {
-            return new \WP_Error( 'mshield_ai_shape', 'Unexpected OpenAI response shape' );
+            return new \WP_Error( 'mshield_ai_shape', __( 'Unexpected OpenAI response shape', 'mighty-shield' ) );
         }
 
         $decoded = json_decode( $content, true );
 
         return is_array( $decoded )
             ? $decoded
-            : new \WP_Error( 'mshield_ai_shape', 'OpenAI returned a verdict that was not valid JSON' );
+            : new \WP_Error( 'mshield_ai_shape', __( 'OpenAI returned a verdict that was not valid JSON', 'mighty-shield' ) );
 
     }
 
@@ -467,7 +535,7 @@ class ai_client {
     private static function call_gemini( $prompt ) {
 
         $key = settings::get( 'mshield_ai_gemini_key' );
-        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', 'No Gemini API key configured' );
+        if( empty( $key ) ) return new \WP_Error( 'mshield_ai_nokey', __( 'No Gemini API key configured', 'mighty-shield' ) );
 
         $model = rawurlencode( settings::get( 'mshield_ai_gemini_model' ) );
         $url   = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent';
@@ -496,14 +564,14 @@ class ai_client {
         $content = $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
         if( ! is_string( $content ) ) {
-            return new \WP_Error( 'mshield_ai_shape', 'Unexpected Gemini response shape' );
+            return new \WP_Error( 'mshield_ai_shape', __( 'Unexpected Gemini response shape', 'mighty-shield' ) );
         }
 
         $decoded = json_decode( $content, true );
 
         return is_array( $decoded )
             ? $decoded
-            : new \WP_Error( 'mshield_ai_shape', 'Gemini returned a verdict that was not valid JSON' );
+            : new \WP_Error( 'mshield_ai_shape', __( 'Gemini returned a verdict that was not valid JSON', 'mighty-shield' ) );
 
     }
 
@@ -595,15 +663,21 @@ class ai_client {
         if( get_transient( 'mshield_ai_alerted' ) ) return;
         set_transient( 'mshield_ai_alerted', 1, DAY_IN_SECONDS );
 
+        if( ! settings::alerts_enabled() ) return;
+
         $message = sprintf(
-            "MightyShield's AI order review is currently unavailable.\n\n" .
-            "Reason: %s\n\n" .
-            "Orders are being allowed through WITHOUT AI review until this is resolved. Common causes:\n" .
-            "- Invalid or expired API key\n" .
-            "- Provider quota exhausted or rate limited\n" .
-            "- Network/API outage\n\n" .
-            "Check your credentials under MightyShield > AI Detection.\n\n" .
-            "This alert is sent at most once per day.",
+            /* translators: %s: the error the AI provider returned. */
+            __(
+                "MightyShield's AI order review is currently unavailable.\n\n" .
+                "Reason: %s\n\n" .
+                "Orders are being allowed through WITHOUT AI review until this is resolved. Common causes:\n" .
+                "- Invalid or expired API key\n" .
+                "- Provider quota exhausted or rate limited\n" .
+                "- Network/API outage\n\n" .
+                "Check your credentials under MightyShield > AI Review.\n\n" .
+                "This alert is sent at most once per day.",
+                'mighty-shield'
+            ),
             $error
         );
 
@@ -614,7 +688,7 @@ class ai_client {
         // called a method that does not exist and fatalled the checkout —
         // turning the deliberate fail-open into a hard failure at exactly the
         // moment it was supposed to get out of the shopper's way.
-        wp_mail( settings::notification_recipients(), '[MightyShield] AI order review is unavailable', $message );
+        wp_mail( settings::notification_recipients(), __( '[MightyShield] AI order review is unavailable', 'mighty-shield' ), $message );
 
     }
 
@@ -642,6 +716,9 @@ class ai_client {
 
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
 
+        // Switched off is not degraded. Left on with a key cleared still is.
+        if( settings::get( 'mshield_ai_enabled' ) !== 'yes' ) return;
+
         $degraded = get_option( 'mshield_ai_degraded' );
         if( empty( $degraded ) || empty( $degraded['time'] ) ) return;
 
@@ -655,6 +732,7 @@ class ai_client {
                 __( 'AI order review is unavailable and orders are NOT being reviewed. Last error: %s', 'mighty-shield' ),
                 $degraded['message']
             ) ),
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
             \MightyShield\Admin\admin_page::dismiss_url( 'mshield_ai_degraded' ),
             esc_html__( 'Dismiss', 'mighty-shield' )
         );

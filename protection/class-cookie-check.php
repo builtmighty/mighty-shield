@@ -24,7 +24,8 @@
  */
 namespace MightyShield\Protection;
 
-use MightyShield\Includes\exempt;
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\risk_context;
 
 class cookie_check {
@@ -52,10 +53,6 @@ class cookie_check {
      */
     public function assess_classic() {
 
-        $email = isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '';
-
-        if( exempt::is_exempt( $email ) ) return;
-
         self::assess();
 
     }
@@ -71,8 +68,6 @@ class cookie_check {
     public function assess_store_api( $order, $request ) {
 
         if( ! is_object( $order ) || ! method_exists( $order, 'get_billing_email' ) ) return;
-
-        if( exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         self::assess();
 

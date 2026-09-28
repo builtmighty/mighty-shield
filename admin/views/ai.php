@@ -1,6 +1,6 @@
 <?php
 /**
- * AI Detection settings view.
+ * AI Review settings view.
  *
  * @package MightyShield
  * @since   1.8.0
@@ -17,7 +17,20 @@ $provider    = settings::get( 'mshield_ai_provider' );
 // there is no flash of the wrong fields before the inline script runs.
 $hide        = ' style="display:none;"';
 $hide_p      = function( $key ) use ( $provider, $hide ) { return $provider === $key ? '' : $hide; };
-$hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide;
+
+// One dropdown per provider, each in that provider's row, so the choices
+// change with the provider selected above. A saved id that is no longer on
+// the list is still offered, so saving the page cannot silently move the
+// store onto a different model.
+$model_select = function( $key ) {
+    $name    = 'mshield_ai_' . $key . '_model';
+    $current = (string) settings::get( $name );
+    echo '<select name="' . esc_attr( $name ) . '" class="regular-text">';
+    foreach( \MightyShield\Includes\ai_client::models( $key ) as $id => $label ) {
+        echo '<option value="' . esc_attr( $id ) . '"' . selected( $current, $id, false ) . '>' . esc_html( $label ) . '</option>';
+    }
+    echo '</select>';
+};
 
 // Authorize needs a gateway that can reserve funds without capturing. Gated
 // here and again in the sanitize callback, so a stale POST or a gateway being
@@ -32,11 +45,11 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
     <?php settings_fields( 'mshield_ai' ); ?>
 
     <div class="mshield-section">
-        <h2><?php esc_html_e( 'AI Detection', 'mighty-shield' ); ?></h2>
+        <h2><?php esc_html_e( 'AI Review', 'mighty-shield' ); ?></h2>
         <p class="description"><?php esc_html_e( 'Uses an AI model to review orders that look legitimate to the rule-based layers. It targets stolen-card orders shipped to real, deliverable addresses, where every attribute passes on its own and only the pattern across them is suspicious.', 'mighty-shield' ); ?></p>
         <table class="form-table">
             <tr>
-                <th scope="row"><?php esc_html_e( 'Enable AI Detection', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Enable AI review', 'mighty-shield' ); ?></th>
                 <td>
                     <label>
                         <input type="hidden" name="mshield_ai_enabled" value="no" />
@@ -51,7 +64,7 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
 
     <div class="mshield-section">
         <h2><?php esc_html_e( 'AI Credentials', 'mighty-shield' ); ?></h2>
-        <p class="description"><?php esc_html_e( 'Choose a provider and enter its connection details. Small, fast models are the right tier here. Reviews run inline with checkout, so latency and per-order cost matter more than raw capability.', 'mighty-shield' ); ?></p>
+        <p class="description"><?php esc_html_e( 'Choose a provider and enter its connection details.', 'mighty-shield' ); ?></p>
         <table class="form-table">
             <tr>
                 <th scope="row"><?php esc_html_e( 'Provider', 'mighty-shield' ); ?></th>
@@ -66,64 +79,58 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
             </tr>
 
             <?php $has_key = ! empty( settings::get( 'mshield_ai_anthropic_key' ) ); ?>
-            <tr class="mshield-ai-p-anthropic"<?php echo $hide_p( 'anthropic' ); ?>>
-                <th scope="row"><?php esc_html_e( 'Anthropic API Key', 'mighty-shield' ); ?></th>
+            <tr class="mshield-ai-p-anthropic"<?php echo $hide_p( 'anthropic' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
+                <th scope="row"><?php esc_html_e( 'Anthropic API key', 'mighty-shield' ); ?></th>
                 <td>
-                    <input type="password" name="mshield_ai_anthropic_key" value="" class="regular-text" <?php echo $has_key ? 'placeholder="••••••••"' : ''; ?> />
-                    <p class="description"><?php echo $has_key ? esc_html__( 'Key is saved. Leave blank to keep existing key.', 'mighty-shield' ) : esc_html__( 'Your Anthropic API key.', 'mighty-shield' ); ?></p>
+                    <input type="password" name="mshield_ai_anthropic_key" value="" class="regular-text" autocomplete="off" placeholder="<?php echo $has_key ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>" />
                 </td>
             </tr>
-            <tr class="mshield-ai-p-anthropic"<?php echo $hide_p( 'anthropic' ); ?>>
+            <tr class="mshield-ai-p-anthropic"<?php echo $hide_p( 'anthropic' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Model', 'mighty-shield' ); ?></th>
                 <td>
-                    <input type="text" name="mshield_ai_anthropic_model" value="<?php echo esc_attr( settings::get( 'mshield_ai_anthropic_model' ) ); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e( 'Default: claude-haiku-4-5, the fastest and lowest cost Claude model, well suited to per-order scoring.', 'mighty-shield' ); ?></p>
+                    <?php $model_select( 'anthropic' ); ?>
                 </td>
             </tr>
 
             <?php $has_key = ! empty( settings::get( 'mshield_ai_openai_key' ) ); ?>
-            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); ?>>
-                <th scope="row"><?php esc_html_e( 'OpenAI API Key', 'mighty-shield' ); ?></th>
+            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
+                <th scope="row"><?php esc_html_e( 'OpenAI API key', 'mighty-shield' ); ?></th>
                 <td>
-                    <input type="password" name="mshield_ai_openai_key" value="" class="regular-text" <?php echo $has_key ? 'placeholder="••••••••"' : ''; ?> />
-                    <p class="description"><?php echo $has_key ? esc_html__( 'Key is saved. Leave blank to keep existing key.', 'mighty-shield' ) : esc_html__( 'Your OpenAI API key.', 'mighty-shield' ); ?></p>
+                    <input type="password" name="mshield_ai_openai_key" value="" class="regular-text" autocomplete="off" placeholder="<?php echo $has_key ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>" />
                 </td>
             </tr>
-            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); ?>>
+            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Organization ID', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="text" name="mshield_ai_openai_org" value="<?php echo esc_attr( settings::get( 'mshield_ai_openai_org' ) ); ?>" class="regular-text" />
                     <p class="description"><?php esc_html_e( 'Optional. Only needed if your key belongs to more than one organization.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
-            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); ?>>
+            <tr class="mshield-ai-p-openai"<?php echo $hide_p( 'openai' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Model', 'mighty-shield' ); ?></th>
                 <td>
-                    <input type="text" name="mshield_ai_openai_model" value="<?php echo esc_attr( settings::get( 'mshield_ai_openai_model' ) ); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e( 'Use a small, fast model. Check your provider\'s current model list, because model IDs change over time.', 'mighty-shield' ); ?></p>
+                    <?php $model_select( 'openai' ); ?>
                 </td>
             </tr>
 
             <?php $has_key = ! empty( settings::get( 'mshield_ai_gemini_key' ) ); ?>
-            <tr class="mshield-ai-p-gemini"<?php echo $hide_p( 'gemini' ); ?>>
-                <th scope="row"><?php esc_html_e( 'Gemini API Key', 'mighty-shield' ); ?></th>
+            <tr class="mshield-ai-p-gemini"<?php echo $hide_p( 'gemini' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
+                <th scope="row"><?php esc_html_e( 'Gemini API key', 'mighty-shield' ); ?></th>
                 <td>
-                    <input type="password" name="mshield_ai_gemini_key" value="" class="regular-text" <?php echo $has_key ? 'placeholder="••••••••"' : ''; ?> />
-                    <p class="description"><?php echo $has_key ? esc_html__( 'Key is saved. Leave blank to keep existing key.', 'mighty-shield' ) : esc_html__( 'Your Google AI Studio API key.', 'mighty-shield' ); ?></p>
+                    <input type="password" name="mshield_ai_gemini_key" value="" class="regular-text" autocomplete="off" placeholder="<?php echo $has_key ? esc_attr__( 'saved, leave blank to keep', 'mighty-shield' ) : ''; ?>" />
                 </td>
             </tr>
-            <tr class="mshield-ai-p-gemini"<?php echo $hide_p( 'gemini' ); ?>>
+            <tr class="mshield-ai-p-gemini"<?php echo $hide_p( 'gemini' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- returns '' or the literal style attribute defined at the top of this file ?>>
                 <th scope="row"><?php esc_html_e( 'Model', 'mighty-shield' ); ?></th>
                 <td>
-                    <input type="text" name="mshield_ai_gemini_model" value="<?php echo esc_attr( settings::get( 'mshield_ai_gemini_model' ) ); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e( 'Use a Flash-tier model. Check your provider\'s current model list, because model IDs change over time.', 'mighty-shield' ); ?></p>
+                    <?php $model_select( 'gemini' ); ?>
                 </td>
             </tr>
 
             <tr>
-                <th scope="row"><?php esc_html_e( 'Test Connection', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Test connection', 'mighty-shield' ); ?></th>
                 <td>
-                    <?php admin_page::test_button( 'ai', __( 'Sends one real review request to the selected provider, using the same tool definition and schema a live order uses. This tests the saved key, not what is typed above, so save first. It costs one request and does not count against the daily limit.', 'mighty-shield' ) ); ?>
+                    <?php admin_page::test_button( 'ai', __( 'Tests the saved key. Save first.', 'mighty-shield' ) ); ?>
                 </td>
             </tr>
         </table>
@@ -134,7 +141,7 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
         <p class="description"><?php esc_html_e( 'A review costs money and adds a couple of seconds to checkout, so it runs only on the risk levels you choose and only during checkout, where its verdict can still change what happens to the order.', 'mighty-shield' ); ?></p>
         <table class="form-table">
             <tr>
-                <th scope="row"><?php esc_html_e( 'Send to Review', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Send to review', 'mighty-shield' ); ?></th>
                 <td>
                     <div class="mshield-level-pills">
                         <?php foreach( \MightyShield\Includes\risk_levels::AI_REVIEWABLE as $ai_level ) :
@@ -157,15 +164,6 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
                             </label>
                         <?php endforeach; ?>
                     </div>
-                    <p class="description">
-                        <?php esc_html_e( 'An order is scored first. If it lands on one of these levels it goes to the model, and the rating that comes back is what the blocking engine then acts on.', 'mighty-shield' ); ?>
-                    </p>
-                    <p class="description">
-                        <?php esc_html_e( 'Trusted and Low are most orders, so choosing them will cost real money. Elevated and High are the ambiguous ones, where a verdict is most likely to change the outcome.', 'mighty-shield' ); ?>
-                    </p>
-                    <p class="description">
-                        <?php esc_html_e( 'Rejected is worth considering if you would rather not turn anyone away on arithmetic alone: the review happens before the refusal, so with the rating effect below set to raise as well as lower, a model that recognises an ordinary customer can rescue the order. Orders stopped by a single decisive signal — a hidden trap field, a failed bot challenge, a card with a chargeback — are never sent, because the model cannot overturn those and the call would be wasted.', 'mighty-shield' ); ?>
-                    </p>
                     <?php if( ! \MightyShield\Includes\ai_client::is_ready() ) : ?>
                         <p class="description">
                             <strong><?php esc_html_e( 'No reviews will run until a provider is set up above.', 'mighty-shield' ); ?></strong>
@@ -175,19 +173,16 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
                 </td>
             </tr>
             <tr>
-                <th scope="row"><?php esc_html_e( 'Rating Effect', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Rating effect', 'mighty-shield' ); ?></th>
                 <td>
                     <?php admin_page::radios( 'mshield_ai_direction', [
-                        'lower' => __( 'Only lower the rating', 'mighty-shield' ),
-                        'both'  => __( 'Lower or raise the rating', 'mighty-shield' ),
+                        'lower' => __( 'Only lower the trust rating', 'mighty-shield' ),
+                        'both'  => __( 'Lower or raise the trust rating', 'mighty-shield' ),
                     ], settings::get( 'mshield_ai_direction' ) ); ?>
-                    <p class="description">
-                        <?php esc_html_e( 'The review returns its own rating from 1 to 100, judging the whole order. Lowering only means it can veto trust the checks granted, but never hand any back. Allowing it to raise lets a model that recognises an ordinary customer rescue an order the checks were too harsh on, at the cost of letting one confident wrong answer do the same. Either way it cannot push an order into Trusted; that still takes a clean order history.', 'mighty-shield' ); ?>
-                    </p>
                 </td>
             </tr>
             <tr>
-                <th scope="row"><?php esc_html_e( 'Customer Details', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Customer details', 'mighty-shield' ); ?></th>
                 <td>
                     <label>
                         <input type="checkbox" name="mshield_ai_redact_pii" value="yes"
@@ -195,12 +190,12 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
                         <?php esc_html_e( 'Do not send customers\' personal details to the AI provider', 'mighty-shield' ); ?>
                     </label>
                     <p class="description">
-                        <?php esc_html_e( 'The review still sees what it needs: the email domain, whether the address looks plausible, the city and postcode, and the network the order came from. It sees but not the street address, mailbox name, phone number or exact IP. Slightly less accurate, and worth turning on if you would rather those details never left your site.', 'mighty-shield' ); ?>
+                        <?php esc_html_e( 'The review still sees what it needs, without specific customer information. Slightly less accurate.', 'mighty-shield' ); ?>
                     </p>
                 </td>
             </tr>
             <tr>
-                <th scope="row"><?php esc_html_e( 'Daily Limit', 'mighty-shield' ); ?></th>
+                <th scope="row"><?php esc_html_e( 'Daily limit', 'mighty-shield' ); ?></th>
                 <td>
                     <input type="number" min="0" step="1" style="width:110px;"
                            name="mshield_ai_daily_cap"
@@ -214,29 +209,6 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
                         );
                         ?>
                     </p>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <div class="mshield-section">
-        <h2><?php esc_html_e( 'Notifications', 'mighty-shield' ); ?></h2>
-        <table class="form-table">
-            <tr>
-                <th scope="row"><?php esc_html_e( 'Notification', 'mighty-shield' ); ?></th>
-                <td>
-                    <label>
-                        <input type="hidden" name="mshield_ai_notify_admin" value="no" />
-                        <input type="checkbox" name="mshield_ai_notify_admin" value="yes" <?php checked( settings::get( 'mshield_ai_notify_admin' ), 'yes' ); ?> />
-                        <?php esc_html_e( 'Email me when a review comes back badly rated.', 'mighty-shield' ); ?>
-                    </label>
-                </td>
-            </tr>
-            <tr class="mshield-ai-notify-only"<?php echo $hide_notify; ?>>
-                <th scope="row"><?php esc_html_e( 'Notification Email(s)', 'mighty-shield' ); ?></th>
-                <td>
-                    <input type="text" name="mshield_ai_notify_emails" value="<?php echo esc_attr( settings::get( 'mshield_ai_notify_emails' ) ); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e( 'Comma-separated. Leave blank to use the site admin address.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
         </table>
@@ -261,22 +233,10 @@ $hide_notify = settings::get( 'mshield_ai_notify_admin' ) === 'yes' ? '' : $hide
         } );
     }
 
-
-    function syncNotify() {
-        var box = document.querySelector( 'input[type="checkbox"][name="mshield_ai_notify_admin"]' );
-        document.querySelectorAll( '.mshield-ai-notify-only' ).forEach( function( el ) {
-            show( el, !! ( box && box.checked ) );
-        } );
-    }
-
     document.querySelectorAll( 'input[name="mshield_ai_provider"]' ).forEach( function( input ) {
         input.addEventListener( 'change', syncProvider );
     } );
 
-    var notify = document.querySelector( 'input[type="checkbox"][name="mshield_ai_notify_admin"]' );
-    if ( notify ) { notify.addEventListener( 'change', syncNotify ); }
-
     syncProvider();
-    syncNotify();
 } )();
 </script>

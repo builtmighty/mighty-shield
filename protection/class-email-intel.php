@@ -20,9 +20,10 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
-use MightyShield\Includes\exempt;
 use MightyShield\Includes\risk_context;
 
 class email_intel {
@@ -59,6 +60,18 @@ class email_intel {
     const DNS_CACHE = WEEK_IN_SECONDS;
 
     /**
+     * How long a negative DNS answer is remembered.
+     *
+     * Short on purpose. checkdnsrr() cannot tell a domain that does not exist
+     * from a resolver that did not answer, and a week-long "no" from one
+     * resolver hiccup marked gmail.com undeliverable for every customer until
+     * it expired.
+     *
+     * @since   3.0.0
+     */
+    const DNS_NEGATIVE_CACHE = HOUR_IN_SECONDS;
+
+    /**
      * Construct.
      *
      * @since   1.9.0
@@ -87,8 +100,6 @@ class email_intel {
 
         $email = $data['billing_email'] ?? '';
 
-        if( exempt::is_exempt( $email ) ) return;
-
         self::assess( $email );
 
     }
@@ -102,8 +113,6 @@ class email_intel {
      * @param   \WP_REST_Request    $request
      */
     public function evaluate_store_api( $order, $request ) {
-
-        if( exempt::is_exempt( $order->get_billing_email(), $order->get_user_id() ) ) return;
 
         self::assess( $order->get_billing_email() );
 
@@ -196,7 +205,8 @@ class email_intel {
                     || checkdnsrr( $domain, 'A' )
                     || checkdnsrr( $domain, 'AAAA' );
 
-        set_transient( $key, $deliverable ? 'yes' : 'no', self::DNS_CACHE );
+        // A "yes" is durable; a "no" is not. See DNS_NEGATIVE_CACHE.
+        set_transient( $key, $deliverable ? 'yes' : 'no', $deliverable ? self::DNS_CACHE : self::DNS_NEGATIVE_CACHE );
 
         return ! $deliverable;
 

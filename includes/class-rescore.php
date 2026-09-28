@@ -10,11 +10,15 @@
  * the administrator's own browser sitting on wp-admin.
  *
  * So a rating produced here is PARTIAL, and this class is built to say so
- * rather than to hide it. Ten of the thirty-three signals in the catalogue can
- * be derived from a stored order; the other twenty-three are named in
- * SKIPPED_GROUPS and reported alongside the number. An 88 from this is not the
- * same statement as an 88 from checkout, and a panel that presented them
- * identically would be lying by omission.
+ * rather than to hide it. The signals that can be derived from a stored order
+ * are listed in REPLAYABLE; everything else is named in SKIPPED_GROUPS and
+ * reported alongside the number. An 88 from this is not the same statement as
+ * an 88 from checkout, and a panel that presented them identically would be
+ * lying by omission.
+ *
+ * Counted from the two lists rather than written down here, because a count
+ * in a comment goes stale the first time somebody adds a signal -- this one
+ * said "ten of thirty-three" for three releases after neither was true.
  *
  * It is also deliberately READ-ONLY. It records a rating and dispatches
  * nothing: no hold, no cancellation, no 3-D Secure request. Rating a shipped
@@ -24,6 +28,8 @@
  * @since   1.9.5
  */
 namespace MightyShield\Includes;
+
+defined( 'ABSPATH' ) || exit;
 
 class rescore {
 
@@ -58,7 +64,17 @@ class rescore {
         'high_value',
         'ip_geo_mismatch',
         'ip_datacenter',
-        'ip_proxy',
+        // Added in 3.0.0. Every one reads a field stored on the order, so
+        // unlike the bot, timing and device layers these genuinely do
+        // reproduce -- a re-rate reaches the same answer the checkout did.
+        'address_reshipper',
+        'address_bill_ship_mismatch',
+        'phone_area_mismatch',
+        'phone_voip',
+        'country_blocked',
+        'country_high_risk',
+        'amount_over_ceiling',
+        'first_order',
         'entity_chargeback',
         'entity_denied',
         'entity_linked_bad',
@@ -89,12 +105,12 @@ class rescore {
             return new \WP_Error( 'mshield_no_order', __( 'That order could not be loaded.', 'mighty-shield' ) );
         }
 
-        if( exempt::is_exempt_order( $order ) ) {
-            return new \WP_Error(
-                'mshield_exempt',
-                __( 'This customer is on the allowlist, so MightyShield does not rate their orders.', 'mighty-shield' )
-            );
-        }
+        // An allowlisted customer's orders are rated like anyone else's. This
+        // used to refuse outright, which made the one screen an administrator
+        // could use to find out WHY an order was let through the one screen
+        // that would not tell them. The allowlist decides what is done about a
+        // rating, not whether one exists -- and a re-rate does nothing about
+        // anything, so there is nothing here for it to suppress.
 
         // risk_context is process-global static state with no production
         // callers of reset(). An admin request can already have signals in it —
@@ -139,19 +155,34 @@ class rescore {
             require_once MSHIELD_PATH . 'protection/class-order-signals.php';
         }
 
-        // The second argument switches the exemption test to the ORDER's
-        // identity. Without it the check asks whether the administrator is
-        // allowlisted, which on most stores is yes, and every signal below
-        // would silently return nothing.
-        ( new \MightyShield\Protection\order_signals() )->assess( $order, true );
+        // No exemption argument any more: assess() does not test the allowlist
+        // at all. It used to, and getting the test wrong here meant asking
+        // whether the ADMINISTRATOR was allowlisted -- which on most stores is
+        // yes, because activation allowlists the server's own address, so every
+        // signal below silently returned nothing while appearing to run.
+        ( new \MightyShield\Protection\order_signals() )->assess( $order );
 
         // Identity history — the only source of the trust-earning signal, and
         // the reason a re-rate is worth doing at all on an old order.
         $identities = entities::for_order( $order );
 
         if( ! empty( $identities ) ) {
+
             entities::assess( $identities );
-            entities::record( $identities, $order->get_id() );
+
+            // Linked as of when the order was PLACED. A back-catalogue pass
+            // used to stamp every link with the moment it ran, so a family
+            // home with three orders across two years looked like three
+            // orders last month and tripped address_velocity for the next
+            // thirty days.
+            $placed = $order->get_date_created();
+            $seen   = $placed ? gmdate( 'Y-m-d H:i:s', $placed->getTimestamp() ) : null;
+
+            entities::record( $identities, $order->get_id(), $seen );
+
+            // And counted, if the store was paid for it. Once.
+            if( entities::order_is_paid( $order ) ) entities::count_paid( $order );
+
         }
 
         self::assess_ip( $order );
@@ -187,8 +218,31 @@ class rescore {
      */
     public static function assess_ip( $order ) {
 
-        $ip = $order->get_customer_ip_address();
-        if( empty( $ip ) ) return;
+        // The address the recorder resolved, not WooCommerce's copy of
+        // X-Real-IP: a card tester on a hosting box who set that header to a
+        // residential address was looked up as that address, and the
+        // data-centre check never fired.
+        self::assess_ip_address( ip_utils::order_ip( $order ) );
+
+    }
+
+    /**
+     * The network signals for one address, from the cache only.
+     *
+     * Called at validation as well as at record time since 3.0.0: the record
+     * call at order-processed runs after the AI review (90) and the refusal
+     * (99), so the model never saw the network and a data-centre address
+     * could not contribute to a refusal. risk_context::add() is
+     * first-write-wins, so the second call costs nothing.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $ip
+     */
+    public static function assess_ip_address( $ip ) {
+
+        $ip = (string) $ip;
+        if( $ip === '' ) return;
 
         $geo = db::get_ip_data( $ip );
         if( empty( $geo ) ) return;
@@ -198,13 +252,14 @@ class rescore {
         if( isset( $geo['hosting'] ) && (int) $geo['hosting'] === 1 ) {
             risk_context::add(
                 'ip_datacenter',
-                sprintf( 'IP belongs to a hosting provider or datacenter (%s)', $geo['asname'] ?: $geo['org'] )
+                sprintf( 'IP belongs to a hosting provider or datacenter (%s)', $geo['org'] ?: $geo['asname'] )
             );
         }
 
-        if( isset( $geo['proxy'] ) && (int) $geo['proxy'] === 1 ) {
-            risk_context::add( 'ip_proxy', 'IP is a known proxy, VPN, or Tor exit node' );
-        }
+        // ip_proxy used to be emitted here. It was retired in 3.0.0 along with
+        // the ip-api.com dependency: MaxMind's Anonymous IP database is a paid
+        // product and there is no free source for proxy, VPN or Tor status, so
+        // there is nothing to read. See includes/class-ip-data.php.
 
     }
 
@@ -287,7 +342,7 @@ class rescore {
         $order->save();
 
         db::log_event(
-            $order->get_customer_ip_address(),
+            ip_utils::order_ip( $order ),
             'risk_engine',
             'flagged',
             sprintf( 'Order #%d rated by hand: %s/100 → %s', $order_id, $verdict['trust'], $verdict['risk_level'] ),

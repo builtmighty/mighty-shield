@@ -9,6 +9,8 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
 use MightyShield\Includes\ip_data;
@@ -134,6 +136,7 @@ class admin_page {
         $needle = (string) $needle;
 
         if( $needle === '' ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
             $needle = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
         }
 
@@ -164,12 +167,21 @@ class admin_page {
         add_action( 'admin_notices', [ __CLASS__, 'render_store_api_notice' ] );
         add_action( 'admin_init', [ $this, 'register_settings' ] );
         add_action( 'admin_init', [ $this, 'handle_actions' ] );
+
+        // The menu is manage_woocommerce, but every Settings API form posts to
+        // options.php, which demands manage_options unless told otherwise. So a
+        // Shop Manager could open every tab and save none of them. Same
+        // capability on both sides.
+        foreach( [ 'mshield_logs', 'mshield_scoring', 'mshield_blocking', 'mshield_ai' ] as $group ) {
+            add_filter( 'option_page_capability_' . $group, function() { return 'manage_woocommerce'; } );
+        }
         add_action( 'save_post_page', [ __CLASS__, 'refresh_block_checkout' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_styles' ] );
         add_action( 'wp_ajax_mshield_set_theme', [ $this, 'ajax_set_theme' ] );
         add_action( 'wp_ajax_mshield_get_ip', [ $this, 'ajax_get_ip' ] );
         add_action( 'wp_ajax_mshield_chart', [ $this, 'ajax_chart' ] );
         add_action( 'wp_ajax_mshield_test_connection', [ $this, 'ajax_test_connection' ] );
+        add_action( 'wp_ajax_mshield_backfill_state', [ $this, 'ajax_backfill_state' ] );
         add_filter( 'admin_body_class', [ $this, 'admin_body_class' ] );
         // Late, so notices registered by other plugins are already in place.
         add_action( 'in_admin_header', [ $this, 'suppress_notices' ], 1000 );
@@ -259,7 +271,12 @@ class admin_page {
             ] );
 
             register_setting( 'mshield_scoring', 'mshield_sig_' . $key . '_weight', [
-                'sanitize_callback' => function( $value ) {
+                'sanitize_callback' => function( $value ) use ( $signal ) {
+                    // An emptied field means "back to the default", not zero.
+                    // Zero is a real setting -- it disarms the signal -- and a
+                    // merchant who cleared a box to start over should not get
+                    // it by accident.
+                    if( ! is_numeric( $value ) ) return (float) $signal['weight'];
                     // Negative weights are legal: they earn trust back.
                     return max( -100.0, min( 100.0, (float) $value ) );
                 },
@@ -308,7 +325,14 @@ class admin_page {
                     // which is safer than silently meaning zero.
                     if( $type === 'decimal' ) {
 
-                        $clean = preg_replace( '/[^0-9.\-]/', '', (string) $value );
+                        // Through WooCommerce's own parser, which knows the
+                        // store's decimal separator. The regex it replaces
+                        // kept '.' and dropped ',', so on a comma-decimal
+                        // store "1.500,00" became 1.5 and a ceiling of fifteen
+                        // hundred euros held every order over one and a half.
+                        $clean = function_exists( 'wc_format_decimal' )
+                            ? (string) wc_format_decimal( wp_strip_all_tags( (string) $value ) )
+                            : preg_replace( '/[^0-9.\-]/', '', (string) $value );
 
                         if( $clean === '' || ! is_numeric( $clean ) ) return get_option( $option, '' );
 
@@ -349,7 +373,7 @@ class admin_page {
 
         foreach( array_keys( \MightyShield\Includes\risk_levels::DEFAULT_THRESHOLDS ) as $level ) {
             register_setting( 'mshield_blocking', 'mshield_level_' . $level . '_threshold', [
-                'sanitize_callback' => function( $value ) { return max( 1, min( 100, absint( $value ) ) ); },
+                'sanitize_callback' => function( $value ) use ( $level ) { return self::ordered_threshold( $level, $value ); },
             ] );
         }
 
@@ -557,10 +581,10 @@ class admin_page {
             },
         ] );
 
-        register_setting( 'mshield_ai', 'mshield_ai_notify_admin', [
+        register_setting( 'mshield_logs', 'mshield_ai_notify_admin', [
             'sanitize_callback' => [ self::class, 'sanitize_checkbox' ],
         ] );
-        register_setting( 'mshield_ai', 'mshield_ai_notify_emails', [
+        register_setting( 'mshield_logs', 'mshield_ai_notify_emails', [
             'sanitize_callback' => [ self::class, 'sanitize_email_list' ],
         ] );
 
@@ -631,18 +655,11 @@ class admin_page {
      */
     public static function refusal_note_tags() {
 
-        $link = [ 'href' => true, 'title' => true, 'target' => true, 'rel' => true, 'name' => true, 'download' => true ];
-
-        return [
-            'a'      => $link,
-            'b'      => [],
-            'strong' => [],
-            'i'      => [],
-            'em'     => [],
-            'p'      => [],
-            'br'     => [],
-            'abbr'   => [ 'title' => true ],
-        ];
+        // The list moved to response in 3.0.0, which is where the note is
+        // actually rendered. Kept as a passthrough so anything already calling
+        // it by this name keeps working, and so the save-time sanitizer and
+        // the render-time one can never drift apart.
+        return \MightyShield\Includes\response::refusal_note_tags();
 
     }
 
@@ -664,6 +681,29 @@ class admin_page {
     }
 
     /**
+     * Where to go after allowlisting or blocking from a log row.
+     *
+     * Back to the log the merchant was reading, with its filters and page,
+     * when that is where they came from; otherwise the list they changed.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $tab    The Access tab alias to fall back to.
+     * @return  string  URL.
+     */
+    private static function back_to_logs_or( $tab ) {
+
+        $referer = wp_get_referer();
+
+        if( $referer && strpos( $referer, 'page=mighty-shield' ) !== false && strpos( $referer, 'tab=logs' ) !== false ) {
+            return $referer;
+        }
+
+        return admin_url( 'admin.php?page=mighty-shield&tab=' . $tab );
+
+    }
+
+    /**
      * Handle admin actions (whitelist add/remove).
      *
      * @since   1.0.0
@@ -678,7 +718,7 @@ class admin_page {
 
             $option = sanitize_key( wp_unslash( $_GET['mshield_dismiss'] ) );
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_dismiss_' . $option ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_dismiss_' . $option ) ) {
                 self::dismiss_degraded( $option );
             }
 
@@ -695,9 +735,9 @@ class admin_page {
         // Add a typed entry to the whitelist (IP / user / email / role).
         if( isset( $_POST['mshield_add_ip'] ) && check_admin_referer( 'mshield_whitelist_action' ) ) {
 
-            $type  = sanitize_text_field( $_POST['mshield_new_type'] ?? 'ip' );
+            $type  = sanitize_text_field( isset( $_POST['mshield_new_type'] ) ? wp_unslash( $_POST['mshield_new_type'] ) : 'ip' );
             $value = ( $type === 'role' )
-                ? sanitize_key( $_POST['mshield_new_role'] ?? '' )
+                ? sanitize_key( isset( $_POST['mshield_new_role'] ) ? wp_unslash( $_POST['mshield_new_role'] ) : '' )
                 : sanitize_text_field( wp_unslash( $_POST['mshield_new_value'] ?? '' ) );
             $label = sanitize_text_field( wp_unslash( $_POST['mshield_new_ip_label'] ?? '' ) );
 
@@ -711,9 +751,9 @@ class admin_page {
         // Remove an entry from the whitelist.
         if( isset( $_GET['mshield_remove_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_remove_ip' ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_remove_ip' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_remove_ip'] ) );
-                $type  = sanitize_text_field( $_GET['wl_type'] ?? 'ip' );
+                $type  = sanitize_text_field( isset( $_GET['wl_type'] ) ? wp_unslash( $_GET['wl_type'] ) : 'ip' );
                 // 'role' belongs here. The allowlist view offers role entries
                 // and ip_whitelist::remove_entry() has always supported them,
                 // but this list did not -- so the type was coerced to 'ip',
@@ -737,14 +777,38 @@ class admin_page {
         // Add IP to blocklist.
         if( isset( $_POST['mshield_block_add_ip'] ) && check_admin_referer( 'mshield_blocklist_action' ) ) {
 
-            $ip    = sanitize_text_field( $_POST['mshield_block_new_ip'] ?? '' );
-            $label = sanitize_text_field( $_POST['mshield_block_new_ip_label'] ?? '' );
+            $value = sanitize_text_field( isset( $_POST['mshield_block_new_ip'] ) ? wp_unslash( $_POST['mshield_block_new_ip'] ) : '' );
+            $label = sanitize_text_field( isset( $_POST['mshield_block_new_ip_label'] ) ? wp_unslash( $_POST['mshield_block_new_ip_label'] ) : '' );
 
-            if( ! empty( $ip ) && $this->validate_ip_input( $ip ) ) {
-                ip_blocklist::add_ip( $ip, $label, 'Added manually' );
-                set_transient( 'mshield_admin_notice', [ 'ip_blocked', __( 'IP address added to blocklist.', 'mighty-shield' ), 'success' ], 30 );
+            // The form gained a type selector in 3.0.0. Absent means the
+            // request came from somewhere that predates it, and 'ip' is what
+            // that somewhere could have meant.
+            $type = isset( $_POST['mshield_block_new_type'] )
+                ? sanitize_key( wp_unslash( $_POST['mshield_block_new_type'] ) )
+                : 'ip';
+
+            if( ! in_array( $type, ip_blocklist::TYPES, true ) ) $type = 'ip';
+
+            // Only the IP type gets format validation, because only it has a
+            // format. A name or a city is whatever the merchant says it is,
+            // and add_entry() rejects anything that normalises to nothing.
+            $valid = $value !== '' && ( $type !== 'ip' || $this->validate_ip_input( $value ) );
+
+            if( $valid && ip_blocklist::add_entry( $type, $value, $label, 'Added manually' ) ) {
+
+                set_transient( 'mshield_admin_notice', [ 'ip_blocked', __( 'Added to the blocklist.', 'mighty-shield' ), 'success' ], 30 );
+
+            } elseif( $valid ) {
+
+                // add_entry() refused a well-formed value, which it only does
+                // for a duplicate. Saying "invalid" there would send somebody
+                // looking for a typo in something already on the list.
+                set_transient( 'mshield_admin_notice', [ 'ip_duplicate', __( 'That is already on the blocklist.', 'mighty-shield' ), 'warning' ], 30 );
+
             } else {
-                set_transient( 'mshield_admin_notice', [ 'ip_invalid', __( 'Invalid IP address or CIDR format.', 'mighty-shield' ), 'error' ], 30 );
+
+                set_transient( 'mshield_admin_notice', [ 'ip_invalid', __( 'That does not look like a value MightyShield can match on.', 'mighty-shield' ), 'error' ], 30 );
+
             }
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=blocklist' ) );
@@ -755,10 +819,24 @@ class admin_page {
         // Remove IP from blocklist.
         if( isset( $_GET['mshield_block_remove_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_block_remove_ip' ) ) {
-                $ip = sanitize_text_field( $_GET['mshield_block_remove_ip'] );
-                ip_blocklist::remove_ip( $ip );
-                set_transient( 'mshield_admin_notice', [ 'ip_unblocked', __( 'IP address removed from blocklist.', 'mighty-shield' ), 'success' ], 30 );
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_block_remove_ip' ) ) {
+
+                $value = sanitize_text_field( wp_unslash( $_GET['mshield_block_remove_ip'] ) );
+
+                // The type arrived alongside from 3.0.0. A link rendered by an
+                // older page, or a bookmark, carries only the value -- and for
+                // those 'ip' is the right answer, because that is all the list
+                // could hold when the link was made.
+                $type = isset( $_GET['mshield_block_remove_type'] )
+                    ? sanitize_key( wp_unslash( $_GET['mshield_block_remove_type'] ) )
+                    : 'ip';
+
+                if( ! in_array( $type, ip_blocklist::TYPES, true ) ) $type = 'ip';
+
+                ip_blocklist::remove_entry( $type, $value );
+
+                set_transient( 'mshield_admin_notice', [ 'ip_unblocked', __( 'Removed from the blocklist.', 'mighty-shield' ), 'success' ], 30 );
+
             }
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=blocklist' ) );
@@ -769,15 +847,15 @@ class admin_page {
         // Block an IP directly from the Logs table.
         if( isset( $_GET['mshield_block_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_block_ip' ) ) {
-                $ip = sanitize_text_field( $_GET['mshield_block_ip'] );
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_block_ip' ) ) {
+                $ip = sanitize_text_field( wp_unslash( $_GET['mshield_block_ip'] ) );
                 if( ! empty( $ip ) && $this->validate_ip_input( $ip ) ) {
                     ip_blocklist::add_ip( $ip, '', 'Blocked from logs' );
                     set_transient( 'mshield_admin_notice', [ 'ip_blocked', sprintf( __( 'IP %s added to blocklist.', 'mighty-shield' ), $ip ), 'success' ], 30 );
                 }
             }
 
-            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=blocklist' ) );
+            wp_safe_redirect( self::back_to_logs_or( 'blocklist' ) );
             exit;
 
         }
@@ -785,12 +863,12 @@ class admin_page {
         // Whitelist an IP directly from the Logs table.
         if( isset( $_GET['mshield_whitelist_ip'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_whitelist_ip' ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_whitelist_ip' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_ip'] ) );
                 set_transient( 'mshield_admin_notice', $this->whitelist_add( 'ip', $value, 'Whitelisted from logs' ), 30 );
             }
 
-            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=whitelist' ) );
+            wp_safe_redirect( self::back_to_logs_or( 'whitelist' ) );
             exit;
 
         }
@@ -798,7 +876,7 @@ class admin_page {
         // Whitelist an email directly from the Logs table.
         if( isset( $_GET['mshield_whitelist_email'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_whitelist_email' ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_whitelist_email' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_email'] ) );
                 set_transient( 'mshield_admin_notice', $this->whitelist_add( 'email', $value, 'Whitelisted from logs' ), 30 );
             }
@@ -811,7 +889,7 @@ class admin_page {
         // Whitelist a WP user directly from the Logs table.
         if( isset( $_GET['mshield_whitelist_user'] ) && isset( $_GET['_wpnonce'] ) ) {
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_whitelist_user' ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_whitelist_user' ) ) {
                 $value = sanitize_text_field( wp_unslash( $_GET['mshield_whitelist_user'] ) );
                 set_transient( 'mshield_admin_notice', $this->whitelist_add( 'user', $value, 'Whitelisted from logs' ), 30 );
             }
@@ -828,7 +906,7 @@ class admin_page {
 
             $state = sanitize_key( wp_unslash( $_GET['mshield_set_state'] ) );
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_set_state_' . $state ) ) {
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_set_state_' . $state ) ) {
 
                 $message = self::apply_state( $state );
 
@@ -857,7 +935,7 @@ class admin_page {
 
             $profile = sanitize_key( wp_unslash( $_GET['mshield_set_profile'] ) );
 
-            if( wp_verify_nonce( $_GET['_wpnonce'], 'mshield_set_profile_' . $profile )
+            if( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mshield_set_profile_' . $profile )
                 && \MightyShield\Includes\scoring_profiles::apply( $profile ) ) {
 
                 set_transient( 'mshield_admin_notice', [
@@ -882,7 +960,7 @@ class admin_page {
         // Bulk actions on selected log rows.
         if( isset( $_POST['mshield_logs_bulk'] ) && check_admin_referer( 'mshield_logs_bulk_action' ) ) {
 
-            $action = sanitize_text_field( $_POST['mshield_bulk_action'] ?? '' );
+            $action = sanitize_text_field( isset( $_POST['mshield_bulk_action'] ) ? wp_unslash( $_POST['mshield_bulk_action'] ) : '' );
             $ids    = array_filter( array_map( 'absint', (array) ( $_POST['log_ids'] ?? [] ) ) );
 
             if( empty( $ids ) || $action === '' ) {
@@ -898,6 +976,7 @@ class admin_page {
 
                 global $wpdb;
                 $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- plugin-owned table
                 $ips = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT ip FROM {$wpdb->prefix}mshield_log WHERE id IN ({$placeholders})", $ids ) );
 
                 $count = 0;
@@ -934,6 +1013,183 @@ class admin_page {
             exit;
 
         }
+
+        // Rate the back catalogue.
+        if( isset( $_POST['mshield_backfill_start'] ) && check_admin_referer( 'mshield_backfill_action' ) ) {
+
+            $days   = isset( $_POST['mshield_backfill_days'] ) ? absint( wp_unslash( $_POST['mshield_backfill_days'] ) ) : 365;
+            $result = \MightyShield\Includes\backfill::start( min( 3650, $days ) );
+
+            if( is_wp_error( $result ) ) {
+                set_transient( 'mshield_admin_notice', [ 'backfill_failed', $result->get_error_message(), 'error' ], 30 );
+            } elseif( (int) $result['total'] === 0 ) {
+                set_transient( 'mshield_admin_notice', [ 'backfill_empty', __( 'There are no past orders in that window to rate.', 'mighty-shield' ), 'warning' ], 30 );
+            } else {
+                set_transient( 'mshield_admin_notice', [ 'backfill_started', sprintf(
+                    /* translators: %s: number of orders. */
+                    __( 'Rating %s past orders. This runs in the background — you can leave this page.', 'mighty-shield' ),
+                    number_format_i18n( (int) $result['total'] )
+                ), 'success' ], 30 );
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
+        // Chargeback import: look at the file, then apply it. Two steps
+        // because writing chargebacks into the identity graph is not
+        // something to do on a guess about which column holds the reference.
+        if( isset( $_POST['mshield_disputes_preview'] ) && check_admin_referer( 'mshield_disputes_action' ) ) {
+
+            $upload = self::uploaded_csv( 'mshield_disputes_file' );
+
+            if( is_wp_error( $upload ) ) {
+                set_transient( 'mshield_admin_notice', [ 'disputes', $upload->get_error_message(), 'error' ], 30 );
+            } else {
+
+                $preview = \MightyShield\Includes\dispute_import::preview( $upload );
+
+                if( is_wp_error( $preview ) ) {
+                    set_transient( 'mshield_admin_notice', [ 'disputes', $preview->get_error_message(), 'error' ], 30 );
+                } else {
+                    // The parsed result, plus where the file is, for the
+                    // confirm step. Short-lived: a merchant who wanders off
+                    // should have to upload again rather than apply a file
+                    // they have forgotten the contents of.
+                    $preview['path'] = $upload;
+                    set_transient( \MightyShield\Includes\dispute_import::preview_key(), $preview, \MightyShield\Includes\dispute_import::PREVIEW_TTL );
+                }
+
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
+        if( isset( $_POST['mshield_disputes_apply'] ) && check_admin_referer( 'mshield_disputes_action' ) ) {
+
+            $preview = get_transient( \MightyShield\Includes\dispute_import::preview_key() );
+
+            if( ! is_array( $preview ) || empty( $preview['path'] ) ) {
+
+                set_transient( 'mshield_admin_notice', [ 'disputes', __( 'That upload has expired. Please choose the file again.', 'mighty-shield' ), 'warning' ], 30 );
+
+            } else {
+
+                $result = \MightyShield\Includes\dispute_import::apply( $preview['path'], (int) $preview['column'] );
+
+                if( is_wp_error( $result ) ) {
+                    set_transient( 'mshield_admin_notice', [ 'disputes', $result->get_error_message(), 'error' ], 30 );
+                } else {
+                    set_transient( 'mshield_admin_notice', [ 'disputes', sprintf(
+                        /* translators: 1: recorded, 2: already known, 3: not matched. */
+                        __( 'Recorded %1$s chargebacks. %2$s were already known, and %3$s rows matched no order.', 'mighty-shield' ),
+                        number_format_i18n( $result['recorded'] ),
+                        number_format_i18n( $result['already'] ),
+                        number_format_i18n( $result['unmatched'] )
+                    ), 'success' ], 30 );
+                }
+
+                // The file has done its job and holds customer data.
+                wp_delete_file( $preview['path'] );
+
+            }
+
+            delete_transient( \MightyShield\Includes\dispute_import::preview_key() );
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
+        if( isset( $_POST['mshield_disputes_cancel'] ) && check_admin_referer( 'mshield_disputes_action' ) ) {
+
+            $preview = get_transient( \MightyShield\Includes\dispute_import::preview_key() );
+
+            if( is_array( $preview ) && ! empty( $preview['path'] ) ) {
+                wp_delete_file( $preview['path'] );
+            }
+
+            delete_transient( \MightyShield\Includes\dispute_import::preview_key() );
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
+        if( isset( $_POST['mshield_backfill_cancel'] ) && check_admin_referer( 'mshield_backfill_action' ) ) {
+
+            \MightyShield\Includes\backfill::cancel();
+            set_transient( 'mshield_admin_notice', [ 'backfill_cancelled', __( 'Stopped. Everything rated so far is kept.', 'mighty-shield' ), 'success' ], 30 );
+
+            wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) );
+            exit;
+
+        }
+
+    }
+
+    /**
+     * Take a CSV upload and return a path to it.
+     *
+     * Deliberately strict, and not via wp_handle_upload(): that moves the file
+     * into the uploads directory, where it would sit under a guessable URL
+     * containing other people's card disputes until somebody remembered to
+     * delete it. This keeps it in the system temp directory, which is not
+     * web-served, and the caller deletes it as soon as it has been read.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $field  The file input's name.
+     * @return  string|\WP_Error  Path to the moved file.
+     */
+    private static function uploaded_csv( $field ) {
+
+        // $_FILES is upload metadata, not a value to sanitize wholesale, and
+        // every field read out of it below is validated on its own: the error
+        // code is cast to int, tmp_name goes through is_uploaded_file(), the
+        // size is compared numerically, and the client-supplied name goes
+        // through sanitize_file_name() before wp_check_filetype_and_ext()
+        // checks the real contents against it.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- verified by the caller; each field validated individually below.
+        $file = isset( $_FILES[ $field ] ) ? $_FILES[ $field ] : null;
+
+        if ( ! is_array( $file ) || ! isset( $file['tmp_name'], $file['error'] ) ) {
+            return new \WP_Error( 'mshield_upload_missing', __( 'No file was uploaded.', 'mighty-shield' ) );
+        }
+
+        if ( (int) $file['error'] !== UPLOAD_ERR_OK ) {
+            return new \WP_Error( 'mshield_upload_failed', __( 'That file did not upload completely. It may be too large for this server.', 'mighty-shield' ) );
+        }
+
+        $tmp = (string) $file['tmp_name'];
+
+        // The one check that matters: PHP guarantees this is a file it
+        // received in this request, not a path somebody posted.
+        if ( ! is_uploaded_file( $tmp ) ) {
+            return new \WP_Error( 'mshield_upload_invalid', __( 'That upload could not be verified.', 'mighty-shield' ) );
+        }
+
+        if ( filesize( $tmp ) > 8 * MB_IN_BYTES ) {
+            return new \WP_Error( 'mshield_upload_large', __( 'That file is larger than 8MB. A dispute report should be far smaller.', 'mighty-shield' ) );
+        }
+
+        $name  = isset( $file['name'] ) ? sanitize_file_name( wp_unslash( $file['name'] ) ) : 'disputes.csv';
+        $check = wp_check_filetype_and_ext( $tmp, $name, [ 'csv' => 'text/csv', 'txt' => 'text/plain' ] );
+
+        if ( empty( $check['ext'] ) || ! in_array( $check['ext'], [ 'csv', 'txt' ], true ) ) {
+            return new \WP_Error( 'mshield_upload_type', __( 'That is not a CSV file.', 'mighty-shield' ) );
+        }
+
+        $dest = trailingslashit( get_temp_dir() ) . uniqid( 'mshield-disputes-', true ) . '.csv';
+
+        if ( ! @move_uploaded_file( $tmp, $dest ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+            return new \WP_Error( 'mshield_upload_move', __( 'That file could not be saved for reading.', 'mighty-shield' ) );
+        }
+
+        return $dest;
 
     }
 
@@ -1084,12 +1340,16 @@ class admin_page {
      */
     public static function enqueue_app_assets() {
 
-        // Design-system fonts (Public Sans + JetBrains Mono).
+        // Design-system fonts (Public Sans + JetBrains Mono), served from this
+        // plugin. These came from fonts.googleapis.com until 3.0.0, which the
+        // plugin directory does not allow -- assets ship with the plugin -- and
+        // which also meant every admin page load handed the merchant's IP to a
+        // third party to render a screen.
         wp_enqueue_style(
             'mshield-fonts',
-            'https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300..800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap',
+            MSHIELD_URI . 'assets/fonts/mshield-fonts.css',
             [],
-            null
+            \MightyShield\asset_version( 'assets/fonts/mshield-fonts.css' )
         );
 
         // Version assets by modification time so edits always bust the cache.
@@ -1098,33 +1358,20 @@ class admin_page {
 
         wp_enqueue_style( 'mshield-admin', MSHIELD_URI . 'assets/css/mshield-admin.css', [ 'mshield-fonts' ], $css_ver );
 
-        wp_enqueue_script( 'mshield-admin', MSHIELD_URI . 'assets/js/mshield-admin.js', [], $js_ver, [ 'in_footer' => true ] );
+        // The script translates its own strings through wp.i18n, so a language
+        // pack from WordPress.org reaches them the same way it reaches the PHP.
+        // Until 3.0.0 the strings were handed over in a wp_localize_script map,
+        // and a dozen of them -- the chart titles, the tooltip legend, the
+        // theme labels, the profile-switch confirmation -- were never in it.
+        wp_enqueue_script( 'mshield-admin', MSHIELD_URI . 'assets/js/mshield-admin.js', [ 'wp-i18n' ], $js_ver, [ 'in_footer' => true ] );
+        wp_set_script_translations( 'mshield-admin', 'mighty-shield', MSHIELD_PATH . 'languages' );
         wp_localize_script( 'mshield-admin', 'mshieldAdmin', [
             'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
             'themeNonce' => wp_create_nonce( 'mshield_set_theme' ),
             'ipNonce'    => wp_create_nonce( 'mshield_get_ip' ),
             'chartNonce' => wp_create_nonce( 'mshield_chart' ),
             'testNonce'  => wp_create_nonce( 'mshield_test_connection' ),
-            'i18n'       => [
-                'selected'    => __( 'selected', 'mighty-shield' ),
-                'eventDetail' => __( 'Event detail', 'mighty-shield' ),
-                'ip'          => __( 'IP address', 'mighty-shield' ),
-                'endpoint'    => __( 'Endpoint', 'mighty-shield' ),
-                'reason'      => __( 'Reason', 'mighty-shield' ),
-                'user'        => __( 'User', 'mighty-shield' ),
-                'raw'         => __( 'Request data', 'mighty-shield' ),
-                'whitelistIp' => __( 'Allowlist IP', 'mighty-shield' ),
-                'blockPerm'   => __( 'Block permanently', 'mighty-shield' ),
-                'ipIntel'     => __( 'IP location', 'mighty-shield' ),
-                'getIp'       => __( 'Get IP', 'mighty-shield' ),
-                'testing'     => __( 'Testing…', 'mighty-shield' ),
-                'testFailed'  => __( 'The test could not be run. Reload the page and try again.', 'mighty-shield' ),
-                'gettingIp'   => __( 'Looking up…', 'mighty-shield' ),
-                'location'    => __( 'Location', 'mighty-shield' ),
-                'org'         => __( 'Organization', 'mighty-shield' ),
-                'country'     => __( 'Country', 'mighty-shield' ),
-                'lookupFail'  => __( 'Lookup failed. Please try again.', 'mighty-shield' ),
-            ],
+            'bfNonce'    => wp_create_nonce( 'mshield_backfill_state' ),
         ] );
 
     }
@@ -1252,7 +1499,21 @@ class admin_page {
             'mshield_captcha_degraded' => __( 'The bot challenge is misconfigured and is failing open so it does not block checkout. Last error: %s', 'mighty-shield' ),
         ];
 
+        // A feature switched OFF cannot be degraded, so its banner is not
+        // shown; the record stays for the day it is switched back on. A
+        // feature left on with a key cleared still shows it: clearing the bad
+        // key is how a merchant reacts, and the banner vanishing reads as
+        // fixed.
+        $cap_provider = settings::get( 'mshield_captcha_provider' );
+        $in_use = [
+            'mshield_ai_degraded'      => settings::get( 'mshield_ai_enabled' ) === 'yes',
+            'mshield_smarty_degraded'  => settings::get( 'mshield_smarty_enabled' ) === 'yes',
+            'mshield_captcha_degraded' => $cap_provider === 'turnstile' || $cap_provider === 'recaptcha_v3',
+        ];
+
         foreach( $sources as $option => $template ) {
+
+            if( empty( $in_use[ $option ] ) ) continue;
 
             $degraded = get_option( $option );
             if( empty( $degraded ) || empty( $degraded['time'] ) ) continue;
@@ -1265,10 +1526,28 @@ class admin_page {
                 . '</div>',
                 esc_html__( 'MightyShield:', 'mighty-shield' ),
                 esc_html( sprintf( $template, isset( $degraded['message'] ) ? $degraded['message'] : '' ) ),
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
                 self::dismiss_url( $option ),
                 esc_html__( 'Dismiss', 'mighty-shield' )
             );
 
+        }
+
+        // A live condition rather than a recorded failure, so no dismissal.
+        // The hook MightyShield reads disputes, card checks and declines from
+        // was added in Stripe Gateway 9.8.0; on anything older it never fires
+        // and those features quietly do nothing, which for a fraud tool is
+        // the worst way to fail.
+        if( defined( 'WC_STRIPE_VERSION' ) && version_compare( WC_STRIPE_VERSION, '9.8.0', '<' ) ) {
+            printf(
+                '<div class="mshield-banner is-danger ms-degraded"><div><strong>%s</strong> %s</div></div>',
+                esc_html__( 'MightyShield:', 'mighty-shield' ),
+                esc_html( sprintf(
+                    /* translators: %s: the installed WooCommerce Stripe Gateway version */
+                    __( 'WooCommerce Stripe Gateway %s is too old for MightyShield to read disputes, card checks and declined payments from Stripe. Those need 9.8.0 or newer and are skipped until you update.', 'mighty-shield' ),
+                    WC_STRIPE_VERSION
+                ) )
+            );
         }
 
     }
@@ -1391,7 +1670,7 @@ class admin_page {
     }
 
     /**
-     * The Test Connection control, rendered the same way on every tab.
+     * The Test connection control, rendered the same way on every tab.
      *
      * A button is an action, not a setting, so it is called directly from a
      * view rather than registered in signals::SETTINGS -- anything in there is
@@ -1409,10 +1688,31 @@ class admin_page {
             '<p><button type="button" class="mshield-btn mshield-test" data-service="%s">%s</button>'
             . '<span class="mshield-test-result" aria-live="polite"></span></p>',
             esc_attr( $service ),
-            esc_html__( 'Test Connection', 'mighty-shield' )
+            esc_html__( 'Test connection', 'mighty-shield' )
         );
 
         if( $note !== '' ) printf( '<p class="description">%s</p>', esc_html( $note ) );
+
+    }
+
+    /**
+     * AJAX: the state of the past-orders rating run, for the Logs card to
+     * keep its counter moving without a reload.
+     *
+     * @since   3.0.0
+     */
+    public function ajax_backfill_state() {
+
+        if( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
+        if( ! check_ajax_referer( 'mshield_backfill_state', 'nonce', false ) ) wp_send_json_error( '', 400 );
+
+        $state = \MightyShield\Includes\backfill::state();
+
+        wp_send_json_success( [
+            'status' => (string) $state['status'],
+            'done'   => number_format_i18n( (int) $state['done'] ),
+            'total'  => number_format_i18n( (int) $state['total'] ),
+        ] );
 
     }
 
@@ -1470,7 +1770,8 @@ class admin_page {
      */
     public function render_page() {
 
-        $tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'dashboard';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
+        $tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'dashboard';
 
         // Whitelist allowed tabs to prevent path traversal.
         if( isset( self::MERGED_TABS[ $tab ] ) ) {
@@ -1526,17 +1827,23 @@ class admin_page {
         $theme_labels = [ 'system' => esc_html__( 'System', 'mighty-shield' ), 'light' => esc_html__( 'Light', 'mighty-shield' ), 'dark' => esc_html__( 'Dark', 'mighty-shield' ) ];
         $doc_url      = admin_url( 'admin.php?page=mighty-shield&tab=documentation' );
 
-        echo '<div class="wrap mshield-app" data-theme="' . esc_attr( $theme ) . '">';
+        // The tab rides on the wrapper so a stylesheet can treat one screen
+        // differently: the manual spreads to the full width of the column.
+        $tab_class = $tab !== '' ? ' is-tab-' . sanitize_html_class( $tab ) : '';
+        echo '<div class="wrap mshield-app' . esc_attr( $tab_class ) . '" data-theme="' . esc_attr( $theme ) . '">';
 
         // Header.
         echo '<div class="mshield-header">';
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
         echo '<div class="ms-brandmark">' . $shield . '</div>';
         echo '<div><div class="mshield-title-row"><h1>' . esc_html__( 'MightyShield', 'mighty-shield' ) . '</h1>';
         echo '<span class="mshield-version">' . esc_html( 'v' . MSHIELD_VERSION ) . '</span></div>';
         echo '<div class="mshield-tagline">' . esc_html__( 'Spam and fraud protection for WooCommerce', 'mighty-shield' ) . '</div></div>';
         echo '<span class="mshield-spacer"></span>';
         $doc_active = $tab === 'documentation' ? ' is-primary' : '';
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
         echo '<a class="mshield-btn' . esc_attr( $doc_active ) . '" href="' . esc_url( $doc_url ) . '">' . $book . esc_html__( 'Documentation', 'mighty-shield' ) . '</a>';
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
         echo '<button type="button" id="mshield-theme-toggle" class="mshield-btn"><span class="ms-theme-icon">' . $theme_icons[ $theme ] . '</span><span class="ms-theme-label">' . $theme_labels[ $theme ] . '</span></button>';
         echo '</div>';
 
@@ -1552,6 +1859,7 @@ class admin_page {
                 $url    = admin_url( 'admin.php?page=mighty-shield&tab=' . $key );
                 $active = ( $tab === $key ) ? ' is-active' : '';
                 $icon   = isset( $icons[ $key ] ) ? $icons[ $key ] : '';
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
                 echo '<a class="mshield-navcard' . esc_attr( $active ) . '" href="' . esc_url( $url ) . '">' . $icon . '<span>' . esc_html( $label ) . '</span></a>';
             }
             echo '</div>';
@@ -1566,7 +1874,9 @@ class admin_page {
 
         }
 
-        if( $nav ) self::render_hero( $tab );
+        // Not on the report and reading tabs: Payment, Logs and the manual
+        // have nothing to switch, and the switch there was noise.
+        if( $nav && ! in_array( $tab, [ 'payment', 'logs', 'documentation' ], true ) ) self::render_hero( $tab );
 
     }
 
@@ -1644,7 +1954,8 @@ class admin_page {
             );
         }
 
-        if( isset( $_GET['settings-updated'] ) && $_GET['settings-updated'] ) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
+        if( isset( $_GET['settings-updated'] ) && sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) ) ) {
             printf(
                 '<div class="mshield-banner" style="margin-bottom:18px;"><div>%s</div></div>',
                 esc_html__( 'Settings saved.', 'mighty-shield' )
@@ -1773,6 +2084,61 @@ class admin_page {
     }
 
     /**
+     * Clamp one risk-level threshold so the ladder stays in order.
+     *
+     * The four thresholds are saved one at a time, and each used to be
+     * clamped to 1..100 on its own. Typed the wrong way round -- High 80,
+     * Elevated 60 -- nothing objected, Elevated became unreachable, and the
+     * AI's one-level rescue had nowhere to go. The other values in the same
+     * submission are read here, so a High above Elevated is pulled back to
+     * one below it and the ladder always reads rejected < high < elevated < low.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $level
+     * @param   mixed   $value
+     * @return  int
+     */
+    public static function ordered_threshold( $level, $value ) {
+
+        $order = [ 'rejected', 'high', 'elevated', 'low' ];
+        $at    = array_search( $level, $order, true );
+
+        if( $at === false ) return max( 1, min( 100, absint( $value ) ) );
+
+        // Every value in this submission, this one included, sorted into the
+        // ladder's order: the smallest is Rejected's, the largest is Low's.
+        // Two typed the wrong way round simply swap places, which is what the
+        // merchant meant. Equal values are nudged apart so no level vanishes.
+        $values = [];
+
+        foreach( $order as $which ) {
+
+            $key = 'mshield_level_' . $which . '_threshold';
+
+            if( $which === $level ) {
+                $values[] = max( 1, min( 100, absint( $value ) ) );
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- options.php has already verified the settings nonce; this reads a sibling field of the same submission
+            } elseif( isset( $_POST[ $key ] ) ) {
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- as above
+                $values[] = max( 1, min( 100, absint( wp_unslash( $_POST[ $key ] ) ) ) );
+            } else {
+                $values[] = (int) \MightyShield\Includes\risk_levels::threshold( $which );
+            }
+
+        }
+
+        sort( $values, SORT_NUMERIC );
+
+        for( $i = 1; $i < count( $values ); $i++ ) {
+            if( $values[ $i ] <= $values[ $i - 1 ] ) $values[ $i ] = $values[ $i - 1 ] + 1;
+        }
+
+        return max( 1, min( 100, (int) $values[ $at ] ) );
+
+    }
+
+    /**
      * Whether this store's checkout page is the block one.
      *
      * Cached in an option because the answer is needed on the FRONT end, by the
@@ -1798,6 +2164,7 @@ class admin_page {
         }
 
         $answer = false;
+        $page   = 0;
 
         if( function_exists( 'wc_get_page_id' ) && function_exists( 'has_block' ) ) {
 
@@ -1807,7 +2174,12 @@ class admin_page {
 
         }
 
-        update_option( 'mshield_block_checkout', $answer ? 'yes' : 'no', false );
+        // Only a real answer is remembered. With no checkout page assigned
+        // yet the answer is "no", and caching that made a block checkout
+        // assigned a minute later invisible to the firewall for good.
+        if( $page > 0 ) {
+            update_option( 'mshield_block_checkout', $answer ? 'yes' : 'no', false );
+        }
 
         return $answer;
 
@@ -1849,28 +2221,15 @@ class admin_page {
      */
     public static function checkout_conflict() {
 
-        static $answer = null;
-
-        if( $answer !== null ) return $answer;
-
-        $answer = false;
-
-        // Never on the front end: has_block() loads the checkout page's post
-        // content, which is wasted work on every shopper request for a warning
-        // only an administrator can see or act on.
-        if( ! is_admin() ) return $answer;
-
-        if( settings::get( 'mshield_block_store_api' ) !== 'yes' )    return $answer;
-        if( settings::get( 'mshield_firewall_mode' ) !== 'whitelist' ) return $answer;
-
-        if( ! function_exists( 'wc_get_page_id' ) || ! function_exists( 'has_block' ) ) return $answer;
-
-        $page = (int) wc_get_page_id( 'checkout' );
-        if( $page <= 0 ) return $answer;
-
-        $answer = has_block( 'woocommerce/checkout', $page );
-
-        return $answer;
+        // There is no longer a combination that closes the shop. The Store
+        // API firewall's Allowlist mode steps aside on a store whose checkout
+        // is the block one (firewall/class-api-firewall.php), so the cart and
+        // checkout endpoints stay open there whatever the mode says. This
+        // used to test for the pairing and raise a red "your checkout is
+        // closed" banner on the wizard, every tab and the dashboard -- on
+        // stores where nothing was closed. Kept as a method so the callers
+        // stay simple; it now says what is true.
+        return false;
 
     }
 
@@ -1886,7 +2245,7 @@ class admin_page {
         printf(
             '<div class="mshield-banner is-danger" style="margin-bottom:18px"><div><strong>%s</strong> %s <a href="%s">%s</a></div></div>',
             esc_html__( 'Your checkout is closed to customers.', 'mighty-shield' ),
-            esc_html__( 'This store uses the block checkout, which is built on the Store API, and the Store API Firewall is set to Allowlist. That combination refuses the cart and the checkout for everyone who is not on your allowlist, so no customer can buy. Set the firewall to Blocklist, or turn it off.', 'mighty-shield' ),
+            esc_html__( 'This store uses the block checkout, which is built on the Store API, and the Store API firewall is set to Allowlist. That combination refuses the cart and the checkout for everyone who is not on your allowlist, so no customer can buy. Set the firewall to Blocklist, or turn it off.', 'mighty-shield' ),
             esc_url( admin_url( 'admin.php?page=mighty-shield&tab=blocking' ) ),
             esc_html__( 'Change it on Shielding', 'mighty-shield' )
         );

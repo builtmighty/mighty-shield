@@ -221,6 +221,34 @@
         window.setInterval( push, 90000 );
     }
 
+    // Re-push as the shopper interacts, and once more at the moment they place
+    // the order. The first push happens on DOMContentLoaded, before anyone has
+    // moved a mouse or typed a character -- so on its own it described every
+    // desktop shopper as having done nothing, and the server read that as a
+    // form filled without a person. Debounced, because the store dispatch is
+    // not free and a mousemove fires hundreds of times a second.
+    var pushTimer = null;
+    function schedulePush() {
+        if( pushTimer ) return;
+        pushTimer = window.setTimeout( function() { pushTimer = null; push(); }, 1500 );
+    }
+    [ 'pointermove', 'mousemove', 'touchstart', 'keydown', 'paste', 'scroll', 'input' ].forEach( function( type ) {
+        try { document.addEventListener( type, schedulePush, { passive: true, capture: true } ); } catch( e ) {}
+    } );
+
+    // The place-order button, on mousedown so the push lands before the click
+    // handler builds the request. Delegated, because the block re-renders it.
+    document.addEventListener( 'mousedown', function( e ) {
+        var t = e.target;
+        while( t && t !== document ) {
+            if( t.classList && t.classList.contains( 'wc-block-components-checkout-place-order-button' ) ) { push(); return; }
+            t = t.parentNode;
+        }
+    }, true );
+    document.addEventListener( 'keydown', function( e ) {
+        if( e.key === 'Enter' ) push();
+    }, true );
+
     if( cfg.turnstile ) {
 
         // The block checkout is a React tree that re-renders as the shopper

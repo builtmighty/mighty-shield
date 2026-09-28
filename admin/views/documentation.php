@@ -37,24 +37,20 @@ $actions = \MightyShield\Includes\actions::CATALOG;
 <div class="mshield-docs">
 
     <style>
+        /* The app's own tokens, so the manual is the same product as the tabs
+           and follows the theme toggle like everything else. */
         .mshield-docs {
-            --bg: #ffffff;
-            --surface: #f5f5f7;
-            --text: #1d1d1f;
-            --text-secondary: #6e6e73;
-            --border: #d2d2d7;
-            --accent: #d4121f;
-            --accent-tint: #fdecec;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: var(--text);
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            font-family: var(--sans);
+            color: var(--fg);
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
             margin-top: 12px;
             display: flex;
             align-items: flex-start;
             gap: 48px;
-            max-width: 1120px;
+            width: 100%;
         }
         .mshield-docs * { box-sizing: border-box; }
 
@@ -65,7 +61,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             top: 32px;
             align-self: flex-start;
             padding: 28px 20px;
-            border-right: 1px solid var(--border);
+            border-right: 1px solid var(--line);
             max-height: calc(100vh - 64px);
             overflow-y: auto;
         }
@@ -74,7 +70,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            color: var(--text-secondary);
+            color: var(--fg-2);
             margin: 22px 0 8px;
         }
         .mshield-docs-nav .nav-title:first-child { margin-top: 0; }
@@ -82,64 +78,63 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             display: block;
             padding: 5px 10px;
             font-size: 14px;
-            color: var(--text);
+            color: var(--fg);
             text-decoration: none;
             border-left: 2px solid transparent;
             border-radius: 0 4px 4px 0;
         }
-        .mshield-docs-nav a:hover { color: #000; background: var(--surface); }
-        .mshield-docs-nav a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+        .mshield-docs-nav a:hover { color: var(--fg); background: var(--surface-2); }
+        .mshield-docs-nav a.active { color: var(--brand); border-left-color: var(--brand); font-weight: 600; }
 
         /* Reading column */
         .mshield-docs-main {
             flex: 1 1 auto;
-            max-width: 760px;
             padding: 32px 40px 64px;
             min-width: 0;
         }
-        .mshield-docs-main h1 {
-            font-size: 40px;
+        .mshield-docs-main .mshield-docs-title {
+            font-size: 26px;
             font-weight: 700;
             line-height: 1.1;
             letter-spacing: -0.02em;
             margin: 0 0 8px;
-            color: var(--text);
+            color: var(--fg);
         }
-        .mshield-docs-main .lede { font-size: 17px; color: var(--text-secondary); margin: 0 0 8px; }
-        .mshield-docs-main h2 {
-            font-size: 28px;
+        .mshield-docs-main .lede { font-size: 15px; color: var(--fg-2); margin: 0 0 8px; }
+        .mshield-docs-main h2:not(.mshield-docs-title) {
+            font-size: 21px;
             font-weight: 600;
             line-height: 1.2;
             letter-spacing: -0.01em;
             margin: 56px 0 12px;
             padding-top: 12px;
-            color: var(--text);
+            color: var(--fg);
         }
         .mshield-docs-main h3 {
-            font-size: 20px;
+            font-size: 17px;
             font-weight: 600;
             line-height: 1.3;
             margin: 32px 0 8px;
-            color: var(--text);
+            color: var(--fg);
         }
         .mshield-docs-main h4 {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             line-height: 1.35;
             margin: 24px 0 6px;
-            color: var(--text);
+            color: var(--fg);
         }
         .mshield-docs-main p,
-        .mshield-docs-main li { font-size: 16px; line-height: 1.6; color: var(--text); }
-        .mshield-docs-main a { color: var(--accent); text-decoration: none; }
+        .mshield-docs-main li { font-size: 14px; line-height: 1.6; color: var(--fg); }
+        .mshield-docs-main a { color: var(--brand); text-decoration: none; }
         .mshield-docs-main a:hover { text-decoration: underline; }
         .mshield-docs-main code {
-            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-            font-size: 14px;
-            background: var(--surface);
+            font-family: var(--mono);
+            font-size: 12.5px;
+            background: var(--surface-2);
             border-radius: 4px;
             padding: 2px 6px;
-            color: var(--text);
+            color: var(--fg);
         }
         .mshield-docs-main table {
             width: 100%;
@@ -149,40 +144,40 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         }
         .mshield-docs-main th,
         .mshield-docs-main td {
-            border: 1px solid var(--border);
+            border: 1px solid var(--line);
             padding: 8px 12px;
             text-align: left;
             vertical-align: top;
             line-height: 1.5;
         }
-        .mshield-docs-main th { background: var(--surface); font-weight: 600; }
-        .mshield-docs-main .default { color: var(--text-secondary); white-space: nowrap; }
+        .mshield-docs-main th { background: var(--surface-2); font-weight: 600; }
+        .mshield-docs-main .default { color: var(--fg-2); white-space: nowrap; }
 
         .mshield-docs-main .callout {
-            border: 1px solid var(--border);
-            border-left: 3px solid var(--text-secondary);
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--fg-2);
             border-radius: 6px;
             padding: 12px 16px;
             margin: 20px 0;
-            background: var(--bg);
+            background: var(--surface);
         }
         .mshield-docs-main .callout .callout-label {
             font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            color: var(--text-secondary);
+            color: var(--fg-2);
             display: block;
             margin-bottom: 4px;
         }
-        .mshield-docs-main .callout.important { border-left-color: var(--accent); background: var(--accent-tint); }
-        .mshield-docs-main .callout.important .callout-label { color: var(--accent); }
+        .mshield-docs-main .callout.important { border-left-color: var(--brand); background: var(--brand-soft); }
+        .mshield-docs-main .callout.important .callout-label { color: var(--brand); }
         .mshield-docs-main .callout p { margin: 0; font-size: 15px; }
 
         .mshield-docs-main .field {
             font-weight: 600;
         }
-        .mshield-docs-main hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+        .mshield-docs-main hr { border: 0; border-top: 1px solid var(--line); margin: 40px 0; }
         .mshield-docs-main ul, .mshield-docs-main ol { padding-left: 22px; }
         .mshield-docs-main li { margin: 4px 0; }
 
@@ -193,10 +188,10 @@ $actions = \MightyShield\Includes\actions::CATALOG;
                 flex-basis: auto;
                 width: 100%;
                 border-right: 0;
-                border-bottom: 1px solid var(--border);
+                border-bottom: 1px solid var(--line);
                 max-height: none;
             }
-            .mshield-docs-main { padding: 24px; max-width: none; }
+            .mshield-docs-main { padding: 24px; }
         }
     </style>
 
@@ -204,12 +199,12 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <div class="nav-title"><?php esc_html_e( 'Getting started', 'mighty-shield' ); ?></div>
         <a href="#overview"><?php esc_html_e( 'Overview', 'mighty-shield' ); ?></a>
         <a href="#lifecycle"><?php esc_html_e( 'How an order is judged', 'mighty-shield' ); ?></a>
-        <a href="#quick-start"><?php esc_html_e( 'Quick start', 'mighty-shield' ); ?></a>
+        <a href="#quick-start"><?php esc_html_e( 'Quick Start', 'mighty-shield' ); ?></a>
         <a href="#actions"><?php esc_html_e( 'What MightyShield can do', 'mighty-shield' ); ?></a>
 
         <div class="nav-title"><?php esc_html_e( 'Screens', 'mighty-shield' ); ?></div>
         <a href="#dashboard"><?php esc_html_e( 'Dashboard', 'mighty-shield' ); ?></a>
-        <a href="#widget"><?php esc_html_e( 'Dashboard widget', 'mighty-shield' ); ?></a>
+        <a href="#widget"><?php esc_html_e( 'Dashboard Widget', 'mighty-shield' ); ?></a>
         <a href="#scoring"><?php esc_html_e( 'Scoring', 'mighty-shield' ); ?></a>
         <a href="#ai"><?php esc_html_e( 'AI Review', 'mighty-shield' ); ?></a>
         <a href="#blocking"><?php esc_html_e( 'Shielding', 'mighty-shield' ); ?></a>
@@ -218,17 +213,17 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <a href="#logs"><?php esc_html_e( 'Logs', 'mighty-shield' ); ?></a>
 
         <div class="nav-title"><?php esc_html_e( 'Working orders', 'mighty-shield' ); ?></div>
-        <a href="#order-panel"><?php esc_html_e( 'On an order', 'mighty-shield' ); ?></a>
+        <a href="#order-panel"><?php esc_html_e( 'On an Order', 'mighty-shield' ); ?></a>
         <a href="#review-queue"><?php esc_html_e( 'Fraud Review', 'mighty-shield' ); ?></a>
         <a href="#memory"><?php esc_html_e( 'How it learns', 'mighty-shield' ); ?></a>
 
         <div class="nav-title"><?php esc_html_e( 'Help', 'mighty-shield' ); ?></div>
-        <a href="#situations"><?php esc_html_e( 'Common situations', 'mighty-shield' ); ?></a>
+        <a href="#situations"><?php esc_html_e( 'Common Situations', 'mighty-shield' ); ?></a>
     </aside>
 
     <main class="mshield-docs-main">
 
-        <h1><?php esc_html_e( 'MightyShield', 'mighty-shield' ); ?></h1>
+        <h2 class="mshield-docs-title"><?php esc_html_e( 'The Manual', 'mighty-shield' ); ?></h2>
         <p class="lede"><?php esc_html_e( 'MightyShield works 24/7 to keep bots, card testers, scammers, fraudsters, and the people running stolen cards from making more work for you, so that you can get on with selling instead of cleaning up after them. It is built to be fine-tuned to your customers rather than somebody else\'s, and everything below explains how to do that by specifying what each setting does and when to reach for it.', 'mighty-shield' ); ?></p>
 
         <h2 id="overview"><?php esc_html_e( 'Overview', 'mighty-shield' ); ?></h2>
@@ -288,18 +283,18 @@ $actions = \MightyShield\Includes\actions::CATALOG;
                         <td><?php if( $mshield_row[2] ) : ?><strong><?php echo esc_html( $mshield_row[1] ); ?></strong><?php else : ?><?php echo esc_html( $mshield_row[1] ); ?><?php endif; ?></td>
                     </tr>
                 <?php endforeach; ?>
-                <tr><td><?php esc_html_e( 'n/a', 'mighty-shield' ); ?></td><td><span class="field"><?php esc_html_e( 'Banned', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Refused, and the address is added to your blocklist.', 'mighty-shield' ); ?></td><td><strong><?php esc_html_e( 'No', 'mighty-shield' ); ?></strong></td></tr>
+                <tr><td><?php esc_html_e( 'n/a', 'mighty-shield' ); ?></td><td><span class="field"><?php esc_html_e( 'Banned', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Refused, and the address is temporarily blocked for a day.', 'mighty-shield' ); ?></td><td><strong><?php esc_html_e( 'No', 'mighty-shield' ); ?></strong></td></tr>
             </tbody>
         </table>
         <p><?php esc_html_e( 'Rejected and Banned orders never reach your payment processor, and High defaults to an action that does not either. That is what keeps spam attempts off your decline and dispute figures.', 'mighty-shield' ); ?></p>
-        <p><?php esc_html_e( 'Banned has no rating range because no rating can produce it. It is reachable only when a check forces it, and only one does by default: an order linked to a previous chargeback.', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'Banned has no rating range because no rating can produce it. It is reachable only when a check forces it, and three do by default: an order linked to a previous chargeback, an address on your blocklist, and a customer, phone or address on your blocklist.', 'mighty-shield' ); ?></p>
 
         <div class="callout">
             <span class="callout-label"><?php esc_html_e( 'Why a new customer is never Trusted', 'mighty-shield' ); ?></span>
             <p><?php esc_html_e( 'An order starts at 100 and spends trust as checks notice things. But an order with nothing known about the customer is capped at 94, which is Low. The top of the scale has to be earned by a clean run of past orders, because knowing nothing about someone is not the same as trusting them.', 'mighty-shield' ); ?></p>
         </div>
 
-        <h2 id="quick-start"><?php esc_html_e( 'Quick start', 'mighty-shield' ); ?></h2>
+        <h2 id="quick-start"><?php esc_html_e( 'Quick Start', 'mighty-shield' ); ?></h2>
 
         <p>
             <?php
@@ -328,11 +323,11 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <table>
             <thead><tr><th><?php esc_html_e( 'Action', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'What happens', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'The money', 'mighty-shield' ); ?></th></tr></thead>
             <tbody>
-                <?php foreach( $actions as $act ) : ?>
+                <?php foreach( $actions as $mshield_act_key => $act ) : ?>
                     <tr>
-                        <td><span class="field"><?php echo esc_html( $act['label'] ); ?></span></td>
-                        <td><?php echo esc_html( $act['desc'] ); ?></td>
-                        <td class="default"><?php echo esc_html( $act['money'] ); ?></td>
+                        <td><span class="field"><?php echo esc_html( \MightyShield\Includes\actions::label( $mshield_act_key ) ); ?></span></td>
+                        <td><?php echo esc_html( \MightyShield\Includes\actions::desc( $mshield_act_key ) ); ?></td>
+                        <td class="default"><?php echo esc_html( \MightyShield\Includes\actions::money( $mshield_act_key ) ); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -347,14 +342,17 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <ul>
             <li><strong><?php esc_html_e( 'The protection switch.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Three positions, and the control sits at the top of every MightyShield page. Disabled means no orders are checked at all. Observing means orders are rated and recorded but nothing is refused or held because of the rating. Active means the rating decides what happens.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'The chart.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Blocked, rate limited and flagged events over 24 hours, 7 days or 30 days. Hovering gives you the numbers for any single point.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Waiting for you.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'How many orders are held or flagged and not yet decided, with the way into the Fraud Review queue.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Enforcement Audit.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The last 30 days of orders re-rated against the thresholds on Shielding: how many would have been refused, how many of those were fraud, and how many were real customers. The full breakdown is on Shielding, next to the thresholds.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'What your orders say.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Checks that keep firing on orders you approved, and pairs that fire together, each with a link to that check on Scoring.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Top blocked addresses.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The busiest offenders of the past week, with where they are and a link to their log entries.', 'mighty-shield' ); ?></li>
         </ul>
         <div class="callout">
             <span class="callout-label"><?php esc_html_e( 'What Observing still does', 'mighty-shield' ); ?></span>
-            <p><?php esc_html_e( 'In Observing the individual checks really do still block. What is not happening is the trust rating being acted on. So an order that trips the hidden trap field is still refused; an order that merely scores badly is recorded and let through.', 'mighty-shield' ); ?></p>
+            <p><?php esc_html_e( 'In Observing nothing is refused or held because of what MightyShield worked out. An order that trips the hidden trap field is rated Rejected, recorded as such, and still goes through — that is the point, so you can see what enforcing would have done before it does it. What still acts are your own lists: an address on your blocklist is refused, and the Store API firewall keeps whichever mode you set, because those are instructions you gave, not ratings.', 'mighty-shield' ); ?></p>
         </div>
 
-        <h2 id="widget"><?php esc_html_e( 'Dashboard widget', 'mighty-shield' ); ?></h2>
+        <h2 id="widget"><?php esc_html_e( 'Dashboard Widget', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'A summary on the main WordPress dashboard, so the state of your protection is the first thing you see when you log in. It reports and does not change anything.', 'mighty-shield' ); ?></p>
         <ul>
             <li><strong><?php esc_html_e( 'The status stripe.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Disabled, Observing or Active. There is no switch on it, because changing that belongs on the screen that explains what the three mean.', 'mighty-shield' ); ?></li>
@@ -366,8 +364,8 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <h2 id="scoring"><?php esc_html_e( 'Scoring', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'Every check in one table, with what it costs and how often it has actually fired on your traffic. This is where you tune MightyShield to your own customers.', 'mighty-shield' ); ?></p>
 
-        <h3><?php esc_html_e( 'Scoring profiles', 'mighty-shield' ); ?></h3>
-        <p><?php esc_html_e( 'If you would rather not judge forty-five checks one at a time, pick a profile at the top of the tab and it sets every trust cost at once. You can still change any individual row afterwards.', 'mighty-shield' ); ?></p>
+        <h3><?php esc_html_e( 'Scoring Profiles', 'mighty-shield' ); ?></h3>
+        <p><?php esc_html_e( 'If you would rather not judge every check one at a time, pick a profile at the top of the tab and it sets every trust cost at once. You can still change any individual row afterwards.', 'mighty-shield' ); ?></p>
         <ul>
             <li><strong><?php esc_html_e( 'Balanced.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'What most stores should use, and what MightyShield ships with. Catches the obvious attacks and leaves ordinary customers alone.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Cautious.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'For a store seeing more fraud than it used to. The checks that point at a specific problem cost more, and MightyShield starts collecting device information at checkout.', 'mighty-shield' ); ?></li>
@@ -387,16 +385,16 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <li><strong><?php esc_html_e( 'History.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'What you already know about the people behind the order, from the orders they placed before this one. The only group that can give trust back as well as take it.', 'mighty-shield' ); ?></li>
         </ul>
 
-        <h3><?php esc_html_e( 'Reading the table', 'mighty-shield' ); ?></h3>
+        <h3><?php esc_html_e( 'Reading the Grid', 'mighty-shield' ); ?></h3>
         <ul>
             <li><strong><?php esc_html_e( 'On or off.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Switching a check off stops it contributing anything at all. Prefer lowering its cost first, so it still counts for something.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Trust cost.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'How much of the 100 an order loses when this check notices something. A check that is only partly sure costs proportionally less, which is what lets several small concerns add up without any one of them taking over.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Force level.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Makes one check decide the outcome on its own, whatever the rating says. Use it only for things a real customer essentially cannot do, such as filling in a hidden trap field. Anything genuinely ambiguous should be left on scoring only, so the rating can weigh it against everything else.', 'mighty-shield' ); ?></li>
-            <li><strong><?php esc_html_e( 'How often it fires.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Measured on your own orders over the last 30 days. This is the most useful column on the page. A check firing on half your orders is describing your customers, not your fraudsters.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'How often it fires.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Measured on your own orders over the last 30 days. This is the most useful column on the page. A check that fires on most orders is marked, and one that keeps firing on orders you approved or fires together with another says so under its name; the chips above the grid show only those. A check firing on half your orders is describing your customers, not your fraudsters.', 'mighty-shield' ); ?></li>
         </ul>
         <div class="callout">
             <span class="callout-label"><?php esc_html_e( 'One check gives trust back', 'mighty-shield' ); ?></span>
-            <p><?php esc_html_e( 'Known good customer has a negative cost. It is the only check that adds trust rather than spending it, and it is the only way an order can reach Trusted. A customer earns it with three or more orders and a clean history, and loses it the moment anything connected to them goes bad.', 'mighty-shield' ); ?></p>
+            <p><?php esc_html_e( 'Known good customer has a negative cost. It is the only check that adds trust rather than spending it, and it is the only way an order can reach Trusted. A customer earns it with three or more orders, a clean history and at least two weeks on the books — so three quick purchases on a stolen card earn nothing — and loses it the moment anything connected to them goes bad. Past a real anomaly on an order it can hand back only a little, because a taken-over account is exactly a good history with something suddenly wrong.', 'mighty-shield' ); ?></p>
         </div>
 
         <h3><?php esc_html_e( 'The checks, and what they look at', 'mighty-shield' ); ?></h3>
@@ -405,14 +403,14 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <thead><tr><th><?php esc_html_e( 'Setting', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'What it does', 'mighty-shield' ); ?></th><th><?php esc_html_e( 'Default', 'mighty-shield' ); ?></th></tr></thead>
             <tbody>
                 <tr><td><span class="field"><?php esc_html_e( 'Blocked email domains', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Your own list, on top of the built in list of throwaway email providers. One domain per line.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'empty', 'mighty-shield' ); ?></td></tr>
-                <tr><td><span class="field"><?php esc_html_e( 'Check the domain can receive mail', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Looks up whether anything is actually listening for email at that domain. A domain that cannot receive mail is not a real customer.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'On', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Check the domain can receive mail', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Looks up whether anything is actually listening for email at that domain. A domain that cannot receive mail is not a real customer. This is the one check that asks something outside your server during a checkout — your own DNS resolver — which is why it is off until you switch it on.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Off', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Address sensitivity', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'How willing the made up address check is to call an address nonsense. High catches more and objects to more unusual real addresses.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Medium', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Minimum order amount', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Orders below this are treated as suspicious. Card testers use the cheapest thing in the shop, so set it just under your genuine cheapest item.', 'mighty-shield' ); ?></td><td class="default">1.00</td></tr>
-                <tr><td><span class="field"><?php esc_html_e( 'High value amount', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Orders at or above this cost a little trust, and a prepaid card used on one is its own check in the Payment group.', 'mighty-shield' ); ?></td><td class="default">500.00</td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'High value amount', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Orders at or above this cost a little trust, and a prepaid card used on one is its own check in the Payment group. At 0 it is worked out from your own completed orders — the point below which 95 in 100 of them fall — and kept current daily; 500.00 stands in until there are enough orders to learn from. Type a figure and yours is used instead.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( '0 (learned from your orders)', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Address velocity', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'How many orders to the same delivery address, over how many days, before it looks like a drop address.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( '3 orders / 30 days', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Postcode and state check', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Checks that a US postcode belongs to the state given with it.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'On', 'mighty-shield' ); ?></td></tr>
-                <tr><td><span class="field"><?php esc_html_e( 'Smarty address verification', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Checks the delivery address against a real postal database. Needs a Smarty account and its two credentials. Off unless you have one.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Off', 'mighty-shield' ); ?></td></tr>
-                <tr><td><span class="field"><?php esc_html_e( 'Test Connection', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Makes one real call to Smarty with the credentials you have saved, and tells you exactly what came back. It also works out which of the two ways of sending credentials your server can actually deliver, and keeps that. Save the page before testing: the token field is write-only, so the test uses what is stored, not what is typed. Costs one lookup from your Smarty account.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Button', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Smarty address verification', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Checks the billing address against a real postal database. Needs a Smarty account and its two credentials. Off unless you have one.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Off', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Test connection', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Makes one real call to Smarty with the credentials you have saved, and tells you exactly what came back. It also works out which of the two ways of sending credentials your server can actually deliver, and keeps that. Save the page before testing: the token field is write-only, so the test uses what is stored, not what is typed. Costs one lookup from your Smarty account.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Button', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Hidden trap field', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'An invisible field on the checkout. A person never sees it; a bot fills it in. Almost no false positives.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'On', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Minimum checkout seconds', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'A checkout completed faster than this was almost certainly not typed by a person.', 'mighty-shield' ); ?></td><td class="default">4</td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Device check', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Looks at what the browser reports about itself, to spot automated browsers. Off by default because it needs JavaScript and can be noisy.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Off', 'mighty-shield' ); ?></td></tr>
@@ -421,7 +419,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
                 <tr><td><span class="field"><?php esc_html_e( 'Temporary block length', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'How long an address stays temporarily blocked after tripping a hard check. It clears itself. A temporary block costs an order trust rather than refusing it, because the address may be a whole office or a mobile network.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( '1 hour', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Different emails per hour', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'How many different email addresses one network may use in an hour. Card testing looks exactly like this.', 'mighty-shield' ); ?></td><td class="default">10</td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Orders per 15 minutes', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'How many orders one network may place in a quarter of an hour.', 'mighty-shield' ); ?></td><td class="default">15</td></tr>
-                <tr><td><span class="field"><?php esc_html_e( 'Failed payments per hour', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Repeated declines from one address are the clearest sign of card testing there is.', 'mighty-shield' ); ?></td><td class="default">10</td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Failed payments per hour', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Repeated declines from one address, or through one mailbox, are the clearest sign of card testing there is. Each is counted separately against this limit.', 'mighty-shield' ); ?></td><td class="default">10</td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Registrations per hour', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'How many accounts one address may create in an hour.', 'mighty-shield' ); ?></td><td class="default">3</td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Failed logins per hour', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'How many failed sign ins one address may make before it counts against an order from them.', 'mighty-shield' ); ?></td><td class="default">10</td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Failed coupons per hour', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Guessing at discount codes in bulk is its own kind of attack.', 'mighty-shield' ); ?></td><td class="default">5</td></tr>
@@ -435,7 +433,7 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         </div>
         <div class="callout">
             <span class="callout-label"><?php esc_html_e( 'Before you have any orders', 'mighty-shield' ); ?></span>
-            <p><?php esc_html_e( 'Until orders have been through the checkout there is nothing to measure, so the How often it fires column shows a dash. It fills in on its own. You do not need to touch any of this; the defaults are sensible for a normal store.', 'mighty-shield' ); ?></p>
+            <p><?php esc_html_e( 'Until orders have been through the checkout there is nothing to measure, so how often each check fires shows a dash. It fills in on its own. You do not need to touch any of this; the defaults are sensible for a normal store.', 'mighty-shield' ); ?></p>
         </div>
 
         <h2 id="ai"><?php esc_html_e( 'AI Review', 'mighty-shield' ); ?></h2>
@@ -446,25 +444,24 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <tbody>
                 <tr><td><span class="field"><?php esc_html_e( 'Enable AI review', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Nothing is sent anywhere until this is on and a key is saved.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Off', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Provider and model', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Anthropic, OpenAI or Google. Each has its own key field and its own model name, which you can change if you want a cheaper or a stronger one.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Anthropic', 'mighty-shield' ); ?></td></tr>
-                <tr><td><span class="field"><?php esc_html_e( 'Test Connection', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Sends one real review request to the provider you selected, built exactly the way a live order builds it, and tells you what came back. Because it uses the real request, it catches a model name your provider does not recognise as readily as it catches a bad key. Save the page before testing: key fields are write-only, so the test uses what is stored. It costs one request and does not count against your daily limit.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Button', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Test connection', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Sends one real review request to the provider you selected, built exactly the way a live order builds it, and tells you what came back. Because it uses the real request, it catches a model name your provider does not recognise as readily as it catches a bad key. Save the page before testing: key fields are write-only, so the test uses what is stored. It costs one request and does not count against your daily limit.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Button', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Rating effect', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Lower only means the model can take trust away but never give it back, so it can never talk a bad order into looking fine. Lower or raise lets it rescue an order the checks were too harsh on.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Lower only', 'mighty-shield' ); ?></td></tr>
                 <tr><td><span class="field"><?php esc_html_e( 'Daily limit', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'A hard ceiling on how many orders can be sent for review in a day, so a flood of traffic cannot run up a bill. 0 means no limit.', 'mighty-shield' ); ?></td><td class="default">0</td></tr>
-                <tr><td><span class="field"><?php esc_html_e( 'Hide customer details', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Sends the shape of the customer\'s details rather than the details themselves, so the name, address and email never leave your site. It costs some accuracy, which is why the choice is yours.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'Off', 'mighty-shield' ); ?></td></tr>
-                <tr><td><span class="field"><?php esc_html_e( 'Email me about reviews', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Sends a message when the model rates an order badly. Leave the address list empty to use the site administrator.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'On', 'mighty-shield' ); ?></td></tr>
+                <tr><td><span class="field"><?php esc_html_e( 'Hide customer details', 'mighty-shield' ); ?></span></td><td><?php esc_html_e( 'Sends the shape of the customer\'s details rather than the details themselves, so the name, address and email never leave your site. It costs some accuracy, which is why the choice is yours.', 'mighty-shield' ); ?></td><td class="default"><?php esc_html_e( 'On', 'mighty-shield' ); ?></td></tr>
             </tbody>
         </table>
         <div class="callout important">
             <span class="callout-label"><?php esc_html_e( 'What is sent, and to whom', 'mighty-shield' ); ?></span>
             <p><?php esc_html_e( 'Your API key is stored in your database and is only ever sent to the provider you chose. The order details go to that provider and nowhere else. If that matters to you, turn Hide customer details on: the model then sees that an address exists and how it compares to others, but not what it says.', 'mighty-shield' ); ?></p>
         </div>
-        <p><?php esc_html_e( 'Which risk levels get a review is the Send to Review setting on this tab: select the levels you want a second opinion on. Elevated and High are on by default. Trusted and Low are not, because that is most of your orders and reviewing them multiplies the cost for very little.', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'Which risk levels get a review is the Send to review setting on this tab: select the levels you want a second opinion on. Elevated and High are on by default. Trusted and Low are not, because that is most of your orders and reviewing them multiplies the cost for very little.', 'mighty-shield' ); ?></p>
         <p><?php esc_html_e( 'Rejected is offered too, and is worth considering if you would rather not turn anyone away on arithmetic alone. The review happens before the refusal, so with the rating effect set to lower or raise, a model that recognises an ordinary customer can rescue the order. Orders stopped by a single decisive check, such as a filled trap field or a card with a chargeback against it, are never sent: the model cannot overturn those, so the call would be wasted. Banned is not offered for the same reason.', 'mighty-shield' ); ?></p>
 
         <h2 id="blocking"><?php esc_html_e( 'Shielding', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'Where the trust rating turns into something happening. This is the tab that decides what your customers actually experience.', 'mighty-shield' ); ?></p>
         <ul>
-            <li><strong><?php esc_html_e( 'Risk levels.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'For each level: the rating at or below which it applies, what it does, and whether the order still reaches your processor. The last column shows how orders at that level actually turned out, which is what tells you whether a threshold is right.', 'mighty-shield' ); ?></li>
-            <li><strong><?php esc_html_e( 'Bot challenge.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Cloudflare Turnstile or Google reCAPTCHA v3, and which pages it guards.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Risk levels.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'For each level: the rating at or below which it applies, what it does, and whether the order still reaches your processor. Each row is coloured by how severe its level is, and changing the action rewrites what the row says about it, including what happens to the money. The last column shows how orders at that level actually turned out, which is what tells you whether a threshold is right.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Bot challenge.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Cloudflare Turnstile or Google reCAPTCHA v3, and which pages it guards. These run whether protection is Observing or Active. A failed comment is held for moderation rather than refused.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Slow down refusals.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Automated card testing relies on a quick, consistent answer. Refusing slowly, with a message that varies and reads like an ordinary bank decline, means an attacker cannot work out what tripped or time their way around it. Genuine customers are never refused, so it does not affect them. It does hold a server process for the length of the delay, which is the only reason to turn it off. The delay is random between a minimum and a maximum you set, 3 and 8 seconds by default, and the randomness is the point: a fixed delay is itself a signal.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Add your own line to the end of every refusal.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The three refusal messages are shown above the box so you can see what a refused customer reads. They are deliberately vague, and that vagueness is what stops an attacker learning anything from them. The cost is paid by the occasional real customer who gets caught by mistake and has no idea who to talk to. Put your phone number or your support address here and it is added to the end of every refusal, whatever caused it. Links work, so the number can be tapped on a phone. Leave it empty and nothing changes.', 'mighty-shield' ); ?></li>
         </ul>
@@ -472,12 +469,12 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <h3><?php esc_html_e( 'Store API Firewall', 'mighty-shield' ); ?></h3>
         <p><?php esc_html_e( 'This controls access to the WooCommerce cart and checkout endpoints, and it is the one setting here that can close your shop if it is set wrongly.', 'mighty-shield' ); ?></p>
         <ul>
-            <li><strong><?php esc_html_e( 'Allowlist mode.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Refuses those endpoints to everyone who is not on your allowlist. Right for a store using the classic checkout, where customers never touch them.', 'mighty-shield' ); ?></li>
-            <li><strong><?php esc_html_e( 'Blocklist mode.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Refuses only addresses on your blocklist. Required if your checkout page uses the Checkout block, because that checkout is built on those endpoints.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Allowlist mode.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Refuses those endpoints to everyone who is not on your allowlist. Right for a store using the classic checkout, where customers never touch them. On a store whose checkout page uses the Checkout block, this mode steps aside for the cart and checkout endpoints, because that checkout is built on them; the rating protects them instead, and the mode still governs every other Store API route.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Blocklist mode.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Refuses only addresses on your blocklist, on every route.', 'mighty-shield' ); ?></li>
         </ul>
         <div class="callout important">
             <span class="callout-label"><?php esc_html_e( 'If your checkout stops working', 'mighty-shield' ); ?></span>
-            <p><?php esc_html_e( 'The block based checkout in Allowlist mode means no customer can reach the cart or the checkout at all. MightyShield now detects that combination and says so at the top of this tab and on your WordPress dashboard, but if you ever see an empty cart or a checkout that will not load, this is the first setting to check.', 'mighty-shield' ); ?></p>
+            <p><?php esc_html_e( 'MightyShield never closes the cart or the checkout on a block checkout store, whatever this setting says. If you ever see an empty cart or a checkout that will not load, look first at the Blocklist under Access and at the Logs tab for a refused address.', 'mighty-shield' ); ?></p>
         </div>
         <p><strong><?php esc_html_e( 'Block checkout protection', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'runs the checks on the block based checkout as well as the classic one. Leave it on. Every check now works the same on both, including the ones that need something from the browser, such as the checkout timer, the device check, the hidden decoy field and the bot challenge, so the same order is judged the same way whichever checkout your store uses.', 'mighty-shield' ); ?></p>
 
@@ -497,18 +494,20 @@ $actions = \MightyShield\Includes\actions::CATALOG;
         <p><?php esc_html_e( 'Who skips every check, and who is refused outright.', 'mighty-shield' ); ?></p>
 
         <h3><?php esc_html_e( 'Allowlist', 'mighty-shield' ); ?></h3>
-        <p><?php esc_html_e( 'Anything here bypasses MightyShield entirely. Four kinds of entry:', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'An allowlisted shopper is still rated and recorded, so your reports stay complete; what the allowlist stops is anything being done about the rating. Nine kinds of entry. The first four decide at checkout:', 'mighty-shield' ); ?></p>
         <ul>
             <li><strong><?php esc_html_e( 'IP address or range.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'A single address, or a range in CIDR form. Your own office is the usual case.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'WordPress user.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Follows the person rather than where they are, so it survives a changing home address.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Email address.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Only counts when the customer is signed in to an account carrying that address. Typing it at the checkout proves nothing, so it grants nothing.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Role.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Everyone with that role. Be careful with broad roles: allowlisting Customer exempts every registered shopper on your site.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Phone, name, postcode, city or country.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Matched against a stored order when you review or re-rate it, never at checkout. A shopper types all five into the form, so an allowlisted postcode would otherwise let anyone who typed it skip every hold.', 'mighty-shield' ); ?></li>
         </ul>
         <p><?php esc_html_e( 'Your server\'s own address is added automatically when the plugin is activated, so that scheduled tasks and admin work are never blocked.', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'That has one consequence worth knowing. If your site sits behind a reverse proxy or a load balancer on the same machine, every shopper reaches PHP from the server\'s own address, and so every shopper is allowlisted: the log shows 127.0.0.1 on every row and nothing is enforced. MightyShield deliberately does not trust the X-Forwarded-For header on its own, because a shopper can send it too. Tell it which header your proxy sets by adding a MSHIELD_IP_HEADER constant to wp-config.php, for example HTTP_X_REAL_IP; it is honoured only on connections that arrive from a private or loopback address, or from a Cloudflare edge. Cloudflare\'s own header is recognised without any setting.', 'mighty-shield' ); ?></p>
 
         <h3><?php esc_html_e( 'Blocklist', 'mighty-shield' ); ?></h3>
-        <p><?php esc_html_e( 'Addresses refused outright, before any check runs. Entries stay until you remove them. MightyShield adds one itself in two cases: when you block an order in review, and when an order is rated Banned.', 'mighty-shield' ); ?></p>
-        <p><?php esc_html_e( 'Temporary blocks are separate and do not appear here. They are applied automatically for 24 hours when something trips a hard check, and they clear themselves.', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'Addresses refused outright, before any check runs. Entries stay until you remove them. MightyShield adds one itself in one case: when you block an order in review, and only if the address is neither allowlisted nor your own server\'s. An order rated Banned puts its address under a day-long temporary block instead, because the address is rarely the fraudster\'s alone: on a mobile carrier or an office it is hundreds of people, and the identities that earned the ban, the card and the mailbox, are what refuse the next attempt.', 'mighty-shield' ); ?></p>
+        <p><?php esc_html_e( 'Temporary blocks are separate and do not appear here. They are applied automatically when something trips a hard check, last an hour by default (Temporary block length, on the Scoring tab), and clear themselves.', 'mighty-shield' ); ?></p>
         <p><?php esc_html_e( 'The allowlist always wins. An address on both lists is allowed.', 'mighty-shield' ); ?></p>
 
         <h2 id="logs"><?php esc_html_e( 'Logs', 'mighty-shield' ); ?></h2>
@@ -517,21 +516,22 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <li><strong><?php esc_html_e( 'Filters.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'By time, by what happened, or by searching for an address, an email or a reason.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Row actions.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'From the detail panel you can allowlist an address or block it permanently.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Retention.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'How many days of log entries to keep. Older entries are removed automatically once a day.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Alerts.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'One switch for every email MightyShield sends: an order rated badly enough to be held, a review that rated one badly, a service that has stopped responding, a bot challenge refusing everybody, or a wave of failed payments. Leave the address list empty to use the site administrator. At most one email an hour per kind.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Export.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Downloads the current filtered view as a spreadsheet file.', 'mighty-shield' ); ?></li>
         </ul>
 
-        <h2 id="order-panel"><?php esc_html_e( 'On an order', 'mighty-shield' ); ?></h2>
+        <h2 id="order-panel"><?php esc_html_e( 'On an Order', 'mighty-shield' ); ?></h2>
         <p><?php esc_html_e( 'Open any order and MightyShield is in the right hand column, above the fold. Everything it knows about that order is there, and everything you can do about it.', 'mighty-shield' ); ?></p>
         <ul>
             <li><strong><?php esc_html_e( 'The rating.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'The dial at the top is the same 1 to 100 scale as the Scoring tab, coloured to match. Underneath are the checks that actually tripped, worst first, with what each one cost.', 'mighty-shield' ); ?></li>
-            <li><strong><?php esc_html_e( 'Unrated orders.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'An order placed before MightyShield was installed, or while it was switched off, has no rating. Rate Order works one out from what the order still contains. It changes nothing about the order and will not hold or cancel anything, however badly it scores.', 'mighty-shield' ); ?></li>
+            <li><strong><?php esc_html_e( 'Unrated orders.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'An order placed before MightyShield was installed, or while it was switched off, has no rating. Rate order works one out from what the order still contains. It changes nothing about the order and will not hold or cancel anything, however badly it scores.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Clean or Fraud.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Your verdict, and the single most valuable thing on this panel. Change it whenever you like: if a chargeback arrives six months later, mark it Fraud then, and if one turns out to be a family member using the card, mark it Clean and the penalty is taken back off.', 'mighty-shield' ); ?></li>
             <li><strong><?php esc_html_e( 'Approve and Block.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Shown on orders MightyShield is holding. What they do depends on what happened to the money, which the panel states before the buttons.', 'mighty-shield' ); ?></li>
         </ul>
         <div class="callout important">
             <span class="callout-label"><?php esc_html_e( 'A rating worked out afterwards is a partial one', 'mighty-shield' ); ?></span>
             <p><?php esc_html_e( 'About half the checks look at the visit rather than the order: whether a hidden trap field was filled in, how fast the form was completed, what the browser reported, how many orders that address placed in the previous quarter hour. None of that is kept, and re running it now would measure your own browser sitting in the admin.', 'mighty-shield' ); ?></p>
-            <p><?php esc_html_e( 'So Rate Order works from what is left: the address, the email, the location, the totals, and the customer\'s own history with you. That is genuinely useful, but a 90 from it is not the same statement as a 90 earned at checkout, and the panel says so wherever it shows one.', 'mighty-shield' ); ?></p>
+            <p><?php esc_html_e( 'So Rate order works from what is left: the address, the email, the location, the totals, and the customer\'s own history with you. That is genuinely useful, but a 90 from it is not the same statement as a 90 earned at checkout, and the panel says so wherever it shows one.', 'mighty-shield' ); ?></p>
         </div>
         <div class="callout">
             <p><strong><?php esc_html_e( 'Held with the payment taken.', 'mighty-shield' ); ?></strong> <?php esc_html_e( 'Approve moves the order to Processing. Block cancels it and blocks the address, then tells you to refund from the order items panel. It will not refund automatically, because that is real money moving and it should be a decision you make with the amount in front of you.', 'mighty-shield' ); ?></p>
@@ -569,13 +569,13 @@ $actions = \MightyShield\Includes\actions::CATALOG;
             <p><?php esc_html_e( 'One thing does outrank your verdict, and it should: a chargeback. If you release an order and the bank later takes the money back, that is recorded against everyone connected to it, exactly as it would be on any other order. Your judgement stands until reality contradicts it.', 'mighty-shield' ); ?></p>
         </div>
 
-        <h2 id="situations"><?php esc_html_e( 'Common situations', 'mighty-shield' ); ?></h2>
+        <h2 id="situations"><?php esc_html_e( 'Common Situations', 'mighty-shield' ); ?></h2>
 
         <h3><?php esc_html_e( 'A real customer was blocked', 'mighty-shield' ); ?></h3>
         <p><?php printf( wp_kses_post( __( 'Find them in the <a href="%1$s">Logs</a> and read the reason. Allowlist their address from the detail panel if it was a one off. If the same check is catching several real customers, open <a href="%2$s">Scoring</a>, find that check, and either lower its cost or switch it off. If a threshold is the problem, raise it on <a href="%3$s">Shielding</a>.', 'mighty-shield' ) ), esc_url( $logs_url ), esc_url( $scoring_url ), esc_url( $blocking_url ) ); ?></p>
 
         <h3><?php esc_html_e( 'My checkout stopped working', 'mighty-shield' ); ?></h3>
-        <p><?php printf( wp_kses_post( __( 'If your checkout page uses the Checkout block, set the Store API Firewall on <a href="%s">Shielding</a> to Blocklist mode. In Allowlist mode that firewall refuses the cart and checkout to every customer, which looks exactly like a broken shop. MightyShield warns you about this combination, but it is worth checking first whenever the checkout misbehaves.', 'mighty-shield' ) ), esc_url( $blocking_url ) ); ?></p>
+        <p><?php printf( wp_kses_post( __( 'The Store API firewall never closes a block checkout, whichever mode it is in. Look first at the Blocklist under <a href="%1$s">Access</a> and at the <a href="%2$s">Logs</a> for a refused address.', 'mighty-shield' ) ), esc_url( $access_url ), esc_url( $logs_url ) ); ?></p>
 
         <h3><?php esc_html_e( 'We are under active attack', 'mighty-shield' ); ?></h3>
         <ol>

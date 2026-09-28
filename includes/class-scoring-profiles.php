@@ -3,7 +3,7 @@
  * Scoring profiles.
  *
  * Three presets for the whole Scoring tab, so a merchant who does not want to
- * make thirty-nine individual judgement calls does not have to make any.
+ * make more than fifty individual judgement calls does not have to make any.
  *
  * ---------------------------------------------------------------------------
  * WHY THESE ARE OVERRIDE TABLES AND NOT A MULTIPLIER — read before editing.
@@ -13,11 +13,13 @@
  * levels are absolute point ranges, and the realistic orders in the scenario
  * suite sit hard against their edges:
  *
- *   Stolen card, drop address      70 points   high       4 points of headroom
- *   Prior denial, otherwise clean  70 points   high       4 points
- *   Traveller on a VPN             40 points   elevated   9 points
- *   Gift order, high value         40 points   elevated   9 points
- *   Sloppy but real                40 points   elevated   9 points
+ *   Gift to a busy address, first order   70 points   high       4 points of headroom
+ *     (address_velocity + bill/ship at half + name mismatch + high value + first order)
+ *   The same from an IP abroad            85 points   rejected   (refused, and recorded)
+ *   Prior denial, otherwise clean         70 points   high       4 points
+ *   Traveller on a VPN                    40 points   elevated   9 points
+ *   Gift order, high value                40 points   elevated   9 points
+ *   Sloppy but real                       40 points   elevated   9 points
  *
  * So the largest uniform multiplier that does not push the stolen-card order
  * into "rejected" is about 1.07, which is not a product feature. And "high"
@@ -42,6 +44,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class scoring_profiles {
 
     /**
@@ -65,7 +69,7 @@ class scoring_profiles {
     /**
      * Signals no profile may move, and why.
      *
-     * Two kinds. The first six are floored: a floor bypasses the arithmetic
+     * Two kinds. The first seven are floored: a floor bypasses the arithmetic
      * entirely, so changing their weight is a no-op that looks like a change.
      * The rest carry a calibration comment in the catalog explaining that they
      * are deliberately low because they misfire on a real population, or they
@@ -80,16 +84,20 @@ class scoring_profiles {
     const NEVER_TOUCH = [
 
         // Floored. The weight is decoration.
-        'honeypot', 'device_automated', 'captcha_failed',
-        'ip_temp_blocked', 'ip_blocklisted', 'entity_chargeback',
+        'honeypot', 'device_automated', 'captcha_failed', 'ip_blocklisted',
+        'identity_blocklisted', 'country_blocked', 'entity_chargeback',
+
+        // Not floored, but scored as a refusal on its own and keyed on a
+        // shared address; a profile that moved it would move a hold onto
+        // whole networks.
+        'ip_temp_blocked',
 
         // Deliberately low, per the catalog's own comments.
         'email_role',           // small businesses really do order from info@
         'email_name_mismatch',  // and appears in two scenarios near an edge
         'address_velocity',     // apartment buildings, offices, dorms, families
         'ip_geo_mismatch',      // gifts, travel, mobile carriers, corporate egress
-        'ip_proxy',             // VPNs are mainstream, and it double-counts the timezone
-        'device_tz_mismatch',   // the other half of that double-count
+        'device_tz_mismatch',   // a VPN is usually what makes the timezone disagree
         'interaction_none',     // keyboard-only and assistive-technology shoppers
         'cookies_none',         // a cookie-stripping CDN would misfire store-wide
         'account_new',          // everyone is new once
@@ -119,15 +127,11 @@ class scoring_profiles {
     const PROFILES = [
 
         'balanced' => [
-            'label'   => 'Balanced',
-            'blurb'   => 'What most stores should use. Catches the obvious attacks and leaves ordinary customers alone.',
             'weights' => [],
             'options' => [],
         ],
 
         'cautious' => [
-            'label'   => 'Cautious',
-            'blurb'   => 'For a store seeing more fraud than it used to. Everything specific costs more, and device information starts being collected.',
             'weights' => [
                 'email_disposable'   => 52.0,
                 'email_no_mx'        => 47.0,
@@ -154,8 +158,6 @@ class scoring_profiles {
         ],
 
         'strict' => [
-            'label'   => 'Strict',
-            'blurb'   => 'For a store under attack, or one selling things worth stealing. Expect to review more orders by hand.',
             'weights' => [
                 'email_disposable'   => 60.0,
                 'email_no_mx'        => 55.0,

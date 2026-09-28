@@ -8,6 +8,9 @@
  * @since   1.0.0
  */
 namespace MightyShield\Includes;
+
+defined( 'ABSPATH' ) || exit;
+
 class settings {
 
     /**
@@ -26,11 +29,34 @@ class settings {
         'mshield_rate_checkout_limit'       => 20,
         'mshield_rate_checkout_window'      => 3600,
         'mshield_velocity_email_threshold'  => 10,
+        // Orders per hour from one email identity, counting dots,
+        // plus-tags and alias domains as the same inbox. Tighter than the
+        // per-IP limits because it is a far more specific claim: one
+        // person, not one network.
+        'mshield_velocity_root_threshold'   => 5,
         'mshield_velocity_order_threshold'  => 15,
         'mshield_failed_payment_threshold'  => 10,
         'mshield_temp_block_duration'       => 3600,
         'mshield_blocked_email_domains'     => '',
         'mshield_min_order_amount'          => '1.00',
+        // 0 disables, and that is the right default: a ceiling is a statement
+        // about one store's normal order, and there is no figure that is
+        // sensible for both a coffee shop and a jeweller.
+        'mshield_max_order_amount'          => '0',
+        // Both empty by default. MightyShield ships no opinion about any
+        // country -- a blocked-country list belongs to the merchant's licence,
+        // tax position and shipping contracts, not to a fraud plugin, and a
+        // shipped "high risk" list is a guess about people that would be wrong
+        // somewhere on every store.
+        'mshield_blocked_countries'         => '',
+        'mshield_high_risk_countries'       => '',
+        'mshield_phone_voip_prefixes'       => '',
+        // Empty, and it stays empty. A bundled list of "known" forwarder
+        // addresses is a list of real warehouses, and one wrong entry
+        // refuses every order a legitimate business ever places. The
+        // merchant knows which addresses are costing them; MightyShield
+        // does not, and guessing on their behalf is not a favour.
+        'mshield_reshipper_addresses'       => '',
         'mshield_address_sensitivity'       => 'medium',
         'mshield_smarty_enabled'            => 'no',
         'mshield_smarty_auth_id'            => '',
@@ -64,7 +90,11 @@ class settings {
         'mshield_entity_retention_days'     => 365,
 
         // Email intelligence.
-        'mshield_email_dns_check'           => 'yes',
+        // Off by default. It is the one check that leaves the server during a
+        // checkout -- up to three DNS lookups through the host's resolver, with
+        // no timeout PHP can set -- and the readme promises none. A merchant
+        // who wants it can switch it on knowing that.
+        'mshield_email_dns_check'           => 'no',
         'mshield_email_list_enabled'        => 'yes',
 
         // Account, login and coupon behaviour, counted per hour per IP.
@@ -109,21 +139,47 @@ class settings {
         'mshield_ai_openai_org'             => '',
         'mshield_ai_openai_model'           => 'gpt-4o-mini',
         'mshield_ai_gemini_key'             => '',
-        'mshield_ai_gemini_model'           => 'gemini-1.5-flash',
+        // Not 1.5: Google retired the whole 1.5 series in September 2025, so a
+        // merchant who took the default got a 404 on every review.
+        'mshield_ai_gemini_model'           => 'gemini-2.5-flash',
         // inline: review during checkout (needed for authorize-only holds).
         // async: review immediately after, off the shopper's request.
         // Hard ceiling on provider calls per day. 0 = no cap.
         'mshield_ai_daily_cap'              => 0,
         // Send the shape of the customer's details to the AI provider rather
-        // than the details themselves. Off by default: it costs some accuracy,
-        // and the choice belongs to the store.
-        'mshield_ai_redact_pii'             => 'no',
+        // than the details themselves.
+        //
+        // ON by default since 3.0.0. It shipped off, on the reasoning that it
+        // costs some accuracy and the choice belongs to the store. Both halves
+        // of that are still true, but they are the wrong way round for a
+        // default: the store is opting somebody ELSE's name, street, email,
+        // phone and IP address into being sent to a third party, and a default
+        // that quietly does that is not a choice anybody made.
+        //
+        // The accuracy it costs is small and mostly theoretical. The model is
+        // shown which checks fired and what they cost, which is the evidence it
+        // actually reasons from; a masked street still supports "billing and
+        // shipping disagree", and a masked email still carries its length and
+        // whether it contains digits.
+        //
+        // A store that has ever saved the AI Review tab holds an explicit
+        // value and keeps it, because get() only falls back to this default
+        // when the option is absent. A store that never opened the tab picks
+        // the new default up on upgrade -- deliberately, and there is no
+        // migration notice for it because the change only ever sends LESS
+        // about a customer than it did yesterday.
+        'mshield_ai_redact_pii'             => 'yes',
         'mshield_ai_direction'              => 'lower',
         // Whether to also review Monitored orders. Off by default: that risk level
         // is most orders, so turning it on multiplies the API bill.
         'mshield_ai_velocity_orders'        => 3,
         'mshield_ai_velocity_days'          => 30,
-        'mshield_ai_high_value_amount'      => '500.00',
+        // 0 means "learn it from this store's own completed orders", which
+        // is what the Scoring tab's label and the readme have promised since
+        // 3.0.0 -- but the field shipped as 500.00, so the learned figure was
+        // computed nightly and never once read. 500.00 still stands in until
+        // there are enough orders to learn from; see order_signals.
+        'mshield_ai_high_value_amount'      => '0',
         'mshield_ai_notify_admin'           => 'yes',
         'mshield_ai_notify_emails'          => '',
     ];
@@ -148,7 +204,7 @@ class settings {
      *
      * Paired with get() so a caller that stores a setting reads the same key
      * through the same door. Only for settings the plugin discovers for itself
-     * -- the transport Test Connection finds, say -- never for form input,
+     * -- the transport Test connection finds, say -- never for form input,
      * which goes through the registered sanitizers on the settings group.
      *
      * @since   2.0.1
@@ -173,6 +229,25 @@ class settings {
      *
      * @return  array   Email addresses.
      */
+    /**
+     * Whether the merchant wants to hear from MightyShield by email at all.
+     *
+     * One switch for every alert -- a badly rated AI review, a service that
+     * has stopped answering, a bot challenge refusing everybody, a wave of
+     * declines -- which is what the setup wizard says it is. Until 3.0.0 only
+     * the AI verdict email honoured it and the service alerts went to the
+     * site administrator address regardless of what was set.
+     *
+     * @since   3.0.0
+     *
+     * @return  bool
+     */
+    public static function alerts_enabled() {
+
+        return self::get( 'mshield_ai_notify_admin' ) === 'yes';
+
+    }
+
     public static function notification_recipients() {
 
         $emails = [];

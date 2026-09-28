@@ -9,6 +9,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
@@ -36,8 +38,6 @@ class order_amount_validator {
      * @param   object   $errors WP_Error object, unused — this layer does not refuse.
      */
     public function assess_checkout( $data, $errors ) {
-
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
         // No order exists yet at validation time, so the cart is the only total
         // there is. The Store API reads its draft order instead. The two can

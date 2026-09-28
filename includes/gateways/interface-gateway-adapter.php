@@ -20,6 +20,8 @@
  */
 namespace MightyShield\Includes\Gateways;
 
+defined( 'ABSPATH' ) || exit;
+
 interface gateway_adapter {
 
     /**

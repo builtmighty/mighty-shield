@@ -9,6 +9,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
@@ -230,8 +232,6 @@ class email_domain_blocker {
      */
     public function check_email( $data, $errors ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         $email = isset( $data['billing_email'] ) ? $data['billing_email'] : '';
         if( empty( $email ) ) return;
 
@@ -290,8 +290,26 @@ class email_domain_blocker {
             $domains = array_merge( $domains, $custom_domains );
         }
 
-        // Allow filtering.
-        $domains = apply_filters( 'mighty_shield_blocked_email_domains', $domains );
+        /**
+         * The full disposable-domain list, after the built-in and
+         * merchant-configured lists are merged.
+         *
+         * @since   3.0.0
+         *
+         * @param   string[]    $domains    Lowercase domain names.
+         */
+        $domains = apply_filters( 'mshield_blocked_email_domains', $domains );
+
+        // The original name. Every other hook in the plugin is mshield_*;
+        // this one and mighty_shield_ip_lookup_timeout were the two that got
+        // away, and an extension point is a promise, so the old name still
+        // runs rather than being quietly dropped.
+        $domains = apply_filters_deprecated(
+            'mighty_shield_blocked_email_domains',
+            [ $domains ],
+            '3.0.0',
+            'mshield_blocked_email_domains'
+        );
 
         return array_unique( $domains );
 

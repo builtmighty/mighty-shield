@@ -1,6 +1,6 @@
 <?php
 /**
- * CAPTCHA / Bot Challenge.
+ * CAPTCHA / Bot challenge.
  *
  * Adds a Cloudflare Turnstile or Google reCAPTCHA v3 challenge to the classic
  * checkout and verifies the token server-side. Strong defense against automated
@@ -10,6 +10,8 @@
  * @since   1.2.0
  */
 namespace MightyShield\Protection;
+
+defined( 'ABSPATH' ) || exit;
 
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
@@ -31,6 +33,25 @@ class captcha {
      * @since   1.2.0
      */
     private const RECAPTCHA_VERIFY = 'https://www.google.com/recaptcha/api/siteverify';
+
+    /**
+     * How many empty challenge answers one address may give on the spam
+     * surfaces before an empty answer is judged as a failure.
+     *
+     * A person whose ad blocker ate the widget retries once, maybe twice. A
+     * script that has learned to omit the token does it on every request.
+     * Three in the window separates the two with room to spare.
+     *
+     * @since   3.0.0
+     */
+    private const UNANSWERED_ALLOWANCE = 3;
+
+    /**
+     * The window those answers are counted over, in seconds.
+     *
+     * @since   3.0.0
+     */
+    private const UNANSWERED_WINDOW = 600;
 
     /**
      * What judge() can conclude about a request.
@@ -104,6 +125,7 @@ class captcha {
         // the very key they had just cleared, which reads as fixed.
         if( is_admin() ) {
             add_action( 'admin_notices', [ $this, 'render_degraded_notice' ] );
+            add_action( 'admin_notices', [ $this, 'render_conflict_notice' ] );
         }
 
         if( $this->provider !== 'turnstile' && $this->provider !== 'recaptcha_v3' ) return;
@@ -147,8 +169,6 @@ class captcha {
      * @param   \WP_Error   $errors
      */
     public function assess( $data, $errors ) {
-
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
         $verdict = self::assess_surface( 'checkout' );
 
@@ -467,6 +487,10 @@ class captcha {
 
         self::enqueue( $surface );
 
+        // Server-side proof that this surface serves a challenge, which is what
+        // lets assess_surface() tell a stripped marker from a missing widget.
+        self::mark_rendering( $surface );
+
         // One field name for both providers. Turnstile would inject its own
         // cf-turnstile-response, but rendering explicitly means the token comes
         // back through a callback, so it can go wherever we like -- and every
@@ -537,6 +561,60 @@ class captcha {
         $age = time() - (int) $ts;
 
         return $age >= 0 && $age <= DAY_IN_SECONDS;
+
+    }
+
+    /**
+     * The key under which a surface's "this really does render" note lives.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $surface
+     * @return  string
+     */
+    private static function renders_key( $surface ) {
+
+        return 'mshield_cap_renders_' . preg_replace( '/[^a-z_]/', '', (string) $surface );
+
+    }
+
+    /**
+     * Note that this surface served a challenge to somebody.
+     *
+     * Refreshed at most once a day per surface, so a busy form is not a write
+     * per page view.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $surface
+     */
+    private static function mark_rendering( $surface ) {
+
+        $key  = self::renders_key( $surface );
+        $seen = (int) get_transient( $key );
+
+        if( $seen && ( time() - $seen ) < DAY_IN_SECONDS ) return;
+
+        set_transient( $key, time(), self::RENDERS_TTL );
+
+    }
+
+    /**
+     * Whether this surface is known to put a challenge in front of visitors.
+     *
+     * Deliberately a transient. An object cache evicting it costs a window in
+     * which a stripped marker reads as a missing widget again -- which is the
+     * fail-OPEN direction, and therefore the right way for this to break. The
+     * next visitor who loads the form re-arms it.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $surface
+     * @return  bool
+     */
+    public static function renders( $surface ) {
+
+        return (bool) get_transient( self::renders_key( $surface ) );
 
     }
 
@@ -622,6 +700,31 @@ class captcha {
     }
 
     /**
+     * Whether this address has given too many empty challenge answers lately.
+     *
+     * Counted in the rate-limit table rather than a transient, for the reason
+     * account_guard gives: an object cache can evict a transient at any
+     * moment, which would silently disable exactly the counting this relies
+     * on. Allowlisted addresses are never rationed.
+     *
+     * @since   3.0.0
+     *
+     * @return  bool
+     */
+    private static function unanswered_too_often() {
+
+        $ip = ip_utils::get_client_ip();
+        if( $ip === '' ) return false;
+
+        if( \MightyShield\Firewall\ip_whitelist::is_whitelisted( $ip ) ) return false;
+
+        $count = (int) db::increment_rate_limit( md5( $ip . '|captcha_unanswered' ), 'captcha_unanswered', self::UNANSWERED_WINDOW );
+
+        return $count > self::UNANSWERED_ALLOWANCE;
+
+    }
+
+    /**
      * The provider's verdict on this request, for one surface.
      *
      * Memoised for the life of the request: a token is single use, so asking
@@ -646,7 +749,9 @@ class captcha {
             // renders a widget implicitly, so accept either.
             $token = '';
             foreach( [ 'mshield_captcha_token', 'cf-turnstile-response', 'g-recaptcha-response' ] as $field ) {
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
                 if( ! empty( $_POST[ $field ] ) ) {
+                    // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
                     $token = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
                     break;
                 }
@@ -672,7 +777,51 @@ class captcha {
 
             if( ! $was_shown ) {
 
+                // Unless this surface is known to render one.
+                //
+                // The marker is signed, so it cannot be forged -- but it is
+                // still a field the client sends, and the branch above treats
+                // its absence as innocence. Omitting two fields therefore
+                // converted "asked and failed" into "never asked" and walked
+                // through: on the store this was found on, one address reset
+                // passwords past a challenge that was refusing ~300 other
+                // attempts, and the only trace was a daily "failing open" note.
+                //
+                // renders() is server-side and cannot be influenced from the
+                // request, so once this form has served a challenge to anybody,
+                // a submission without a marker is a removal, not an absence.
+                // The circuit breaker still sits behind this via passes(): if
+                // nothing has passed anywhere for six hours, the keys are the
+                // likelier explanation and everyone is let through regardless.
+                //
+                // Checkout is deliberately excluded. The marker is a hidden
+                // input printed by widget(), so a shopper whose Turnstile
+                // SCRIPT was blocked still sends it and lands on UNANSWERED
+                // rather than here -- but a theme or page builder that rebuilds
+                // the checkout form and drops fields it does not recognise
+                // would put every genuine customer in this branch. On the spam
+                // surfaces that costs a retry; on checkout, captcha_failed
+                // carries a rejected floor, so it would refuse every order on
+                // the store until the breaker noticed. Failing a password reset
+                // closed is worth it, failing revenue closed is not, and the
+                // bypass this exists to shut was on the reset form.
+                if( $surface !== 'checkout' && self::renders( $surface ) ) {
+                    return $seen[ $surface ] = self::FAILED;
+                }
+
                 self::report_missing( $surface );
+
+                // On checkout a removed marker is not free either. The widget
+                // is known to render there, so a submission carrying neither
+                // field is a stripped form, and it is scored the way the
+                // block checkout already scores the same request: as a
+                // challenge that went unanswered (captcha_unverified, no
+                // floor). Without this, a bot that dropped both fields paid
+                // nothing while an honest shopper whose ad blocker stopped
+                // the script paid twenty.
+                if( $surface === 'checkout' && self::renders( $surface ) ) {
+                    return $seen[ $surface ] = self::UNANSWERED;
+                }
 
                 return $seen[ $surface ] = self::NOT_ASKED;
 
@@ -684,6 +833,23 @@ class captcha {
             // rarely somebody stripping the field. It used to be a flat refusal,
             // which is how a real person ends up locked out of their own login
             // with no widget visible and nothing to solve.
+            //
+            // Rarely -- but on the spam surfaces "rarely" is what a script does
+            // on every request. A bot that omits the token walked through here
+            // for free, and there was nothing between it and ten thousand
+            // registrations. So the free pass is rationed: a handful of empty
+            // answers from one address in a few minutes is a person retrying,
+            // a stream of them is not, and from then on an empty answer is
+            // judged as FAILED. The circuit breaker behind passes() still
+            // overrides that if nothing on the site is passing at all.
+            //
+            // Checkout keeps the unconditional pass. UNANSWERED is scored there
+            // rather than refused, and the cost of a wrong FAILED is a lost sale
+            // instead of a retried login.
+            if( $surface !== 'checkout' && self::unanswered_too_often() ) {
+                return $seen[ $surface ] = self::FAILED;
+            }
+
             return $seen[ $surface ] = self::UNANSWERED;
 
         }
@@ -725,6 +891,18 @@ class captcha {
      * @since   2.1.1
      */
     const MISSING_BEFORE_ALERT = 5;
+
+    /**
+     * How long a surface is remembered as one that really does render.
+     *
+     * Long enough that a quiet form -- lost-password on a small store may go
+     * days without a legitimate visit -- does not forget between callers, short
+     * enough that switching the surface off and removing the widget stops
+     * mattering within a week.
+     *
+     * @since   3.0.0
+     */
+    const RENDERS_TTL = WEEK_IN_SECONDS;
 
     /**
      * The counter's lifetime. Long enough to span a quiet night on a small
@@ -841,6 +1019,10 @@ class captcha {
         // single bad token every few hours hold the breaker open indefinitely.
         if( count( $seen ) === 1 ) {
             set_transient( $key, $seen, self::BREAKER_WINDOW );
+            // When the window closes, kept beside the list: the timeout row
+            // WordPress writes for a transient does not exist under a
+            // persistent object cache, so it cannot be read back from there.
+            set_transient( $key . '_until', time() + self::BREAKER_WINDOW, self::BREAKER_WINDOW );
         } else {
             self::extend_without_refresh( $key, $seen );
         }
@@ -885,8 +1067,15 @@ class captcha {
      */
     private static function extend_without_refresh( $key, $value ) {
 
-        $timeout = (int) get_option( '_transient_timeout_' . $key, 0 );
-        $left    = $timeout > 0 ? $timeout - time() : self::BREAKER_WINDOW;
+        // The window's end, recorded when it opened. Reading the transient's
+        // own timeout option used to work only where transients live in the
+        // options table; on a persistent object cache that row is never
+        // written, the read returned 0, and every failure re-armed the full
+        // window -- exactly the drift this exists to prevent.
+        $until = (int) get_transient( $key . '_until' );
+        if( $until <= 0 ) $until = (int) get_option( '_transient_timeout_' . $key, 0 );
+
+        $left = $until > 0 ? $until - time() : self::BREAKER_WINDOW;
 
         set_transient( $key, $value, max( 60, $left ) );
 
@@ -1007,7 +1196,7 @@ class captcha {
      * What the bot challenge has actually been doing.
      *
      * The plugin calls this its single most effective control and then showed a
-     * merchant nothing about it: no status, no last verdict, no Test Connection,
+     * merchant nothing about it: no status, no last verdict, no Test connection,
      * while the AI and address integrations each have one. Everything needed was
      * already being recorded and nothing read it back.
      *
@@ -1028,13 +1217,15 @@ class captcha {
 
         $table = $wpdb->prefix . 'mshield_log';
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $rows = $wpdb->get_results( $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
             "SELECT reason, COUNT(*) AS n FROM {$table}
              WHERE created_at > DATE_SUB( NOW(), INTERVAL %d DAY )
                AND reason LIKE %s
              GROUP BY reason",
             (int) $days,
-            '%' . $wpdb->esc_like( 'Bot challenge' ) . '%'
+            '%' . $wpdb->esc_like( 'Bot Challenge' ) . '%'
         ), ARRAY_A );
 
         $refused = 0;
@@ -1115,13 +1306,21 @@ class captcha {
         if( get_transient( 'mshield_captcha_alerted' ) ) return;
         set_transient( 'mshield_captcha_alerted', 1, DAY_IN_SECONDS );
 
-        $admin_email = get_option( 'admin_email' );
-        $subject     = '[MightyShield] Bot challenge is misconfigured';
+        // To the merchant's chosen addresses, and only when they asked to be
+        // told; see settings::alerts_enabled().
+        if( ! settings::alerts_enabled() ) return;
+
+        $admin_email = settings::notification_recipients();
+        $subject     = __( '[MightyShield] Bot challenge is misconfigured', 'mighty-shield' );
         $message     = sprintf(
-            "MightyShield's bot challenge (%s) is rejecting all tokens because of a configuration error: %s.\n\n" .
-            "To avoid blocking legitimate checkouts, the challenge is temporarily failing open (allowing orders) until this is fixed.\n\n" .
-            "Check the Site Key and Secret Key under MightyShield > Blocking > Bot Challenge.\n\n" .
-            "This alert is sent at most once per day.",
+            /* translators: 1: the challenge provider (turnstile or recaptcha_v3), 2: the error code it returned. */
+            __(
+                "MightyShield's bot challenge (%1\$s) is rejecting all tokens because of a configuration error: %2\$s.\n\n" .
+                "To avoid blocking legitimate checkouts, the challenge is temporarily failing open (allowing orders) until this is fixed.\n\n" .
+                "Check the Site Key and Secret Key under MightyShield > Shielding > Bot challenge.\n\n" .
+                "This alert is sent at most once per day.",
+                'mighty-shield'
+            ),
             settings::get( 'mshield_captcha_provider' ),
             $error
         );
@@ -1139,6 +1338,13 @@ class captcha {
 
         if( ! current_user_can( 'manage_woocommerce' ) ) return;
 
+        // A challenge switched OFF cannot be misconfigured, so nothing is
+        // said. A provider chosen with a key cleared is a different case and
+        // still gets the warning: clearing the bad key is how a merchant
+        // reacts to it, and the warning vanishing then reads as fixed.
+        $provider = settings::get( 'mshield_captcha_provider' );
+        if( $provider !== 'turnstile' && $provider !== 'recaptcha_v3' ) return;
+
         $degraded = get_option( 'mshield_captcha_degraded' );
         if( empty( $degraded ) || empty( $degraded['time'] ) ) return;
         if( ( time() - (int) $degraded['time'] ) > DAY_IN_SECONDS ) return;
@@ -1150,6 +1356,64 @@ class captcha {
                 /* translators: %s: provider error code. */
                 __( 'The bot challenge is misconfigured (%s) and is failing open so it does not block checkout. Verify your Site Key and Secret Key on the Shielding tab.', 'mighty-shield' ),
                 $degraded['message']
+            ) )
+        );
+
+    }
+
+    /**
+     * Warn when a second captcha plugin is running the same surfaces.
+     *
+     * Two Turnstile implementations on one wp-login form race each other: both
+     * render a widget, the provider issues one token per widget, and whichever
+     * script wins puts its token in its own field. The loser sees an empty
+     * field on a form it believes it rendered, which is indistinguishable from
+     * a shopper with an ad blocker -- so one of the two intermittently fails
+     * open while the other refuses, and neither is wrong about what it saw.
+     *
+     * This is the most likely explanation for a surface that mostly enforces
+     * and occasionally does not, so it is worth naming rather than leaving a
+     * merchant to read it as a MightyShield fault.
+     *
+     * Detected by function, not by plugin slug, so a renamed or forked copy is
+     * still caught.
+     *
+     * @since   3.0.0
+     */
+    public function render_conflict_notice() {
+
+        if( ! current_user_can( 'manage_woocommerce' ) ) return;
+
+        if( $this->provider !== 'turnstile' && $this->provider !== 'recaptcha_v3' ) return;
+
+        $others = [];
+
+        // Both verified present on a live install; the plugin defines no
+        // constant to test, so these are the stable handles it does expose.
+        if( function_exists( 'cfturnstile_field_show' ) || function_exists( 'cfturnstile_check' ) ) {
+            $others[] = 'Simple Cloudflare Turnstile';
+        }
+
+        if( class_exists( 'Advanced_NoCaptcha_ReCaptcha' ) ) {
+            $others[] = 'Advanced noCaptcha & invisible Captcha';
+        }
+
+        // Deliberately short. A name that does not match costs a missed
+        // warning; a name that matches something else accuses a merchant of a
+        // conflict they do not have, and they would be right to switch this
+        // plugin off over it. Only symbols confirmed to belong to the plugin
+        // named go in here.
+        $others = apply_filters( 'mshield_conflicting_captcha_plugins', $others );
+
+        if( empty( $others ) ) return;
+
+        printf(
+            '<div class="notice notice-warning"><p><strong>%s</strong> %s</p></div>',
+            esc_html__( 'MightyShield:', 'mighty-shield' ),
+            esc_html( sprintf(
+                /* translators: %s: comma-separated plugin names. */
+                __( '%s is also running a bot challenge. Two challenges on one form compete for the same token and each will intermittently let requests through that the other would refuse. Run one or the other — either switch the bot challenge off on the Shielding tab, or disable the other plugin on the forms MightyShield covers.', 'mighty-shield' ),
+                implode( ', ', $others )
             ) )
         );
 

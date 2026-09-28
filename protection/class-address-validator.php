@@ -9,6 +9,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
@@ -84,8 +86,6 @@ class address_validator {
      * @param   object   $errors WP_Error object, unused — this layer does not refuse.
      */
     public function validate_address( $data, $errors ) {
-
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
         $verdict = self::assess( $data );
 

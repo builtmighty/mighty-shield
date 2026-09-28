@@ -10,6 +10,8 @@
  */
 namespace MightyShield\Firewall;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
@@ -18,6 +20,19 @@ class api_firewall {
 
     /**
      * Protected route patterns.
+     *
+     * The Store API only, and deliberately so. The legacy WooCommerce REST API
+     * (/wc/v1../wc/v3, and /wc-api/ which is not a REST route at all and never
+     * reaches this filter) is NOT covered, which is worth stating plainly
+     * rather than leaving to be discovered: those routes require a signed key
+     * pair, so they are not the anonymous surface this exists to shut, and they
+     * are how ShipStation, an ERP or a mobile app talks to the store. Blocking
+     * them by IP would break the integrations a merchant cannot see from here
+     * while adding nothing against the card testers this was built for, who use
+     * the unauthenticated checkout.
+     *
+     * A store that does want them covered can say so through the filter below;
+     * it is not something to decide on a merchant's behalf.
      *
      * @since   1.0.0
      */
@@ -124,8 +139,22 @@ class api_firewall {
      */
     private function is_protected_route( $route ) {
 
-        foreach( self::PROTECTED_PATTERNS as $pattern ) {
-            if( preg_match( $pattern, $route ) ) {
+        /**
+         * Which REST routes the firewall covers.
+         *
+         * For stores that do want the legacy REST API behind the same IP rules
+         * — see the note on PROTECTED_PATTERNS for why it is not there by
+         * default, and check what talks to your store before adding it.
+         *
+         * @since 3.0.0
+         *
+         * @param string[] $patterns Array of preg patterns.
+         * @param string   $route    The route being dispatched.
+         */
+        $patterns = apply_filters( 'mshield_protected_rest_routes', self::PROTECTED_PATTERNS, $route );
+
+        foreach( (array) $patterns as $pattern ) {
+            if( is_string( $pattern ) && $pattern !== '' && preg_match( $pattern, $route ) ) {
                 return true;
             }
         }

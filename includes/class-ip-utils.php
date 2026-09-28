@@ -8,6 +8,9 @@
  * @since   1.0.0
  */
 namespace MightyShield\Includes;
+
+defined( 'ABSPATH' ) || exit;
+
 class ip_utils {
 
     /**
@@ -68,6 +71,65 @@ class ip_utils {
         'fc00::/7',           // IPv6 unique local
         'fe80::/10',          // IPv6 link-local
     ];
+
+    /**
+     * The address a stored order was really placed from.
+     *
+     * The recorder writes what get_client_ip() resolved onto the order as
+     * _mshield_ip. WooCommerce's own customer IP is whatever X-Real-IP or
+     * X-Forwarded-For said, which is whatever the shopper said, and every
+     * reader that used it -- the network signals, the order panel's Block,
+     * the log rows -- could be pointed at an address of the attacker's
+     * choosing with one header. The fallback is for orders rated before the
+     * meta existed, where the header is all there is.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @return  string
+     */
+    public static function order_ip( $order ) {
+
+        if( ! is_object( $order ) || ! method_exists( $order, 'get_meta' ) ) return '';
+
+        $ip = (string) $order->get_meta( '_mshield_ip' );
+
+        if( $ip === '' && method_exists( $order, 'get_customer_ip_address' ) ) {
+            $ip = (string) $order->get_customer_ip_address();
+        }
+
+        return $ip;
+
+    }
+
+    /**
+     * The key a per-address counter or block is kept under.
+     *
+     * The address itself for IPv4. For IPv6 the /64, because a subscriber is
+     * handed at least that much and can put a fresh address on every
+     * request without a proxy: keyed on the exact address, the decline
+     * counter, the temporary block and the checkout rate limit were all
+     * defeated from one home connection. The identity graph already treats
+     * IPv6 this way (a /48, coarser still); this is the same idea for the
+     * short-lived counters. The log keeps the exact address.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $ip
+     * @return  string
+     */
+    public static function rate_key( $ip ) {
+
+        $ip = (string) $ip;
+
+        if( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) return $ip;
+
+        $bin = @inet_pton( $ip );
+        if( $bin === false || strlen( $bin ) !== 16 ) return $ip;
+
+        return inet_ntop( substr( $bin, 0, 8 ) . str_repeat( "\0", 8 ) ) . '/64';
+
+    }
 
     /**
      * Whether an address is loopback or private.

@@ -22,6 +22,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class risk_context {
 
     /**
@@ -45,6 +47,35 @@ class risk_context {
     private static $ai_trust = null;
 
     /**
+     * A signal that costs at least this much is an anomaly rather than a
+     * nuisance -- and past one, a good history hands back at most
+     * CREDIT_CAP_UNDER_ANOMALY. See trust().
+     *
+     * @since   3.0.0
+     */
+    const ANOMALY_WEIGHT = 15.0;
+    const CREDIT_CAP_UNDER_ANOMALY = 15.0;
+
+    /**
+     * Signals that never count as an anomaly for the credit cap.
+     *
+     * These are the identity marks themselves and the two "new here" notes.
+     * They describe who the customer is, not what this order did, and they
+     * co-occur with a good history legitimately -- a regular whose /24 once
+     * carried somebody else's chargeback is still a regular.
+     *
+     * The test used to exempt the whole "history" Scoring-tab group, which
+     * also held the velocity and decline signals: rate_limited, velocity_*,
+     * failed_payments, email_root_velocity. Those are precisely the
+     * card-testing signals, so a tester who typed a regular's email got the
+     * full 40 points of that regular's history set against ten declined
+     * cards -- the account-takeover shape the cap exists to catch.
+     *
+     * @since   3.0.0
+     */
+    const CAP_EXEMPT = [ 'first_order', 'account_new', 'entity_trusted', 'entity_linked_bad', 'entity_denied', 'entity_chargeback' ];
+
+    /**
      * Record the AI review's rating.
      *
      * @since   1.9.2
@@ -61,7 +92,19 @@ class risk_context {
 
         self::$ai_reasons = array_values( array_filter( array_map( 'strval', (array) $reasons ) ) );
 
+        // What the model was shown. Anything that trips after this -- the
+        // identity history, the network signals -- is evidence it never saw,
+        // and trust() charges it on top of whatever the model said.
+        self::$ai_saw = array_keys( self::$signals );
+
     }
+
+    /**
+     * Signal keys present when the AI answered.
+     *
+     * @since   3.0.0
+     */
+    private static $ai_saw = [];
 
     /**
      * Reasons the AI gave, for the order note.
@@ -173,20 +216,42 @@ class risk_context {
     public static function trust() {
 
         $penalty = 0.0;
+        $credit  = 0.0;     // trust handed back by history
         $blamed  = false;   // anything counted against the order
         $vouched = false;   // positive evidence of good history
+        $anomaly = false;   // something real, not a nuisance signal
 
         foreach( self::$signals as $signal ) {
 
             $contribution = (float) $signal['weight'] * (float) $signal['confidence'];
-            $penalty     += $contribution;
 
-            if( $contribution > 0 ) $blamed  = true;
-            if( $contribution < 0 ) $vouched = true;
+            if( $contribution > 0 ) {
+
+                $penalty += $contribution;
+                $blamed   = true;
+
+                if( $contribution >= self::ANOMALY_WEIGHT && ! \in_array( $signal['key'], self::CAP_EXEMPT, true ) ) $anomaly = true;
+
+            } elseif( $contribution < 0 ) {
+
+                $credit -= $contribution;
+                $vouched = true;
+
+            }
 
         }
 
-        $trust = risk_levels::BASELINE - $penalty;
+        // A good history offsets the small frictions every order carries. It
+        // does not cancel evidence. A taken-over account is exactly a long
+        // clean history plus a sudden anomaly -- a new country, a data-centre
+        // connection, a parcel going somewhere the card has never been -- and
+        // an offset large enough to swallow that is an offset that rewards the
+        // takeover. So once anything of real weight has fired -- other than
+        // the identity marks themselves, see CAP_EXEMPT -- the credit is
+        // capped at what a nuisance costs.
+        if( $anomaly ) $credit = min( $credit, self::CREDIT_CAP_UNDER_ANOMALY );
+
+        $trust = risk_levels::BASELINE - $penalty + $credit;
 
         // Stage two. The model was given this number and every signal behind
         // it, so its answer supersedes rather than adds to them.
@@ -200,9 +265,33 @@ class risk_context {
         // verdict cannot talk an unvouched order into Trusted.
         if( self::$ai_trust !== null ) {
 
-            $trust = settings::get( 'mshield_ai_direction' ) === 'both'
-                ? self::$ai_trust
-                : min( $trust, self::$ai_trust );
+            if( settings::get( 'mshield_ai_direction' ) === 'both' ) {
+
+                // The model's reading stands in for the arithmetic it was
+                // shown -- not for evidence it was not. Signals that tripped
+                // after it answered are charged on top, so a device linked to a
+                // chargeback is not rescued by a model that never saw the
+                // chargeback.
+                $late = 0.0;
+                foreach( self::$signals as $key => $signal ) {
+                    if( in_array( $key, self::$ai_saw, true ) ) continue;
+                    $late += (float) $signal['weight'] * (float) $signal['confidence'];
+                }
+
+                $ai = self::$ai_trust - $late;
+
+                // And it may raise the order by one level, no further. A rescue
+                // from Rejected lands in High -- a hold and a human -- not in
+                // Low. The prompt is built from what the shopper typed, and a
+                // model that can be talked all the way up by a sentence in the
+                // City field is a model that decides nothing.
+                $trust = min( $ai, risk_levels::one_level_up_ceiling( $trust ) );
+
+            } else {
+
+                $trust = min( $trust, self::$ai_trust );
+
+            }
 
         }
 
@@ -219,7 +308,8 @@ class risk_context {
         //
         // So the top risk level is reachable only with positive evidence AND nothing
         // held against the order. Otherwise a good history still helps — it
-        // offsets penalties — but it cannot buy the top risk level outright.
+        // offsets penalties — but it cannot buy the top risk level outright,
+        // and past a real anomaly it cannot buy much of anything (the cap above).
         if( ( ! $vouched || $blamed ) && $trust > risk_levels::LOW_CEILING ) {
             $trust = risk_levels::LOW_CEILING;
         }
@@ -247,6 +337,14 @@ class risk_context {
 
             if( $signal['floor'] === 'none' ) continue;
             if( ! risk_levels::exists( $signal['floor'] ) ) continue;
+
+            // A floor is the detector's word taken as final, so it takes only
+            // a detector that is sure. Every shipped floor is emitted at full
+            // confidence; this is for the merchant who puts a floor on a check
+            // that scales its own certainty, such as "address looks made up",
+            // which used to refuse an order the detector was one-seventh sure
+            // about. Below certainty the signal still costs its weight.
+            if( (float) $signal['confidence'] < 1.0 ) continue;
 
             if( $level === null || risk_levels::rank( $signal['floor'] ) > risk_levels::rank( $level ) ) {
                 $level = $signal['floor'];
@@ -366,9 +464,10 @@ class risk_context {
      */
     public static function reset() {
 
-        self::$signals   = [];
-        self::$ai_trust  = null;
+        self::$signals    = [];
+        self::$ai_trust   = null;
         self::$ai_reasons = [];
+        self::$ai_saw     = [];
 
     }
 

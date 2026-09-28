@@ -12,12 +12,18 @@ use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
 
 // Filters.
+//
+// Read to decide what to display, never to act on, and the screen is
+// already behind manage_woocommerce. A nonce on a filter link would mean
+// a bookmarked or shared log view stopped working.
+// phpcs:disable WordPress.Security.NonceVerification.Recommended
 $filter_action = isset( $_GET['filter_action'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_action'] ) ) : '';
 $filter_ip     = isset( $_GET['filter_ip'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_ip'] ) ) : '';
 $search        = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 $range         = isset( $_GET['range'] ) ? (int) $_GET['range'] : 0;
 $paged         = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1;
 $per_page      = 50;
+// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 $args = [
     'action'   => $filter_action,
@@ -55,7 +61,17 @@ $action_labels = [
     'degraded'     => __( 'Degraded', 'mighty-shield' ),
 ];
 
-$export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&mshield_export_logs=1' ), 'mshield_export_logs' );
+// The filters the screen is showing travel with the export; the handler
+// reads the same names. Without them a filtered view exported every row.
+$export_url = wp_nonce_url( add_query_arg( array_filter( [
+    'page'               => 'mighty-shield',
+    'tab'                => 'logs',
+    'mshield_export_logs' => 1,
+    'filter_action'      => $filter_action,
+    'filter_ip'          => $filter_ip,
+    's'                  => $search,
+    'range'              => $range,
+] ), admin_url( 'admin.php' ) ), 'mshield_export_logs' );
 ?>
 
 <div class="mshield-stack">
@@ -64,7 +80,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
     <div class="mshield-banner">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" style="margin-top:1px;flex:none"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
         <div>
-            <?php printf( esc_html__( 'Log entries are retained for %d days.', 'mighty-shield' ), $retention ); ?>
+            <?php printf( esc_html__( 'Log entries are retained for %d days.', 'mighty-shield' ), (int) $retention ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- format is escaped and %d forces an integer ?>
             <a href="#mshield-log-settings" style="font-weight:600"><?php esc_html_e( 'Change retention', 'mighty-shield' ); ?></a>
             <?php esc_html_e( 'or', 'mighty-shield' ); ?>
             <a href="<?php echo esc_url( $export_url ); ?>" style="font-weight:600"><?php esc_html_e( 'export as CSV', 'mighty-shield' ); ?></a>.
@@ -104,6 +120,9 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
             <option value="degraded" <?php selected( $filter_action, 'degraded' ); ?>><?php esc_html_e( 'Needs attention', 'mighty-shield' ); ?></option>
         </select>
 
+        <?php if( $filter_ip ) : ?>
+            <span class="mshield-chip"><?php echo esc_html( $filter_ip ); ?><a href="<?php echo esc_url( remove_query_arg( [ 'filter_ip', 'paged' ] ) ); ?>" aria-label="<?php esc_attr_e( 'Stop filtering by this address', 'mighty-shield' ); ?>">&times;</a></span>
+        <?php endif; ?>
         <button type="submit" class="mshield-btn"><?php esc_html_e( 'Filter', 'mighty-shield' ); ?></button>
         <?php if( $filter_action || $filter_ip || $search || $range ) : ?>
             <a href="<?php echo esc_url( admin_url( 'admin.php?page=mighty-shield&tab=logs' ) ); ?>" class="mshield-btn"><?php esc_html_e( 'Clear', 'mighty-shield' ); ?></a>
@@ -115,7 +134,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
     </form>
 
     <?php if( empty( $logs ) ) : ?>
-        <div class="mshield-card"><p style="margin:0;color:var(--fg-2)"><?php esc_html_e( 'No log entries found.', 'mighty-shield' ); ?></p></div>
+        <div class="mshield-card"><p class="mshield-empty"><?php esc_html_e( 'No log entries found.', 'mighty-shield' ); ?></p></div>
     <?php else : ?>
 
     <!-- Bulk form + table -->
@@ -171,7 +190,10 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
                 }
 
                 $event = [
-                    'time'        => date_i18n( 'M j, H:i:s', strtotime( $log->created_at ) ),
+                    // wp_date(), not date_i18n(): the row is stored in UTC, and
+                    // date_i18n() given a timestamp prints it as-is, so every
+                    // store off UTC read its own attacks at the wrong hour.
+                    'time'        => wp_date( 'M j, H:i:s', strtotime( $log->created_at . ' UTC' ) ),
                     'ip'          => $log->ip,
                     'action'      => $log->action,
                     'actionLabel' => isset( $action_labels[ $log->action ] ) ? $action_labels[ $log->action ] : $log->action,
@@ -187,7 +209,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
             ?>
             <div class="mshield-logrow is-clickable" data-event="<?php echo esc_attr( wp_json_encode( $event ) ); ?>">
                 <input type="checkbox" class="mshield-logcheck" name="log_ids[]" value="<?php echo esc_attr( (int) $log->id ); ?>" />
-                <span class="mshield-mono" style="font-size:12.5px;color:var(--fg-2)"><?php echo esc_html( date_i18n( 'H:i:s', strtotime( $log->created_at ) ) ); ?></span>
+                <span class="mshield-mono" style="font-size:12.5px;color:var(--fg-2)"><?php echo esc_html( wp_date( 'H:i:s', strtotime( $log->created_at . ' UTC' ) ) ); ?></span>
                 <span class="mshield-mono" style="font-size:12.5px"><?php echo esc_html( $log->ip ); ?></span>
                 <span class="mshield-mono" style="font-size:12px;color:var(--fg-2)"><?php echo esc_html( $log->endpoint ); ?></span>
                 <span><?php echo esc_html( $log->reason ); ?></span>
@@ -208,7 +230,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
                 if( $paged > 1 ) : ?>
                     <a class="mshield-btn is-small" href="<?php echo esc_url( $base_url . '&paged=' . ( $paged - 1 ) ); ?>"><?php esc_html_e( 'Previous', 'mighty-shield' ); ?></a>
                 <?php endif; ?>
-                <span class="mshield-mono"><?php printf( esc_html__( '%1$d / %2$d', 'mighty-shield' ), $paged, $total_pages ); ?></span>
+                <span class="mshield-mono"><?php printf( esc_html__( '%1$d / %2$d', 'mighty-shield' ), (int) $paged, (int) $total_pages ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- format is escaped and %d forces an integer ?></span>
                 <?php if( $paged < $total_pages ) : ?>
                     <a class="mshield-btn is-small" href="<?php echo esc_url( $base_url . '&paged=' . ( $paged + 1 ) ); ?>"><?php esc_html_e( 'Next', 'mighty-shield' ); ?></a>
                 <?php endif; ?>
@@ -218,28 +240,197 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
 
     <?php endif; ?>
 
+    <!-- Rate past orders -->
+    <?php
+    $mshield_bf     = \MightyShield\Includes\backfill::state();
+    $mshield_bf_run = 'running' === $mshield_bf['status'];
+    ?>
+    <div class="mshield-card" id="mshield-backfill"<?php echo $mshield_bf_run ? ' data-running="1"' : ''; ?>>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Rate Past Orders', 'mighty-shield' ); ?></h2>
+
+        <?php if( $mshield_bf_run ) : ?>
+
+            <p class="description">
+                <?php
+                printf(
+                    /* translators: 1: orders rated so far, 2: total orders. */
+                    esc_html__( 'Rating your past orders: %1$s of %2$s done. This continues in the background, so you can leave this page.', 'mighty-shield' ),
+                    '<span data-bf="done">' . esc_html( number_format_i18n( (int) $mshield_bf['done'] ) ) . '</span>',
+                    '<span data-bf="total">' . esc_html( number_format_i18n( (int) $mshield_bf['total'] ) ) . '</span>'
+                );
+                ?>
+            </p>
+            <form method="post">
+                <?php wp_nonce_field( 'mshield_backfill_action' ); ?>
+                <button type="submit" name="mshield_backfill_cancel" value="1" class="mshield-btn"><?php esc_html_e( 'Stop', 'mighty-shield' ); ?></button>
+            </form>
+
+        <?php else : ?>
+
+            <p class="description">
+                <?php esc_html_e( 'MightyShield only knows the customers it has seen since you installed it, so on a new install nobody has a history and nobody earns trust. Rating your past orders fills that in, and the next real order is judged against what your store already knows instead of against nothing.', 'mighty-shield' ); ?>
+            </p>
+            <p class="description">
+                <?php esc_html_e( 'Nothing is done to any order — no holds, no cancellations, no emails. Ratings from past orders are partial, because the bot, timing and device checks measure the checkout as it happens and that moment has gone.', 'mighty-shield' ); ?>
+            </p>
+
+            <?php if( 'complete' === $mshield_bf['status'] || 'cancelled' === $mshield_bf['status'] ) : ?>
+                <p class="description">
+                    <strong>
+                        <?php
+                        printf(
+                            /* translators: 1: orders rated, 2: orders skipped. */
+                            esc_html__( 'Last run: %1$s rated, %2$s skipped.', 'mighty-shield' ),
+                            esc_html( number_format_i18n( (int) $mshield_bf['done'] ) ),
+                            esc_html( number_format_i18n( (int) $mshield_bf['failed'] ) )
+                        );
+                        ?>
+                    </strong>
+                </p>
+            <?php endif; ?>
+
+            <form method="post">
+                <?php wp_nonce_field( 'mshield_backfill_action' ); ?>
+                <label>
+                    <?php esc_html_e( 'How far back', 'mighty-shield' ); ?>
+                    <select name="mshield_backfill_days">
+                        <option value="90"><?php esc_html_e( '90 days', 'mighty-shield' ); ?></option>
+                        <option value="365" selected><?php esc_html_e( '1 year', 'mighty-shield' ); ?></option>
+                        <option value="1095"><?php esc_html_e( '3 years', 'mighty-shield' ); ?></option>
+                        <option value="0"><?php esc_html_e( 'Everything', 'mighty-shield' ); ?></option>
+                    </select>
+                </label>
+                <button type="submit" name="mshield_backfill_start" value="1" class="mshield-btn"><?php esc_html_e( 'Rate Past Orders', 'mighty-shield' ); ?></button>
+            </form>
+
+        <?php endif; ?>
+    </div>
+
+    <!-- Chargeback import -->
+    <?php $mshield_dis = get_transient( \MightyShield\Includes\dispute_import::preview_key() ); ?>
+    <div class="mshield-card">
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Import Chargebacks', 'mighty-shield' ); ?></h2>
+
+        <?php if( is_array( $mshield_dis ) ) : ?>
+
+            <?php if( (int) $mshield_dis['matched'] === 0 ) : ?>
+
+                <p class="description">
+                    <?php esc_html_e( 'None of the columns in that file matched an order. Dispute reports identify a payment the way your processor knows it, so the file needs to contain either the transaction reference stored on the order or the order number itself.', 'mighty-shield' ); ?>
+                </p>
+
+            <?php else : ?>
+
+                <p class="description">
+                    <strong>
+                        <?php
+                        printf(
+                            /* translators: 1: column name, 2: rows matched, 3: rows sampled. */
+                            esc_html__( 'The column "%1$s" matched %2$s of the first %3$s rows.', 'mighty-shield' ),
+                            esc_html( $mshield_dis['label'] ),
+                            esc_html( number_format_i18n( (int) $mshield_dis['matched'] ) ),
+                            esc_html( number_format_i18n( (int) $mshield_dis['sampled'] ) )
+                        );
+                        ?>
+                    </strong>
+                </p>
+
+                <?php if( ! empty( $mshield_dis['examples'] ) ) : ?>
+                    <table class="mshield-table">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e( 'Value in the file', 'mighty-shield' ); ?></th>
+                                <th style="width:120px;"><?php esc_html_e( 'Order', 'mighty-shield' ); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach( $mshield_dis['examples'] as $mshield_eg ) : ?>
+                                <tr>
+                                    <td><code><?php echo esc_html( $mshield_eg['value'] ); ?></code></td>
+                                    <td>#<?php echo esc_html( (int) $mshield_eg['order'] ); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+
+                <p class="mshield-hint" style="margin-top:10px">
+                    <?php
+                    printf(
+                        /* translators: %s: total rows in the file. */
+                        esc_html__( 'Applying will record a chargeback against every order the whole file matches, %s rows in all. Orders MightyShield already knows were charged back are left alone.', 'mighty-shield' ),
+                        esc_html( number_format_i18n( (int) $mshield_dis['total'] ) )
+                    );
+                    ?>
+                </p>
+
+            <?php endif; ?>
+
+            <form method="post">
+                <?php wp_nonce_field( 'mshield_disputes_action' ); ?>
+                <?php if( (int) $mshield_dis['matched'] > 0 ) : ?>
+                    <button type="submit" name="mshield_disputes_apply" value="1" class="mshield-btn"><?php esc_html_e( 'Record these chargebacks', 'mighty-shield' ); ?></button>
+                <?php endif; ?>
+                <button type="submit" name="mshield_disputes_cancel" value="1" class="mshield-btn"><?php esc_html_e( 'Discard the file', 'mighty-shield' ); ?></button>
+            </form>
+
+        <?php else : ?>
+
+            <p class="description">
+                <?php esc_html_e( 'MightyShield learns from chargebacks automatically on Stripe, which tells it when one happens. Every other processor disputes into a dashboard it cannot see — so on those, the strongest signal there is never reaches the scoring.', 'mighty-shield' ); ?>
+            </p>
+            <p class="description">
+                <?php esc_html_e( 'Export your dispute report as CSV and upload it here. Nothing is recorded until you have seen which column it matched on and said so. The file is read once and deleted.', 'mighty-shield' ); ?>
+            </p>
+
+            <form method="post" enctype="multipart/form-data">
+                <?php wp_nonce_field( 'mshield_disputes_action' ); ?>
+                <input type="file" name="mshield_disputes_file" accept=".csv,text/csv,text/plain" />
+                <button type="submit" name="mshield_disputes_preview" value="1" class="mshield-btn"><?php esc_html_e( 'Look at the file', 'mighty-shield' ); ?></button>
+            </form>
+
+        <?php endif; ?>
+    </div>
+
     <!-- Maintenance -->
     <div class="mshield-card">
-        <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Maintenance', 'mighty-shield' ); ?></div>
-        <p style="margin:0 0 12px;color:var(--fg-2);font-size:13px"><?php esc_html_e( 'Clear all log entries. This action cannot be undone.', 'mighty-shield' ); ?></p>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Maintenance', 'mighty-shield' ); ?></h2>
+        <p class="description"><?php esc_html_e( 'Clear all log entries. This action cannot be undone.', 'mighty-shield' ); ?></p>
         <form method="post">
             <?php wp_nonce_field( 'mshield_clear_logs_action' ); ?>
-            <button type="submit" name="mshield_clear_logs" value="1" class="mshield-btn is-danger" onclick="return confirm('<?php echo esc_js( __( 'Are you sure? This will delete all log entries.', 'mighty-shield' ) ); ?>');"><?php esc_html_e( 'Clear All Logs', 'mighty-shield' ); ?></button>
+            <button type="submit" name="mshield_clear_logs" value="1" class="mshield-btn is-danger" onclick="return confirm('<?php echo esc_js( __( 'Are you sure? This will delete all log entries.', 'mighty-shield' ) ); ?>');"><?php esc_html_e( 'Clear all logs', 'mighty-shield' ); ?></button>
         </form>
     </div>
 
-    <!-- Log Settings -->
+    <!-- Log settings -->
     <?php /* Moved here from the Access tab in 1.9.3, next to the logs it governs.
              This is the only Settings API form on the page, so it carries its own
              group -- registering an option to a group with no field submitting it
              makes options.php write null over it on every save of that group. */ ?>
     <div class="mshield-card" id="mshield-log-settings">
-        <div class="mshield-card-title" style="margin-bottom:6px"><?php esc_html_e( 'Log Settings', 'mighty-shield' ); ?></div>
+        <h2 class="mshield-card-title"><?php esc_html_e( 'Alerts and Logs', 'mighty-shield' ); ?></h2>
         <form method="post" action="options.php">
             <?php settings_fields( 'mshield_logs' ); ?>
             <table class="form-table" role="presentation">
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Log Retention', 'mighty-shield' ); ?></th>
+                    <th scope="row"><?php esc_html_e( 'Send alerts', 'mighty-shield' ); ?></th>
+                    <td>
+                        <label>
+                            <input type="hidden" name="mshield_ai_notify_admin" value="no" />
+                            <input type="checkbox" name="mshield_ai_notify_admin" value="yes" <?php checked( settings::get( 'mshield_ai_notify_admin' ), 'yes' ); ?> />
+                            <?php esc_html_e( 'Email me when MightyShield needs attention.', 'mighty-shield' ); ?>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Send to', 'mighty-shield' ); ?></th>
+                    <td>
+                        <input type="text" name="mshield_ai_notify_emails" value="<?php echo esc_attr( settings::get( 'mshield_ai_notify_emails' ) ); ?>" class="regular-text" />
+                        <p class="description"><?php esc_html_e( 'Comma-separated. Leave blank to use the site admin address.', 'mighty-shield' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Log retention', 'mighty-shield' ); ?></th>
                     <td>
                         <input type="number" name="mshield_log_retention_days" value="<?php echo esc_attr( settings::get( 'mshield_log_retention_days' ) ); ?>" min="1" max="365" class="small-text" />
                         <?php esc_html_e( 'days', 'mighty-shield' ); ?>
@@ -247,7 +438,7 @@ $export_url = wp_nonce_url( admin_url( 'admin.php?page=mighty-shield&tab=logs&ms
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Customer History', 'mighty-shield' ); ?></th>
+                    <th scope="row"><?php esc_html_e( 'Customer history', 'mighty-shield' ); ?></th>
                     <td>
                         <input type="number" name="mshield_entity_retention_days" value="<?php echo esc_attr( settings::get( 'mshield_entity_retention_days' ) ); ?>" min="0" max="3650" class="small-text" />
                         <?php esc_html_e( 'days', 'mighty-shield' ); ?>

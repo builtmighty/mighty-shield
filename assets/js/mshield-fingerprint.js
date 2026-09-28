@@ -47,17 +47,31 @@
         writeToField();
     }
 
-    // Re-collect before form submit (in case checkout updates the DOM).
+    // Re-collect at the moment of placing the order. WooCommerce's own submit
+    // handler returns false, which stops the native submit event before any
+    // document-level listener sees it -- so a plain 'submit' listener here
+    // never ran, and the field held whatever the last order-review refresh
+    // left in it. checkout_place_order is the event WooCommerce fires itself,
+    // synchronously, just before it serialises the form. Delegated from body
+    // because the form can be re-rendered; the handler must return true or
+    // WooCommerce treats it as a veto.
+    if( window.jQuery ) {
+        window.jQuery( document.body ).on( 'checkout_place_order', 'form.checkout, form.woocommerce-checkout', function() {
+            writeToField();
+            return true;
+        } );
+
+        // And after WooCommerce refreshes the order review: one-page and AJAX
+        // checkouts re-render the form, which would otherwise blank the field.
+        window.jQuery( document.body ).on( 'updated_checkout', writeToField );
+    }
+
+    // Belt and braces for a theme that submits the form natively. Capture
+    // phase, so it runs before any handler that might stop propagation.
     document.addEventListener( 'submit', function( e ) {
         if( e.target && e.target.matches && e.target.matches( 'form.checkout, form.woocommerce-checkout' ) ) {
             writeToField();
         }
-    } );
-
-    // Re-collect after WooCommerce refreshes the order review (one-page and
-    // AJAX checkouts re-render the form, which would otherwise blank the field).
-    if( window.jQuery ) {
-        window.jQuery( document.body ).on( 'updated_checkout', writeToField );
-    }
+    }, true );
 
 } )();

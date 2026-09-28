@@ -31,7 +31,7 @@ setup_wizard::form_open( 'welcome' );
         <span class="ms-num">1</span>
         <div>
             <strong><?php esc_html_e( 'Checks look at each order', 'mighty-shield' ); ?></strong>
-            <p><?php esc_html_e( 'Around forty of them. Does the billing address exist. Has this card been declined here before. Did the checkout form get filled in faster than a person can type. Each one that trips is called a signal.', 'mighty-shield' ); ?></p>
+            <p><?php esc_html_e( 'More than fifty of them. Does the billing address exist. Has this card been declined here before. Did the checkout form get filled in faster than a person can type. Each one that trips is called a signal.', 'mighty-shield' ); ?></p>
         </div>
     </div>
 

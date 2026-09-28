@@ -44,8 +44,11 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\db;
 use MightyShield\Includes\entities;
+use MightyShield\Includes\exempt;
 use MightyShield\Includes\settings;
 use MightyShield\Includes\response;
 use MightyShield\Includes\risk_context;
@@ -199,7 +202,9 @@ class card_signals {
             if( is_array( $signals ) ) risk_context::restore( $signals );
         }
 
-        $emitted = self::emit( $order, $data );
+        $before = array_keys( risk_context::signals() );
+
+        self::emit( $order, $data );
 
         // The card has a name now, which it did not at checkout, so this is the
         // first moment its own history can be read. A card carrying a
@@ -212,7 +217,18 @@ class card_signals {
         // Nothing new to say. Re-dispatching the same verdict would re-flag an
         // order a merchant may already have reviewed, which is what the
         // _mshield_card_read guard above exists to prevent on a redelivery.
-        if( $emitted === 0 && ! risk_context::has( 'entity_chargeback' ) ) {
+        //
+        // "New" is any signal that was not in the stored verdict -- a card
+        // check that failed, or anything the card's own history just added.
+        // This used to proceed only on a failed card check or a chargeback,
+        // so a card a reviewer had marked Fraud, or one at BAD_REPUTATION
+        // from a run of refusals, was assessed, found wanting, and thrown
+        // away: entity_denied was computed and nothing was rated, held or
+        // noted. The one identity that survives rotating everything else was
+        // read and ignored.
+        $new = array_diff( array_keys( risk_context::signals() ), $before );
+
+        if( empty( $new ) ) {
             risk_context::reset();
             return;
         }
@@ -222,7 +238,13 @@ class card_signals {
         // What the level says to do, then what is still possible now the charge
         // has happened. Refusing, authorizing and 3-D Secure are all off the
         // table by definition at this point.
-        $action = actions::resolve_post_payment( risk_levels::action( $verdict['risk_level'] ) );
+        $action = actions::resolve_post_payment( risk_levels::action( $verdict['risk_level'] ), $order );
+
+        // dispatch() will decline to act on an allowlisted shopper, so say so
+        // in the row rather than recording an action that never happened. The
+        // rating itself stands either way -- the allowlist suppresses the
+        // response, not the verdict. See class-exempt.
+        $exempt = exempt::suppresses_action_for_order( $order );
 
         // Persist before acting, and keep the row's place in the reporting
         // windows: this is the same order re-rated, not a new one.
@@ -230,7 +252,7 @@ class card_signals {
             'trust'             => $verdict['trust'],
             'risk_level'        => $verdict['risk_level'],
             'risk_level_source' => $verdict['risk_level_source'],
-            'action_taken'      => response::is_enforcing() ? $action : 'observed',
+            'action_taken'      => $exempt ? 'exempt' : ( response::is_enforcing() ? $action : 'observed' ),
             'signals'           => risk_context::to_array()['signals'],
             'rated_by'          => 'card',
             'created_at'        => $stored['created_at'] ?? '',
@@ -243,7 +265,7 @@ class card_signals {
         $order->update_meta_data( '_mshield_risk_level', $verdict['risk_level'] );
         $order->save();
 
-        if( response::is_enforcing() && $action !== actions::NONE ) {
+        if( ! $exempt && response::is_enforcing() && $action !== actions::NONE ) {
 
             response::dispatch( $order, $action, sprintf(
                 'The payment processor answered after checkout. Trust rating %s/100 → %s. Signals: %s.',
@@ -333,7 +355,9 @@ class card_signals {
         }
 
         // A prepaid card on a high-value physical order is rarely legitimate.
-        $high_value = (float) settings::get( 'mshield_ai_high_value_amount' );
+        // The same figure high_value uses -- typed, learned, or the fallback --
+        // so setting the field to 0 to learn does not silently switch this off.
+        $high_value = (float) order_signals::high_value_threshold();
 
         if( $data['funding'] === 'prepaid' && $high_value > 0 && (float) $order->get_total() >= $high_value ) {
             $add( 'card_prepaid_high_value', __( 'a prepaid card was used for a high-value order', 'mighty-shield' ) );
@@ -363,7 +387,7 @@ class card_signals {
             }
 
             db::log_event(
-                $order->get_customer_ip_address(),
+                \MightyShield\Includes\ip_utils::order_ip( $order ),
                 'card_signals',
                 'flagged',
                 sprintf( 'Order #%d: %s', $order->get_id(), implode( '; ', risk_context::reasons() ) ),

@@ -15,6 +15,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
@@ -66,8 +68,6 @@ class checkout_timing {
      */
     public function assess_checkout( $data, $errors ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         $result = $this->evaluate();
         if( $result['reason'] === null ) return;
 
@@ -99,6 +99,7 @@ class checkout_timing {
      */
     private function evaluate() {
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         return self::assess( isset( $_POST['mshield_ct_token'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_ct_token'] ) ) : '' );
 
     }
@@ -162,7 +163,33 @@ class checkout_timing {
     public static function generate_token() {
 
         $ts = time();
-        return $ts . '|' . hash_hmac( 'sha256', (string) $ts, wp_salt( 'auth' ) );
+        return $ts . '|' . hash_hmac( 'sha256', $ts . '|' . self::session_key(), wp_salt( 'auth' ) );
+
+    }
+
+    /**
+     * Something about this visitor's session that a different visitor cannot
+     * present.
+     *
+     * A token that was only a signed timestamp was valid for anyone for two
+     * hours: one page load gave a script a token it could replay on every
+     * submission after waiting out the minimum once. Binding it to the
+     * WooCommerce session means a replay needs the session cookie it was
+     * issued to, and a fresh session needs a fresh page load -- which puts the
+     * wait back on every attempt.
+     *
+     * Empty when there is no session to bind to, so a token issued in that
+     * state still verifies rather than costing a real shopper trust.
+     *
+     * @since   3.0.0
+     *
+     * @return  string
+     */
+    private static function session_key() {
+
+        if( ! function_exists( 'WC' ) || ! WC()->session || ! method_exists( WC()->session, 'get_customer_id' ) ) return '';
+
+        return (string) WC()->session->get_customer_id();
 
     }
 
@@ -176,21 +203,43 @@ class checkout_timing {
      */
     public static function verify_token( $token ) {
 
-        if( $token === '' || strpos( $token, '|' ) === false ) return null;
+        // One answer per token per request. Both checkouts may ask more than
+        // once in the same submission, and the second ask must not be read
+        // as a replay.
+        static $seen = [];
+        if( array_key_exists( $token, $seen ) ) return $seen[ $token ];
+
+        if( $token === '' || strpos( $token, '|' ) === false ) return $seen[ $token ] = null;
 
         list( $ts, $sig ) = explode( '|', $token, 2 );
 
-        if( ! ctype_digit( $ts ) ) return null;
+        if( ! ctype_digit( $ts ) ) return $seen[ $token ] = null;
 
-        $expected = hash_hmac( 'sha256', $ts, wp_salt( 'auth' ) );
-        if( ! hash_equals( $expected, $sig ) ) return null;
+        // Bound to this session: see session_key(). A token from another
+        // session -- or from no session -- does not verify.
+        $expected = hash_hmac( 'sha256', $ts . '|' . self::session_key(), wp_salt( 'auth' ) );
+        if( ! hash_equals( $expected, $sig ) ) return $seen[ $token ] = null;
 
         $elapsed = time() - (int) $ts;
 
         // Guard against clock skew (negative) or stale/replayed tokens (>2h).
-        if( $elapsed < 0 || $elapsed > 7200 ) return null;
+        if( $elapsed < 0 || $elapsed > 7200 ) return $seen[ $token ] = null;
 
-        return $elapsed;
+        // Used once per session. Binding the token to the session stopped a
+        // stranger replaying it; it did not stop the session's own script
+        // paying the minimum wait once and then submitting every 300 ms on
+        // the same token. A token is spent the first time it verifies, and
+        // the next submission needs a page load, and the wait, of its own.
+        if( function_exists( 'WC' ) && WC()->session && method_exists( WC()->session, 'get' ) ) {
+
+            $spent = (int) WC()->session->get( 'mshield_ct_spent' );
+            if( (int) $ts <= $spent ) return $seen[ $token ] = null;
+
+            WC()->session->set( 'mshield_ct_spent', (int) $ts );
+
+        }
+
+        return $seen[ $token ] = $elapsed;
 
     }
 

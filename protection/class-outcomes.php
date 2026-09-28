@@ -25,6 +25,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\db;
 use MightyShield\Includes\entities;
 
@@ -37,6 +39,14 @@ class outcomes {
      *
      * @since   1.9.0
      */
+    /**
+     * How long an order sits in Processing before it counts as settled, in
+     * seconds. Fourteen days: the common card-refund window.
+     *
+     * @since   3.0.0
+     */
+    const SETTLED_AFTER = 1209600;
+
     const SEVERITY = [
         'approved'   => 0,
         'refunded'   => 1,
@@ -124,18 +134,29 @@ class outcomes {
         // approved_count was being read as evidence of good standing on an
         // identity that had just cost the merchant a dispute.
         if( $existing !== '' && isset( self::SEVERITY[ $existing ] ) ) {
-            entities::reverse_outcome( $order->get_id(), $existing );
+            entities::reverse_outcome( $order->get_id(), $existing, self::applied_weight( $order ) );
         }
 
         entities::record_outcome( $order->get_id(), $outcome );
 
         $order->update_meta_data( '_mshield_outcome', $outcome );
+        $order->update_meta_data( '_mshield_outcome_weight', '' );
+
+        // A reviewer's Clean is superseded by a denial or a chargeback that
+        // arrives afterwards. Left in place, the panel kept "Clean" lit as
+        // the current verdict on an order the bank had just taken back, and
+        // the reviewer who came to correct it clicked Fraud -- which reversed
+        // the chargeback. See set_manual().
+        if( (string) $order->get_meta( '_mshield_review' ) === 'clean' && self::SEVERITY[ $outcome ] >= self::SEVERITY['denied'] ) {
+            $order->update_meta_data( '_mshield_review', '' );
+        }
+
         $order->save();
 
         db::set_risk_outcome( $order->get_id(), $outcome );
 
         db::log_event(
-            $order->get_customer_ip_address(),
+            \MightyShield\Includes\ip_utils::order_ip( $order ),
             'outcome',
             'flagged',
             sprintf( 'Order #%d recorded as %s — identity reputation updated', $order->get_id(), $outcome ),
@@ -191,14 +212,39 @@ class outcomes {
         // has nothing to reverse or credit until it is linked.
         self::ensure_linked( $order );
 
-        if( $existing !== '' && isset( self::SEVERITY[ $existing ] ) ) {
-            entities::reverse_outcome( $order->get_id(), $existing );
+        // A chargeback is the bank's finding and outranks a reviewer's Fraud,
+        // which says the same thing less severely. Confirming it must not
+        // reverse it: this used to take the -100 back off every identity and
+        // write -25 in its place, so the next order from that card scored a
+        // hold instead of the Banned floor. The verdict is recorded on the
+        // order; the outcome stands.
+        if( $existing === 'chargeback' && $outcome === 'denied' ) {
+
+            $order->update_meta_data( '_mshield_review', $verdict );
+            $order->add_order_note( 'MightyShield: ' . __( 'Marked as fraud by a reviewer. The chargeback already recorded against this order stands.', 'mighty-shield' ) );
+            $order->save();
+
+            return true;
+
         }
 
-        entities::record_outcome( $order->get_id(), $outcome );
+        if( $existing !== '' && isset( self::SEVERITY[ $existing ] ) ) {
+            entities::reverse_outcome( $order->get_id(), $existing, self::applied_weight( $order ) );
+        }
+
+        // A reviewer's word is worth more than a status change. An automatic
+        // completion is +1 and it takes three of them to make a regular; a
+        // human who looked at the order and cleared it has done the work those
+        // three were standing in for, so their verdict carries GOOD_REPUTATION
+        // outright. The weight is kept on the order so a later reversal takes
+        // back exactly what was given.
+        $weight = $verdict === 'clean' ? entities::GOOD_REPUTATION : null;
+
+        entities::record_outcome( $order->get_id(), $outcome, $weight );
 
         $order->update_meta_data( '_mshield_review', $verdict );
         $order->update_meta_data( '_mshield_outcome', $outcome );
+        $order->update_meta_data( '_mshield_outcome_weight', $weight === null ? '' : (string) $weight );
         $order->add_order_note( 'MightyShield: ' . (
             $verdict === 'fraud'
                 ? __( 'Marked as fraud by a reviewer. Future orders from this customer, address, card or network will be scored accordingly.', 'mighty-shield' )
@@ -209,7 +255,7 @@ class outcomes {
         db::set_risk_outcome( $order->get_id(), $outcome );
 
         db::log_event(
-            $order->get_customer_ip_address(),
+            \MightyShield\Includes\ip_utils::order_ip( $order ),
             'outcome',
             $verdict === 'fraud' ? 'blocked' : 'flagged',
             sprintf( 'Order #%d marked %s by a reviewer — identity reputation updated', $order->get_id(), $verdict ),
@@ -240,6 +286,23 @@ class outcomes {
     }
 
     /**
+     * The weight the outcome currently on an order was recorded with, when a
+     * caller chose one; null means "whatever OUTCOME_WEIGHTS says".
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @return  float|null
+     */
+    private static function applied_weight( $order ) {
+
+        $stored = (string) $order->get_meta( '_mshield_outcome_weight' );
+
+        return $stored === '' || ! is_numeric( $stored ) ? null : (float) $stored;
+
+    }
+
+    /**
      * Make sure the order's identities exist and are linked to it.
      *
      * @since   1.9.0
@@ -250,6 +313,7 @@ class outcomes {
 
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $linked = (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT COUNT(*) FROM {$wpdb->prefix}mshield_entity_links WHERE order_id = %d",
             $order->get_id()
@@ -260,7 +324,41 @@ class outcomes {
         $identities = entities::for_order( $order );
         if( empty( $identities ) ) return;
 
-        entities::record( $identities, $order->get_id() );
+        // As of when the order was placed, not when its outcome arrived.
+        $placed = $order->get_date_created();
+        $seen   = $placed ? gmdate( 'Y-m-d H:i:s', $placed->getTimestamp() ) : null;
+
+        entities::record( $identities, $order->get_id(), $seen );
+
+        if( entities::order_is_paid( $order ) ) entities::count_paid( $order );
+
+    }
+
+    /**
+     * Payment confirmed: count the order against its identities.
+     *
+     * Hooked to payment_complete and to the Processing and Completed
+     * transitions, because a store taking payment on delivery or by transfer
+     * never fires the first. count_paid() marks the order, so whichever
+     * arrives first counts and the rest add nothing.
+     *
+     * @since   3.0.0
+     *
+     * @param   int     $order_id
+     */
+    public static function on_paid( $order_id ) {
+
+        $order = wc_get_order( $order_id );
+        if( ! $order ) return;
+
+        if( (string) $order->get_meta( '_mshield_paid_counted' ) === 'yes' ) return;
+
+        // Processing means money for a card, not for cash on delivery.
+        if( ! entities::order_is_paid( $order ) ) return;
+
+        self::ensure_linked( $order );
+
+        entities::count_paid( $order );
 
     }
 
@@ -278,12 +376,15 @@ class outcomes {
     }
 
     /**
-     * A completed order is the only positive signal available, and it is what
-     * lets a genuine repeat customer earn their way into the trusted risk level.
+     * A completed order is a positive signal, and it is what lets a genuine
+     * repeat customer earn their way into the trusted risk level.
      *
-     * Deliberately recorded even though a chargeback can still arrive months
-     * later: the severity ordering means that later chargeback overwrites this,
-     * and its far heavier penalty swamps the small credit given here.
+     * Recorded even though a chargeback can still arrive months later: the
+     * severity ordering means that later chargeback overwrites this, and its
+     * far heavier penalty swamps the small credit given here. What the credit
+     * cannot do is mint trust quickly -- entity_trusted also needs the identity
+     * to have been known for entities::TRUST_MIN_AGE, so three auto-completed
+     * downloads on a stolen card in five minutes earn nothing by the fourth.
      *
      * @since   1.9.0
      *
@@ -292,6 +393,55 @@ class outcomes {
     public function on_completed( $order_id ) {
 
         self::record( $order_id, 'approved' );
+
+    }
+
+    /**
+     * Credit orders that settled without anyone clicking Complete.
+     *
+     * Plenty of stores ship from Processing and never move an order on, so
+     * the only automatic positive never fired for them and none of their
+     * regulars could earn trust. A paid order that has sat in Processing for
+     * the length of a refund window with no outcome recorded against it has
+     * settled as surely as a completed one. Daily, a batch at a time; an
+     * order stops matching the moment it has an outcome, so this converges.
+     *
+     * @since   3.0.0
+     */
+    public static function credit_settled_orders() {
+
+        if( ! function_exists( 'wc_get_orders' ) ) return;
+
+        // Orders with an outcome are excluded in the query, not skipped in
+        // PHP. Skipping left them in the batch: on posts storage a meta-only
+        // save never moves date_modified, and on any storage every order
+        // approved in review and shipped from Processing stayed at the head
+        // of the list -- until two hundred of them filled the batch and the
+        // pass credited nothing, ever again.
+        $orders = wc_get_orders( [
+            'limit'         => 200,
+            'status'        => [ 'wc-processing' ],
+            'date_modified' => '<' . ( time() - self::SETTLED_AFTER ),
+            // 'modified', not 'date_modified': both stores accept 'modified',
+            // but the posts store hands 'date_modified' to WP_Query, which
+            // drops it and silently sorts by creation date instead.
+            'orderby'       => 'modified',
+            'order'         => 'ASC',
+            'meta_query'    => [ [ 'key' => '_mshield_outcome', 'compare' => 'NOT EXISTS' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- a daily batch of 200, not a request
+        ] );
+
+        foreach( (array) $orders as $order ) {
+
+            if( ! is_a( $order, 'WC_Order' ) ) continue;
+            if( (string) $order->get_meta( '_mshield_outcome' ) !== '' ) continue;
+
+            // Processing is not settled for cash on delivery or a bank
+            // transfer nobody has confirmed. See entities::order_is_paid().
+            if( ! entities::order_is_paid( $order ) ) continue;
+
+            self::record( $order, 'approved' );
+
+        }
 
     }
 
@@ -367,8 +517,10 @@ class outcomes {
      */
     public function bulk_action_notice() {
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
         if( ! isset( $_GET['mshield_reported'] ) ) return;
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
         $count = (int) $_GET['mshield_reported'];
 
         printf(

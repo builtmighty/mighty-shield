@@ -18,6 +18,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class ai_capture {
 
     /**
@@ -181,7 +183,13 @@ class ai_capture {
                 }, 10, 2 );
 
             case 'stripe':
-                return self::hook( 'wc_stripe_generate_create_intent_request', function( $request, $intent_order = null ) {
+                // Stripe 11 runs this same filter for SetupIntents (a card
+                // saved for a free trial or a zero-total order), with a fourth
+                // argument saying so. A SetupIntent has nothing to capture and
+                // Stripe rejects capture_method on one, which failed exactly
+                // the checkout the reviewer had decided to hold.
+                return self::hook( 'wc_stripe_generate_create_intent_request', function( $request, $intent_order = null, $prepared_source = null, $is_setup_intent = false ) {
+                    if( $is_setup_intent ) return $request;
                     if( ! self::is_target( $intent_order ) || ! is_array( $request ) ) return $request;
                     // Two shapes: normally top-level, but the confirmation-token
                     // flow (and Amazon Pay) nests it under payment_method_options.
@@ -195,7 +203,7 @@ class ai_capture {
                         $request['capture_method'] = 'manual';
                     }
                     return $request;
-                }, 10, 2 );
+                }, 10, 4 );
 
             case 'woocommerce_payments':
                 return self::hook( 'wcpay_create_and_confirm_intent_request', function( $request, $payment_information = null ) {

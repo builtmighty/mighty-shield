@@ -23,15 +23,19 @@
  */
 namespace MightyShield\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ai_capture;
 use MightyShield\Includes\ai_client;
 use MightyShield\Includes\db;
+use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\rescore;
 use MightyShield\Includes\response;
 use MightyShield\Includes\risk_levels;
 use MightyShield\Includes\signals;
 use MightyShield\Includes\trust_badge;
 use MightyShield\Firewall\ip_blocklist;
+use MightyShield\Firewall\ip_whitelist;
 
 class order_panel {
 
@@ -43,7 +47,29 @@ class order_panel {
      *
      * @since   1.9.6
      */
-    const BLOCK_CONFIRM = 'Block this order? This cancels it and blocks the customer IP.';
+    /**
+     * The confirmation before Block, worded for what Block will do to the
+     * money on this order. One fixed sentence used to promise a cancellation
+     * on the branch where an unconfirmed release leaves the order on hold.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @return  string  Translated, unescaped.
+     */
+    public static function block_confirm( $order ) {
+
+        if( response::is_detained( $order ) ) {
+            return __( 'Block this order? It is cancelled and the address is blocked. Nothing was charged.', 'mighty-shield' );
+        }
+
+        if( ai_capture::is_authorized( $order ) ) {
+            return __( 'Block this order? The reserved payment is released and the address is blocked. If the processor cannot confirm the release, the order stays on hold.', 'mighty-shield' );
+        }
+
+        return __( 'Block this order? It is cancelled and the address is blocked. The payment is not refunded; refund it from the order if you need to.', 'mighty-shield' );
+
+    }
 
     /**
      * Construct.
@@ -168,6 +194,7 @@ class order_panel {
     public static function is_order_screen( $hook ) {
 
         if( $hook === 'woocommerce_page_wc-orders' ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
             return isset( $_GET['action'] ) && $_GET['action'] === 'edit';
         }
 
@@ -192,13 +219,11 @@ class order_panel {
         $order = self::resolve_order( $subject );
         if( ! $order ) return;
 
-        $theme = get_user_meta( get_current_user_id(), 'mshield_admin_theme', true );
-        if( ! \in_array( $theme, [ 'light', 'dark', 'system' ], true ) ) $theme = 'system';
-
-        printf(
-            '<div class="mshield-app mshield-orderbox" data-theme="%s">',
-            esc_attr( $theme )
-        );
+        // No data-theme, like the orders column and the dashboard widget: a
+        // panel inside WooCommerce's white metabox follows that page. With
+        // Dark chosen this painted near-white text into a white box, and the
+        // shared script repainted the whole order screen dark behind it.
+        echo '<div class="mshield-app mshield-orderbox">';
 
         $row = rescore::stored( $order );
 
@@ -315,6 +340,7 @@ class order_panel {
                 esc_html( $reason !== '' ? $reason : signals::label( $key ) ),
                 // Not escaped: self::tune_link() returns markup it built and
                 // escaped itself, and returns '' when there is nothing to link to.
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
                 $can_tune ? self::tune_link( $key ) : '',
                 // A negative weight is the one signal that ADDS trust, so it
                 // gets a plus and reads as credit rather than as a smaller cost.
@@ -364,7 +390,7 @@ class order_panel {
     }
 
     /**
-     * The Rate Order control, for an order nobody has scored.
+     * The Rate order control, for an order nobody has scored.
      *
      * @since   1.9.5
      *
@@ -380,7 +406,7 @@ class order_panel {
         printf(
             '<p class="ms-buttons"><a href="%s" class="button button-primary" data-mshield-rate>%s</a></p>',
             esc_url( self::action_url( $order, 'rate' ) ),
-            esc_html__( 'Rate Order', 'mighty-shield' )
+            esc_html__( 'Rate order', 'mighty-shield' )
         );
 
         // Only offered when a provider is actually configured. An unusable
@@ -388,7 +414,7 @@ class order_panel {
         if( ai_client::is_ready() ) {
             printf(
                 '<label class="ms-aitoggle"><input type="checkbox" id="mshield-use-ai" /> %s</label>',
-                esc_html__( 'Use AI to Review', 'mighty-shield' )
+                esc_html__( 'Use AI to review', 'mighty-shield' )
             );
         }
 
@@ -482,7 +508,7 @@ class order_panel {
         printf(
             '<a href="%s" class="button ms-block" onclick="return confirm(\'%s\');">%s</a>',
             esc_url( self::action_url( $order, 'block' ) ),
-            esc_attr( self::BLOCK_CONFIRM ),
+            esc_js( self::block_confirm( $order ) ),
             esc_html__( 'Block', 'mighty-shield' )
         );
 
@@ -520,6 +546,10 @@ class order_panel {
             return __( 'The funds are reserved on the card but not taken.', 'mighty-shield' );
         }
 
+        if( ! self::has_money( $order ) ) {
+            return __( 'No payment has been recorded for this order yet.', 'mighty-shield' );
+        }
+
         return __( 'The payment has already been captured in full.', 'mighty-shield' );
 
     }
@@ -536,6 +566,7 @@ class order_panel {
 
         if( response::is_detained( $order ) )        return __( 'Never charged', 'mighty-shield' );
         if( ai_capture::is_authorized( $order ) )    return __( 'Reserved, not taken', 'mighty-shield' );
+        if( ! self::has_money( $order ) )              return __( 'No payment yet', 'mighty-shield' );
 
         return __( 'Taken in full', 'mighty-shield' );
 
@@ -638,7 +669,7 @@ class order_panel {
     public static function approve_label( $order ) {
 
         return ! response::is_detained( $order ) && ai_capture::is_authorized( $order )
-            ? __( 'Approve & Capture', 'mighty-shield' )
+            ? __( 'Approve and capture', 'mighty-shield' )
             : __( 'Approve', 'mighty-shield' );
 
     }
@@ -678,12 +709,44 @@ class order_panel {
         if( ! is_a( $order, 'WC_Order' ) ) return false;
         if( ! $order->has_status( 'on-hold' ) ) return false;
 
-        // Any of the three routes that put an order on hold. A merchant's own
-        // manual on-hold is not MightyShield's to act on.
+        // Only a hold MightyShield made. A flag is not a hold: a Low-rated
+        // order that a gateway parked On hold awaiting a bank transfer used to
+        // pass this test on its flag alone, so the queue offered Approve on an
+        // order nobody had paid for, described the money as "taken in full",
+        // and Approve moved it to Processing -- which WooCommerce treats as
+        // paid -- and shipped it.
         if( response::is_detained( $order ) ) return true;
-        if( (string) $order->get_meta( '_mshield_hold' ) !== '' ) return true;
 
-        return (string) $order->get_meta( '_mshield_flagged' ) !== '';
+        // 'released' is the record of a decision already made, not a hold:
+        // with it counted, an approved order left On hold for a bank transfer
+        // was offered Approve again, forever.
+        $hold = (string) $order->get_meta( '_mshield_hold' );
+        if( $hold !== '' && $hold !== 'released' ) return true;
+
+        return (string) $order->get_meta( '_mshield_card_flagged' ) === 'yes';
+
+    }
+
+    /**
+     * Whether money has actually arrived for this order.
+     *
+     * WooCommerce's is_paid() is a status test, and an order MightyShield
+     * held after payment is On hold, so that alone would say no to exactly
+     * the orders Approve exists for. The hold meta and the paid date both
+     * record that the charge happened; an authorization is money reserved.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @return  bool
+     */
+    private static function has_money( $order ) {
+
+        if( ai_capture::is_authorized( $order ) ) return true;
+        if( (string) $order->get_meta( '_mshield_hold' ) === 'paid' ) return true;
+        if( $order->get_date_paid() ) return true;
+
+        return $order->is_paid();
 
     }
 
@@ -737,7 +800,7 @@ class order_panel {
 
         // $_REQUEST so the handler works whether it arrives by link or form;
         // check_admin_referer() reads the nonce from either.
-        $order_id = isset( $_REQUEST['order_id'] ) ? absint( $_REQUEST['order_id'] ) : 0;
+        $order_id = isset( $_REQUEST['order_id'] ) ? absint( wp_unslash( $_REQUEST['order_id'] ) ) : 0;
         $do       = isset( $_REQUEST['do'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['do'] ) ) : '';
         $use_ai   = isset( $_REQUEST['use_ai'] ) && $_REQUEST['use_ai'] === '1';
 
@@ -747,7 +810,10 @@ class order_panel {
 
         $allowed = [ 'rate', 'verdict_clean', 'verdict_fraud', 'approve', 'block' ];
 
-        if( ! $order || ! \in_array( $do, $allowed, true ) ) {
+        // instanceof, not truthiness: wc_get_order() hands back a
+        // WC_Order_Refund for a refund id, which has no billing email, no
+        // payment method and no edit URL, and white-screened here.
+        if( ! $order instanceof \WC_Order || ! \in_array( $do, $allowed, true ) ) {
             wp_die( esc_html__( 'Invalid MightyShield order request.', 'mighty-shield' ), '', [ 'response' => 400 ] );
         }
 
@@ -786,7 +852,7 @@ class order_panel {
 
             $url = admin_url( 'admin.php?page=mshield-fraud-review' );
 
-            $paged = isset( $_REQUEST['ms_paged'] ) ? absint( $_REQUEST['ms_paged'] ) : 0;
+            $paged = isset( $_REQUEST['ms_paged'] ) ? absint( wp_unslash( $_REQUEST['ms_paged'] ) ) : 0;
             if( $paged > 1 ) $url = add_query_arg( 'paged', $paged, $url );
 
             wp_safe_redirect( $url );
@@ -875,7 +941,7 @@ class order_panel {
 
             \MightyShield\Protection\outcomes::set_manual( $order, 'clean' );
 
-            db::log_event( $order->get_customer_ip_address(), 'risk_engine', 'flagged', 'Held order #' . $order->get_id() . ' released for payment' );
+            db::log_event( ip_utils::order_ip( $order ), 'risk_engine', 'flagged', 'Held order #' . $order->get_id() . ' released for payment' );
 
             return [ sprintf(
                 /* translators: %s: checkout payment URL. */
@@ -914,6 +980,36 @@ class order_panel {
 
         }
 
+        // Release the post-payment hold BEFORE the status moves. The hold's
+        // hook fires inside update_status() at priority 999 and re-holds any
+        // order still marked 'paid'; with the mark still on, Approve was undone
+        // in the same request that reported it done.
+        if( $order->get_meta( '_mshield_hold' ) === 'paid' ) {
+            $order->update_meta_data( '_mshield_hold', 'released' );
+            $order->save();
+        }
+
+        // No money, no Processing. An order still waiting for a bank
+        // transfer or a cheque must not be marked paid by a fraud verdict;
+        // the verdict is recorded and the status is the gateway's to move.
+        if( ! self::has_money( $order ) ) {
+
+            // The decision is made, so the hold is over even though the status
+            // is not ours to move; otherwise the order stays in the queue with
+            // Approve offered again.
+            if( (string) $order->get_meta( '_mshield_hold' ) !== '' ) {
+                $order->update_meta_data( '_mshield_hold', 'released' );
+                $order->save();
+            }
+
+            \MightyShield\Protection\outcomes::set_manual( $order, 'clean' );
+
+            db::log_event( ip_utils::order_ip( $order ), 'risk_engine', 'flagged', 'Order #' . $order->get_id() . ' cleared in review while still awaiting payment' );
+
+            return [ __( 'Verdict recorded. No payment has arrived for this order yet, so its status was left alone; it will move on when the payment does.', 'mighty-shield' ), 'success' ];
+
+        }
+
         if( ! $order->has_status( [ 'processing', 'completed' ] ) ) {
             $order->update_status( 'processing', __( 'MightyShield: approved in review.', 'mighty-shield' ) );
         } else {
@@ -925,7 +1021,7 @@ class order_panel {
         // scoring engine precisely nothing.
         \MightyShield\Protection\outcomes::set_manual( $order, 'clean' );
 
-        db::log_event( $order->get_customer_ip_address(), 'risk_engine', 'flagged', 'Order #' . $order->get_id() . ' approved in review' );
+        db::log_event( ip_utils::order_ip( $order ), 'risk_engine', 'flagged', 'Order #' . $order->get_id() . ' approved in review' );
 
         return [ __( 'Order approved.', 'mighty-shield' ), 'success' ];
 
@@ -958,7 +1054,7 @@ class order_panel {
 
             \MightyShield\Protection\outcomes::set_manual( $order, 'fraud' );
 
-            db::log_event( $order->get_customer_ip_address(), 'risk_engine', 'blocked', 'Held order #' . $order->get_id() . ' blocked in review' );
+            db::log_event( ip_utils::order_ip( $order ), 'risk_engine', 'blocked', 'Held order #' . $order->get_id() . ' blocked in review' );
 
             return [ $blocked
                 ? __( 'Order blocked and cancelled, and the IP added to the blocklist. No payment was taken, so there is nothing to refund.', 'mighty-shield' )
@@ -1006,7 +1102,7 @@ class order_panel {
                 $order->save();
 
                 db::log_event(
-                    $order->get_customer_ip_address(),
+                    ip_utils::order_ip( $order ),
                     'risk_engine',
                     'flagged',
                     'Order #' . $order->get_id() . ' block attempted, authorization release UNCONFIRMED by the processor — left on hold'
@@ -1028,7 +1124,7 @@ class order_panel {
             \MightyShield\Protection\outcomes::set_manual( $order, 'fraud' );
 
             db::log_event(
-                $order->get_customer_ip_address(),
+                ip_utils::order_ip( $order ),
                 'risk_engine',
                 'blocked',
                 'Order #' . $order->get_id() . ' blocked in review, authorization released'
@@ -1053,7 +1149,7 @@ class order_panel {
 
         \MightyShield\Protection\outcomes::set_manual( $order, 'fraud' );
 
-        db::log_event( $order->get_customer_ip_address(), 'risk_engine', 'blocked', 'Order #' . $order->get_id() . ' blocked in review' );
+        db::log_event( ip_utils::order_ip( $order ), 'risk_engine', 'blocked', 'Order #' . $order->get_id() . ' blocked in review' );
 
         return [ $blocked
             ? __( 'Order blocked, cancelled, and the IP added to the blocklist. The payment was already captured, so refund it from the order items panel below and the order is settled.', 'mighty-shield' )
@@ -1075,9 +1171,20 @@ class order_panel {
      */
     private function blocklist_ip( $order ) {
 
-        $ip = $order->get_customer_ip_address();
+        // The address the recorder resolved, never the one WooCommerce copied
+        // from X-Forwarded-For: that one is whatever the shopper said it was,
+        // and a fraudster who named a CDN edge or the merchant's own office
+        // would have had the reviewer's Block lock out everyone behind it
+        // while their own address stayed clear.
+        $ip = ip_utils::order_ip( $order );
 
         if( empty( $ip ) || ! filter_var( $ip, FILTER_VALIDATE_IP ) ) return false;
+
+        // Never the store's own perimeter, and never an address the merchant
+        // has allowlisted: the blocklist would win, and the row would read as
+        // a deliberate decision.
+        if( ip_utils::is_private( $ip ) ) return false;
+        if( class_exists( '\MightyShield\Firewall\ip_whitelist' ) && ip_whitelist::is_whitelisted( $ip ) ) return false;
 
         return (bool) ip_blocklist::add_ip(
             $ip,
@@ -1099,7 +1206,8 @@ class order_panel {
 
         // HPOS serves the order at ?page=wc-orders&action=edit&id=N; legacy at
         // post.php?post=N&action=edit.
-        $order_id = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : ( isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0 );
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
+        $order_id = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : ( isset( $_GET['post'] ) ? absint( wp_unslash( $_GET['post'] ) ) : 0 );
         if( ! $order_id ) return;
 
         $notice = get_transient( 'mshield_order_notice_' . $order_id );

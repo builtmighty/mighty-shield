@@ -11,6 +11,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
@@ -116,7 +118,9 @@ class device_fingerprint {
     private static function is_review_refresh() {
 
         return defined( 'DOING_AJAX' ) && DOING_AJAX
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
             && isset( $_GET['wc-ajax'] )
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read to decide what to display, not to act on
             && sanitize_text_field( wp_unslash( $_GET['wc-ajax'] ) ) === 'update_order_review';
 
     }
@@ -138,8 +142,6 @@ class device_fingerprint {
     public function assess_checkout( $data, $errors ) {
 
         if( self::is_review_refresh() ) return;
-
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
 
         $country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
         $result  = $this->evaluate( $country );
@@ -172,6 +174,7 @@ class device_fingerprint {
      */
     private function evaluate( $country ) {
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         $raw = isset( $_POST['mshield_device_data'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_device_data'] ) ) : '';
 
         // Missing/malformed fingerprint means the browser never ran our JS — the
@@ -220,6 +223,12 @@ class device_fingerprint {
 
         $reasons    = [];
         $temp_block = false;
+
+        // Remember the signature for the identity graph. It was computed here
+        // for the velocity counter and thrown away, so the one identity that
+        // survives a fraudster rotating email, phone, address and IP -- the
+        // laptop -- never accumulated any history at all.
+        self::$signature = self::get_signature( $device );
 
         // Bot detection: navigator.webdriver is true for Selenium/Puppeteer.
         if( isset( $device['webdriver'] ) && $device['webdriver'] === true ) {
@@ -298,8 +307,24 @@ class device_fingerprint {
 
         $reasons = [];
 
-        // A collector that failed to load tells us nothing about the shopper.
-        if( ! empty( $device['degraded'] ) ) return $reasons;
+        // A collector that failed to load tells us nothing about the shopper --
+        // and that is worth exactly what an absent fingerprint is worth. It used
+        // to be worth more: a payload of {"degraded":true}, or one with no
+        // interaction counters at all, skipped every check below and cost
+        // nothing, so a script that sent that stub did strictly better than one
+        // that sent nothing. Now the two are the same.
+        if( ! empty( $device['degraded'] ) || ! isset( $device['moves'], $device['keys'], $device['scrolls'] ) ) {
+
+            $reason = ! empty( $device['degraded'] )
+                ? 'Device collector reported itself degraded'
+                : 'Device data carried no interaction record';
+
+            risk_context::add( 'device_missing', $reason );
+            $reasons[] = $reason;
+
+            return $reasons;
+
+        }
 
         // --- Environment consistency -------------------------------------
         //
@@ -365,11 +390,10 @@ class device_fingerprint {
 
         // No interaction of any kind. Skipped on touch devices, where a short
         // tap-and-submit genuinely produces very little.
-        if( isset( $device['moves'], $device['keys'], $device['scrolls'] )
-            && (int) $device['moves'] === 0
+        if( (int) $device['moves'] === 0
             && (int) $device['keys'] === 0
             && (int) $device['scrolls'] === 0
-            && (int) $device['pastes'] === 0
+            && (int) ( $device['pastes'] ?? 0 ) === 0
             && empty( $device['has_touch'] ) ) {
 
             $reason = 'No mouse, keyboard, scroll or touch activity during checkout';
@@ -395,8 +419,7 @@ class device_fingerprint {
 
         if( self::is_review_refresh() ) return;
 
-        if( \MightyShield\Includes\exempt::is_exempt( isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
-
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         $raw = isset( $_POST['mshield_device_data'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_device_data'] ) ) : '';
         if( empty( $raw ) ) return;
 
@@ -432,6 +455,26 @@ class device_fingerprint {
 
         $window = (int) settings::get( 'mshield_rate_checkout_window' );
         db::increment_rate_limit( $signature, 'fp_velocity', $window );
+
+    }
+
+    /**
+     * The signature of the device on this request, once evaluate_device() has
+     * seen the payload. Empty until then, and empty for a request that sent
+     * nothing usable.
+     *
+     * @since   3.0.0
+     */
+    private static $signature = '';
+
+    /**
+     * @since   3.0.0
+     *
+     * @return  string
+     */
+    public static function current_signature() {
+
+        return self::$signature;
 
     }
 

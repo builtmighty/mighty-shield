@@ -9,6 +9,8 @@
  */
 namespace MightyShield\Protection;
 
+defined( 'ABSPATH' ) || exit;
+
 use MightyShield\Includes\ip_utils;
 use MightyShield\Includes\db;
 use MightyShield\Includes\settings;
@@ -63,8 +65,6 @@ class honeypot {
      */
     public function assess_checkout( $data, $errors ) {
 
-        if( \MightyShield\Includes\exempt::is_exempt( $data['billing_email'] ?? '' ) ) return;
-
         if( ! $this->is_triggered() ) return;
 
         $ip    = ip_utils::get_client_ip();
@@ -103,6 +103,7 @@ class honeypot {
      */
     private function get_value() {
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
         return isset( $_POST['mshield_hp_field'] ) ? sanitize_text_field( wp_unslash( $_POST['mshield_hp_field'] ) ) : '';
 
     }

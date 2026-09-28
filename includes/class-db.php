@@ -8,6 +8,9 @@
  * @since   1.0.0
  */
 namespace MightyShield\Includes;
+
+defined( 'ABSPATH' ) || exit;
+
 class db {
 
     /**
@@ -25,7 +28,19 @@ class db {
      *
      * @since   1.9.0
      */
-    const SCHEMA_VERSION = 8;
+    const SCHEMA_VERSION = 11;
+
+    /**
+     * How long cached IP intelligence stays useful, in days.
+     *
+     * Longer than the log's 30-day default on purpose: geolocation and ASN
+     * change rarely, the data costs a rate-limited external call to replace,
+     * and the point of introducing this was to stop the cache expiring in step
+     * with the log. See cleanup().
+     *
+     * @since   3.0.0
+     */
+    const IP_DATA_TTL_DAYS = 90;
 
     /**
      * Bring the schema up to date if it is behind.
@@ -54,6 +69,7 @@ class db {
 
             $table = $wpdb->prefix . 'mshield_risk';
 
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             $has_score = $wpdb->get_var( $wpdb->prepare(
                 "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
                  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = 'score'",
@@ -63,7 +79,9 @@ class db {
             if( $has_score ) {
                 // Carry any existing values across before dropping, inverting
                 // them onto the new scale so historic rows stay comparable.
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table
                 $wpdb->query( "UPDATE {$table} SET trust = GREATEST(1, 100 - score) WHERE trust = 0" );
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table
                 $wpdb->query( "ALTER TABLE {$table} DROP COLUMN score" );
             }
 
@@ -98,6 +116,7 @@ class db {
                 // that is its own rename target.
                 if( $from === $to ) continue;
 
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
                 $has_old = $wpdb->get_var( $wpdb->prepare(
                     "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
                      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s",
@@ -107,7 +126,9 @@ class db {
 
                 if( ! $has_old ) continue;
 
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table
                 $wpdb->query( "UPDATE {$table} SET {$to} = {$from} WHERE {$to} = ''" );
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table
                 $wpdb->query( "ALTER TABLE {$table} DROP COLUMN {$from}" );
 
             }
@@ -145,6 +166,67 @@ class db {
         // record. dbDelta adds the column at its 0 default, which is right:
         // no historic refusal was ever counted, so none can be claimed.
 
+        // Schema 9 narrowed mshield_rate_limits.identifier from 255 to 191 and
+        // added mshield_log.idx_action_created. dbDelta adds the index on its
+        // own, but it will not reliably narrow a column that a UNIQUE index is
+        // built on -- it compares definitions and can decide the existing one is
+        // close enough -- so that half is done here.
+        //
+        // Failure is survivable and deliberately not fatal: an install where the
+        // column is already 191, or where the ALTER is refused, keeps working
+        // exactly as it did. The width only matters on row formats where the
+        // wider index could not have been created in the first place.
+        if( $installed > 0 && $installed < 9 ) {
+
+            $rate_table = $wpdb->prefix . 'mshield_rate_limits';
+
+            // Guarded rather than assumed: MODIFY on a column that is not there
+            // is an error worth not raising, and this table is the one whose
+            // absence is the very problem being fixed.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+            $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $rate_table ) );
+
+            if( $exists ) {
+
+                // Nothing can be longer than 65 characters by construction, but
+                // a truncating MODIFY on a UNIQUE index would collide rather
+                // than truncate, so check before touching it.
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+                $too_long = (int) $wpdb->get_var(
+                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
+                    "SELECT COUNT(*) FROM {$rate_table} WHERE CHAR_LENGTH( identifier ) > 191"
+                );
+
+                if( $too_long === 0 ) {
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table
+                    $wpdb->query( "ALTER TABLE {$rate_table} MODIFY identifier VARCHAR(191) NOT NULL DEFAULT ''" );
+                }
+
+            }
+
+        }
+
+        // Schema 10 taught normalize_address() the spellings that mean the
+        // same thing on an envelope, which changes the hash every address
+        // identity is stored under. Rather than let the history behind an
+        // address go dark, the graph is re-hashed in place from the orders
+        // each identity is linked to -- batched, never on a shopper's request,
+        // by entities::maybe_rehash_addresses(). This only arms it: the order
+        // factory is not up yet at the point this runs.
+        //
+        // Schema 11 made the same normaliser keep letters outside a-z, so a
+        // Cyrillic, Greek or accented street stops collapsing to its house
+        // number; the same re-hash covers it.
+        if( $installed > 0 && $installed < 11 ) {
+            update_option( 'mshield_rehash_addresses', 0, false );
+
+            // order_count changed meaning at schema 11, from orders created
+            // to orders paid. Everything placed before this moment was counted
+            // the old way; entities::count_paid() treats those as already
+            // counted so they are not counted twice as they complete.
+            add_option( 'mshield_paid_count_epoch', time(), '', 'no' );
+        }
+
         update_option( 'mshield_db_version', self::SCHEMA_VERSION, true );
 
     }
@@ -174,12 +256,15 @@ class db {
             // option to the name it already has.
             if( $from === $to ) continue;
 
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             $wpdb->query( $wpdb->prepare(
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
                 "UPDATE {$table} SET risk_level = %s WHERE risk_level = %s",
                 $to,
                 $from
             ) );
 
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             $wpdb->query( $wpdb->prepare(
                 "UPDATE {$wpdb->postmeta} SET meta_value = %s
                  WHERE meta_key = '_mshield_risk_level' AND meta_value = %s",
@@ -189,8 +274,10 @@ class db {
 
             // HPOS keeps order meta in its own table when it is in use.
             $hpos = $wpdb->prefix . 'wc_orders_meta';
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             if( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $hpos ) ) === $hpos ) {
                 $wpdb->query( $wpdb->prepare(
+                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
                     "UPDATE {$hpos} SET meta_value = %s
                      WHERE meta_key = '_mshield_risk_level' AND meta_value = %s",
                     $to,
@@ -206,6 +293,7 @@ class db {
                 delete_option( $old_opt );
             }
 
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             $wpdb->query( $wpdb->prepare(
                 "UPDATE {$wpdb->options} SET option_value = %s
                  WHERE option_name LIKE %s AND option_value = %s",
@@ -250,15 +338,37 @@ class db {
             INDEX idx_ip (ip),
             INDEX idx_action (action),
             INDEX idx_order (order_id),
-            INDEX idx_created (created_at)
+            INDEX idx_created (created_at),
+            INDEX idx_action_created (action, created_at)
         ) {$charset_collate};";
+        // idx_action_created: every aggregate this table feeds -- get_stats,
+        // get_daily_stats, get_hourly_stats, get_top_blocked_ips -- filters on
+        // action AND a created_at range. MySQL can only pick one single-column
+        // index for that, so it was reading far more rows than it returned on
+        // the one table that grows without bound.
+        //
+        // Comments live out here, not inside the SQL. dbDelta() splits the
+        // CREATE on newlines and reads the first word of each line as a column
+        // name, so a "--" comment line inside the statement became a column
+        // called "--" that did not exist, and every activation issued
+        // "ALTER TABLE ... ADD COLUMN -- ..." -- a syntax error, silent unless
+        // WP_DEBUG was on, and then a database error logged on every install.
 
         // Rate limits table.
         $rate_table = $wpdb->prefix . 'mshield_rate_limits';
+        // identifier is 191, not 255. It and action_type together form a UNIQUE
+        // index, and at 255 that index is 1,220 bytes under utf8mb4 -- past
+        // InnoDB's 767-byte limit for COMPACT and REDUNDANT row formats. Where
+        // that limit applies, dbDelta fails with error 1071 and this table is
+        // silently never created, taking rate limiting, device velocity,
+        // distinct-email velocity and the account guard with it. Real
+        // identifiers are md5-derived and at most 65 characters, so nothing is
+        // lost. WordPress core caps its own indexed varchars at 191 for exactly
+        // this reason. (Kept outside the SQL: see the note under $sql_log.)
         $sql_rate = "CREATE TABLE {$rate_table} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             PRIMARY KEY  (id),
-            identifier VARCHAR(255) NOT NULL DEFAULT '',
+            identifier VARCHAR(191) NOT NULL DEFAULT '',
             action_type VARCHAR(50) NOT NULL DEFAULT '',
             count int(10) unsigned NOT NULL DEFAULT 0,
             window_start DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -415,6 +525,7 @@ class db {
             $format[]          = '%d';
         }
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->replace( $wpdb->prefix . 'mshield_risk', $data, $format );
 
     }
@@ -431,6 +542,7 @@ class db {
 
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $row = $wpdb->get_row( $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}mshield_risk WHERE order_id = %d",
             (int) $order_id
@@ -443,6 +555,18 @@ class db {
     /**
      * Record the final outcome of an order against its risk row.
      *
+     * Creates the row when there is not one yet, rather than matching nothing
+     * and returning as though it had worked.
+     *
+     * outcomes::record() fires for every order that completes, is refunded or
+     * is disputed -- including orders placed before the plugin was installed,
+     * and orders it never scored. Those have no risk row, so the UPDATE matched
+     * nothing and the outcome was lost. On the store this was found on, 65
+     * orders carried an outcome in their meta and 8 had reached this table, so
+     * the tuning report was averaging over 8 orders while appearing to describe
+     * all of them. An outcome with no rating still says something useful -- the
+     * report counts it as unrated rather than not counting it at all.
+     *
      * @since   1.9.0
      *
      * @param   int     $order_id
@@ -452,13 +576,38 @@ class db {
 
         global $wpdb;
 
-        $wpdb->update(
+        $order_id = (int) $order_id;
+        $outcome  = substr( sanitize_text_field( $outcome ), 0, 20 );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+        $updated = $wpdb->update(
             $wpdb->prefix . 'mshield_risk',
-            [ 'outcome' => substr( sanitize_text_field( $outcome ), 0, 20 ) ],
-            [ 'order_id' => (int) $order_id ],
+            [ 'outcome' => $outcome ],
+            [ 'order_id' => $order_id ],
             [ '%s' ],
             [ '%d' ]
         );
+
+        if( $updated ) return;
+
+        // No rating to attach it to. Record the outcome on its own, marked as
+        // such: risk_level is left empty rather than guessed, so nothing reads
+        // it as a verdict this plugin reached.
+        //
+        // Not save_risk(), which REPLACEs -- a race with the recorder would
+        // throw away the verdict it had just written. INSERT IGNORE loses to
+        // the real row instead, and the outcome lands on the next status change.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+        $wpdb->query( $wpdb->prepare(
+            'INSERT IGNORE INTO ' . $wpdb->prefix . 'mshield_risk
+                ( order_id, outcome, rated_by, created_at ) VALUES ( %d, %s, %s, %s )',
+            $order_id,
+            $outcome,
+            'unrated',
+            // Bound, so it is UTC like every other row rather than the
+            // database server's local time via the column default.
+            gmdate( 'Y-m-d H:i:s' )
+        ) );
 
     }
 
@@ -485,6 +634,7 @@ class db {
 
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $rows = $wpdb->get_results( $wpdb->prepare(
             "SELECT risk_level, signals FROM {$wpdb->prefix}mshield_risk
              WHERE created_at >= DATE_SUB( %s, INTERVAL %d DAY )
@@ -538,6 +688,7 @@ class db {
 
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         return (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT COUNT(*) FROM {$wpdb->prefix}mshield_risk
              WHERE created_at >= DATE_SUB( %s, INTERVAL %d DAY )",
@@ -562,6 +713,7 @@ class db {
 
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         return $wpdb->get_results( $wpdb->prepare(
             "SELECT risk_level, outcome, COUNT(*) as total
              FROM {$wpdb->prefix}mshield_risk
@@ -599,34 +751,38 @@ class db {
             $data = self::capture_forensics();
         }
 
-        $wpdb->insert(
-            $wpdb->prefix . 'mshield_log',
-            [
-                'ip'           => sanitize_text_field( $ip ),
-                'endpoint'     => sanitize_text_field( substr( $endpoint, 0, 255 ) ),
-                'action'       => sanitize_text_field( $action ),
-                'reason'       => sanitize_text_field( substr( $reason, 0, 255 ) ),
-                'request_data' => sanitize_textarea_field( $data ),
-                // Recorded so a log row can be tied back to the order it
-                // belongs to. Without it, investigating an incident meant
-                // matching on IP and timestamp by eye.
-                'order_id'     => (int) $order_id,
-                'created_at'   => gmdate( 'Y-m-d H:i:s' ),
-            ],
-            [ '%s', '%s', '%s', '%s', '%s', '%d', '%s' ]
-        );
+        $row = [
+            'ip'           => sanitize_text_field( $ip ),
+            'endpoint'     => sanitize_text_field( substr( $endpoint, 0, 255 ) ),
+            'action'       => sanitize_text_field( $action ),
+            'reason'       => sanitize_text_field( substr( $reason, 0, 255 ) ),
+            'request_data' => sanitize_textarea_field( $data ),
+            // Recorded so a log row can be tied back to the order it
+            // belongs to. Without it, investigating an incident meant
+            // matching on IP and timestamp by eye.
+            'order_id'     => (int) $order_id,
+            'created_at'   => gmdate( 'Y-m-d H:i:s' ),
+        ];
+
+        $format = [ '%s', '%s', '%s', '%s', '%s', '%d', '%s' ];
 
         // Nullable on purpose: a row with no rating stores NULL, not 0, since
         // 0 would read as the worst possible rating rather than "not rated".
+        // Omitting the key entirely is what gets NULL; passing null through
+        // $wpdb->insert() would be formatted as the string "".
+        //
+        // In the insert rather than an UPDATE straight after it. The old form
+        // cost two queries on every logged event that carried a rating, on the
+        // request path, and the UPDATE ran unguarded on a failed insert — where
+        // insert_id is whatever the last successful insert on this connection
+        // returned, so a failure wrote the rating onto an unrelated row.
         if( $trust !== null ) {
-            $wpdb->update(
-                $wpdb->prefix . 'mshield_log',
-                [ 'trust' => (float) $trust ],
-                [ 'id' => (int) $wpdb->insert_id ],
-                [ '%f' ],
-                [ '%d' ]
-            );
+            $row['trust'] = (float) $trust;
+            $format[]     = '%f';
         }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- plugin-owned table
+        $wpdb->insert( $wpdb->prefix . 'mshield_log', $row, $format );
 
     }
 
@@ -649,7 +805,14 @@ class db {
             $forensics['ua'] = substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 255 );
         }
 
-        if( ! empty( $_POST['billing_email'] ) ) {
+        // is_string(): the checkout hooks that log here run before WooCommerce
+        // has cleaned the posted fields, and sanitize_email() calls strlen()
+        // before anything else, which on PHP 8 throws for `billing_email[]=x`.
+        // Every layer on woocommerce_checkout_process logs through this
+        // method, so an array here took the whole checkout request down.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
+        if( ! empty( $_POST['billing_email'] ) && is_string( $_POST['billing_email'] ) ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
             $forensics['email'] = sanitize_email( wp_unslash( $_POST['billing_email'] ) );
         }
 
@@ -691,7 +854,9 @@ class db {
         $end   = gmdate( 'Y-m-d H:i:s', time() + $window );
 
         // Atomic upsert: insert new record or increment/reset existing.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->query( $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
             "INSERT INTO {$table} (identifier, action_type, count, window_start, window_end)
             VALUES (%s, %s, 1, %s, %s)
             ON DUPLICATE KEY UPDATE
@@ -710,7 +875,9 @@ class db {
         ) );
 
         // Read back the current count.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $count = $wpdb->get_var( $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
             "SELECT count FROM {$table} WHERE identifier = %s AND action_type = %s",
             $identifier,
             $action_type
@@ -736,7 +903,9 @@ class db {
         $table = $wpdb->prefix . 'mshield_rate_limits';
         $now   = gmdate( 'Y-m-d H:i:s' );
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $row = $wpdb->get_row( $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
             "SELECT count, window_end FROM {$table} WHERE identifier = %s AND action_type = %s",
             $identifier,
             $action_type
@@ -790,6 +959,7 @@ class db {
         $values[] = (int) $args['per_page'];
         $values[] = $offset;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- plugin-owned table
         return $wpdb->get_results( $wpdb->prepare( $query, $values ) );
 
     }
@@ -811,9 +981,11 @@ class db {
         list( $where_sql, $values ) = self::build_log_where( $args );
 
         if( ! empty( $values ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- plugin-owned table
             return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} {$where_sql}", $values ) );
         }
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- plugin-owned table
         return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
 
     }
@@ -886,6 +1058,7 @@ class db {
         $table        = $wpdb->prefix . 'mshield_log';
         $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- plugin-owned table
         return (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE id IN ({$placeholders})", $ids ) );
 
     }
@@ -905,19 +1078,33 @@ class db {
         $days  = max( 1, (int) $days );
         $table = $wpdb->prefix . 'mshield_log';
 
+        // The merchant's days, not UTC's. Rows are stored in UTC; the buckets
+        // are cut where the store's own midnight falls, and the window opens
+        // at the start of the oldest day rather than at this time of day
+        // days ago -- which used to leave the first bar holding only the part
+        // of its day that came after now o'clock.
+        $tz     = self::site_tz_offset();
+        $start  = get_gmt_from_date( wp_date( 'Y-m-d 00:00:00', time() - ( ( $days - 1 ) * DAY_IN_SECONDS ) ) );
+
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $rows = $wpdb->get_results( $wpdb->prepare(
-            "SELECT DATE(created_at) as d, action, COUNT(*) as total
+            "SELECT DATE( CONVERT_TZ( created_at, '+00:00', %s ) ) as d, action, COUNT(*) as total
              FROM {$table}
-             WHERE created_at >= DATE_SUB( %s, INTERVAL %d DAY )
-             GROUP BY DATE(created_at), action",
-            gmdate( 'Y-m-d H:i:s' ),
-            $days - 1
+             WHERE created_at >= %s
+             GROUP BY DATE( CONVERT_TZ( created_at, '+00:00', %s ) ), action",
+            $tz,
+            $start,
+            $tz
         ) );
+
+// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 
         // Seed each day with zeros so the chart always has a full series.
         $series = [];
         for( $i = $days - 1; $i >= 0; $i-- ) {
-            $date = gmdate( 'Y-m-d', time() - ( $i * DAY_IN_SECONDS ) );
+            $date = wp_date( 'Y-m-d', time() - ( $i * DAY_IN_SECONDS ) );
             $series[ $date ] = [ 'date' => $date, 'blocked' => 0, 'rate_limited' => 0, 'flagged' => 0, 'total' => 0 ];
         }
 
@@ -960,7 +1147,9 @@ class db {
                 break;
         }
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $results = $wpdb->get_results( $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
             "SELECT action, COUNT(*) as total FROM {$table} WHERE created_at >= DATE_SUB(%s, INTERVAL {$interval}) GROUP BY action",
             gmdate( 'Y-m-d H:i:s' )
         ) );
@@ -1008,7 +1197,9 @@ class db {
                 break;
         }
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         return $wpdb->get_results( $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
             "SELECT ip, COUNT(*) as total FROM {$table} WHERE action = 'blocked' AND created_at >= DATE_SUB(%s, INTERVAL {$interval}) GROUP BY ip ORDER BY total DESC LIMIT %d",
             gmdate( 'Y-m-d H:i:s' ),
             $limit
@@ -1024,6 +1215,25 @@ class db {
      * @param   int     $hours  Number of hours (including the current one).
      * @return  array   Ordered oldest-first, each: [ 'label' => 'H:00', 'blocked' => int, 'rate_limited' => int, 'flagged' => int, 'total' => int ]
      */
+    /**
+     * The store's UTC offset right now, in the form CONVERT_TZ() takes.
+     *
+     * A fixed offset, so it needs no time-zone tables on the database server.
+     * Rows inside a daylight-saving change within the window land an hour
+     * off; that is the cost of a chart that works on every host.
+     *
+     * @since   3.0.0
+     *
+     * @return  string  e.g. '-04:00'
+     */
+    private static function site_tz_offset() {
+
+        $seconds = (int) wp_timezone()->getOffset( new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) ) );
+
+        return sprintf( '%s%02d:%02d', $seconds < 0 ? '-' : '+', intdiv( abs( $seconds ), 3600 ), intdiv( abs( $seconds ) % 3600, 60 ) );
+
+    }
+
     public static function get_hourly_stats( $hours = 24 ) {
 
         global $wpdb;
@@ -1031,20 +1241,30 @@ class db {
         $hours = max( 1, (int) $hours );
         $table = $wpdb->prefix . 'mshield_log';
 
+        // Site-local hours, from the top of the oldest one. See get_daily_stats().
+        $tz    = self::site_tz_offset();
+        $start = get_gmt_from_date( wp_date( 'Y-m-d H:00:00', time() - ( ( $hours - 1 ) * HOUR_IN_SECONDS ) ) );
+
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $rows = $wpdb->get_results( $wpdb->prepare(
-            "SELECT DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H') as h, action, COUNT(*) as total
+            "SELECT DATE_FORMAT( CONVERT_TZ( created_at, '+00:00', %s ), '%%Y-%%m-%%d %%H' ) as h, action, COUNT(*) as total
              FROM {$table}
-             WHERE created_at >= DATE_SUB( %s, INTERVAL %d HOUR )
-             GROUP BY DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H'), action",
-            gmdate( 'Y-m-d H:i:s' ),
-            $hours - 1
+             WHERE created_at >= %s
+             GROUP BY DATE_FORMAT( CONVERT_TZ( created_at, '+00:00', %s ), '%%Y-%%m-%%d %%H' ), action",
+            $tz,
+            $start,
+            $tz
         ) );
+
+// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 
         $series = [];
         for( $i = $hours - 1; $i >= 0; $i-- ) {
             $ts  = time() - ( $i * HOUR_IN_SECONDS );
-            $key = gmdate( 'Y-m-d H', $ts );
-            $series[ $key ] = [ 'label' => gmdate( 'H:00', $ts ), 'blocked' => 0, 'rate_limited' => 0, 'flagged' => 0, 'total' => 0 ];
+            $key = wp_date( 'Y-m-d H', $ts );
+            $series[ $key ] = [ 'label' => wp_date( 'H:00', $ts ), 'blocked' => 0, 'rate_limited' => 0, 'flagged' => 0, 'total' => 0 ];
         }
 
         foreach( $rows as $row ) {
@@ -1072,6 +1292,7 @@ class db {
 
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $row = $wpdb->get_row( $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}mshield_ip_data WHERE ip = %s",
             $ip
@@ -1097,7 +1318,9 @@ class db {
         if( empty( $ips ) ) return [];
 
         $placeholders = implode( ',', array_fill( 0, count( $ips ), '%s' ) );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $rows = $wpdb->get_results( $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- interpolates a table name from $wpdb->prefix and a literal; every value is bound
             "SELECT * FROM {$wpdb->prefix}mshield_ip_data WHERE ip IN ({$placeholders})",
             $ips
         ), ARRAY_A );
@@ -1123,6 +1346,7 @@ class db {
 
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->replace(
             $wpdb->prefix . 'mshield_ip_data',
             [
@@ -1146,6 +1370,159 @@ class db {
     }
 
     /**
+     * Drop cached rows that were resolved with nothing to say about the network.
+     *
+     * Called after the ASN database is installed or refreshed. Those rows were
+     * written by ip_data::resolve() at a moment when there was no database to
+     * ask, so they carry hosting = -1 and would otherwise sit in the cache
+     * answering "unknown" for the full 90-day TTL — on exactly the addresses a
+     * merchant has already seen, which are the ones worth re-reading.
+     *
+     * Rows that DID resolve are left alone: an ASN answer does not go stale in
+     * the week between database refreshes.
+     *
+     * @since   3.0.0
+     *
+     * @return  int     Rows dropped.
+     */
+    public static function forget_unresolved_ip_data() {
+
+        global $wpdb;
+
+        // No user input in this statement; hosting is an integer column and
+        // -1 is a literal.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return (int) $wpdb->query(
+            "DELETE FROM {$wpdb->prefix}mshield_ip_data WHERE hosting = -1"
+        );
+
+    }
+
+    /**
+     * How many completed orders before the learned high-value figure is
+     * trusted.
+     *
+     * Below this a percentile is just "the biggest of a handful", which moves
+     * every time anybody buys anything. Better to say nothing.
+     *
+     * @since   3.0.0
+     */
+    const HIGH_VALUE_MIN_ORDERS = 40;
+
+    /**
+     * Work out what a large order looks like on this store.
+     *
+     * The 95th percentile of completed order totals over the last year, stored
+     * in mshield_high_value_learned and read by
+     * order_signals::high_value_threshold() when the merchant has not set a
+     * figure of their own.
+     *
+     * Percentile rather than a multiple of the average, which is what the
+     * other fraud plugins use. An average is dragged by its outliers, and
+     * outliers are the exact thing this is trying to find: one £40,000 trade
+     * order on a £60 store lifts the mean enough that nothing looks large
+     * afterwards, which disables the signal at precisely the moment it
+     * started mattering. A percentile cannot be moved by one order.
+     *
+     * Completed only. Cancelled and failed orders are disproportionately the
+     * fraudulent ones, so including them would teach the store that fraud is
+     * normal.
+     *
+     * @since   3.0.0
+     *
+     * @return  float   The figure written, or 0.0 when there was nothing to learn.
+     */
+    public static function learn_high_value() {
+
+        global $wpdb;
+
+        $hpos = $wpdb->prefix . 'wc_orders';
+
+        // Whether the table is the LIVE store, not whether it exists. A store
+        // that tried HPOS and went back to posts keeps a wc_orders table that
+        // stops moving the day sync is switched off, and learning from it
+        // meant learning from the past.
+        $use_hpos = class_exists( '\Automattic\WooCommerce\Utilities\OrderUtil' )
+            && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+
+        if( $use_hpos ) {
+
+            $count_sql = "SELECT COUNT(*) FROM {$hpos}
+                           WHERE status = 'wc-completed'
+                             AND type = 'shop_order'
+                             AND date_created_gmt > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 365 DAY)";
+
+            $page_sql  = "SELECT total_amount FROM {$hpos}
+                           WHERE status = 'wc-completed'
+                             AND type = 'shop_order'
+                             AND date_created_gmt > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 365 DAY)
+                           ORDER BY total_amount + 0 ASC
+                           LIMIT 1 OFFSET %d";
+
+        } else {
+
+            $count_sql = "SELECT COUNT(*) FROM {$wpdb->posts} p
+                          INNER JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_order_total'
+                           WHERE p.post_type = 'shop_order'
+                             AND p.post_status = 'wc-completed'
+                             AND p.post_date_gmt > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 365 DAY)";
+
+            $page_sql  = "SELECT m.meta_value FROM {$wpdb->posts} p
+                          INNER JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_order_total'
+                           WHERE p.post_type = 'shop_order'
+                             AND p.post_status = 'wc-completed'
+                             AND p.post_date_gmt > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 365 DAY)
+                           ORDER BY m.meta_value + 0 ASC
+                           LIMIT 1 OFFSET %d";
+
+        }
+
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
+
+        // Table and column names are chosen from the two literals above; the
+        // only bound value is the offset.
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- no user input in this statement
+        $total = (int) $wpdb->get_var( $count_sql );
+
+// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+
+        if( $total < self::HIGH_VALUE_MIN_ORDERS ) {
+
+            // Not enough to say anything. Clear rather than leave a stale
+            // figure standing: a store whose history was just pruned should
+            // fall silent, not keep enforcing a number nothing supports.
+            delete_option( 'mshield_high_value_learned' );
+
+            return 0.0;
+
+        }
+
+        // The value with 95% of orders at or below it. floor() keeps the
+        // offset inside the result set at every size.
+        $offset = (int) floor( $total * 0.95 );
+        if( $offset >= $total ) $offset = $total - 1;
+
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- no user input in this statement
+        $value = (float) $wpdb->get_var( $wpdb->prepare( $page_sql, $offset ) );
+
+// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+
+        if( $value <= 0 ) {
+            delete_option( 'mshield_high_value_learned' );
+            return 0.0;
+        }
+
+        update_option( 'mshield_high_value_learned', round( $value, 2 ), false );
+
+        return $value;
+
+    }
+
+    /**
      * Cleanup expired data.
      *
      * @since   1.0.0
@@ -1161,6 +1538,7 @@ class db {
 
         // Clean old logs in batches to avoid table locks.
         do {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             $deleted = $wpdb->query( $wpdb->prepare(
                 "DELETE FROM {$wpdb->prefix}mshield_log WHERE created_at < DATE_SUB(%s, INTERVAL %d DAY) LIMIT 5000",
                 $now,
@@ -1169,36 +1547,126 @@ class db {
         } while( $deleted >= 5000 );
 
         // Clean expired rate limits.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $wpdb->query( $wpdb->prepare(
             "DELETE FROM {$wpdb->prefix}mshield_rate_limits WHERE window_end < %s",
             $now
         ) );
 
-        // Drop cached IP data for IPs no longer present in the log.
-        $wpdb->query(
+        // Drop cached IP data that is both stale and unreferenced.
+        //
+        // This used to key the cache's lifetime to the LOG's, deleting any IP
+        // absent from it. The log keeps 30 days, so a returning customer's
+        // geolocation was discarded every month and bought again from the
+        // provider — and worse, the cache emptied out precisely when the log
+        // was pruned hardest, which is after an attack. The IP intelligence is
+        // read on the checkout path and skipped on a miss, so a cold cache is
+        // signals that never fire.
+        //
+        // fetched_at is what should have governed this all along: it was
+        // written on every save and read by nothing. An IP is now kept while it
+        // is either still in the log or still fresh, and goes when it is
+        // neither. IP_DATA_TTL is deliberately longer than the log default so
+        // the two no longer move together.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+        $wpdb->query( $wpdb->prepare(
             "DELETE d FROM {$wpdb->prefix}mshield_ip_data d
              LEFT JOIN {$wpdb->prefix}mshield_log l ON l.ip = d.ip
-             WHERE l.ip IS NULL"
-        );
+             WHERE l.ip IS NULL
+               AND d.fetched_at < DATE_SUB(%s, INTERVAL %d DAY)",
+            $now,
+            self::IP_DATA_TTL_DAYS
+        ) );
+
+        // Drop risk rows for orders that no longer exist.
+        //
+        // The only table the cleanup still never touched. It grows one row per
+        // order for ever, and the docblock on prune_entities() claiming the
+        // entity tables were the last untouched pair was simply wrong.
+        //
+        // Age alone is the wrong test here — a two-year-old chargeback is the
+        // most valuable row in the table — so this prunes on the same basis as
+        // the entity links: the order is gone, so the row describes nothing and
+        // nothing can navigate to it. HPOS and legacy storage both checked,
+        // matching prune_entities().
+        self::prune_risk();
 
         self::prune_entities();
 
     }
 
     /**
+     * Drop risk rows whose order no longer exists.
+     *
+     * Batched and select-then-delete for the same reason prune_entities() is:
+     * a multi-table DELETE cannot take a LIMIT.
+     *
+     * @since   3.0.0
+     */
+    private static function prune_risk() {
+
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+        $has_hpos = (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . 'wc_orders' ) );
+
+        $exists = "SELECT 1 FROM {$wpdb->posts} p WHERE p.ID = r.order_id";
+
+        if( $has_hpos ) {
+            $exists .= " UNION ALL SELECT 1 FROM {$wpdb->prefix}wc_orders o WHERE o.id = r.order_id";
+        }
+
+        do {
+
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
+
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+            $ids = $wpdb->get_col(
+                "SELECT r.id FROM {$wpdb->prefix}mshield_risk r
+                 WHERE r.order_id > 0 AND NOT EXISTS ( {$exists} )
+                 LIMIT 1000"
+            );
+
+// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+
+            if( empty( $ids ) ) break;
+
+            $ids = array_map( 'intval', $ids );
+
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names are interpolated from $wpdb->prefix and literals; every value is bound. These are plugin-owned tables and a fraud decision must not read from a stale cache.
+
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
+            $wpdb->query(
+                "DELETE FROM {$wpdb->prefix}mshield_risk
+                 WHERE id IN (" . implode( ',', $ids ) . ')'
+            );
+
+// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+
+        } while( count( $ids ) >= 1000 );
+
+    }
+
+    /**
      * Prune the identity graph.
      *
-     * This ran nowhere until 2.2.0. The two entity tables were the only ones
-     * the daily cleanup did not touch, and they grow on every checkout — this
+     * This ran nowhere until 2.2.0. The two entity tables were among the ones
+     * the daily cleanup did not touch — mshield_risk was the other, and was not
+     * pruned until 3.0.0, so the claim this sentence used to make was wrong
+     * when it was written. They grow on every checkout — this
      * store had 6,072 identities and 19,579 links with no upper bound. Now that
      * refused checkouts are recorded too, every throwaway address a bot invents
      * gets a row, so a prune is not housekeeping any more.
      *
      * What survives is the point:
      *
-     *   anything adverse   a denial, a chargeback, a refund or a refusal is the
-     *                      whole reason the table exists, and is kept
-     *                      regardless of age
+     *   anything adverse   a denial, a chargeback or a refund is the whole
+     *                      reason the table exists, and is kept regardless of
+     *                      age. A refusal on its own is not: it is the
+     *                      plugin's own arithmetic, written to every identity
+     *                      on the attempt including a carrier /24 shared by
+     *                      thousands, and record_refusal() promises those
+     *                      rows go after the retention window
      *   anything recent    seen inside the retention window
      *   anything linked    still attached to an order that still exists
      *
@@ -1236,15 +1704,37 @@ class db {
         // both -- checking only one table would throw away the link graph of
         // every order on a store using the other.
         $hpos = $wpdb->prefix . 'wc_orders';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
         $has_hpos = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $hpos ) ) === $hpos;
 
-        $wpdb->query(
-            "DELETE l FROM {$wpdb->prefix}mshield_entity_links l
-             LEFT JOIN {$wpdb->posts} p ON p.ID = l.order_id"
-            . ( $has_hpos ? " LEFT JOIN {$hpos} o ON o.id = l.order_id" : '' )
-            . " WHERE p.ID IS NULL"
-            . ( $has_hpos ? ' AND o.id IS NULL' : '' )
-        );
+        // Batched: select a slice of orphaned link ids, delete by id, repeat.
+        // This was one multi-table DELETE with two LEFT JOINs over the whole
+        // links table -- seven rows per order, forever -- which on a store of
+        // any age held a lock on it for as long as that took, once a day.
+        $links = $wpdb->prefix . 'mshield_entity_links';
+
+        for( $i = 0; $i < 200; $i++ ) {
+
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- plugin-owned tables; the only interpolations are $wpdb table names
+            $ids = $wpdb->get_col(
+                "SELECT l.id FROM {$links} l
+                 LEFT JOIN {$wpdb->posts} p ON p.ID = l.order_id"
+                . ( $has_hpos ? " LEFT JOIN {$hpos} o ON o.id = l.order_id" : '' )
+                . " WHERE p.ID IS NULL"
+                . ( $has_hpos ? ' AND o.id IS NULL' : '' )
+                . ' LIMIT 2000'
+            );
+
+            if( empty( $ids ) ) break;
+
+            $ids = array_map( 'intval', $ids );
+
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- plugin-owned table; every id is an integer cast above
+            $wpdb->query( "DELETE FROM {$links} WHERE id IN ( " . implode( ',', $ids ) . ' )' );
+
+            if( count( $ids ) < 2000 ) break;
+
+        }
 
         $removed = 0;
 
@@ -1258,6 +1748,7 @@ class db {
         // uses a single-table delete, which does accept one.
         do {
 
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             $ids = $wpdb->get_col( $wpdb->prepare(
                 "SELECT e.id
                    FROM {$wpdb->prefix}mshield_entities e
@@ -1267,7 +1758,6 @@ class db {
                     AND e.denied_count = 0
                     AND e.chargeback_count = 0
                     AND e.refund_count = 0
-                    AND e.refused_count = 0
                   LIMIT 5000",
                 $now,
                 $days
@@ -1279,7 +1769,9 @@ class db {
 
             // Integers straight from the database and cast again, so the IN
             // list needs no placeholders and cannot carry anything but digits.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table
             $wpdb->query(
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- no user input in this statement
                 "DELETE FROM {$wpdb->prefix}mshield_entities WHERE id IN (" . implode( ',', $ids ) . ')'
             );
 

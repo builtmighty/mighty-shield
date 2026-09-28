@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<ruleset name="MightyShield">
+
+    <description>
+        Coding standards for MightyShield.
+
+        The baseline is the WordPress standard, which is what the plugin
+        directory's review tooling runs. Everything excluded below is excluded
+        for a stated reason, and the list is deliberately short: an exclusion
+        is a claim that the sniff is wrong about this codebase, and each one
+        should be arguable on its own.
+    </description>
+
+    <file>.</file>
+
+    <exclude-pattern>/languages/*</exclude-pattern>
+    <exclude-pattern>/assets/*</exclude-pattern>
+    <exclude-pattern>/.git/*</exclude-pattern>
+
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="sp"/>
+    <arg name="parallel" value="8"/>
+
+    <config name="minimum_wp_version" value="6.5"/>
+    <config name="testVersion" value="8.1-"/>
+
+    <rule ref="WordPress">
+
+        <!--
+            Formatting, not correctness.
+
+            This codebase uses if( $x ) rather than if ( $x ), no Yoda
+            conditions, and 4-space indentation throughout ~26k lines. Those
+            are house style, consistently applied. Reformatting the lot to
+            satisfy a whitespace sniff would rewrite every file, destroy the
+            blame history that explains why each weight and threshold is what
+            it is, and change no behaviour.
+        -->
+        <exclude name="WordPress.WhiteSpace"/>
+        <exclude name="Generic.WhiteSpace"/>
+        <exclude name="PEAR.Functions.FunctionCallSignature"/>
+        <exclude name="Squiz.ControlStructures"/>
+        <exclude name="WordPress.PHP.YodaConditions"/>
+        <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+        <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+        <exclude name="Universal.WhiteSpace"/>
+        <exclude name="Universal.Operators.StrictComparisons"/>
+
+        <!--
+            Class file naming.
+
+            WPCS wants one class per file named class-{name}.php with the class
+            in StudlyCaps. The files ARE named that way; the classes are
+            lowercase with underscores, which is the convention the whole
+            plugin was written in. Renaming ~55 classes is a mechanical change
+            with a real chance of missing a string reference, for no gain.
+        -->
+        <exclude name="WordPress.Files.FileName"/>
+        <exclude name="WordPress.NamingConventions.ValidVariableName"/>
+
+    </rule>
+
+    <!--
+        Functions this plugin uses to make input and output safe, which WPCS
+        cannot recognise on its own. Declaring them here is the correct fix:
+        the alternative is a phpcs:ignore at every call site, which hides
+        genuine findings alongside the false ones.
+    -->
+    <rule ref="WordPress.Security.ValidatedSanitizedInput">
+        <properties>
+            <property name="customSanitizingFunctions" type="array">
+                <!-- Returns 'yes' or 'no' and nothing else. -->
+                <element value="sanitize_checkbox"/>
+                <!-- Filters to valid addresses via is_email(). -->
+                <element value="sanitize_email_list"/>
+                <!-- wp_kses against an explicit tag list. -->
+                <element value="sanitize_refusal_note"/>
+            </property>
+        </properties>
+    </rule>
+
+    <rule ref="WordPress.Security.EscapeOutput">
+        <properties>
+            <property name="customEscapingFunctions" type="array">
+                <!-- Each returns markup it has escaped internally; see the
+                     docblock on each for what is interpolated and how. -->
+                <element value="dismiss_url"/>
+                <element value="tune_link"/>
+                <element value="trust_badge::span"/>
+                <element value="trust_badge::value"/>
+            </property>
+        </properties>
+    </rule>
+
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="mighty-shield"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!--
+        Custom tables are the whole point of this plugin: six of them, holding
+        the log, the ratings and the identity graph. Every read and write to
+        them is a direct query by necessity, and none of it is cacheable in the
+        object cache in any useful way — a fraud decision must not be served
+        from a stale read.
+
+        Downgraded to a warning rather than excluded, so a NEW direct query
+        still shows up in a report and has to be looked at.
+    -->
+    <rule ref="WordPress.DB.DirectDatabaseQuery.DirectQuery">
+        <type>warning</type>
+    </rule>
+    <rule ref="WordPress.DB.DirectDatabaseQuery.NoCaching">
+        <type>warning</type>
+    </rule>
+
+</ruleset>

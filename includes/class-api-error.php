@@ -18,6 +18,8 @@
  */
 namespace MightyShield\Includes;
 
+defined( 'ABSPATH' ) || exit;
+
 class api_error {
 
     /**
