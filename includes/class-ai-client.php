@@ -35,9 +35,19 @@ class ai_client {
      * truncated response is a wasted call, so this is sized for the schema
      * rather than shaved to the bone.
      *
+     * 4096, not 1024, since 2026-09-29. Every current frontier model reasons
+     * by default and spends that budget before the first character of the
+     * verdict, so a cap sized for the answer alone is a cap the answer never
+     * reaches -- a live store's reviews were failing as "unexpected response
+     * shape" for exactly this reason, which is the least useful way it could
+     * possibly have been reported. Output tokens are billed on what is
+     * generated rather than what is allowed, so a roomier ceiling costs a
+     * short verdict nothing and removes the failure on every provider at once,
+     * whichever model the merchant picks.
+     *
      * @since   1.8.0
      */
-    const MAX_TOKENS = 1024;
+    const MAX_TOKENS = 4096;
 
     /**
      * When the current review has to be done by, as a Unix timestamp.
@@ -72,29 +82,80 @@ class ai_client {
      * is no longer here is still shown and kept, so an upgrade never silently
      * moves a store onto a different model.
      *
+     * Reviewed 2026-09-29 against all three providers' own documentation,
+     * after a store was found running a Gemini model the plugin had never
+     * heard of -- because by then every model this list offered was legacy,
+     * restricted or shut down, including all three defaults. The merchant had
+     * been more current than the code for months.
+     *
+     * The recommended choice per provider is that provider's cheap, fast,
+     * high-volume option, because this workload is a number and a sentence
+     * rather than a piece of reasoning. Legacy ids are kept below the current
+     * ones so a store grandfathered onto one still sees it by name.
+     *
      * @since   3.0.0
      */
     const MODELS = [
         'anthropic' => [
-            'claude-haiku-4-5' => 'Claude Haiku 4.5 (recommended)',
-            'claude-sonnet-5'  => 'Claude Sonnet 5',
-            'claude-opus-5'    => 'Claude Opus 5',
+            'claude-sonnet-5-5'          => 'Claude Sonnet 5.5 (recommended)',
+            'claude-haiku-4-5-20251001'  => 'Claude Haiku 4.5',
+            'claude-opus-5-5'            => 'Claude Opus 5.5',
+            'claude-fable-5-1'           => 'Claude Fable 5.1',
+            // Retires 15 October 2026. Listed so a store already on it can
+            // still see what it is running; the upgrade moves it.
+            'claude-haiku-4-5'           => 'Claude Haiku 4.5 (retiring)',
+            'claude-sonnet-5'            => 'Claude Sonnet 5 (legacy)',
+            'claude-opus-5'              => 'Claude Opus 5 (legacy)',
         ],
         'openai' => [
-            'gpt-4o-mini'  => 'GPT-4o mini (recommended)',
-            'gpt-4.1-nano' => 'GPT-4.1 nano',
-            'gpt-4.1-mini' => 'GPT-4.1 mini',
-            'gpt-4.1'      => 'GPT-4.1',
-            'gpt-5-nano'   => 'GPT-5 nano',
-            'gpt-5-mini'   => 'GPT-5 mini',
-            'gpt-5'        => 'GPT-5',
+            'gpt-6-luna'   => 'GPT-6 Luna (recommended)',
+            'gpt-6-sol'    => 'GPT-6 Sol',
+            'gpt-6-astra'  => 'GPT-6 Astra',
+            'gpt-5.6-luna' => 'GPT-5.6 Luna',
+            'gpt-5.6-sol'  => 'GPT-5.6 Sol',
+            'gpt-4o-mini'  => 'GPT-4o mini (legacy)',
+            'gpt-4.1'      => 'GPT-4.1 (legacy)',
+            'gpt-4.1-mini' => 'GPT-4.1 mini (legacy)',
+            // Shuts down 23 October 2026; the upgrade moves it to 5.6 Luna,
+            // which is the replacement OpenAI names.
+            'gpt-4.1-nano' => 'GPT-4.1 nano (retiring)',
+            'gpt-5'        => 'GPT-5 (legacy)',
+            'gpt-5-mini'   => 'GPT-5 mini (legacy)',
+            'gpt-5-nano'   => 'GPT-5 nano (legacy)',
         ],
         'gemini' => [
-            'gemini-2.5-flash'      => 'Gemini 2.5 Flash (recommended)',
-            'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash-Lite',
-            'gemini-2.5-pro'        => 'Gemini 2.5 Pro',
-            'gemini-2.0-flash'      => 'Gemini 2.0 Flash',
+            'gemini-3.5-flash-lite' => 'Gemini 3.5 Flash-Lite (recommended)',
+            'gemini-3.8-flash'      => 'Gemini 3.8 Flash',
+            'gemini-3.7-flash'      => 'Gemini 3.7 Flash',
+            'gemini-3.6-flash'      => 'Gemini 3.6 Flash',
+            'gemini-3.5-flash'      => 'Gemini 3.5 Flash',
+            'gemini-3.1-flash-lite' => 'Gemini 3.1 Flash-Lite',
+            // Google limits the 2.5 series to accounts that already used it,
+            // so these are unreachable on a new project and stay listed only
+            // for the stores that are grandfathered in.
+            'gemini-2.5-flash'      => 'Gemini 2.5 Flash (legacy)',
+            'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash-Lite (legacy)',
+            'gemini-2.5-pro'        => 'Gemini 2.5 Pro (legacy)',
         ],
+    ];
+
+    /**
+     * Models the provider has withdrawn, and what to move a store onto.
+     *
+     * Read once, by the upgrade routine. Only ids that are shut down or past
+     * their announced retirement belong here: a merchant's own choice of a
+     * working model is theirs, and moving it would be the plugin overruling
+     * somebody who, on the evidence, keeps up with this better than it does.
+     *
+     * @since   3.0.1
+     */
+    const RETIRED = [
+        // Shut down.
+        'gemini-2.0-flash' => 'gemini-3.5-flash-lite',
+        // Retires 15 October 2026.
+        'claude-haiku-4-5' => 'claude-haiku-4-5-20251001',
+        // Shuts down 23 October 2026. OpenAI names 5.6 Luna as the successor.
+        'gpt-4.1-nano'     => 'gpt-5.6-luna',
     ];
 
     /**
@@ -347,6 +408,33 @@ class ai_client {
             if( ! is_wp_error( $verdict ) ) {
                 self::succeeded();
                 return $verdict;
+            }
+
+            // One more go at the same provider before reaching for another
+            // one. A 503 whose own body says "please try again later", a 429,
+            // and a connection that timed out are all things that a second
+            // attempt a moment later frequently gets past -- and on a store
+            // with one provider keyed, which is most of them, this is the only
+            // recovery there is. Timeouts were the largest bucket of failures
+            // on the store that prompted this, larger than the 503s the
+            // merchant actually reported.
+            //
+            // No backoff. A sleep here is a sleep on the shopper's own
+            // checkout request, and stalling a real customer for a few seconds
+            // to improve the odds on a review is the wrong way round; stores
+            // that want patience have the async mode for it. The deadline is
+            // the only thing allowed to decide whether there is room.
+            if( self::worth_retrying( $verdict ) && self::seconds_left() >= 3 ) {
+
+                $retry = self::attempt( $primary, $prompt );
+
+                if( ! is_wp_error( $retry ) ) {
+                    self::succeeded();
+                    return $retry;
+                }
+
+                $verdict = $retry;
+
             }
 
             $fallback = self::fallback_provider( $primary );
@@ -801,13 +889,15 @@ class ai_client {
             'responseSchema'   => $schema,
         ];
 
-        // 2.5 models think by default, and the reasoning comes out of
+        // Gemini thinks by default, and the reasoning comes out of
         // maxOutputTokens before a single character of the verdict does. A
         // verdict is a number and a sentence; it does not need deliberation,
         // and an unbudgeted thinker can spend the entire cap and hand back a
         // candidate with no parts in it at all.
-        if( self::gemini_allows_no_thinking( $model ) ) {
-            $config['thinkingConfig'] = [ 'thinkingBudget' => 0 ];
+        $thinking = self::gemini_thinking( $model );
+
+        if( $thinking !== null ) {
+            $config['thinkingConfig'] = $thinking;
         }
 
         // The key goes in a header, not the query string. A URL ends up in proxy
@@ -835,23 +925,51 @@ class ai_client {
     }
 
     /**
-     * Whether a Gemini model accepts a zero thinking budget.
+     * How to hold this Gemini model's reasoning down, or null to say nothing.
      *
-     * 2.5 Flash and Flash-Lite do. 2.5 Pro always thinks and rejects a zero
-     * budget outright, 2.0 has no thinkingConfig at all, and a model id the
-     * merchant typed in by hand could be either — so all three get exactly the
-     * request they got before, rather than a 400 they cannot act on.
+     * Two mechanisms, and sending both in one request is a 400:
      *
-     * @since   3.0.0
+     *   3.x   thinkingLevel, a string enum of low / medium / high. There is no
+     *         off -- 3.8 Flash rejects "minimal" outright -- so low is the
+     *         floor and it is what a one-sentence verdict wants.
+     *   2.5   thinkingBudget, where 0 genuinely disables it. Flash and
+     *         Flash-Lite accept that; Pro always thinks and refuses a zero.
+     *
+     * Parsed from the version rather than matched against a list of names.
+     * The list this replaces was two string equalities against 2.5 Flash and
+     * Flash-Lite, so when Google moved the family on, every current model fell
+     * through it silently and thought its way through the whole token budget
+     * before answering -- which is how a live store's reviews came to fail as
+     * "unexpected response shape". A rule that reads the version cannot go
+     * stale the same way.
+     *
+     * Deliberately not a prefix match on "gemini-". An id the merchant typed
+     * in by hand, or one from a family nobody has released yet, has no known
+     * mechanism, and guessing one is how you send a parameter that earns a 400
+     * the merchant cannot act on. No version, no thinkingConfig.
+     *
+     * @since   3.0.1
      *
      * @param   string  $model
-     * @return  bool
+     * @return  array|null
      */
-    private static function gemini_allows_no_thinking( $model ) {
+    private static function gemini_thinking( $model ) {
 
         $model = strtolower( trim( (string) $model ) );
 
-        return $model === 'gemini-2.5-flash' || $model === 'gemini-2.5-flash-lite';
+        if( ! preg_match( '#^gemini-(\d+)\.(\d+)-#', $model, $m ) ) return null;
+
+        $major = (int) $m[1];
+        $minor = (int) $m[2];
+
+        if( $major >= 3 ) return [ 'thinkingLevel' => 'low' ];
+
+        // Pro excluded: it always thinks and rejects a zero budget.
+        if( $major === 2 && $minor === 5 && strpos( $model, 'flash' ) !== false ) {
+            return [ 'thinkingBudget' => 0 ];
+        }
+
+        return null;
 
     }
 
@@ -894,7 +1012,7 @@ class ai_client {
         if( $reason === 'MAX_TOKENS' ) {
             return new \WP_Error( 'mshield_ai_truncated', sprintf(
                 /* translators: %d: the output token cap. */
-                __( 'Gemini used its whole output budget of %d tokens without returning a verdict. Thinking models spend that budget on reasoning first — try Gemini 2.5 Flash.', 'mighty-shield' ),
+                __( 'Gemini used its whole output budget of %d tokens without returning a verdict. Thinking models spend that budget on reasoning first — try Gemini 3.5 Flash-Lite, which reasons least.', 'mighty-shield' ),
                 self::MAX_TOKENS
             ) );
         }
@@ -966,6 +1084,15 @@ class ai_client {
             // can actually act on, and the body says which of the several keys
             // on this screen was rejected.
             $message = api_error::explain( self::provider_name( $provider ), $code, api_error::detail( $response ) );
+
+            // The one thing the merchant CAN do about another company's
+            // capacity, said only when they have not already done it. A store
+            // with a second provider keyed rides an outage out; a store
+            // without one loses the review on every order that hits it, and
+            // has no way of knowing that from a status code.
+            if( $code >= 500 && self::fallback_provider( $provider ) === '' ) {
+                $message .= ' ' . __( 'Orders are going through unreviewed while it lasts. Setting a second provider under AI Review would let them be reviewed anyway.', 'mighty-shield' );
+            }
 
             // The status travels with the error so review() can tell a
             // provider having a bad time from a request that was wrong.

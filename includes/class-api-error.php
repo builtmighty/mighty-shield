@@ -171,6 +171,20 @@ class api_error {
                 );
                 break;
 
+            // A model that has been retired, or one this account was never
+            // able to reach. Worth its own sentence because the providers move
+            // faster than any bundled list can, and the reply from Google
+            // reads "no longer available to new users, please update your
+            // code" -- addressed to a developer, not to the person who has to
+            // change a dropdown.
+            case ( $code === 404 ):
+                $line = sprintf(
+                    /* translators: %s: service name. */
+                    __( 'The model selected for %s is not available on this account (HTTP 404). Pick a current one under AI Review; the provider usually names its replacement below.', 'mighty-shield' ),
+                    $service
+                );
+                break;
+
             case ( $code === 429 ):
                 $line = sprintf(
                     /* translators: %s: service name. */
@@ -179,10 +193,17 @@ class api_error {
                 );
                 break;
 
+            // "Nothing to change here; it should clear on its own", until a
+            // store spent ten days losing reviews to this and the sentence was
+            // the reason nobody looked. The diagnosis was right and the advice
+            // was wrong: the provider's capacity is not the merchant's to fix,
+            // but whether an outage costs them a review is. Say what happened
+            // and let the caller, which knows what recovery is configured, say
+            // what to do about it.
             case ( $code >= 500 ):
                 $line = sprintf(
                     /* translators: 1: service name, 2: HTTP status code. */
-                    __( '%1$s is having trouble at their end (HTTP %2$d). Nothing to change here; it should clear on its own.', 'mighty-shield' ),
+                    __( '%1$s is having trouble at their end (HTTP %2$d). This is their capacity, not your configuration, and it usually clears on its own.', 'mighty-shield' ),
                     $service,
                     $code
                 );

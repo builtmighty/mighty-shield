@@ -3,7 +3,7 @@
  * Plugin Name:       MightyShield
  * Plugin URI:        https://builtmighty.com
  * Description:       Scores every WooCommerce order against 56 fraud checks, optionally reviews it with an AI model, and then acts once — hold, challenge, refuse, or let through.
- * Version:           3.0.0
+ * Version:           3.0.1
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Requires Plugins:  woocommerce
@@ -48,7 +48,7 @@ if( ! defined( 'WPINC' ) ) { die; }
  *
  * @since   1.0.0
  */
-define( 'MSHIELD_VERSION', '3.0.0' );
+define( 'MSHIELD_VERSION', '3.0.1' );
 define( 'MSHIELD_NAME', 'mighty-shield' );
 define( 'MSHIELD_PATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MSHIELD_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -337,6 +337,42 @@ function maybe_upgrade() {
         if( get_option( 'mshield_store_api_checks' ) !== 'yes' ) {
             update_option( 'mshield_store_api_checks', 'yes' );
             update_option( 'mshield_store_api_enabled_notice', 1, false );
+        }
+
+    }
+
+    // 3.0.1: move a store off a model its provider has withdrawn.
+    //
+    // Only the withdrawn ones. A merchant's choice of a model that still works
+    // is theirs -- the store that prompted this had hand-set a Gemini model
+    // newer than anything the plugin listed, and had been right to. But an id
+    // that is shut down, or past the date its provider announced for it, is
+    // not a choice any more; leaving it means every review 404s and the only
+    // symptom is orders quietly going through unreviewed.
+    if( version_compare( $installed, '3.0.1', '<' ) && class_exists( '\MightyShield\Includes\ai_client' ) ) {
+
+        foreach( [ 'anthropic', 'openai', 'gemini' ] as $mshield_provider ) {
+
+            $mshield_key   = 'mshield_ai_' . $mshield_provider . '_model';
+            $mshield_model = (string) get_option( $mshield_key, '' );
+
+            if( ! isset( \MightyShield\Includes\ai_client::RETIRED[ $mshield_model ] ) ) continue;
+
+            $mshield_to = \MightyShield\Includes\ai_client::RETIRED[ $mshield_model ];
+
+            update_option( $mshield_key, $mshield_to );
+
+            // On the record, because a plugin changing a setting under a
+            // merchant should be something they can find afterwards.
+            if( class_exists( '\MightyShield\Includes\db' ) ) {
+                \MightyShield\Includes\db::log_event(
+                    '',
+                    'system',
+                    'flagged',
+                    sprintf( '%s retired %s, so AI review was moved to %s', $mshield_provider, $mshield_model, $mshield_to )
+                );
+            }
+
         }
 
     }

@@ -2,9 +2,9 @@
 # This file is distributed under the GPL-2.0-or-later license.
 msgid ""
 msgstr ""
-"Project-Id-Version: MightyShield 3.0.0\n"
+"Project-Id-Version: MightyShield 3.0.1\n"
 "Report-Msgid-Bugs-To: https://builtmighty.com\n"
-"POT-Creation-Date: 2026-09-29 14:26+0000\n"
+"POT-Creation-Date: 2026-09-29 17:40+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -65,12 +65,12 @@ msgid "%1$s fired on %2$s orders you approved."
 msgstr ""
 
 #. translators: 1: service name, 2: HTTP status code.
-#: includes/class-api-error.php:185
-msgid "%1$s is having trouble at their end (HTTP %2$d). Nothing to change here; it should clear on its own."
+#: includes/class-api-error.php:206
+msgid "%1$s is having trouble at their end (HTTP %2$d). This is their capacity, not your configuration, and it usually clears on its own."
 msgstr ""
 
 #. translators: 1: service name, 2: HTTP status code.
-#: includes/class-api-error.php:194
+#: includes/class-api-error.php:215
 msgid "%1$s refused the request (HTTP %2$d)."
 msgstr ""
 
@@ -85,7 +85,7 @@ msgid "%1$s rejected the credentials (HTTP %2$d). The key or token is wrong, or 
 msgstr ""
 
 #. translators: 1: primary provider and its error. 2: fallback provider and its error.
-#: includes/class-ai-client.php:391
+#: includes/class-ai-client.php:479
 msgid "%1$s, then %2$s"
 msgstr ""
 
@@ -131,7 +131,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: a model id the merchant typed in before the list existed
-#: includes/class-ai-client.php:116
+#: includes/class-ai-client.php:177
 msgid "%s (custom)"
 msgstr ""
 
@@ -177,7 +177,7 @@ msgid "%s is also running a bot challenge. Two challenges on one form compete fo
 msgstr ""
 
 #. translators: %s: service name.
-#: includes/class-api-error.php:177
+#: includes/class-api-error.php:191
 msgid "%s is rate limiting this store (HTTP 429). Nothing is wrong with the configuration; the calls are arriving faster than the plan allows."
 msgstr ""
 
@@ -385,15 +385,15 @@ msgstr ""
 
 #. translators: 1: how long ago the error happened, e.g. "12 mins". 2: the error message.
 #. translators: 1: how long ago the error happened, e.g. "12 mins". 2: API error message.
-#: admin/class-admin-page.php:1649 includes/class-ai-client.php:1233
+#: admin/class-admin-page.php:1649 includes/class-ai-client.php:1360
 msgid "AI order review is unavailable and orders are NOT being reviewed. %1$s ago: %2$s"
 msgstr ""
 
-#: includes/class-ai-client.php:648
+#: includes/class-ai-client.php:736
 msgid "AI returned an unrecognised verdict"
 msgstr ""
 
-#: includes/class-ai-client.php:634
+#: includes/class-ai-client.php:722
 msgid "AI returned no usable verdict"
 msgstr ""
 
@@ -410,7 +410,7 @@ msgid "AI tab"
 msgstr ""
 
 #. translators: %s: the name of the missing field.
-#: includes/class-ai-client.php:641
+#: includes/class-ai-client.php:729
 msgid "AI verdict is missing the \"%s\" field"
 msgstr ""
 
@@ -710,7 +710,7 @@ msgstr ""
 msgid "Anthropic API key"
 msgstr ""
 
-#: includes/class-ai-client.php:718
+#: includes/class-ai-client.php:806
 msgid "Anthropic returned no verdict"
 msgstr ""
 
@@ -1366,7 +1366,7 @@ msgstr ""
 msgid "Customer history"
 msgstr ""
 
-#: includes/class-ai-client.php:327
+#: includes/class-ai-client.php:388
 msgid "Daily AI review limit reached"
 msgstr ""
 
@@ -1450,7 +1450,7 @@ msgstr ""
 msgid "Discard the file"
 msgstr ""
 
-#: admin/class-admin-page.php:1689 includes/class-ai-client.php:1239 protection/class-smarty-address-verifier.php:135
+#: admin/class-admin-page.php:1689 includes/class-ai-client.php:1366 protection/class-smarty-address-verifier.php:135
 msgid "Dismiss"
 msgstr ""
 
@@ -1914,22 +1914,22 @@ msgid "Gemini API key"
 msgstr ""
 
 #. translators: %s: the reason Gemini gave, e.g. SAFETY.
-#: includes/class-ai-client.php:889
+#: includes/class-ai-client.php:1007
 msgid "Gemini declined to answer (%s). Something in the order details tripped a content filter."
 msgstr ""
 
-#: includes/class-ai-client.php:833
+#: includes/class-ai-client.php:923
 msgid "Gemini returned a verdict that was not valid JSON"
 msgstr ""
 
 #. translators: %s: the finish reason Gemini gave.
-#: includes/class-ai-client.php:905
+#: includes/class-ai-client.php:1023
 msgid "Gemini returned no verdict, and stopped because: %s"
 msgstr ""
 
 #. translators: %d: the output token cap.
-#: includes/class-ai-client.php:897
-msgid "Gemini used its whole output budget of %d tokens without returning a verdict. Thinking models spend that budget on reasoning first — try Gemini 2.5 Flash."
+#: includes/class-ai-client.php:1015
+msgid "Gemini used its whole output budget of %d tokens without returning a verdict. Thinking models spend that budget on reasoning first — try Gemini 3.5 Flash-Lite, which reasons least."
 msgstr ""
 
 #: assets/js/mshield-admin.js:111 assets/js/mshield-admin.js:199 assets/js/mshield-admin.js:206
@@ -2300,7 +2300,7 @@ msgid "It is off until you add an API key, and it is only asked about the risk l
 msgstr ""
 
 #. translators: %s: the provider's own error message.
-#: includes/class-api-error.php:203
+#: includes/class-api-error.php:224
 msgid "It said: %s"
 msgstr ""
 
@@ -2608,7 +2608,7 @@ msgid "MightyShield works 24/7 to keep bots, card testers, scammers, fraudsters,
 msgstr ""
 
 #. translators: %s: the error the AI provider returned.
-#: includes/class-ai-client.php:1146
+#: includes/class-ai-client.php:1273
 msgid "MightyShield's AI order review is currently unavailable.\n\nReason: %s\n\nOrders are being allowed through WITHOUT AI review until this is resolved. Common causes:\n- Invalid or expired API key\n- Provider quota exhausted or rate limited\n- Network/API outage\n\nCheck your credentials under MightyShield > AI Review.\n\nThis alert is sent at most once per day."
 msgstr ""
 
@@ -2628,7 +2628,7 @@ msgid "MightyShield's bot challenge (%1$s) is rejecting all tokens because of a 
 msgstr ""
 
 #: admin/class-admin-page.php:247 admin/class-admin-page.php:1681 admin/class-admin-page.php:1702 admin/class-order-panel.php:1249
-#: admin/class-setup-wizard.php:185 includes/class-ai-client.php:1230 protection/class-captcha.php:1471 protection/class-captcha.php:1530
+#: admin/class-setup-wizard.php:185 includes/class-ai-client.php:1357 protection/class-captcha.php:1471 protection/class-captcha.php:1530
 #: protection/class-smarty-address-verifier.php:126
 msgid "MightyShield:"
 msgstr ""
@@ -2793,19 +2793,19 @@ msgid "No"
 msgstr ""
 
 #. translators: %s: provider name.
-#: includes/class-ai-client.php:519
+#: includes/class-ai-client.php:607
 msgid "No %s API key is saved. Enter one and save the page first: the key fields are write-only, so this tests what is stored, not what is typed."
 msgstr ""
 
-#: includes/class-ai-client.php:683
+#: includes/class-ai-client.php:771
 msgid "No Anthropic API key configured"
 msgstr ""
 
-#: includes/class-ai-client.php:788
+#: includes/class-ai-client.php:876
 msgid "No Gemini API key configured"
 msgstr ""
 
-#: includes/class-ai-client.php:733
+#: includes/class-ai-client.php:821
 msgid "No OpenAI API key configured"
 msgstr ""
 
@@ -3146,7 +3146,7 @@ msgstr ""
 msgid "OpenAI API key"
 msgstr ""
 
-#: includes/class-ai-client.php:773
+#: includes/class-ai-client.php:861
 msgid "OpenAI returned a verdict that was not valid JSON"
 msgstr ""
 
@@ -3237,6 +3237,10 @@ msgstr ""
 
 #: includes/class-signals.php:771
 msgid "Orders allowed per hour from one email"
+msgstr ""
+
+#: includes/class-ai-client.php:1094
+msgid "Orders are going through unreviewed while it lasts. Setting a second provider under AI Review would let them be reviewed anyway."
 msgstr ""
 
 #: admin/views/documentation.php:409
@@ -4126,7 +4130,7 @@ msgstr ""
 msgid "The %s subscription is out of lookups (HTTP 402). The credentials are fine; the account needs topping up."
 msgstr ""
 
-#: includes/class-ai-client.php:984
+#: includes/class-ai-client.php:1111
 msgid "The AI provider replied, but the response could not be read as JSON."
 msgstr ""
 
@@ -4324,6 +4328,11 @@ msgstr ""
 
 #: admin/views/whitelist.php:60
 msgid "The last five are matched against a stored order when you review or re-rate it. They do not exempt anyone at checkout, because a shopper types all five into the form — an allowlisted postcode would let anyone who typed it skip every hold. To exempt a customer at checkout, allowlist their account or their address."
+msgstr ""
+
+#. translators: %s: service name.
+#: includes/class-api-error.php:183
+msgid "The model selected for %s is not available on this account (HTTP 404). Pick a current one under AI Review; the provider usually names its replacement below."
 msgstr ""
 
 #: admin/class-fraud-review.php:455 admin/views/documentation.php:324
@@ -4715,11 +4724,11 @@ msgstr ""
 msgid "Under WooCommerce, next to Orders, with a count beside it when something is waiting. <a href=\"%s\">The queue</a> is every order MightyShield stopped or flagged that nobody has ruled on yet, gathered in one place so you can work through them instead of hunting for them."
 msgstr ""
 
-#: includes/class-ai-client.php:910
+#: includes/class-ai-client.php:1028
 msgid "Unexpected Gemini response shape"
 msgstr ""
 
-#: includes/class-ai-client.php:766
+#: includes/class-ai-client.php:854
 msgid "Unexpected OpenAI response shape"
 msgstr ""
 
@@ -5121,7 +5130,7 @@ msgstr ""
 msgid "[MightyShield] %1$s on order #%2$d"
 msgstr ""
 
-#: includes/class-ai-client.php:1167
+#: includes/class-ai-client.php:1294
 msgid "[MightyShield] AI order review is unavailable"
 msgstr ""
 

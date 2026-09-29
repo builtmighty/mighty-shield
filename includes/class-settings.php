@@ -146,14 +146,16 @@ class settings {
         //   through the post-payment route instead.
         'mshield_ai_mode'                   => 'inline',
         'mshield_ai_anthropic_key'          => '',
-        'mshield_ai_anthropic_model'        => 'claude-haiku-4-5',
+        'mshield_ai_anthropic_model'        => 'claude-sonnet-5-5',
         'mshield_ai_openai_key'             => '',
         'mshield_ai_openai_org'             => '',
-        'mshield_ai_openai_model'           => 'gpt-4o-mini',
+        'mshield_ai_openai_model'           => 'gpt-6-luna',
         'mshield_ai_gemini_key'             => '',
-        // Not 1.5: Google retired the whole 1.5 series in September 2025, so a
-        // merchant who took the default got a 404 on every review.
-        'mshield_ai_gemini_model'           => 'gemini-2.5-flash',
+        // Not 2.5: Google now limits that series to accounts that already
+        // used it, so a new project taking the old default could not reach its
+        // own model at all. The 1.5 series before it was retired outright in
+        // September 2025 and did the same thing -- a 404 on every review.
+        'mshield_ai_gemini_model'           => 'gemini-3.5-flash-lite',
         // Hard ceiling on provider calls per day. 0 = no cap.
         'mshield_ai_daily_cap'              => 0,
         // Send the shape of the customer's details to the AI provider rather

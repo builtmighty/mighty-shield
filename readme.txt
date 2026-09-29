@@ -4,7 +4,7 @@ Donate link: https://builtmighty.com
 Tags: woocommerce, security, firewall, fraud, card-testing
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 3.0.0
+Stable tag: 3.0.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -192,6 +192,14 @@ MightyShield answers WordPress's personal data export and erase requests from **
 Fixes three network checks that had never worked and removes a blocking request from every checkout. Adds billing-vs-delivery, country and phone checks, richer allow and block lists, low-rating alerts, and a pass that rates your existing orders so a new install starts out knowing your customers. If you want the network checks back, set a free MaxMind licence key under WooCommerce > Settings > Integrations.
 
 == Changelog ==
+
+= 3.0.1 =
+* Fixed: the list of AI models was a year out of date, and every model it offered — including all three defaults — had been made legacy, restricted or switched off by its provider. A store that took the Anthropic default would have stopped being reviewed on 15 October; the Gemini default could no longer be selected on a new account at all. All three lists are current, and the recommended choice for each provider is now one a new account can actually reach.
+* Fixed: upgrading moves you off a model your provider has withdrawn, and says so in the log. A model you chose yourself that still works is left exactly as you set it.
+* Fixed: reviews could fail with "unexpected response shape" on a current model. Today's models think before they answer and were spending the whole reply budget on it. The budget is four times larger, and on Gemini the reasoning is now explicitly held down — by reading the model's version rather than matching a list of names, which is what went stale last time.
+* New: a failed review is retried once against the same provider before anything else is tried. Timeouts and "please try again later" are the most common way a review is lost, and on a store with one provider configured this is the only recovery there is. It never extends the checkout past the time limit already set.
+* Changed: when a provider has an outage, the notice no longer says "nothing to change here". If you have no second provider configured, that is the one thing you can change, and it now says so.
+* New: if the model you have selected has been retired by its provider, MightyShield says so in those words and points you at the setting. Your provider's own reply says "update your code", which is addressed to a developer rather than to whoever has to change a dropdown.
 
 = 3.0.0 =
 * Fixed: an AI provider outage could end a checkout before payment was taken. Nothing in the outage alert can stop a sale any more, and the once-a-day limit on that alert is applied after the email is attempted rather than before — so a mail problem costs you one alert rather than every alert.
