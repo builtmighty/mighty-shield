@@ -80,6 +80,10 @@ class ai_reviewer {
 
         if( settings::get( 'mshield_ai_enabled' ) !== 'yes' ) return;
 
+        // In async mode the review is scheduled by ai_async after the order
+        // exists, so nothing runs on the shopper's own request.
+        if( ai_async::enabled() ) return;
+
         // Stage two of three, and it runs at validation — after every detector
         // has scored and before risk_recorder decides at 99. It used to run on
         // the order-processed hooks, which put the model's opinion after the
@@ -87,6 +91,36 @@ class ai_reviewer {
         // so the one verdict the merchant pays for could never prevent a sale.
         add_action( 'woocommerce_after_checkout_validation', [ $this, 'review_classic' ], 90, 2 );
         add_action( 'woocommerce_store_api_checkout_update_order_from_request', [ $this, 'review_store_api' ], 90, 2 );
+
+    }
+
+    /**
+     * Review a stored order on a scheduled run, gate and all.
+     *
+     * Between review() and review_now(): the gate applies, because nobody
+     * asked for this one in particular, but the order already exists so the
+     * snapshot is read from it rather than from a checkout request.
+     *
+     * The caller has already restored the checkout's signals into
+     * risk_context, so worth_reviewing() sees the same picture the inline path
+     * would have seen, and set_ai_trust() lands in a complete context.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @return  bool    Whether a review ran.
+     */
+    public static function review_async( $order ) {
+
+        if( ! is_a( $order, 'WC_Order' ) ) return false;
+
+        $reviewer = new self();
+
+        if( ! $reviewer->worth_reviewing() ) return false;
+
+        $reviewer->ask( self::snapshot_from_order( $order ) );
+
+        return self::persist( $order ) !== null;
 
     }
 
@@ -126,7 +160,106 @@ class ai_reviewer {
         // was a paid call to the model for the same order.
         if( $request instanceof \WP_REST_Request && $request->get_method() !== 'POST' ) return;
 
-        $this->review( self::snapshot_from_order( $order ) );
+        $this->review( self::snapshot_from_order( $order ), $order );
+
+    }
+
+    /**
+     * The order behind this checkout, if it has already been rated.
+     *
+     * A declined card sends the shopper round again, and the retry is a fresh
+     * request: the per-request guards are no help there. The block checkout
+     * hands the draft order straight to its hook; classic checkout resumes the
+     * same order and WooCommerce keeps its id in the session. Either way, the
+     * basket has not changed, so paying the model for a second opinion buys a
+     * second rating that overwrites the first, a second order note saying so,
+     * and nothing else.
+     *
+     * Returns the order rather than a bool so the caller can put that earlier
+     * rating back into this request's context — see reapply().
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order|null  $order
+     * @return  \WC_Order|null
+     */
+    private static function rated_order( $order = null ) {
+
+        if( ! is_a( $order, 'WC_Order' ) ) {
+
+            if( ! function_exists( 'WC' ) || ! WC()->session ) return null;
+
+            $id = absint( WC()->session->get( 'order_awaiting_payment' ) );
+            if( ! $id ) return null;
+
+            $order = wc_get_order( $id );
+            if( ! $order ) return null;
+
+            // The same two tests WC_Checkout::create_order() applies before it
+            // will reuse that order. Without them the session's order id was
+            // taken on trust, and it outlives the basket it belongs to: a
+            // shopper whose card was declined, who abandoned the cart and came
+            // back an hour later with a completely different one, was matched
+            // against the old order, treated as already rated, and their new
+            // order went through with no review and no note saying why.
+            if( ! $order->has_status( [ 'pending', 'failed' ] ) ) return null;
+
+            if( function_exists( 'WC' ) && WC()->cart
+                && (string) $order->get_cart_hash() !== (string) WC()->cart->get_cart_hash() ) return null;
+
+        }
+
+        return (string) $order->get_meta( '_mshield_ai_rating' ) !== '' ? $order : null;
+
+    }
+
+    /**
+     * Put an earlier attempt's rating back into this request's context.
+     *
+     * The rating lives on the order; the trust cap it produces lives only in
+     * risk_context, which is per-request. So on the second attempt at a
+     * declined order the ladder scored on deterministic signals alone -- an
+     * order the model had rated 20/100 came out around 90, Low, and the row
+     * recorded a flag where the first attempt had recorded a hold. The hold
+     * itself survived only because the meta from attempt one happened to be
+     * picked up later.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     */
+    private static function reapply( $order ) {
+
+        $rating = (int) $order->get_meta( '_mshield_ai_rating' );
+        if( $rating <= 0 ) return;
+
+        $reasons = $order->get_meta( '_mshield_ai_reasons' );
+
+        risk_context::set_ai_trust( $rating, is_array( $reasons ) ? $reasons : [] );
+
+    }
+
+    /**
+     * The verdict already stored on an order, in persist()'s own shape.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @return  array|null
+     */
+    private static function stored_verdict( $order ) {
+
+        $rating = (string) $order->get_meta( '_mshield_ai_rating' );
+        if( $rating === '' ) return null;
+
+        $reasons = $order->get_meta( '_mshield_ai_reasons' );
+
+        return [
+            'rating'     => (int) $rating,
+            'verdict'    => (string) $order->get_meta( '_mshield_ai_verdict' ),
+            'confidence' => (float) $order->get_meta( '_mshield_ai_confidence' ),
+            'reasons'    => is_array( $reasons ) ? $reasons : [],
+        ];
 
     }
 
@@ -137,13 +270,23 @@ class ai_reviewer {
      *
      * @param   array   $snapshot   From snapshot_from_order() / _from_checkout().
      */
-    private function review( $snapshot ) {
+    private function review( $snapshot, $order = null ) {
 
         // One review per request. Both checkouts fire exactly one of the two
         // entry points above, so this only guards a theme or plugin that
         // triggers validation twice.
         if( $this->reviewed ) return;
         $this->reviewed = true;
+
+        // One review per order, across requests. A declined card sends the
+        // shopper round again in a fresh request, where the flag above is
+        // false and the same basket is worth exactly the same opinion.
+        $rated = self::rated_order( $order );
+
+        if( $rated ) {
+            self::reapply( $rated );
+            return;
+        }
 
         // 1. Decide whether this order is worth paying for an opinion on.
         //    Judged on the signal score alone: the AI's own rating cannot be
@@ -181,8 +324,10 @@ class ai_reviewer {
         ( new self() )->ask( self::snapshot_from_order( $order ) );
 
         // A person is waiting on the screen for this, so it is written through
-        // now rather than left for the recorder that will not run.
-        self::persist( $order );
+        // now rather than left for the recorder that will not run. $replacing,
+        // because a reviewer who clicked the button meant to overwrite the
+        // rating that is already there -- that is what the button is for.
+        self::persist( $order, true );
 
     }
 
@@ -213,18 +358,26 @@ class ai_reviewer {
             'reasons'    => $reasons,
         ];
 
-        db::log_event(
-            ip_utils::get_client_ip(),
-            'ai_review',
-            'flagged',
-            sprintf( 'AI review rated this order %d/100', $rating )
-        );
-
         // 4. Hand it to the ladder, now, while the decision is still ahead of
         //    us. The rating caps the trust score; the level that falls out
         //    decides the action. Nothing is held here — two systems deciding
         //    the same thing is how they came to disagree.
         risk_context::set_ai_trust( $rating, $reasons );
+
+        // Logged after the ladder has seen the rating, so the trust column
+        // means the same thing here as on every other row: the composite the
+        // store acted on, not the AI's own number. That one is in the reason.
+        // There is no order yet — this runs at validation, which is the point
+        // — so the row carries no order id and is tied back by IP and time.
+        db::log_event(
+            ip_utils::get_client_ip(),
+            'ai_review',
+            'flagged',
+            sprintf( 'AI review rated this order %d/100', $rating ),
+            '',
+            0,
+            risk_context::trust()
+        );
 
     }
 
@@ -238,12 +391,32 @@ class ai_reviewer {
      * @since   2.2.0
      *
      * @param   \WC_Order   $order
+     * @param   bool        $replacing  Overwrite a rating the order already
+     *                                  carries. Only a reviewer asking for a
+     *                                  re-rate does this.
      * @return  array|null  The verdict that was written, or null when none ran.
      */
-    public static function persist( $order ) {
+    public static function persist( $order, $replacing = false ) {
 
-        if( self::$pending === null ) return null;
         if( ! is_a( $order, 'WC_Order' ) ) return null;
+
+        // Nothing new to write, but the order may already carry a verdict from
+        // an earlier attempt — and the caller uses this return value to fill
+        // mshield_risk.ai_rating and ai_verdict. save_risk() is a REPLACE, so
+        // handing back null on a payment retry deleted both columns off a row
+        // that had them, and the order read as "no AI has ever run here" while
+        // still carrying the rating in its own meta.
+        if( self::$pending === null ) return self::stored_verdict( $order );
+
+        // The backstop behind rated_order(). That one catches the retry
+        // before the model is paid; this one catches anything that gets past
+        // it, so an order can never end up with two ratings and two notes
+        // saying different things about the same basket. A reviewer who asked
+        // for a re-rate has decided otherwise and passes $replacing.
+        if( ! $replacing && (string) $order->get_meta( '_mshield_ai_rating' ) !== '' ) {
+            self::$pending = null;
+            return self::stored_verdict( $order );
+        }
 
         $pending = self::$pending;
 

@@ -463,6 +463,12 @@ function deactivation() {
     // Clear scheduled cron events.
     wp_clear_scheduled_hook( 'mshield_daily_cleanup' );
 
+    // Queued reviews go too. A deactivated plugin is not loaded, so its
+    // handler is not registered, and the events would fire at nothing until
+    // they were cleared by hand. Carries an order id as an argument, so this
+    // needs unschedule_hook rather than clear_scheduled_hook.
+    wp_unschedule_hook( 'mshield_ai_review_order' );
+
     // And a back-catalogue rating in progress, which would otherwise keep
     // firing at a plugin that is no longer loaded.
     wp_clear_scheduled_hook( 'mshield_backfill_batch' );
@@ -737,6 +743,7 @@ function load() {
     require_once MSHIELD_PATH . 'protection/class-email-intel.php';
     require_once MSHIELD_PATH . 'protection/class-account-guard.php';
     require_once MSHIELD_PATH . 'protection/class-ai-reviewer.php';
+    require_once MSHIELD_PATH . 'protection/class-ai-async.php';
 
     /**
      * Initiate.

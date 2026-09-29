@@ -153,7 +153,7 @@ class risk_recorder {
     public function refuse_classic( $data, $errors ) {
 
         if( ! response::is_enforcing() ) return;
-        if( exempt::suppresses_action( $data['billing_email'] ?? '' ) ) return;
+        if( exempt::suppresses_action( $data['billing_email'] ?? '', null, 'response' ) ) return;
 
         $identities = entities::for_checkout( $data );
 
@@ -204,7 +204,7 @@ class risk_recorder {
         // a real customer's home address past BAD_REPUTATION. The POST that
         // places the order decides; an edit decides nothing.
         if( ! store_api::is_placing( $request ) ) return;
-        if( exempt::suppresses_action( $order->get_billing_email(), $order->get_user_id() ) ) return;
+        if( exempt::suppresses_action( $order->get_billing_email(), $order->get_user_id(), 'response' ) ) return;
 
         $identities = entities::for_order( $order );
 
@@ -401,7 +401,7 @@ class risk_recorder {
         // anything is DONE about the verdict, further down. Returning here
         // instead is what left this store with nine risk rows against seventy
         // orders and no indication anything was missing.
-        $exempt = exempt::suppresses_action( $order->get_billing_email(), $order->get_user_id() );
+        $exempt = exempt::suppresses_action( $order->get_billing_email(), $order->get_user_id(), 'response' );
 
         // The AI answered at validation, before this order existed. Its rating
         // is already in risk_context; this puts the rating, the verdict and the

@@ -327,7 +327,8 @@ class response {
                 'flagged',
                 'Step-up 3-D Secure requested: ' . $reason,
                 '',
-                (int) $order->get_id()
+                (int) $order->get_id(),
+                db::log_trust( $order )
             );
 
         } else {
@@ -519,7 +520,7 @@ class response {
             'Order detained before payment: ' . $reason,
             '',
             (int) $order->get_id(),
-            (float) $order->get_meta( '_mshield_risk_trust' ) ?: null
+            db::log_trust( $order )
         );
 
     }
@@ -588,7 +589,7 @@ class response {
 
         if( $reason === '' ) $reason = __( 'Flagged for review.', 'mighty-shield' );
 
-        db::log_event( ip_utils::get_client_ip(), $source, 'flagged', $reason, '', $order->get_id() );
+        db::log_event( ip_utils::get_client_ip(), $source, 'flagged', $reason, '', $order->get_id(), db::log_trust( $order ) );
 
         $order->add_order_note( 'MightyShield: ' . $reason );
 
@@ -772,7 +773,8 @@ class response {
             'flagged',
             'Order authorized and held for review: ' . $reason,
             '',
-            $order->get_id()
+            $order->get_id(),
+            db::log_trust( $order )
         );
 
         return $applied;
@@ -826,7 +828,8 @@ class response {
             'flagged',
             'Order held for review after payment: ' . $reason,
             '',
-            $order->get_id()
+            $order->get_id(),
+            db::log_trust( $order )
         );
 
         return true;
@@ -834,7 +837,73 @@ class response {
     }
 
     /**
-     * Put a paid order On-hold once the charge has settled.
+     * Set while a reviewer's decision is being carried out.
+     *
+     * @since   3.0.0
+     */
+    private static $deciding = false;
+
+    /**
+     * Bracket a reviewer's decision so the hold hook stands aside for it.
+     *
+     * Used by the order panel around Approve and Block. Both of those move
+     * money and then move the status, and the hold hook runs at priority 999
+     * inside those very transitions.
+     *
+     * @since   3.0.0
+     *
+     * @param   bool    $deciding
+     */
+    public static function deciding( $deciding ) {
+
+        self::$deciding = (bool) $deciding;
+
+    }
+
+    /**
+     * Whether this order is still waiting on a human.
+     *
+     * The routes that actually HOLD an order, which is a smaller set than the
+     * four the Fraud Review queue is built from. An order held at
+     * authorization used to escape the queue by being completed by hand; that
+     * is what this closes.
+     *
+     * Deliberately not _mshield_flagged, and — after this bit them — not
+     * _mshield_card_flagged either. Both are notes to a reviewer, not holds.
+     * card_signals sets its mark whenever ANY card signal fires, including
+     * card_country_mismatch at weight 15, which the catalogue's own comment
+     * says "cannot reach anything by itself". Counting it here meant a
+     * perfectly ordinary order shipping abroad on a domestic card was dragged
+     * back to On hold every time the merchant marked it Completed, forever,
+     * with no way out except the review panel. Nothing ever clears that mark.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @return  bool
+     */
+    private static function awaiting_review( $order ) {
+
+        $hold = (string) $order->get_meta( '_mshield_hold' );
+
+        // 'unavailable' means the hold could not be applied and the order was
+        // handled another way; 'released' means a reviewer let it go.
+        if( $hold === 'paid' || $hold === 'authorized' ) return true;
+
+        return (string) $order->get_meta( '_mshield_detained' ) === 'yes';
+
+    }
+
+    /**
+     * Put an order that is still waiting on a reviewer back On hold.
+     *
+     * Hooked on payment_complete and on the Processing and Completed
+     * transitions. It used to cover only orders held after payment, so an
+     * order held at authorization -- or detained before payment, or flagged
+     * by the card checks -- could be moved to Completed by hand and would
+     * leave the queue silently, with the authorization neither captured nor
+     * voided: money reserved on the customer's card, the order marked
+     * shipped, and nothing anywhere recording that a reviewer had looked.
      *
      * @since   1.9.1
      *
@@ -842,10 +911,17 @@ class response {
      */
     public static function hold_after_payment( $order_id, $unused = null, $transition = null ) {
 
+        // A reviewer is carrying out their decision right now. Approve
+        // captures the authorization first, and most gateways fire
+        // payment_complete from inside that capture -- before the panel has
+        // had any chance to record the verdict. Without this the hold would
+        // see an order still marked held with nothing decided on it yet and
+        // drag the approval straight back to On hold, in the same request
+        // that told the merchant it was done.
+        if( self::$deciding ) return;
+
         $order = wc_get_order( $order_id );
         if( ! $order ) return;
-
-        if( $order->get_meta( '_mshield_hold' ) !== 'paid' ) return;
 
         // A reviewer has already decided. The panel's Approve moves the order
         // to Processing and this hook fires inside that very transition; until
@@ -853,6 +929,11 @@ class response {
         // panel said "approved", the queue dropped the order, and nothing
         // could ever ship it.
         if( (string) $order->get_meta( '_mshield_review' ) !== '' ) return;
+
+        // Its predecessor, honoured for orders decided before 2.0 upgraded.
+        if( (string) $order->get_meta( '_mshield_ai_decision' ) !== '' ) return;
+
+        if( ! self::awaiting_review( $order ) ) return;
 
         if( $order->get_status() === 'on-hold' ) return;
 
@@ -865,8 +946,16 @@ class response {
         // the hold in one click and records the decision.
         $manual = is_array( $transition ) && ! empty( $transition['manual'] );
 
+        // The authorized case gets its own sentence: the money is reserved and
+        // not taken, so completing the order by hand does not charge anybody.
+        // A merchant who is not told that will ship against a capture that
+        // never happened.
+        $held_at_auth = (string) $order->get_meta( '_mshield_hold' ) === 'authorized';
+
         $order->update_status( 'on-hold', $manual
-            ? __( 'MightyShield: held for review. This order was held after payment and has not been reviewed; approve it from the MightyShield panel on this order, or from the Fraud Review queue, to release it.', 'mighty-shield' )
+            ? ( $held_at_auth
+                ? __( 'MightyShield: held for review. The card was authorized but never charged, so this order has not been paid for; approve it from the MightyShield panel on this order, or from the Fraud Review queue, to capture the payment and release it.', 'mighty-shield' )
+                : __( 'MightyShield: held for review. This order has not been reviewed; approve it from the MightyShield panel on this order, or from the Fraud Review queue, to release it.', 'mighty-shield' ) )
             : __( 'MightyShield: held for review.', 'mighty-shield' )
         );
 

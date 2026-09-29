@@ -48,14 +48,14 @@ class exempt {
      *
      * @since   1.4.0
      */
-    private static $ip_user_exempt = null;
+    private static $ip_user_exempt = [];
 
     /**
      * Whether the exempt event has already been logged this request.
      *
      * @since   1.4.0
      */
-    private static $logged = false;
+    private static $logged = [];
 
     /**
      * Determine whether the current request is exempt from all checks.
@@ -67,36 +67,40 @@ class exempt {
      *                               back to the logged-in user when null.
      * @return  bool
      */
-    public static function is_exempt( $email = '', $user_id = null ) {
+    public static function is_exempt( $email = '', $user_id = null, $scope = 'all' ) {
 
         $reason = '';
 
-        // IP + current-user checks are request-global — memoize them.
-        if( self::$ip_user_exempt === null ) {
-            self::$ip_user_exempt = false;
+        // IP + current-user checks are request-global -- memoized per scope,
+        // because the answer genuinely differs between them now. One cache for
+        // all three would hand the firewall's answer to the bot challenge.
+        if( ! isset( self::$ip_user_exempt[ $scope ] ) ) {
 
-            if( ip_whitelist::is_whitelisted( ip_utils::get_client_ip() ) ) {
-                self::$ip_user_exempt = 'ip';
+            self::$ip_user_exempt[ $scope ] = false;
+
+            if( ip_whitelist::is_whitelisted( ip_utils::get_client_ip(), $scope ) ) {
+                self::$ip_user_exempt[ $scope ] = 'ip';
             } else {
                 $current = function_exists( 'get_current_user_id' ) ? (int) get_current_user_id() : 0;
-                if( $current > 0 && ip_whitelist::is_user_whitelisted( $current ) ) {
-                    self::$ip_user_exempt = 'user';
-                } elseif( $current > 0 && ip_whitelist::is_role_whitelisted( $current ) ) {
-                    self::$ip_user_exempt = 'role';
+                if( $current > 0 && ip_whitelist::is_user_whitelisted( $current, $scope ) ) {
+                    self::$ip_user_exempt[ $scope ] = 'user';
+                } elseif( $current > 0 && ip_whitelist::is_role_whitelisted( $current, $scope ) ) {
+                    self::$ip_user_exempt[ $scope ] = 'role';
                 }
             }
+
         }
 
-        if( self::$ip_user_exempt !== false ) {
-            $reason = self::$ip_user_exempt;
+        if( self::$ip_user_exempt[ $scope ] !== false ) {
+            $reason = self::$ip_user_exempt[ $scope ];
         }
 
         // Explicit user id (e.g. order customer) not covered by the memoized
         // current-user check.
         if( $reason === '' && $user_id !== null && (int) $user_id > 0 ) {
-            if( ip_whitelist::is_user_whitelisted( (int) $user_id ) ) {
+            if( ip_whitelist::is_user_whitelisted( (int) $user_id, $scope ) ) {
                 $reason = 'user';
-            } elseif( ip_whitelist::is_role_whitelisted( (int) $user_id ) ) {
+            } elseif( ip_whitelist::is_role_whitelisted( (int) $user_id, $scope ) ) {
                 $reason = 'role';
             }
         }
@@ -110,20 +114,20 @@ class exempt {
         // bypass every check in the plugin — the firewall, the blocklist, the
         // score, all of it. An allowlist that anyone can opt into is not an
         // allowlist.
-        if( $reason === '' && $email !== '' && self::owns_email( $email ) && ip_whitelist::is_email_whitelisted( $email ) ) {
+        if( $reason === '' && $email !== '' && self::owns_email( $email ) && ip_whitelist::is_email_whitelisted( $email, $scope ) ) {
             $reason = 'email';
         }
 
         // Say so when a whitelisted address was typed but not proven. A store
         // that was relying on the old behaviour needs to see why it stopped,
         // rather than quietly wondering where its exemption went.
-        if( $reason === '' && $email !== '' && ip_whitelist::is_email_whitelisted( $email ) ) {
+        if( $reason === '' && $email !== '' && ip_whitelist::is_email_whitelisted( $email, $scope ) ) {
             self::log_unverified( $email );
         }
 
         if( $reason === '' ) return false;
 
-        self::log_once( $reason );
+        self::log_once( $reason, $scope );
 
         return true;
 
@@ -147,9 +151,9 @@ class exempt {
      * @param   int|null  $user_id   Explicit user ID (e.g. order customer).
      * @return  bool
      */
-    public static function suppresses_action( $email = '', $user_id = null ) {
+    public static function suppresses_action( $email = '', $user_id = null, $scope = 'all' ) {
 
-        return self::is_exempt( $email, $user_id );
+        return self::is_exempt( $email, $user_id, $scope );
 
     }
 
@@ -179,19 +183,19 @@ class exempt {
      * @param   \WC_Order   $order
      * @return  bool
      */
-    public static function suppresses_action_for_order( $order ) {
+    public static function suppresses_action_for_order( $order, $scope = 'response' ) {
 
         if( ! is_a( $order, 'WC_Order' ) ) return false;
 
         $ip = self::order_ip( $order );
 
-        if( $ip !== '' && ip_whitelist::is_whitelisted( $ip ) ) return true;
+        if( $ip !== '' && ip_whitelist::is_whitelisted( $ip, $scope ) ) return true;
 
         $user_id = (int) $order->get_user_id();
 
         if( $user_id > 0 ) {
-            if( ip_whitelist::is_user_whitelisted( $user_id ) ) return true;
-            if( ip_whitelist::is_role_whitelisted( $user_id ) ) return true;
+            if( ip_whitelist::is_user_whitelisted( $user_id, $scope ) ) return true;
+            if( ip_whitelist::is_role_whitelisted( $user_id, $scope ) ) return true;
         }
 
         // NOT matches_order(). Phone, name, postcode, city and country are
@@ -254,7 +258,7 @@ class exempt {
      * @param   \WC_Order   $order
      * @return  bool
      */
-    public static function is_exempt_order( $order ) {
+    public static function is_exempt_order( $order, $scope = 'response' ) {
 
         if( ! is_a( $order, 'WC_Order' ) ) return false;
 
@@ -263,18 +267,18 @@ class exempt {
         $ip = self::order_ip( $order );
         if( $ip === '' ) $ip = (string) $order->get_customer_ip_address();
 
-        if( $ip !== '' && ip_whitelist::is_whitelisted( $ip ) ) return true;
+        if( $ip !== '' && ip_whitelist::is_whitelisted( $ip, $scope ) ) return true;
 
         $user_id = (int) $order->get_user_id();
 
         if( $user_id > 0 ) {
-            if( ip_whitelist::is_user_whitelisted( $user_id ) ) return true;
-            if( ip_whitelist::is_role_whitelisted( $user_id ) ) return true;
+            if( ip_whitelist::is_user_whitelisted( $user_id, $scope ) ) return true;
+            if( ip_whitelist::is_role_whitelisted( $user_id, $scope ) ) return true;
         }
 
         $email = (string) $order->get_billing_email();
 
-        if( $email !== '' && ip_whitelist::is_email_whitelisted( $email ) ) return true;
+        if( $email !== '' && ip_whitelist::is_email_whitelisted( $email, $scope ) ) return true;
 
         if( ip_whitelist::matches_order( $order ) ) return true;
 
@@ -313,8 +317,8 @@ class exempt {
      */
     private static function log_unverified( $email ) {
 
-        if( self::$logged ) return;
-        self::$logged = true;
+        if( ! empty( self::$logged['unverified'] ) ) return;
+        self::$logged['unverified'] = true;
 
         db::log_event(
             ip_utils::get_client_ip(),
@@ -333,16 +337,27 @@ class exempt {
      *
      * @param   string  $reason  Which match granted the exemption.
      */
-    private static function log_once( $reason ) {
+    private static function log_once( $reason, $scope = 'all' ) {
 
-        if( self::$logged ) return;
-        self::$logged = true;
+        // Keyed by scope, and the scope is in the message.
+        //
+        // One shared flag was written when an exemption meant one thing. Now
+        // the firewall asks first and the response layer asks second, so a
+        // shopper exempt only from holds had their firewall answer logged --
+        // or, worse, the unverified-email line below claimed the flag and the
+        // exemption that actually happened was never recorded at all. And
+        // "checks bypassed" was simply untrue for a scoped entry: the firewall
+        // may well have run.
+        if( ! empty( self::$logged[ $scope ] ) ) return;
+        self::$logged[ $scope ] = true;
 
         db::log_event(
             ip_utils::get_client_ip(),
             'classic_checkout',
             'exempt',
-            'Whitelisted — checks bypassed (' . $reason . ')'
+            $scope === 'all'
+                ? 'Allowlisted — every check bypassed (' . $reason . ')'
+                : 'Allowlisted — ' . $scope . ' checks bypassed (' . $reason . ')'
         );
 
     }

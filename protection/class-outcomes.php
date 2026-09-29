@@ -161,7 +161,8 @@ class outcomes {
             'flagged',
             sprintf( 'Order #%d recorded as %s — identity reputation updated', $order->get_id(), $outcome ),
             '',
-            (int) $order->get_id()
+            (int) $order->get_id(),
+            db::log_trust( $order )
         );
 
         return true;
@@ -245,10 +246,21 @@ class outcomes {
         $order->update_meta_data( '_mshield_review', $verdict );
         $order->update_meta_data( '_mshield_outcome', $outcome );
         $order->update_meta_data( '_mshield_outcome_weight', $weight === null ? '' : (string) $weight );
-        $order->add_order_note( 'MightyShield: ' . (
+
+        // Who and when. A verdict is the thing that takes an order out of the
+        // queue, and until now the record of it named nobody -- so an order
+        // that turned out to be a chargeback could be traced to a decision but
+        // not to a decider.
+        $order->update_meta_data( '_mshield_review_by', (int) get_current_user_id() );
+        $order->update_meta_data( '_mshield_review_at', gmdate( 'Y-m-d H:i:s' ) );
+
+        $order->add_order_note( 'MightyShield: ' . sprintf(
+            /* translators: 1: what the reviewer decided. 2: who they are. */
+            __( '%1$s (%2$s)', 'mighty-shield' ),
             $verdict === 'fraud'
                 ? __( 'Marked as fraud by a reviewer. Future orders from this customer, address, card or network will be scored accordingly.', 'mighty-shield' )
-                : __( 'Marked as clean by a reviewer. Any penalty this order placed on the customer has been taken back.', 'mighty-shield' )
+                : __( 'Marked as clean by a reviewer. Any penalty this order placed on the customer has been taken back.', 'mighty-shield' ),
+            self::acting_user()
         ) );
         $order->save();
 
@@ -260,7 +272,8 @@ class outcomes {
             $verdict === 'fraud' ? 'blocked' : 'flagged',
             sprintf( 'Order #%d marked %s by a reviewer — identity reputation updated', $order->get_id(), $verdict ),
             '',
-            (int) $order->get_id()
+            (int) $order->get_id(),
+            db::log_trust( $order )
         );
 
         return true;
@@ -392,7 +405,82 @@ class outcomes {
      */
     public function on_completed( $order_id ) {
 
+        self::note_undecided_exit( $order_id );
+
         self::record( $order_id, 'approved' );
+
+    }
+
+    /**
+     * Name whoever completed an order MightyShield had flagged.
+     *
+     * The queue is built from order status as well as meta, so completing a
+     * flagged order takes it off the list whether or not anybody used the
+     * panel. That was the whole of the record: an outcome of 'approved' and no
+     * indication that a person was involved, let alone which one. Orders that
+     * were actually *held* are put back On hold by response::hold_after_payment
+     * instead; this covers the rest.
+     *
+     * @since   3.0.0
+     *
+     * @param   int     $order_id
+     */
+    private static function note_undecided_exit( $order_id ) {
+
+        $order = wc_get_order( $order_id );
+        if( ! $order ) return;
+
+        // A reviewer already went through the panel, which records itself.
+        if( (string) $order->get_meta( '_mshield_review' ) !== '' ) return;
+
+        // Nothing to account for on an order MightyShield never marked.
+        if( (string) $order->get_meta( '_mshield_flagged' ) === ''
+            && (string) $order->get_meta( '_mshield_card_flagged' ) === '' ) return;
+
+        // And nothing to say about an order that is being HELD rather than
+        // released. hold_paid(), hold_authorized() and mark_detained() all set
+        // _mshield_flagged, so every genuinely held order sailed through the
+        // test above -- and response::hold_after_payment() then dragged it
+        // back to On hold at priority 999 on this very hook. The order was
+        // left carrying a note saying it had been completed without review, a
+        // reviewer's name against a review nobody did, an approved outcome
+        // credited to all its identities, and a status of On hold.
+        //
+        // The same keys set_manual() uses for a real verdict, so anything
+        // reading them could not tell the two apart.
+        $hold = (string) $order->get_meta( '_mshield_hold' );
+
+        if( $hold === 'paid' || $hold === 'authorized' ) return;
+        if( (string) $order->get_meta( '_mshield_detained' ) === 'yes' ) return;
+
+        $user = (int) get_current_user_id();
+        if( ! $user ) return;
+
+        $order->update_meta_data( '_mshield_review_by', $user );
+        $order->update_meta_data( '_mshield_review_at', gmdate( 'Y-m-d H:i:s' ) );
+        $order->add_order_note( 'MightyShield: ' . sprintf(
+            /* translators: %s: the user who completed the order. */
+            __( 'Completed by %s without going through the review panel, so no verdict was recorded against it.', 'mighty-shield' ),
+            self::acting_user()
+        ) );
+        $order->save();
+
+    }
+
+    /**
+     * Who is acting, for an order note.
+     *
+     * @since   3.0.0
+     *
+     * @return  string
+     */
+    private static function acting_user() {
+
+        $user = wp_get_current_user();
+
+        if( ! $user || ! $user->exists() ) return __( 'automatically', 'mighty-shield' );
+
+        return $user->display_name !== '' ? $user->display_name : $user->user_login;
 
     }
 

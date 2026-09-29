@@ -51,6 +51,14 @@ class adapter_skyverge implements gateway_adapter {
         if( ! \in_array( $gateway, self::handles(), true ) ) return false;
 
         // Card signals yes; 3-D Secure no — see the class note.
+        //
+        // Declines no, deliberately. The framework hook this adapter listens
+        // on, wc_payment_gateway_{id}_add_transaction_data, fires on approved
+        // transactions: there is no equivalent carrying a declined
+        // authorization and its own id. So these gateways keep counting
+        // declines from WooCommerce's failed-status transition, which counts
+        // per attempt rather than per authorization and is the weaker of the
+        // two. Saying so here rather than claiming a parity that is not there.
         return $capability === 'card_signals';
 
     }

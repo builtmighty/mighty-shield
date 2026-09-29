@@ -26,6 +26,14 @@ $type_labels = [
     'country'  => __( 'Country', 'mighty-shield' ),
 ];
 
+// Entries stored before scopes existed carry none, and are read as 'all'.
+$scope_labels = [
+    'all'       => __( 'Everything', 'mighty-shield' ),
+    'response'  => __( 'Flags, holds and refusals', 'mighty-shield' ),
+    'challenge' => __( 'Bot challenge', 'mighty-shield' ),
+    'firewall'  => __( 'Firewall and blocklist', 'mighty-shield' ),
+];
+
 $wp_role_names = wp_roles()->get_names();
 ?>
 
@@ -70,7 +78,24 @@ $wp_role_names = wp_roles()->get_names();
                             <option value="<?php echo esc_attr( $role_slug ); ?>"><?php echo esc_html( translate_user_role( $role_name ) ); ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <p class="description"><?php esc_html_e( 'Every user in this role bypasses all checks. Be careful with broad roles like Customer, which would exempt all such users.', 'mighty-shield' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Every user in this role is exempted from whatever you choose below. Be careful with broad roles like Customer, which would cover every shopper on the store.', 'mighty-shield' ); ?></p>
+                    <label>
+                        <input type="checkbox" name="mshield_confirm_role" value="1" />
+                        <?php esc_html_e( 'Yes, exempt everyone in this role', 'mighty-shield' ); ?>
+                    </label>
+                    <span class="mshield-hint"><?php esc_html_e( 'Only needed for a role your customers hold.', 'mighty-shield' ); ?></span>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Exempt From', 'mighty-shield' ); ?></th>
+                <td>
+                    <select name="mshield_new_scope">
+                        <option value="all"><?php esc_html_e( 'Everything', 'mighty-shield' ); ?></option>
+                        <option value="response"><?php esc_html_e( 'Flags, holds and refusals only', 'mighty-shield' ); ?></option>
+                        <option value="challenge"><?php esc_html_e( 'The bot challenge only', 'mighty-shield' ); ?></option>
+                        <option value="firewall"><?php esc_html_e( 'The firewall and IP blocklist only', 'mighty-shield' ); ?></option>
+                    </select>
+                    <p class="description"><?php esc_html_e( 'Narrow this where you can. A warehouse account that needs to skip the bot challenge rarely needs its orders exempt from review as well.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
             <tr>
@@ -94,6 +119,7 @@ $wp_role_names = wp_roles()->get_names();
                     <th><?php esc_html_e( 'Type', 'mighty-shield' ); ?></th>
                     <th><?php esc_html_e( 'Value', 'mighty-shield' ); ?></th>
                     <th><?php esc_html_e( 'Label', 'mighty-shield' ); ?></th>
+                    <th><?php esc_html_e( 'Exempt From', 'mighty-shield' ); ?></th>
                     <th><?php esc_html_e( 'Source', 'mighty-shield' ); ?></th>
                     <th><?php esc_html_e( 'Added', 'mighty-shield' ); ?></th>
                     <th><?php esc_html_e( 'Actions', 'mighty-shield' ); ?></th>
@@ -117,6 +143,7 @@ $wp_role_names = wp_roles()->get_names();
                         ?>
                     </td>
                     <td><?php echo esc_html( $entry['label'] ); ?></td>
+                    <td><?php echo esc_html( $scope_labels[ $entry['scope'] ?? 'all' ] ?? $scope_labels['all'] ); ?></td>
                     <td>
                         <?php if( ! empty( $entry['system'] ) ) : ?>
                             <span style="color: #2271b1;"><?php esc_html_e( 'System', 'mighty-shield' ); ?></span>

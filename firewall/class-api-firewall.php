@@ -103,13 +103,13 @@ class api_firewall {
         $ip = ip_utils::get_client_ip();
 
         // Check if whitelisted.
-        if( ip_whitelist::is_whitelisted( $ip ) ) {
+        if( ip_whitelist::is_whitelisted( $ip, 'firewall' ) ) {
             return $result;
         }
 
         // Whitelisted WP user or role bypasses the firewall.
         $uid = get_current_user_id();
-        if( $uid && ( ip_whitelist::is_user_whitelisted( $uid ) || ip_whitelist::is_role_whitelisted( $uid ) ) ) {
+        if( $uid && ( ip_whitelist::is_user_whitelisted( $uid, 'firewall' ) || ip_whitelist::is_role_whitelisted( $uid, 'firewall' ) ) ) {
             return $result;
         }
 

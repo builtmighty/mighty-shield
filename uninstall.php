@@ -94,6 +94,16 @@ function mshield_uninstall_site() {
     wp_clear_scheduled_hook( 'mshield_daily_cleanup' );
     wp_clear_scheduled_hook( 'mshield_backfill_batch' );
 
+    // wp_unschedule_hook(), not wp_clear_scheduled_hook(): a queued review
+    // carries its order id as an argument, and the clear_ function only
+    // removes events whose args match the ones it is given -- so with no args
+    // it would walk straight past every one of them.
+    // The literal, not ai_async::HOOK. Nothing in this file is bootstrapped --
+    // WordPress loads uninstall.php on its own, with the plugin unloaded --
+    // so naming the class here would be a fatal on the one path that has to
+    // work without it.
+    wp_unschedule_hook( 'mshield_ai_review_order' );
+
 }
 
 if( is_multisite() ) {
@@ -115,10 +125,10 @@ if( is_multisite() ) {
 
 }
 
-// Background reviews were retired in 1.9.2 -- reviews run during checkout, so
-// nothing is queued. Still cancelled here: an install upgrading from an older
-// version can have jobs sitting in Action Scheduler, and leaving them would
-// have it firing at a plugin that no longer exists.
+// Reviews can be queued again as of 3.0.0: a store set to review just after
+// checkout schedules one per order. Cancelled here so nothing fires at a
+// plugin that no longer exists -- which also covers jobs left over from the
+// background reviews this hook carried before they were retired in 1.9.2.
 if( function_exists( 'as_unschedule_all_actions' ) ) {
     as_unschedule_all_actions( 'mshield_ai_review_order' );
     // A back-catalogue rating still in progress.

@@ -33,6 +33,38 @@ class api_error {
     const MAX = 300;
 
     /**
+     * Whether a second provider is worth trying after this failure.
+     *
+     * The distinction is between "this provider is having a bad time" and
+     * "this request was wrong". A timeout, a 5xx, a rate limit or a dead key
+     * are all facts about one provider, and another one may well answer. A
+     * malformed request, a schema the provider rejected, or a model name that
+     * does not exist will fail in exactly the same way twice, and trying again
+     * only spends the shopper's time and a second provider's quota.
+     *
+     * A WP_Error from the HTTP layer -- DNS, TLS, a connection timeout --
+     * never reached the provider at all, so it always qualifies.
+     *
+     * @since   3.0.0
+     *
+     * @param   int     $code   HTTP status, or 0 when the request never landed.
+     * @return  bool
+     */
+    public static function retryable( $code ) {
+
+        $code = (int) $code;
+
+        if( $code === 0 )   return true;   // transport: DNS, TLS, timeout
+        if( $code === 401 ) return true;   // this provider's key is bad
+        if( $code === 403 ) return true;
+        if( $code === 408 ) return true;
+        if( $code === 429 ) return true;   // this provider's quota
+
+        return $code >= 500;
+
+    }
+
+    /**
      * Pull the provider's own explanation out of a response.
      *
      * Handles the shapes the supported providers actually use: Anthropic and

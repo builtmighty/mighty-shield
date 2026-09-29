@@ -125,7 +125,7 @@ class gateways {
      *
      * @since   1.9.3
      *
-     * @return  array   brand => [ label, 3ds, auth_only, card_signals, active, note ]
+     * @return  array   brand => [ label, 3ds, auth_only, card_signals, declines, active, note ]
      */
     public static function supported_report() {
 
@@ -140,6 +140,7 @@ class gateways {
                 '3ds'          => false,
                 'auth_only'    => false,
                 'card_signals' => false,
+                'declines'     => false,
                 'active'       => false,
             ];
 
@@ -147,7 +148,7 @@ class gateways {
 
                 // Derived, never restated. If an adapter drops a capability
                 // this row stops claiming it on the next page load.
-                foreach( [ '3ds', 'auth_only', 'card_signals' ] as $cap ) {
+                foreach( [ '3ds', 'auth_only', 'card_signals', 'declines' ] as $cap ) {
                     if( self::supports( $cap, $id ) ) $row[ $cap ] = true;
                 }
 
@@ -329,6 +330,7 @@ class gateways {
                 '3ds'          => self::supports( '3ds', $id ),
                 'card_signals' => self::supports( 'card_signals', $id ),
                 'auth_only'    => self::supports( 'auth_only', $id ),
+                'declines'     => self::supports( 'declines', $id ),
                 'adapter'      => substr( strrchr( $adapter, '\\' ), 1 ),
             ];
 

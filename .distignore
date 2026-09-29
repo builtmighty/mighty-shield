@@ -28,8 +28,12 @@ package-lock.json
 node_modules
 vendor/bin
 
-# Development documentation. readme.txt is what the directory reads; README.md
-# is for the repository and duplicates it.
+# Development documentation. readme.txt is what the directory reads, and
+# every .md file in here is for the repository instead: README.md duplicates
+# readme.txt, and the rest are working notes and defect reports that quote
+# real order numbers and support addresses. The wildcard is the point -- the
+# named entries below kept working while anything new quietly shipped.
+*.md
 README.md
 CONTRIBUTING.md
 

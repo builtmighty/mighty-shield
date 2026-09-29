@@ -125,8 +125,9 @@ class smarty_address_verifier {
             '<div class="notice notice-error"><p><strong>%s</strong> %s <a href="%s">%s</a></p></div>',
             esc_html__( 'MightyShield:', 'mighty-shield' ),
             esc_html( sprintf(
-                /* translators: %s: API error message. */
-                __( 'Address verification (Smarty) is degraded and is falling back to a basic ZIP and state check. Full USPS verification is NOT running. Last error: %s', 'mighty-shield' ),
+                /* translators: 1: how long ago the error happened, e.g. "12 mins". 2: API error message. */
+                __( 'Address verification (Smarty) is degraded and is falling back to a basic ZIP and state check. Full USPS verification is NOT running. %1$s ago: %2$s', 'mighty-shield' ),
+                human_time_diff( (int) $degraded['time'] ),
                 $degraded['message']
             ) ),
             // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal

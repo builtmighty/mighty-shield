@@ -38,7 +38,11 @@ jobs:
           unzip -l mighty-shield.zip | tail -n 1
           echo
           echo "Anything that should not be here?"
-          unzip -Z1 mighty-shield.zip | grep -E '(^|/)(\.git|\.github|node_modules|README\.md|composer\.json|phpcs\.xml)' && exit 1 || echo "  nothing unexpected"
+          # Any .md at all, not just README.md. Working notes and defect
+          # reports live in the repo root and quote real order numbers and
+          # support addresses; naming them one at a time is how the last one
+          # got missed.
+          unzip -Z1 mighty-shield.zip | grep -E '(^|/)(\.git|\.github|node_modules|composer\.json|phpcs\.xml)|\.md$' && exit 1 || echo "  nothing unexpected"
 
       - name: Get latest release tag
         id: tag

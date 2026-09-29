@@ -88,7 +88,7 @@ class ip_blocklist {
         // on PHP 8 throws for `billing_email[]=x`. A refusal must not become a
         // 500 the blocked visitor can trigger at will.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checkout form data on a WooCommerce hook; WooCommerce owns the nonce for its own checkout
-        if( \MightyShield\Includes\exempt::suppresses_action( isset( $_POST['billing_email'] ) && is_string( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '' ) ) return;
+        if( \MightyShield\Includes\exempt::suppresses_action( isset( $_POST['billing_email'] ) && is_string( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '', null, 'firewall' ) ) return;
 
         db::log_event( $ip, 'classic_checkout', 'blocked', 'Blocklisted IP' );
         // Deliberately NOT gated on response::may_refuse(). Every other legacy
@@ -133,7 +133,7 @@ class ip_blocklist {
         // every cart and checkout route on the block checkout.
         $uid = get_current_user_id();
         if( $uid && class_exists( '\MightyShield\Includes\exempt' )
-            && \MightyShield\Includes\exempt::suppresses_action( (string) wp_get_current_user()->user_email, $uid ) ) {
+            && \MightyShield\Includes\exempt::suppresses_action( (string) wp_get_current_user()->user_email, $uid, 'firewall' ) ) {
             return $result;
         }
 
@@ -164,7 +164,7 @@ class ip_blocklist {
     public static function is_blocked( $ip ) {
 
         // Whitelist always wins.
-        if( ip_whitelist::is_whitelisted( $ip ) ) return false;
+        if( ip_whitelist::is_whitelisted( $ip, 'firewall' ) ) return false;
 
         $blocklist = self::get_blocklist();
 

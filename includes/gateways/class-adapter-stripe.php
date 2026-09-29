@@ -69,6 +69,21 @@ class adapter_stripe implements gateway_adapter {
         // either would promise a signal that never arrives.
         if( $capability === 'card_signals' ) return $gateway === 'stripe';
 
+        // Declines, off the same stream. charge.failed is one declined
+        // authorization with its own id, which is what a card tester produces
+        // and what WooCommerce's status machine cannot see: fifty cards
+        // through one order is one failed status.
+        //
+        // Claiming this stands the status-transition fallback down, so it is
+        // an OBSERVATION and not a claim about the gateway id. This class's
+        // own note above says webhooks "on a great many stores were not"
+        // configured; a store like that would have had decline counting, the
+        // temp block and the card-testing alert go silently dead on the
+        // commonest gateway in the install base. webhooks_live() only answers
+        // yes once a Stripe webhook has actually arrived, so an unconfigured
+        // store keeps the fallback it already had.
+        if( $capability === 'declines' ) return $gateway === 'stripe' && self::webhooks_live();
+
         return false;
 
     }
@@ -137,7 +152,61 @@ class adapter_stripe implements gateway_adapter {
      */
     const PLAIN_DECLINE_WEIGHT = 3.0;
 
+    /**
+     * When a Stripe webhook was last seen, as a Unix timestamp.
+     *
+     * @since   3.0.0
+     */
+    const WEBHOOK_SEEN = 'mshield_stripe_webhook_seen';
+
+    /**
+     * How long a store counts as having working webhooks after the last one.
+     *
+     * Generous on purpose. A quiet store can go weeks without an event worth
+     * delivering, and the cost of being wrong in this direction is one decline
+     * counted by the status hook as well; the cost in the other direction is
+     * decline tracking switched off on a store that never had webhooks.
+     *
+     * @since   3.0.0
+     */
+    const WEBHOOK_TTL = 2592000; // 30 days.
+
+    /**
+     * Note that Stripe reached us.
+     *
+     * Written at most once a day: this runs on every webhook, and a store
+     * under load takes a lot of them.
+     *
+     * @since   3.0.0
+     */
+    private static function note_webhook() {
+
+        $seen = (int) get_option( self::WEBHOOK_SEEN, 0 );
+
+        if( time() - $seen < DAY_IN_SECONDS ) return;
+
+        update_option( self::WEBHOOK_SEEN, time(), false );
+
+    }
+
+    /**
+     * Whether this store's Stripe webhooks are actually delivering.
+     *
+     * @since   3.0.0
+     *
+     * @return  bool
+     */
+    public static function webhooks_live() {
+
+        $seen = (int) get_option( self::WEBHOOK_SEEN, 0 );
+
+        return $seen > 0 && ( time() - $seen ) < self::WEBHOOK_TTL;
+
+    }
+
     public static function on_webhook( $type, $notification, $order ) {
+
+        self::note_webhook();
 
         if( empty( $notification->data->object ) ) return;
 
@@ -158,8 +227,14 @@ class adapter_stripe implements gateway_adapter {
         // subscription renewal retried off-session is not a checkout at all.
         if( $type === 'charge.failed' ) {
 
-            $fp = (string) ( $charge->payment_method_details->card->fingerprint ?? '' );
-            if( $fp === '' || ! class_exists( '\MightyShield\Includes\entities' ) ) return;
+            // The order and the renewal test come first, and the idempotency
+            // key is claimed only once there is something to be idempotent
+            // about. Claiming it above these meant any early exit burned the
+            // key and Stripe's redelivery -- its only retry -- was dropped for
+            // a week.
+            $declined = $order instanceof \WC_Order ? $order : self::order_for( $charge );
+
+            if( $declined instanceof \WC_Order && function_exists( 'wcs_order_contains_renewal' ) && wcs_order_contains_renewal( $declined ) ) return;
 
             $charge_id = (string) ( $charge->id ?? '' );
             if( $charge_id !== '' ) {
@@ -168,8 +243,20 @@ class adapter_stripe implements gateway_adapter {
                 set_transient( $seen_key, 1, WEEK_IN_SECONDS );
             }
 
-            $renewal = $order instanceof \WC_Order ? $order : self::order_for( $charge );
-            if( $renewal instanceof \WC_Order && function_exists( 'wcs_order_contains_renewal' ) && wcs_order_contains_renewal( $renewal ) ) return;
+            // Counted before the fingerprint is read, and whether or not there
+            // is one. A decline is a decline: iDEAL, Bancontact, SEPA and Link
+            // all ride the same 'stripe' gateway id and carry no card
+            // fingerprint, and with this below the fingerprint guard an
+            // unlimited number of them moved no counter at all -- while
+            // counts_its_own_declines() had already stood the status-transition
+            // fallback down for the whole gateway.
+            if( $declined instanceof \WC_Order && class_exists( '\MightyShield\Protection\failed_payment_tracker' ) ) {
+                \MightyShield\Protection\failed_payment_tracker::record_decline( $declined, $charge_id );
+            }
+
+            // Reputation is the card's own, so it needs a card.
+            $fp = (string) ( $charge->payment_method_details->card->fingerprint ?? '' );
+            if( $fp === '' || ! class_exists( '\MightyShield\Includes\entities' ) ) return;
 
             $code   = (string) ( $charge->failure_code ?? '' );
             $reason = (string) ( $charge->outcome->reason ?? '' );

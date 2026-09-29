@@ -133,6 +133,18 @@ class settings {
         // AI Detection.
         'mshield_ai_enabled'                => 'no',
         'mshield_ai_provider'               => 'anthropic',
+        // Empty means no fallback, which is the default: a second provider is
+        // a second bill and a second set of terms, so nobody gets one by
+        // accident. Only consulted when the first provider is the thing that
+        // failed -- see api_error::retryable() -- and inside the same timeout,
+        // so a fallback cannot make a slow checkout slower.
+        'mshield_ai_fallback_provider'      => '',
+        // inline: review during checkout, before payment. The only mode that
+        //   can hold an authorize-only order before the card is charged.
+        // async: review immediately after, off the shopper's request, so a
+        //   slow provider cannot slow the checkout down. A hold then arrives
+        //   through the post-payment route instead.
+        'mshield_ai_mode'                   => 'inline',
         'mshield_ai_anthropic_key'          => '',
         'mshield_ai_anthropic_model'        => 'claude-haiku-4-5',
         'mshield_ai_openai_key'             => '',
@@ -142,8 +154,6 @@ class settings {
         // Not 1.5: Google retired the whole 1.5 series in September 2025, so a
         // merchant who took the default got a 404 on every review.
         'mshield_ai_gemini_model'           => 'gemini-2.5-flash',
-        // inline: review during checkout (needed for authorize-only holds).
-        // async: review immediately after, off the shopper's request.
         // Hard ceiling on provider calls per day. 0 = no cap.
         'mshield_ai_daily_cap'              => 0,
         // Send the shape of the customer's details to the AI provider rather

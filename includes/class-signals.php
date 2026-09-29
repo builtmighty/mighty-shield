@@ -498,6 +498,25 @@ class signals {
             'weight' => 55.0,
             'floor'  => 'none',
         ],
+        'recent_declines' => [
+            'group'  => 'history',
+            // The companion to failed_payments, for the shape that one cannot
+            // see. Its threshold is the merchant's, it defaults to ten an
+            // hour, and it also temporarily blocks the address -- so it has to
+            // stay high enough that a shopper fumbling a card number is not
+            // locked out of the store. Card testing does not look like ten
+            // declines. It looks like two or three and then a charge that
+            // works, and against a ten-decline gate that scores nothing at
+            // all.
+            //
+            // So: a lower, fixed count, scoring only, blocking nothing. At 25
+            // a clean order lands on Elevated rather than Low, which is a
+            // second look and not a refusal -- right for a shape that also
+            // describes an honest shopper who finally found the right card.
+            // The two never both fire; see failed_payment_tracker.
+            'weight' => 25.0,
+            'floor'  => 'none',
+        ],
         'store_under_attack' => [
             'group'  => 'network',
             // Not about this order: about the store. While the store-wide
@@ -1175,6 +1194,11 @@ class signals {
             'failed_payments' => [
                 'label' => __( 'Repeated payment failures', 'mighty-shield' ),
                 'desc'  => __( 'A run of declines from one connection or one mailbox — the clearest sign of cards being tried until one works.', 'mighty-shield' ),
+            ],
+
+            'recent_declines' => [
+                'label' => __( 'A few declines just before this order', 'mighty-shield' ),
+                'desc'  => __( 'Two or three cards refused and then one that worked. Often a shopper who found the right card, which is why this asks for a second look rather than refusing.', 'mighty-shield' ),
             ],
 
             'store_under_attack' => [

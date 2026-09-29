@@ -716,7 +716,7 @@ class captcha {
         $ip = ip_utils::get_client_ip();
         if( $ip === '' ) return false;
 
-        if( \MightyShield\Firewall\ip_whitelist::is_whitelisted( $ip ) ) return false;
+        if( \MightyShield\Firewall\ip_whitelist::is_whitelisted( $ip, 'challenge' ) ) return false;
 
         $count = (int) db::increment_rate_limit( md5( $ip . '|captcha_unanswered' ), 'captcha_unanswered', self::UNANSWERED_WINDOW );
 
@@ -1470,9 +1470,10 @@ class captcha {
             '<div class="notice notice-error"><p><strong>%s</strong> %s</p></div>',
             esc_html__( 'MightyShield:', 'mighty-shield' ),
             esc_html( sprintf(
-                /* translators: %s: provider error code. */
-                __( 'The bot challenge is misconfigured (%s) and is failing open so it does not block checkout. Verify your Site Key and Secret Key on the Shielding tab.', 'mighty-shield' ),
-                $degraded['message']
+                /* translators: 1: provider error code. 2: how long ago it happened, e.g. "12 mins". */
+                __( 'The bot challenge is misconfigured (%1$s) and is failing open so it does not block checkout, as of %2$s ago. Verify your Site Key and Secret Key on the Shielding tab.', 'mighty-shield' ),
+                $degraded['message'],
+                human_time_diff( (int) $degraded['time'] )
             ) )
         );
 

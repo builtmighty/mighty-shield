@@ -90,6 +90,12 @@ class Plugin {
         // run, and only for the levels the merchant chose to spend calls on.
         $this->load_class( \MightyShield\Protection\ai_reviewer::class );
 
+        // The same review, scheduled after the order exists, for stores that
+        // would rather not spend a provider's latency on the checkout request.
+        // Registers its handler either way so reviews already queued still run
+        // after a merchant switches back to inline.
+        $this->load_class( \MightyShield\Protection\ai_async::class );
+
         // Phase 1 terminus. Records the scored verdict once every layer above
         // has emitted. Observation only — it takes no action on the order.
         $this->load_class( \MightyShield\Protection\risk_recorder::class );

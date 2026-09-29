@@ -59,6 +59,16 @@ $model_select = function( $key ) {
                     <p class="description"><?php esc_html_e( 'Requires valid API credentials below. Every review costs a request to your AI provider.', 'mighty-shield' ); ?></p>
                 </td>
             </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'When To Review', 'mighty-shield' ); ?></th>
+                <td>
+                    <?php admin_page::radios( 'mshield_ai_mode', [
+                        'inline' => __( 'During checkout', 'mighty-shield' ),
+                        'async'  => __( 'Just after checkout', 'mighty-shield' ),
+                    ], settings::get( 'mshield_ai_mode' ) ); ?>
+                    <span class="mshield-hint"><?php esc_html_e( 'Reviewing during checkout is the only way to hold a card before it is charged. Reviewing just after keeps a slow provider out of the shopper\'s way; a held order is put on hold moments later instead.', 'mighty-shield' ); ?></span>
+                </td>
+            </tr>
         </table>
     </div>
 
@@ -75,6 +85,25 @@ $model_select = function( $key ) {
                         'gemini'    => __( 'Google Gemini', 'mighty-shield' ),
                     ], $provider ); ?>
                     <p class="description"><?php esc_html_e( 'Only the selected provider\'s credentials are used. Keys for the others stay saved if you switch back.', 'mighty-shield' ); ?></p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row"><?php esc_html_e( 'If That Provider Is Down', 'mighty-shield' ); ?></th>
+                <td>
+                    <?php
+                    $fallback = (string) settings::get( 'mshield_ai_fallback_provider' );
+                    $choices  = [ '' => __( 'Skip the review', 'mighty-shield' ) ];
+                    foreach( [ 'anthropic' => __( 'Try Anthropic', 'mighty-shield' ), 'openai' => __( 'Try OpenAI', 'mighty-shield' ), 'gemini' => __( 'Try Google Gemini', 'mighty-shield' ) ] as $id => $label ) {
+                        if( $id !== $provider ) $choices[ $id ] = $label;
+                    }
+                    echo '<select name="mshield_ai_fallback_provider" class="regular-text">';
+                    foreach( $choices as $id => $label ) {
+                        echo '<option value="' . esc_attr( $id ) . '"' . selected( $fallback, $id, false ) . '>' . esc_html( $label ) . '</option>';
+                    }
+                    echo '</select>';
+                    ?>
+                    <span class="mshield-hint"><?php esc_html_e( 'Needs a saved key for whichever you pick. Only used when the first provider is the thing that failed, and inside the same time limit, so a fallback cannot slow a checkout down.', 'mighty-shield' ); ?></span>
                 </td>
             </tr>
 

@@ -39,6 +39,52 @@ class ip_whitelist {
     const TYPES = [ 'ip', 'user', 'email', 'role', 'phone', 'name', 'postcode', 'city', 'country' ];
 
     /**
+     * What an entry may be exempted from.
+     *
+     * One allowlist used to mean one verdict: allowlisting a role so the
+     * warehouse could place orders without answering a bot challenge also
+     * stopped their orders being held, scored against, or refused by the
+     * firewall -- and a merchant had no way to say which they meant.
+     *
+     *   all        everything, and what every existing entry means.
+     *   firewall   the IP blocklist and the API firewall.
+     *   challenge  the bot challenge on checkout and the login forms.
+     *   response   what the risk rating does to an order: flags, holds,
+     *              refusals, 3-D Secure step-ups.
+     *
+     * An entry with no scope stored is read as 'all', so nothing that was
+     * allowlisted before this existed changes behaviour, and no migration is
+     * needed. That is the reason the default is the broad one rather than the
+     * narrow one.
+     *
+     * @since   3.0.0
+     */
+    const SCOPES = [ 'all', 'firewall', 'challenge', 'response' ];
+
+    /**
+     * Whether an entry's scope covers the thing being asked about.
+     *
+     * @since   3.0.0
+     *
+     * @param   array   $entry
+     * @param   string  $scope  One of SCOPES, or 'all' to match anything.
+     * @return  bool
+     */
+    public static function in_scope( $entry, $scope = 'all' ) {
+
+        $stored = isset( $entry['scope'] ) ? (string) $entry['scope'] : 'all';
+
+        if( ! in_array( $stored, self::SCOPES, true ) ) $stored = 'all';
+
+        // An entry scoped to everything answers every question, and a question
+        // about everything is answered by any entry -- which is what a screen
+        // listing exemptions, or an upgrade path calling these without a
+        // scope, is asking.
+        return $stored === 'all' || $scope === 'all' || $stored === $scope;
+
+    }
+
+    /**
      * The order-field types, and which normalised field each one reads.
      *
      * @since   3.0.0
@@ -121,11 +167,12 @@ class ip_whitelist {
      * @param   string  $ip     IP address to check.
      * @return  bool
      */
-    public static function is_whitelisted( $ip ) {
+    public static function is_whitelisted( $ip, $scope = 'all' ) {
 
         foreach( self::get_whitelist() as $entry ) {
 
             if( $entry['type'] !== 'ip' ) continue;
+            if( ! self::in_scope( $entry, $scope ) ) continue;
 
             $value = $entry['value'];
 
@@ -198,7 +245,7 @@ class ip_whitelist {
      * @param   array   $fields     type => raw value.
      * @return  bool
      */
-    public static function matches_fields( $fields ) {
+    public static function matches_fields( $fields, $scope = 'all' ) {
 
         // Normalise once, not once per allowlist row.
         $want = [];
@@ -219,6 +266,7 @@ class ip_whitelist {
             $type = $entry['type'] ?? '';
 
             if( ! isset( $want[ $type ] ) ) continue;
+            if( ! self::in_scope( $entry, $scope ) ) continue;
 
             // Stored already normalised by add_entry(), so this is an exact
             // comparison of two values in the same shape.
@@ -238,12 +286,13 @@ class ip_whitelist {
      * @param   int  $user_id    WordPress user ID.
      * @return  bool
      */
-    public static function is_user_whitelisted( $user_id ) {
+    public static function is_user_whitelisted( $user_id, $scope = 'all' ) {
 
         $user_id = (int) $user_id;
         if( $user_id <= 0 ) return false;
 
         foreach( self::get_whitelist() as $entry ) {
+            if( ! self::in_scope( $entry, $scope ) ) continue;
             if( $entry['type'] === 'user' && (int) $entry['value'] === $user_id ) {
                 return true;
             }
@@ -261,12 +310,13 @@ class ip_whitelist {
      * @param   string  $email  Email address.
      * @return  bool
      */
-    public static function is_email_whitelisted( $email ) {
+    public static function is_email_whitelisted( $email, $scope = 'all' ) {
 
         $email = strtolower( trim( (string) $email ) );
         if( $email === '' ) return false;
 
         foreach( self::get_whitelist() as $entry ) {
+            if( ! self::in_scope( $entry, $scope ) ) continue;
             if( $entry['type'] === 'email' && $entry['value'] === $email ) {
                 return true;
             }
@@ -284,7 +334,7 @@ class ip_whitelist {
      * @param   int  $user_id    WordPress user ID.
      * @return  bool
      */
-    public static function is_role_whitelisted( $user_id ) {
+    public static function is_role_whitelisted( $user_id, $scope = 'all' ) {
 
         $user_id = (int) $user_id;
         if( $user_id <= 0 ) return false;
@@ -292,6 +342,7 @@ class ip_whitelist {
         // Collect whitelisted role slugs.
         $roles = [];
         foreach( self::get_whitelist() as $entry ) {
+            if( ! self::in_scope( $entry, $scope ) ) continue;
             if( $entry['type'] === 'role' ) $roles[] = $entry['value'];
         }
 
@@ -315,7 +366,7 @@ class ip_whitelist {
      * @param   bool    $system Whether this is a system-detected entry.
      * @return  bool    True if added, false if already exists or invalid type.
      */
-    public static function add_entry( $type, $value, $label = '', $system = false ) {
+    public static function add_entry( $type, $value, $label = '', $system = false, $scope = 'all' ) {
 
         $type = in_array( $type, self::TYPES, true ) ? $type : '';
         if( $type === '' ) return false;
@@ -326,9 +377,25 @@ class ip_whitelist {
 
         $whitelist = self::get_whitelist();
 
-        // Check for duplicate (same type + value).
-        foreach( $whitelist as $entry ) {
-            if( $entry['type'] === $type && $entry['value'] === $value ) return false;
+        $scope = in_array( $scope, self::SCOPES, true ) ? $scope : 'all';
+
+        // Same type and value: not a new entry, but the scope may have moved.
+        //
+        // Returning false outright meant the only way to narrow an existing
+        // entry was to remove it and add it again -- and the admin screen
+        // reported "added to allowlist" either way, so a merchant following
+        // the form's own advice to narrow a scope was told it had worked when
+        // nothing had changed.
+        foreach( $whitelist as $i => $entry ) {
+
+            if( $entry['type'] !== $type || $entry['value'] !== $value ) continue;
+
+            if( ( $entry['scope'] ?? 'all' ) === $scope ) return false;
+
+            $whitelist[ $i ]['scope'] = $scope;
+
+            return update_option( self::OPTION_KEY, $whitelist );
+
         }
 
         $new = [
@@ -336,6 +403,7 @@ class ip_whitelist {
             'value'  => $value,
             'label'  => sanitize_text_field( $label ),
             'system' => (bool) $system,
+            'scope'  => $scope,
             'added'  => time(),
         ];
 

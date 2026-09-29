@@ -100,7 +100,7 @@ class rate_limiter {
 
         // Whitelisted IPs are never treated as temp-blocked, even if a
         // transient was set before the IP was whitelisted.
-        if( \MightyShield\Firewall\ip_whitelist::is_whitelisted( $ip ) ) return false;
+        if( \MightyShield\Firewall\ip_whitelist::is_whitelisted( $ip, 'firewall' ) ) return false;
 
         $key = 'mshield_tempblock_' . md5( ip_utils::rate_key( $ip ) );
         return (bool) get_transient( $key );

@@ -13,7 +13,7 @@ Stops card testing and stolen-card orders. Scores every order, shows what enforc
 
 == Description ==
 
-MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 56 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
+MightyShield protects WooCommerce stores from card testing attacks and stolen-card orders. Every order is scored out of 100 by 57 checks, optionally reviewed by an AI model, and then acted on once — held, challenged, refused, or let through — according to rules you set.
 
 Nothing is enforced until you say so. MightyShield installs in Observe mode: it rates every order and records what it would have done, so you can tune it against your own traffic before it touches a single sale.
 
@@ -194,6 +194,20 @@ Fixes three network checks that had never worked and removes a blocking request 
 == Changelog ==
 
 = 3.0.0 =
+* Fixed: an AI provider outage could end a checkout before payment was taken. Nothing in the outage alert can stop a sale any more, and the once-a-day limit on that alert is applied after the email is attempted rather than before — so a mail problem costs you one alert rather than every alert.
+* New: choose a second AI provider to try when the first one is down. Only used when that provider is the thing that failed, never when the request itself was wrong, and inside the same time limit — so a fallback can never make a checkout slower than it already was.
+* New: choose whether AI review runs during checkout or just after it. Reviewing during checkout is the only way to hold a card before it is charged; reviewing just after keeps a slow provider out of the shopper's way, and a held order is put on hold moments later instead.
+* Fixed: on Gemini, a thinking model could spend its whole answer on reasoning and return nothing, reported as an unexpected response. MightyShield now turns thinking off where the model allows it, and when an answer is cut short it says so.
+* New: allowlist entries can be narrowed. A warehouse account that needs to skip the bot challenge no longer has to be exempt from holds and refusals as well. Existing entries are unchanged and still exempt everything.
+* New: allowlisting a role your customers hold now asks you to confirm it, and says so afterwards. It exempts every shopper on the store, and it used to be one click with no more warning than any other entry.
+* Fixed: the allowlist offered nine kinds of entry and would only accept four. Phone, name, postcode, city and country all returned "Invalid allowlist entry type".
+* New: a lighter card-testing check. A run of two or three declines and then a charge that works is what card testing actually looks like, and the existing check only fires at ten an hour because it also blocks the address. This one only scores, so it can be far more sensitive without locking out a shopper fumbling a card number.
+* Fixed: on Stripe with webhooks configured, each declined charge now counts towards the decline checks. Fifty cards tried through one order counted as one failed payment, because WooCommerce sees one failed order however many cards went through it. Stores without Stripe webhooks keep counting the way they always did, so nothing goes quiet.
+* New: the Test connection button is limited to twenty tries an hour. Every test is a real billed call, and some plans are metered in tens a day.
+* Changed: the "unavailable" warnings now say how long ago the problem happened. A minute ago and twenty hours ago call for opposite reactions and used to read identically.
+* Fixed: an order held at authorization, or held before payment, could be moved to Completed by hand and would leave the review queue with the card neither charged nor released. It is put back on hold and says why.
+* Fixed: a shopper whose payment was declined and who tried again was charged for a second AI review of the same basket, which overwrote the first rating and added a second note saying so.
+* Changed: a reviewer's decision now records who made it and when, and orders completed without going through the review panel say who completed them.
 * Changed: every check on the Scoring tab is on one grid, with its cost, force level and how often it fires in the row and its extra settings folded under a caret. Find a check by name, or show only the ones costing you customers, firing together, or switched off. Save pins itself to the window once something has changed and says how many checks changed.
 * Changed: the Dashboard leads with the chart, then what is waiting for you, what enforcing would do, and what your orders say about the weights.
 * Changed: the admin reads as one product: sentence case throughout, one heading style, one helper-text style, one empty state, one save button, and the manual on the same palette and fonts as the tabs, in dark mode too.

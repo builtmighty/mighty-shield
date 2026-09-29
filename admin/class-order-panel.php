@@ -817,24 +817,46 @@ class order_panel {
             wp_die( esc_html__( 'Invalid MightyShield order request.', 'mighty-shield' ), '', [ 'response' => 400 ] );
         }
 
-        switch( $do ) {
+        // Approve and Block move money before they move the status, and the
+        // hold hook runs at priority 999 inside both of those transitions --
+        // and inside the gateway's own payment_complete during a capture. It
+        // stands aside for the length of a reviewer's decision rather than
+        // each path having to clear the right piece of meta at the right
+        // moment, which is how Approve once undid itself.
+        // Only the two that move money and then move the status. rate and
+        // verdict_* change neither, so suppressing the hold for their whole
+        // request bought nothing and would have swallowed a transition some
+        // other plugin made during set_manual()'s save.
+        $deciding = in_array( $do, [ 'approve', 'block' ], true );
 
-            case 'rate':
-                $notice = $this->rate( $order, $use_ai );
-                break;
+        if( $deciding ) response::deciding( true );
 
-            case 'verdict_clean':
-            case 'verdict_fraud':
-                $notice = $this->verdict( $order, substr( $do, 8 ) );
-                break;
+        try {
 
-            case 'approve':
-                $notice = $this->approve( $order );
-                break;
+            switch( $do ) {
 
-            default:
-                $notice = $this->block( $order );
-                break;
+                case 'rate':
+                    $notice = $this->rate( $order, $use_ai );
+                    break;
+
+                case 'verdict_clean':
+                case 'verdict_fraud':
+                    $notice = $this->verdict( $order, substr( $do, 8 ) );
+                    break;
+
+                case 'approve':
+                    $notice = $this->approve( $order );
+                    break;
+
+                default:
+                    $notice = $this->block( $order );
+                    break;
+
+            }
+
+        } finally {
+
+            if( $deciding ) response::deciding( false );
 
         }
 
@@ -1184,7 +1206,7 @@ class order_panel {
         // has allowlisted: the blocklist would win, and the row would read as
         // a deliberate decision.
         if( ip_utils::is_private( $ip ) ) return false;
-        if( class_exists( '\MightyShield\Firewall\ip_whitelist' ) && ip_whitelist::is_whitelisted( $ip ) ) return false;
+        if( class_exists( '\MightyShield\Firewall\ip_whitelist' ) && ip_whitelist::is_whitelisted( $ip, 'firewall' ) ) return false;
 
         return (bool) ip_blocklist::add_ip(
             $ip,

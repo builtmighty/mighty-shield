@@ -74,6 +74,29 @@ class admin_page {
     ];
 
     /**
+     * Test connections allowed per service, per hour, per user.
+     *
+     * Every test is a real billed call to a real provider -- that is what
+     * makes the button worth having -- and some free tiers are measured in
+     * tens of requests a day. The button disables itself while a request is in
+     * flight, which stops a double click and nothing else. Twenty is far more
+     * than anyone diagnosing a key by hand will need in an hour.
+     *
+     * @since   3.0.0
+     */
+    const TESTS_PER_HOUR = 20;
+
+    /**
+     * How many people can hold a role before it counts as a customer role.
+     *
+     * Staff roles are small and customer roles are not. Fifty is comfortably
+     * above any shop's back office and far below any shop's customer list.
+     *
+     * @since   3.0.0
+     */
+    const PUBLIC_ROLE_USERS = 50;
+
+    /**
      * Clear one degraded flag.
      *
      * This hides the warning; it does not fix anything, and it cannot hide a
@@ -522,6 +545,17 @@ class admin_page {
                 return \in_array( $value, [ 'anthropic', 'openai', 'gemini' ], true ) ? $value : 'anthropic';
             },
         ] );
+        register_setting( 'mshield_ai', 'mshield_ai_fallback_provider', [
+            'sanitize_callback' => function( $value ) {
+                // '' is the default and means no fallback.
+                return \in_array( $value, [ '', 'anthropic', 'openai', 'gemini' ], true ) ? $value : '';
+            },
+        ] );
+        register_setting( 'mshield_ai', 'mshield_ai_mode', [
+            'sanitize_callback' => function( $value ) {
+                return \in_array( $value, [ 'inline', 'async' ], true ) ? $value : 'inline';
+            },
+        ] );
         register_setting( 'mshield_ai', 'mshield_ai_anthropic_key', [
             'sanitize_callback' => function( $value ) {
                 if( empty( $value ) ) {
@@ -740,8 +774,15 @@ class admin_page {
                 ? sanitize_key( isset( $_POST['mshield_new_role'] ) ? wp_unslash( $_POST['mshield_new_role'] ) : '' )
                 : sanitize_text_field( wp_unslash( $_POST['mshield_new_value'] ?? '' ) );
             $label = sanitize_text_field( wp_unslash( $_POST['mshield_new_ip_label'] ?? '' ) );
+            $scope = sanitize_key( wp_unslash( $_POST['mshield_new_scope'] ?? 'all' ) );
 
-            set_transient( 'mshield_admin_notice', $this->whitelist_add( $type, $value, $label ), 30 );
+            // A form posted before scopes existed, or one with the field
+            // stripped, means what it has always meant.
+            if( ! \in_array( $scope, ip_whitelist::SCOPES, true ) ) $scope = 'all';
+
+            $confirmed = ! empty( $_POST['mshield_confirm_role'] );
+
+            set_transient( 'mshield_admin_notice', $this->whitelist_add( $type, $value, $label, $scope, $confirmed ), 30 );
 
             wp_safe_redirect( admin_url( 'admin.php?page=mighty-shield&tab=whitelist' ) );
             exit;
@@ -1239,14 +1280,65 @@ class admin_page {
      * @param   string  $label  Optional label.
      * @return  array   Admin-notice tuple [ id, message, type ].
      */
-    private function whitelist_add( $type, $value, $label = '' ) {
+    /**
+     * Whether a role is one an ordinary shopper holds.
+     *
+     * By capability rather than by slug, so a store's own "Wholesale Buyer" is
+     * caught as surely as Customer is. A role that can reach nothing in the
+     * back office is a customer role whatever it has been named, and the role
+     * new sign-ups are given is public by definition however it is configured.
+     *
+     * @since   3.0.0
+     *
+     * @param   string  $slug
+     * @param   array   $role   As stored in wp_roles()->roles.
+     * @return  bool
+     */
+    private static function public_role( $slug, $role ) {
+
+        // Whatever new sign-ups are given is public by definition.
+        if( $slug === (string) get_option( 'default_role' ) ) return true;
+
+        $caps = array_keys( array_filter( (array) ( $role['capabilities'] ?? [] ) ) );
+
+        // A role that grants nothing beyond reading the site is a customer
+        // role whatever it has been named, so a store's own "Wholesale Buyer"
+        // is caught as surely as Customer is.
+        //
+        // This replaced a fixed list of back-office capabilities, tested the
+        // other way round. That list could only ever be incomplete: a B2B
+        // plugin that gives its customer tier upload_files -- for purchase
+        // orders, which is ordinary -- slipped past it and the merchant
+        // allowlisted every wholesale shopper on the store with a plain
+        // "Role added" and no warning at all. Asking what a role DOES grant
+        // cannot be outflanked that way.
+        if( empty( array_diff( $caps, [ 'read', 'level_0' ] ) ) ) return true;
+
+        // And the other half, for a customer tier that does hold something
+        // extra: a role hundreds of people are in is a customer role however
+        // its capabilities read. Bounded to 51 rows, so this stays cheap on a
+        // store with a large user table.
+        $holders = get_users( [
+            'role'        => $slug,
+            'fields'      => 'ID',
+            'number'      => self::PUBLIC_ROLE_USERS + 1,
+            'count_total' => false,
+        ] );
+
+        return count( $holders ) > self::PUBLIC_ROLE_USERS;
+
+    }
+
+    private function whitelist_add( $type, $value, $label = '', $scope = 'all', $confirmed = false ) {
 
         if( $type === 'ip' ) {
 
             if( empty( $value ) || ! $this->validate_ip_input( $value ) ) {
                 return [ 'wl_invalid', __( 'Invalid IP address or CIDR format.', 'mighty-shield' ), 'error' ];
             }
-            ip_whitelist::add_entry( 'ip', $value, $label );
+            if( ! ip_whitelist::add_entry( 'ip', $value, $label, false, $scope ) ) {
+                return [ 'wl_invalid', sprintf( __( 'IP %s is already on the allowlist with that scope.', 'mighty-shield' ), $value ), 'error' ];
+            }
             return [ 'wl_added', sprintf( __( 'IP %s added to allowlist.', 'mighty-shield' ), $value ), 'success' ];
 
         }
@@ -1256,7 +1348,9 @@ class admin_page {
             if( ! is_email( $value ) ) {
                 return [ 'wl_invalid', __( 'Invalid email address.', 'mighty-shield' ), 'error' ];
             }
-            ip_whitelist::add_entry( 'email', $value, $label );
+            if( ! ip_whitelist::add_entry( 'email', $value, $label, false, $scope ) ) {
+                return [ 'wl_invalid', sprintf( __( 'Email %s is already on the allowlist with that scope.', 'mighty-shield' ), $value ), 'error' ];
+            }
             return [ 'wl_added', sprintf( __( 'Email %s added to allowlist.', 'mighty-shield' ), $value ), 'success' ];
 
         }
@@ -1276,7 +1370,9 @@ class admin_page {
             }
 
             $display = $label !== '' ? $label : $user->user_login . ' (' . $user->user_email . ')';
-            ip_whitelist::add_entry( 'user', $user->ID, $display );
+            if( ! ip_whitelist::add_entry( 'user', $user->ID, $display, false, $scope ) ) {
+                return [ 'wl_invalid', sprintf( __( 'User %s is already on the allowlist with that scope.', 'mighty-shield' ), $user->user_login ), 'error' ];
+            }
             return [ 'wl_added', sprintf( __( 'User %s added to allowlist.', 'mighty-shield' ), $user->user_login ), 'success' ];
 
         }
@@ -1303,8 +1399,59 @@ class admin_page {
 
             $name    = translate_user_role( $roles[ $slug ]['name'] );
             $display = $label !== '' ? $label : $name;
-            ip_whitelist::add_entry( 'role', $slug, $display );
+
+            // A role every shopper holds is not an allowlist entry, it is an
+            // off switch. Allowlisting Customer on a store with open
+            // registration exempts anybody who signs up, and the description
+            // above the control said so -- to a merchant who had already
+            // decided, before they typed anything, and who then got a plain
+            // "Role added" like any other. So: say it at the moment it is
+            // being done, and make them mean it.
+            if( self::public_role( $slug, $roles[ $slug ] ) && ! $confirmed ) {
+                return [ 'wl_confirm', sprintf(
+                    /* translators: %s: the role name. */
+                    __( 'Every customer holds the %s role, so allowlisting it would exempt every shopper on this store. Tick "Yes, exempt everyone in this role" and add it again if that is what you want.', 'mighty-shield' ),
+                    $name
+                ), 'error' ];
+            }
+
+            if( ! ip_whitelist::add_entry( 'role', $slug, $display, false, $scope ) ) {
+                return [ 'wl_invalid', sprintf( __( 'Role %s is already on the allowlist with that scope.', 'mighty-shield' ), $name ), 'error' ];
+            }
+
+            if( self::public_role( $slug, $roles[ $slug ] ) ) {
+                return [ 'wl_added', sprintf(
+                    /* translators: %s: the role name. */
+                    __( 'Role %s added to the allowlist. Every shopper on this store now holds an exemption.', 'mighty-shield' ),
+                    $name
+                ), 'warning' ];
+            }
+
             return [ 'wl_added', sprintf( __( 'Role %s added to allowlist.', 'mighty-shield' ), $name ), 'success' ];
+
+        }
+
+        // The order-field types: phone, name, postcode, city, country. The
+        // form has offered all five since 3.0.0 and this method handled none
+        // of them, so picking one of the five and pressing Add returned
+        // "Invalid allowlist entry type" -- a screen offering nine choices
+        // that accepted four.
+        //
+        // No format validation beyond "normalises to something": a name or a
+        // city is whatever the merchant says it is, and add_entry() rejects
+        // anything that comes out empty. The blocklist's own add path made the
+        // same judgement for the same reason.
+        if( isset( ip_whitelist::FIELD_TYPES[ $type ] ) ) {
+
+            if( ! ip_whitelist::add_entry( $type, $value, $label, false, $scope ) ) {
+                return [ 'wl_invalid', __( 'That value could not be added. It may be empty, or already on the list.', 'mighty-shield' ), 'error' ];
+            }
+
+            return [ 'wl_added', sprintf(
+                /* translators: %s: the value that was added. */
+                __( '%s added to allowlist.', 'mighty-shield' ),
+                $value
+            ), 'success' ];
 
         }
 
@@ -1493,10 +1640,17 @@ class admin_page {
      */
     private static function render_degraded_banners() {
 
+        // Each template takes the age of the failure and then the error. The
+        // age is the half a merchant actually needs: a banner reading "last
+        // error: timed out" is the same whether that happened a minute ago or
+        // twenty hours ago, and those call for opposite reactions.
         $sources = [
-            'mshield_ai_degraded'      => __( 'AI order review is unavailable and orders are NOT being reviewed. Last error: %s', 'mighty-shield' ),
-            'mshield_smarty_degraded'  => __( 'Address verification (Smarty) is degraded and has fallen back to a basic ZIP/State check. Last error: %s', 'mighty-shield' ),
-            'mshield_captcha_degraded' => __( 'The bot challenge is misconfigured and is failing open so it does not block checkout. Last error: %s', 'mighty-shield' ),
+            /* translators: 1: how long ago the error happened, e.g. "12 mins". 2: the error message. */
+            'mshield_ai_degraded'      => __( 'AI order review is unavailable and orders are NOT being reviewed. %1$s ago: %2$s', 'mighty-shield' ),
+            /* translators: 1: how long ago the error happened, e.g. "12 mins". 2: the error message. */
+            'mshield_smarty_degraded'  => __( 'Address verification (Smarty) is degraded and has fallen back to a basic ZIP/State check. %1$s ago: %2$s', 'mighty-shield' ),
+            /* translators: 1: how long ago the error happened, e.g. "12 mins". 2: the error message. */
+            'mshield_captcha_degraded' => __( 'The bot challenge is misconfigured and is failing open so it does not block checkout. %1$s ago: %2$s', 'mighty-shield' ),
         ];
 
         // A feature switched OFF cannot be degraded, so its banner is not
@@ -1525,7 +1679,11 @@ class admin_page {
                     . '<a class="mshield-btn is-small" href="%s">%s</a>'
                 . '</div>',
                 esc_html__( 'MightyShield:', 'mighty-shield' ),
-                esc_html( sprintf( $template, isset( $degraded['message'] ) ? $degraded['message'] : '' ) ),
+                esc_html( sprintf(
+                    $template,
+                    human_time_diff( (int) $degraded['time'] ),
+                    isset( $degraded['message'] ) ? $degraded['message'] : ''
+                ) ),
                 // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- value is escaped where it is built, or is a literal
                 self::dismiss_url( $option ),
                 esc_html__( 'Dismiss', 'mighty-shield' )
@@ -1637,6 +1795,27 @@ class admin_page {
         // perform no call at all rather than falling through to a default one.
         if( ! \in_array( $service, [ 'smarty', 'ai', 'captcha' ], true ) ) {
             wp_send_json_error( [ 'message' => __( 'Unknown service.', 'mighty-shield' ) ], 400 );
+        }
+
+        // Counted after the allowlist, so an unknown service spends nothing,
+        // and per service, so diagnosing the address checker does not use up
+        // the budget for diagnosing the model.
+        $tests = (int) \MightyShield\Includes\db::increment_rate_limit(
+            md5( get_current_user_id() . '|test|' . $service ),
+            'test_connection',
+            HOUR_IN_SECONDS
+        );
+
+        if( $tests > self::TESTS_PER_HOUR ) {
+            wp_send_json_success( [
+                'ok'      => false,
+                'message' => sprintf(
+                    /* translators: %d: the number of tests allowed per hour. */
+                    __( 'That is %d tests in an hour, which is as many as MightyShield will make. Each one is a real request to the provider and some plans are metered tightly. Try again shortly.', 'mighty-shield' ),
+                    self::TESTS_PER_HOUR
+                ),
+                'tried'   => [],
+            ] );
         }
 
         if( $service === 'captcha' ) {

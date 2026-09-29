@@ -726,6 +726,27 @@ class db {
     }
 
     /**
+     * The trust to stamp on a log row for an order, or null when there is none.
+     *
+     * A log row with trust 0 and a log row with no trust recorded read the
+     * same in a chargeback investigation and mean opposite things, so an
+     * absent rating has to stay NULL. Trust runs 1 to 100, never 0, which is
+     * what makes the cast-and-fall-through safe.
+     *
+     * @since   3.0.0
+     *
+     * @param   \WC_Order   $order
+     * @return  float|null
+     */
+    public static function log_trust( $order ) {
+
+        if( ! is_a( $order, 'WC_Order' ) ) return null;
+
+        return (float) $order->get_meta( '_mshield_risk_trust' ) ?: null;
+
+    }
+
+    /**
      * Log an event.
      *
      * @since   1.0.0
@@ -734,11 +755,11 @@ class db {
      * @param   string  $endpoint   Route or endpoint identifier.
      * @param   string  $action     Action taken (blocked, rate_limited, flagged).
      * @param   string  $reason     Reason for the action.
-     * @param   int     $order_id   Order this event belongs to, when known.
-     * @param   float   $trust      Trust rating at the time, when known.
      * @param   string  $data       Optional request data. When empty, a compact
      *                              JSON forensics blob (user agent, billing
      *                              email, request URI) is captured automatically.
+     * @param   int     $order_id   Order this event belongs to, when known.
+     * @param   float   $trust      Trust rating at the time, when known.
      */
     public static function log_event( $ip, $endpoint, $action, $reason = '', $data = '', $order_id = 0, $trust = null ) {
 
